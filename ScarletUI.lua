@@ -19,10 +19,6 @@ function ScarletUI:OnInitialize()
     self.db = sui_AceDB:New("ScarletUIDB")
 end
 
-function ScarletUI:OnEnable()
-    ScarletUI:Setup()
-end
-
 function ScarletUI:Setup()
     if not IsAddOnLoaded("ElvUI") then
         SetCVar('useUiScale', 1)
@@ -32,17 +28,19 @@ function ScarletUI:Setup()
         self:SetupActionbars()
         self:SetupRepair()
     end
-    self:SetupChat()
+    --ScarletUI:SetupChat()
+
     self:Print("UI setup successful.")
 end
 
 local function OnEvent(self, event, addon, isReload)
-    if event == "ADDON_LOADED" and addon == "ScarletUI" then
-        ScarletUI:SetupChat()
-        ScarletUI:TidyIcons_Update()
+    if event == "PLAYER_ENTERING_WORLD" then
+        ScarletUI:Setup()
     end
 end
 
 ScarletUI.Frame = CreateFrame("Frame")
-ScarletUI.Frame:RegisterEvent("ADDON_LOADED")
+ScarletUI.Frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 ScarletUI.Frame:SetScript("OnEvent", OnEvent)
+
+--hooksecurefunc("SetCVar", function(k, v) print("CVar", k, "changed to", v) end)

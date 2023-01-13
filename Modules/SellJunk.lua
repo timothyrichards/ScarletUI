@@ -19,12 +19,12 @@ local function SellJunkFunc()
 
     -- Traverse bags and sell grey items
     for BagID = 0, 4 do
-        for BagSlot = 1, GetContainerNumSlots(BagID) do
-            CurrentItemLink = GetContainerItemLink(BagID, BagSlot)
+        for BagSlot = 1, C_Container.GetContainerNumSlots(BagID) do
+            CurrentItemLink = C_Container.GetContainerItemLink(BagID, BagSlot)
             if CurrentItemLink then
                 void, void, Rarity, void, void, void, void, void, void, void, ItemPrice = GetItemInfo(CurrentItemLink)
                 -- Continue
-                local void, itemCount = GetContainerItemInfo(BagID, BagSlot)
+                local void, itemCount = C_Container.GetContainerItemInfo(BagID, BagSlot)
                 if Rarity == 0 and ItemPrice ~= 0 then
                     SoldCount = SoldCount + 1
                     if MerchantFrame:IsShown() then

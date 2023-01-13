@@ -1,15 +1,16 @@
 function ScarletUI:SetupUnitFrames()
+    SetCVar('useCompactPartyFrames', 1)
     SetCVar('USE_RAID_STYLE_PARTY_FRAMES', 1)
 
     PlayerFrame:SetMovable(true)
     PlayerFrame:SetUserPlaced(true)
     PlayerFrame:ClearAllPoints()
-    PlayerFrame:SetPoint("TOPRIGHT", UIParent, "CENTER", -100, -200)
+    PlayerFrame:SetPoint("TOPRIGHT", UIParent, "CENTER", -125, -150)
 
     TargetFrame:SetMovable(true)
     TargetFrame:SetUserPlaced(true)
     TargetFrame:ClearAllPoints()
-    TargetFrame:SetPoint("TOPLEFT", UIParent, "CENTER", 100, -200)
+    TargetFrame:SetPoint("TOPLEFT", UIParent, "CENTER", 125, -150)
 
     if FocusFrame then
         FocusFrame:SetMovable(true)

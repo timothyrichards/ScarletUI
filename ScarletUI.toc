@@ -1,4 +1,4 @@
-## Interface: 92500
+## Interface: 10000
 ## Title: Scarlet UI
 ## Author: ScarletPaladin
 ## Notes: Misc UI features/modifications preferred by ScarletPaladin
@@ -28,7 +28,6 @@ ScarletUI.lua
 Modules\Helpers.lua
 Modules\UnitFrames.lua
 Modules\Actionbars.lua
-Modules\TidyIcons.lua
 Modules\Chat.lua
 Modules\Repair.lua
 Modules\SellJunk.lua

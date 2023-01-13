@@ -1,26 +1,36 @@
 function ScarletUI:SetupActionbars()
-    if MicroButtonAndBagsBar then
-        MainMenuBarBackpackButton:ClearAllPoints();
-        MainMenuBarBackpackButton:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -2, 2);
+    MainMenuBarLeftEndCap:Hide()
+    MainMenuBarRightEndCap:Hide()
+    MainMenuBarMaxLevelBar:Hide()
+    MainMenuBarTexture0:Hide()
+    MainMenuBarTexture1:Hide()
+    MainMenuBarTexture2:Hide()
+    MainMenuBarTexture3:Hide()
+    MainMenuBar:SetWidth(510)
 
-        CharacterBag0Slot:ClearAllPoints()
-        CharacterBag0Slot:SetPoint("RIGHT", MainMenuBarBackpackButton, "LEFT", -2, -4)
-
-        CharacterMicroButton:ClearAllPoints()
-        CharacterMicroButton:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 2, 2)
-        CharacterMicroButton.SetPoint = function() end
-
-        MicroButtonAndBagsBar.MicroBagBar:Hide()
+    if MainMenuExpBar:IsShown() or ReputationWatchBar:IsShown() then
+        MainMenuBar:ClearAllPoints()
+        MainMenuBar:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 15)
     end
 
-    if MainMenuBarArtFrameBackground then
-        MainMenuBarArtFrameBackground:Hide()
-    end
+    ActionBarUpButton:Hide()
+    ActionBarDownButton:Hide()
+    MainMenuBarPageNumber:Hide()
 
-    if MainMenuBarArtFrame.LeftEndCap and MainMenuBarArtFrame.RightEndCap then
-        MainMenuBarArtFrame.LeftEndCap:Hide()
-        MainMenuBarArtFrame.RightEndCap:Hide()
-    end
+    MainMenuBarBackpackButton:ClearAllPoints();
+    MainMenuBarBackpackButton:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -2, 2);
+    MainMenuBarBackpackButtonNormalTexture:Hide()
+
+    CharacterBag0Slot:ClearAllPoints()
+    CharacterBag0Slot:SetPoint("RIGHT", MainMenuBarBackpackButton, "LEFT", -3, -2)
+    CharacterBag0SlotNormalTexture:Hide()
+    CharacterBag1SlotNormalTexture:Hide()
+    CharacterBag2SlotNormalTexture:Hide()
+    CharacterBag3SlotNormalTexture:Hide()
+
+    CharacterMicroButton:ClearAllPoints()
+    CharacterMicroButton:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 2, 2)
+    CharacterMicroButton.SetPoint = function() end
 
     MultiBarBottomLeft:SetMovable(true)
     MultiBarBottomLeft:SetUserPlaced(true)
@@ -70,5 +80,24 @@ function ScarletUI:SetupActionbars()
     PetActionBarFrame:SetPoint("BOTTOMLEFT", StanceBarFrame, "TOPLEFT", -4, 3)
     PetActionBarFrame.SetPoint = function() end
 
-    ScarletUI:TidyIcons_Update()
+    ReputationWatchBar:SetWidth(510)
+    ReputationWatchBar.StatusBar:SetWidth(510)
+    ReputationWatchBar.StatusBar.XPBarTexture1:Hide()
+    ReputationWatchBar.StatusBar.XPBarTexture2:Hide()
+    ReputationWatchBar.StatusBar.XPBarTexture3:ClearAllPoints()
+    ReputationWatchBar.StatusBar.XPBarTexture3:SetPoint("LEFT", ReputationWatchBar.StatusBar.XPBarTexture0, "RIGHT", 0, 0)
+    ReputationWatchBar:ClearAllPoints()
+    ReputationWatchBar:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 0)
+    ReputationWatchBar.SetPoint = function() end
+
+    MainMenuExpBar:SetWidth(510)
+    MainMenuXPBarTexture0:ClearAllPoints()
+    MainMenuXPBarTexture0:SetPoint("LEFT", MainMenuExpBar, "LEFT", 0, 0)
+    MainMenuXPBarTexture1:Hide()
+    MainMenuXPBarTexture2:Hide()
+    MainMenuXPBarTexture3:ClearAllPoints()
+    MainMenuXPBarTexture3:SetPoint("LEFT", MainMenuXPBarTexture0, "RIGHT", 0, 0)
+    MainMenuExpBar:ClearAllPoints()
+    MainMenuExpBar:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 0)
+    MainMenuExpBar.SetPoint = function() end
 end
