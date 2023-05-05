@@ -1,29 +1,123 @@
-local _G = _G
-local ipairs = ipairs
-local ChatFrame_AddMessageGroup = ChatFrame_AddMessageGroup
-local ChatFrame_RemoveAllMessageGroups = ChatFrame_RemoveAllMessageGroups
-local ChatFrame_RemoveMessageGroup = ChatFrame_RemoveMessageGroup
-local FCF_OpenNewWindow = FCF_OpenNewWindow
-local FCF_ResetChatWindows = FCF_ResetChatWindows
-local FCF_SetChatWindowFontSize = FCF_SetChatWindowFontSize
-local FCF_SetWindowName = FCF_SetWindowName
-local FCFDock_SelectWindow = FCFDock_SelectWindow
-local SetCVar = SetCVar
-local VoiceTranscriptionFrame_UpdateEditBox = VoiceTranscriptionFrame_UpdateEditBox
-local VoiceTranscriptionFrame_UpdateVisibility = VoiceTranscriptionFrame_UpdateVisibility
-local VoiceTranscriptionFrame_UpdateVoiceTab = VoiceTranscriptionFrame_UpdateVoiceTab
+ScarletUI.CVars = {
+    -- UI CVars
+    useUiScale =  1,
+    UIScale =  0.75,
+    XpBarText = 1,
+    lootUnderMouse = 1,
+    autoLootDefault = 1,
+    floatingCombatTextCombatHealing = 1,
+    showTargetOfTarget = 1,
+    doNotFlashLowHealthWarning = 0,
 
-local function OnEvent(self, event, ...)
-    if (event == "CVAR_UPDATE") then
-        print(event, ...)
-    elseif (event == "ARENA_OPPONENT_UPDATE") then
-        --ArenaPrepFrame1:Hide()
-        --ArenaPrepFrame2:Hide()
-        --ArenaPrepFrame3:Hide()
+    -- Chat CVars
+    chatStyle = 'classic',
+    whisperMode = 'inline',
+    colorChatNamesByClass = 1,
+    chatClassColorOverride = 0,
+    speechToText = 0,
+    textToSpeech = 0,
+    chatMouseScroll = 1,
+
+    -- Floating Combat Text
+    enableFloatingCombatText = 1,
+    floatingCombatTextLowManaHealth = 1,
+    floatingCombatTextDodgeParryMiss = 1,
+    floatingCombatTextCombatState = 1,
+    floatingCombatTextFriendlyHealers = 1,
+    floatingCombatTextEnergyGains = 1,
+
+    -- Raid Frame CVars
+    useCompactPartyFrames = 1,
+
+    -- Misc CVars
+    nameplateShowEnemies = 1,
+    Sound_EnableErrorSpeech = 0,
+}
+
+ScarletUI.raidProfile = {
+    useClassColors = true,
+    displayBorder = false,
+    displayPowerBar = true,
+    displayOnlyDispellableDebuffs = true,
+    healthText = 'perc',
+    frameHeight = 46,
+    frameWidth = 90,
+}
+
+function ScarletUI:SetupCVars()
+    -- Dialog to reload and apply CVars
+    StaticPopupDialogs['SCARLET_UI_RELOAD_DIALOG'] = {
+        text = '<Scarlet UI>\n\nCVars have been updated, not all changes will be applied until your UI is reloaded.',
+        button1 = 'Reload',
+        button2 = 'Close',
+        OnAccept = function()
+            ReloadUI()
+        end,
+        timeout = 0,
+        whileDead = true,
+        hideOnEscape = false,
+        preferredIndex = 3,
+    }
+
+    -- Check and apply CVars
+    local CVarsChanged = false
+    for key, value in pairs(ScarletUI.CVars) do
+        if tostring(GetCVar(key)) ~= tostring(value) then
+            SetCVar(key, value)
+            CVarsChanged = true;
+        end
+    end
+
+    -- Check and apply Raid Profile settings
+    for key, value in pairs(ScarletUI.raidProfile) do
+        if tostring(GetRaidProfileOption('Primary', key)) ~= tostring(value) then
+            SetRaidProfileOption('Primary', key, value)
+            CVarsChanged = true;
+        end
+    end
+
+    -- Show popup to reload if any CVars are updated
+    if (CVarsChanged) then
+        StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
     end
 end
 
-local f = CreateFrame("Frame")
-f:RegisterEvent("CVAR_UPDATE")
-f:RegisterEvent("ARENA_OPPONENT_UPDATE")
-f:SetScript("OnEvent", OnEvent)
+function ScarletUI:GetContainerNumSlots(BagID)
+    if GetContainerNumSlots then
+        return GetContainerNumSlots(BagID)
+    else
+        return C_Container.GetContainerNumSlots(BagID)
+    end
+end
+
+function ScarletUI:GetContainerItemLink(BagID, BagSlot)
+    if GetContainerItemLink then
+        return GetContainerItemLink(BagID, BagSlot)
+    else
+        return C_Container.GetContainerItemLink(BagID, BagSlot)
+    end
+end
+
+function ScarletUI:GetContainerItemInfo(BagID, BagSlot)
+    if GetContainerItemInfo then
+        return GetContainerItemInfo(BagID, BagSlot)
+    else
+        return C_Container.GetContainerItemInfo(BagID, BagSlot)
+    end
+end
+
+function ScarletUI:GetItemInfo(ItemLink)
+    if GetItemInfo then
+        return GetItemInfo(ItemLink)
+    else
+        return C_Container.GetItemInfo(ItemLink)
+    end
+end
+
+function ScarletUI:UseContainerItem(BagID, BagSlot)
+    if UseContainerItem then
+        return UseContainerItem(BagID, BagSlot)
+    else
+        return C_Container.UseContainerItem(BagID, BagSlot)
+    end
+end

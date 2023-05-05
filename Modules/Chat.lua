@@ -1,11 +1,4 @@
 function ScarletUI:SetupChat()
-    SetCVar('chatStyle', 'classic')
-    SetCVar('whisperMode', 'inline')
-    SetCVar('colorChatNamesByClass', 1)
-    SetCVar('chatClassColorOverride', 0)
-    SetCVar('speechToText', 0)
-    SetCVar('textToSpeech', 0)
-
     -- Process normal and existing chat frames
     for i = 1, 50 do
         if _G["ChatFrame" .. i] then
@@ -33,11 +26,7 @@ function ScarletUI:SetupChat()
         local id = frame:GetID()
 
         -- Set chat font size
-        if IsAddOnLoaded("ElvUI") then
-            FCF_SetChatWindowFontSize(nil, frame, 12)
-        else
-            FCF_SetChatWindowFontSize(nil, frame, 14)
-        end
+        FCF_SetChatWindowFontSize(nil, frame, 14)
 
         if id == 1 then
             FCF_SetWindowName(frame, 'General')
@@ -53,6 +42,9 @@ function ScarletUI:SetupChat()
         elseif (id == 4) then
             ChatFrame_RemoveAllMessageGroups(frame)
             FCF_SetWindowName(frame, 'LFG')
+            if IsAddOnLoaded("Hardcore") then
+                ChatFrame_AddChannel(frame, 'hclfg')
+            end
             ChatFrame_AddChannel(frame, 'LookingForGroup')
         elseif (id == 5) then
             ChatFrame_RemoveAllMessageGroups(frame)
@@ -64,12 +56,10 @@ function ScarletUI:SetupChat()
     -- Jump back to main tab
     FCFDock_SelectWindow(_G.GENERAL_CHAT_DOCK, _G.ChatFrame1)
 
-    if not IsAddOnLoaded("ElvUI") then
-        ChatFrame1:SetMovable(true)
-        ChatFrame1:SetUserPlaced(true)
-        ChatFrame1:SetHeight(150)
-        ChatFrame1:SetWidth(450)
-        ChatFrame1:ClearAllPoints()
-        ChatFrame1:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 0, 75)
-    end
+    ChatFrame1:SetMovable(true)
+    ChatFrame1:SetUserPlaced(true)
+    ChatFrame1:SetHeight(150)
+    ChatFrame1:SetWidth(400)
+    ChatFrame1:ClearAllPoints()
+    ChatFrame1:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 0, 75)
 end

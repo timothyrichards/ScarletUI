@@ -1,16 +1,13 @@
 function ScarletUI:SetupUnitFrames()
-    SetCVar('useCompactPartyFrames', 1)
-    SetCVar('USE_RAID_STYLE_PARTY_FRAMES', 1)
-
     PlayerFrame:SetMovable(true)
     PlayerFrame:SetUserPlaced(true)
     PlayerFrame:ClearAllPoints()
-    PlayerFrame:SetPoint("TOPRIGHT", UIParent, "CENTER", -125, -150)
+    PlayerFrame:SetPoint("TOPRIGHT", UIParent, "CENTER", -65, -200)
 
     TargetFrame:SetMovable(true)
     TargetFrame:SetUserPlaced(true)
     TargetFrame:ClearAllPoints()
-    TargetFrame:SetPoint("TOPLEFT", UIParent, "CENTER", 125, -150)
+    TargetFrame:SetPoint("TOPLEFT", UIParent, "CENTER", 65, -200)
 
     if FocusFrame then
         FocusFrame:SetMovable(true)
@@ -19,17 +16,18 @@ function ScarletUI:SetupUnitFrames()
         FocusFrame:SetPoint("TOPRIGHT", UIParent, "CENTER", -60, 150)
     end
 
+    CompactRaidFrameManagerContainerResizeFrame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 650, -450)
+
     self:SetupClassColoredFrames()
 end
 
 function ScarletUI:SetupClassColoredFrames()
     -- Create background frame for player frame
     local PlayFN = CreateFrame("FRAME", nil, PlayerFrame)
-    PlayFN:Hide()
     PlayFN:SetWidth(TargetFrameNameBackground:GetWidth())
     PlayFN:SetHeight(TargetFrameNameBackground:GetHeight())
 
-    local void, void, void, x, y = TargetFrameNameBackground:GetPoint()
+    local _, _, _, x, y = TargetFrameNameBackground:GetPoint()
     PlayFN:SetPoint("TOPLEFT", PlayerFrame, "TOPLEFT", -x, y)
 
     PlayFN.t = PlayFN:CreateTexture(nil, "BORDER")
@@ -42,12 +40,12 @@ function ScarletUI:SetupClassColoredFrames()
     -- Create color function for target and focus frames
     local function TargetFrameCol()
         if UnitIsPlayer("target") then
-            local c = RAID_CLASS_COLORS[select(2, UnitClass("target"))]
-            if c then TargetFrameNameBackground:SetVertexColor(c.r, c.g, c.b) end
+            local targetColor = RAID_CLASS_COLORS[select(2, UnitClass("target"))]
+            if targetColor then TargetFrameNameBackground:SetVertexColor(c.r, c.g, c.b) end
         end
         if UnitIsPlayer("focus") then
-            local c = RAID_CLASS_COLORS[select(2, UnitClass("focus"))]
-            if c then FocusFrameNameBackground:SetVertexColor(c.r, c.g, c.b) end
+            local focusColor = RAID_CLASS_COLORS[select(2, UnitClass("focus"))]
+            if focusColor then FocusFrameNameBackground:SetVertexColor(c.r, c.g, c.b) end
         end
     end
 
@@ -55,9 +53,11 @@ function ScarletUI:SetupClassColoredFrames()
     ColTar:SetScript("OnEvent", TargetFrameCol) -- Events are registered if target option is enabled
 
     -- Refresh color if focus frame size changes
-    hooksecurefunc("FocusFrame_SetSmallSize", function()
-        TargetFrameCol()
-    end)
+    if FocusFrame_SetSmallSize then
+        hooksecurefunc("FocusFrame_SetSmallSize", function()
+            TargetFrameCol()
+        end)
+    end
 
     -- Player frame
     PlayFN:Show()

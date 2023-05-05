@@ -2,6 +2,7 @@ function ScarletUI:SetupActionbars()
     MainMenuBarLeftEndCap:Hide()
     MainMenuBarRightEndCap:Hide()
     MainMenuBarMaxLevelBar:Hide()
+    MainMenuBarPerformanceBarFrame:Hide()
     MainMenuBarTexture0:Hide()
     MainMenuBarTexture1:Hide()
     MainMenuBarTexture2:Hide()
@@ -34,15 +35,20 @@ function ScarletUI:SetupActionbars()
 
     MultiBarBottomLeft:SetMovable(true)
     MultiBarBottomLeft:SetUserPlaced(true)
+    MultiBarBottomLeft:UnregisterAllEvents();
     MultiBarBottomLeft:ClearAllPoints()
     MultiBarBottomLeft:SetWidth(500)
     MultiBarBottomLeft:SetHeight(40)
-    MultiBarBottomLeft:SetPoint("BOTTOMLEFT", ActionButton1, "TOPLEFT", 0, 6)
+    if MainMenuExpBar:IsShown() or ReputationWatchBar:IsShown() then
+        MultiBarBottomLeft:SetPoint("BOTTOM", UIParent, "BOTTOM", 3, 61)
+    else
+        MultiBarBottomLeft:SetPoint("BOTTOM", UIParent, "BOTTOM", 3, 45)
+    end
     MultiBarBottomLeft.SetPoint = function() end
 
     local childrenMultiBarRight = { MultiBarRight:GetChildren() }
     local previousChildMultiBarRight;
-    for __, child in ipairs(childrenMultiBarRight) do
+    for _, child in ipairs(childrenMultiBarRight) do
         child:ClearAllPoints()
 
         if previousChildMultiBarRight then
@@ -56,29 +62,37 @@ function ScarletUI:SetupActionbars()
 
     MultiBarRight:SetMovable(true)
     MultiBarRight:SetUserPlaced(true)
+    MultiBarRight:UnregisterAllEvents();
     MultiBarRight:ClearAllPoints()
     MultiBarRight:SetWidth(500)
     MultiBarRight:SetHeight(40)
-    MultiBarRight:SetPoint("BOTTOMLEFT", MultiBarBottomLeft, "TOPLEFT", 0, -1)
+    if MainMenuExpBar:IsShown() or ReputationWatchBar:IsShown() then
+        MultiBarRight:SetPoint("BOTTOM", UIParent, "BOTTOM", 3, 101)
+    else
+        MultiBarRight:SetPoint("BOTTOM", UIParent, "BOTTOM", 3, 85)
+    end
     MultiBarRight.SetPoint = function() end
 
     MultiBarLeft:SetMovable(true)
     MultiBarLeft:SetUserPlaced(true)
+    MultiBarLeft:UnregisterAllEvents();
     MultiBarLeft:ClearAllPoints()
     MultiBarLeft:SetPoint("RIGHT", UIParent, "RIGHT", -2, 0)
-    MultiBarLeft.SetPoint = function() end
+    --MultiBarLeft.SetPoint = function() end
 
     StanceBarFrame:SetMovable(true)
     StanceBarFrame:SetUserPlaced(true)
+    StanceBarFrame:UnregisterAllEvents();
     StanceBarFrame:ClearAllPoints()
     StanceBarFrame:SetPoint("BOTTOMLEFT", MultiBarRight, "TOPLEFT", 0, 3)
-    StanceBarFrame.SetPoint = function() end
+    --StanceBarFrame.SetPoint = function() end
 
     PetActionBarFrame:SetMovable(true)
     PetActionBarFrame:SetUserPlaced(true)
+    PetActionBarFrame:UnregisterAllEvents();
     PetActionBarFrame:ClearAllPoints()
     PetActionBarFrame:SetPoint("BOTTOMLEFT", StanceBarFrame, "TOPLEFT", -4, 3)
-    PetActionBarFrame.SetPoint = function() end
+    --PetActionBarFrame.SetPoint = function() end
 
     ReputationWatchBar:SetWidth(510)
     ReputationWatchBar.StatusBar:SetWidth(510)
@@ -86,11 +100,15 @@ function ScarletUI:SetupActionbars()
     ReputationWatchBar.StatusBar.XPBarTexture2:Hide()
     ReputationWatchBar.StatusBar.XPBarTexture3:ClearAllPoints()
     ReputationWatchBar.StatusBar.XPBarTexture3:SetPoint("LEFT", ReputationWatchBar.StatusBar.XPBarTexture0, "RIGHT", 0, 0)
+    ReputationWatchBar:SetMovable(true)
+    ReputationWatchBar:SetUserPlaced(true)
+    ReputationWatchBar:UnregisterAllEvents();
     ReputationWatchBar:ClearAllPoints()
     ReputationWatchBar:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 0)
-    ReputationWatchBar.SetPoint = function() end
+    --ReputationWatchBar.SetPoint = function() end
 
     MainMenuExpBar:SetWidth(510)
+    ExhaustionLevelFillBar:SetWidth(510)
     MainMenuXPBarTexture0:ClearAllPoints()
     MainMenuXPBarTexture0:SetPoint("LEFT", MainMenuExpBar, "LEFT", 0, 0)
     MainMenuXPBarTexture1:Hide()
@@ -99,5 +117,7 @@ function ScarletUI:SetupActionbars()
     MainMenuXPBarTexture3:SetPoint("LEFT", MainMenuXPBarTexture0, "RIGHT", 0, 0)
     MainMenuExpBar:ClearAllPoints()
     MainMenuExpBar:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 0)
-    MainMenuExpBar.SetPoint = function() end
+    --MainMenuExpBar.SetPoint = function() end
+
+    self:TidyIcons_Update()
 end

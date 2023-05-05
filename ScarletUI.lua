@@ -20,20 +20,20 @@ function ScarletUI:OnInitialize()
 end
 
 function ScarletUI:Setup()
-    if not IsAddOnLoaded("ElvUI") then
-        SetCVar('useUiScale', 1)
-        SetCVar('UIScale', 0.75)
-
-        self:SetupUnitFrames()
-        self:SetupActionbars()
-        self:SetupRepair()
+    if IsAddOnLoaded("ElvUI") then
+        self:Print("ElvUI detected, aborting setup.")
+        return
     end
-    --ScarletUI:SetupChat()
+
+    self:SetupCVars()
+    self:SetupUnitFrames()
+    self:SetupActionbars()
+    self:SetupChat()
 
     self:Print("UI setup successful.")
 end
 
-local function OnEvent(self, event, addon, isReload)
+local function OnEvent(_, event, ...)
     if event == "PLAYER_ENTERING_WORLD" then
         ScarletUI:Setup()
     end
@@ -43,4 +43,6 @@ ScarletUI.Frame = CreateFrame("Frame")
 ScarletUI.Frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 ScarletUI.Frame:SetScript("OnEvent", OnEvent)
 
---hooksecurefunc("SetCVar", function(k, v) print("CVar", k, "changed to", v) end)
+--hooksecurefunc("SetCVar", function(k, v)
+--    print("CVar", k, "changed to", v)
+--end)
