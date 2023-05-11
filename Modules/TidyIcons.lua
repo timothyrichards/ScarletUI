@@ -2,30 +2,27 @@ local function trimIcon(icon)
     icon:SetTexCoord(.08, .92, .08, .92)
 end
 
---local function untrimIcon(icon)
---    icon:SetTexCoord(0, 0, 0, 1, 1, 0, 1, 1)
---end
+function ScarletUI:TidyIcons_MacroFrame_Update()
+    if (MacroFrame:IsShown()) then
+        for i = 1, 120 do
+            local button = _G["MacroButton" .. i]
+            if button then
+                local name = button:GetName()
+                local icon = _G[name .. "Icon"]
 
-local function toggleIconTrim(icon)
-    trimIcon(icon)
+                trimIcon(icon)
+            end
+        end
+    end
 end
 
-local function TidyIcons_MacroPopupFrame_Update()
-    --if (MacroPopupFrame:IsShown()) then
-    --    for i = 1, 90 do
-    --        local button = _G["MacroPopupButton" .. i]
-    --        local name = button:GetName()
-    --        local icon = _G[name .. "Icon"]
-    --
-    --        toggleIconTrim(icon)
-    --    end
-    --end
-end
 -- Ensure MacroPopupFrame frame is loaded first, so we don't get an error
 if not IsAddOnLoaded("Blizzard_MacroUI") then
     LoadAddOn("Blizzard_MacroUI")
 end
-MacroPopupFrame:HookScript("OnShow", TidyIcons_MacroPopupFrame_Update)
+MacroFrame:HookScript("OnShow", function()
+    ScarletUI:TidyIcons_MacroFrame_Update()
+end)
 
 function ScarletUI:TidyIcons_Update()
     -- Tidy action bar icons
@@ -41,18 +38,9 @@ function ScarletUI:TidyIcons_Update()
             local name = button:GetName()
             local icon = _G[name .. "Icon"]
 
-            toggleIconTrim(icon)
+            trimIcon(icon)
         end
     end
 
-    -- Tidy macro icons
-    --for i = 1, 120 do
-    --    local button = _G["MacroButton" .. i]
-    --    local name = button:GetName()
-    --    local icon = _G[name .. "Icon"]
-    --
-    --    toggleIconTrim(icon)
-    --end
-
-    TidyIcons_MacroPopupFrame_Update()
+    ScarletUI:TidyIcons_MacroFrame_Update()
 end

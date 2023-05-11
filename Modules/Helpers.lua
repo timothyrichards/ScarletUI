@@ -1,37 +1,41 @@
+-- Can remove when addons are fixed from P3 WotLK PTR
+GetAddOnMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
+
 ScarletUI.CVars = {
     -- UI CVars
-    useUiScale =  1,
-    UIScale =  0.75,
-    XpBarText = 1,
-    lootUnderMouse = 1,
-    autoLootDefault = 1,
-    floatingCombatTextCombatHealing = 1,
-    showTargetOfTarget = 1,
-    doNotFlashLowHealthWarning = 0,
+    useUiScale =  '1',
+    UIScale =  '0.75',
+    XpBarText = '1',
+    lootUnderMouse = '1',
+    autoLootDefault = '1',
+    floatingCombatTextCombatHealing = '1',
+    showTargetOfTarget = '1',
+    doNotFlashLowHealthWarning = '0',
 
     -- Chat CVars
     chatStyle = 'classic',
     whisperMode = 'inline',
-    colorChatNamesByClass = 1,
-    chatClassColorOverride = 0,
-    speechToText = 0,
-    textToSpeech = 0,
-    chatMouseScroll = 1,
+    colorChatNamesByClass = '1',
+    chatClassColorOverride = '0',
+    speechToText = '0',
+    textToSpeech = '0',
+    chatMouseScroll = '1',
 
     -- Floating Combat Text
-    enableFloatingCombatText = 1,
-    floatingCombatTextLowManaHealth = 1,
-    floatingCombatTextDodgeParryMiss = 1,
-    floatingCombatTextCombatState = 1,
-    floatingCombatTextFriendlyHealers = 1,
-    floatingCombatTextEnergyGains = 1,
+    enableFloatingCombatText = '1',
+    floatingCombatTextLowManaHealth = '1',
+    floatingCombatTextDodgeParryMiss = '1',
+    floatingCombatTextCombatState = '1',
+    floatingCombatTextFriendlyHealers = '1',
+    floatingCombatTextEnergyGains = '1',
 
     -- Raid Frame CVars
-    useCompactPartyFrames = 1,
+    useCompactPartyFrames = '1',
 
     -- Misc CVars
-    nameplateShowEnemies = 1,
-    Sound_EnableErrorSpeech = 0,
+    nameplateShowEnemies = '1',
+    countdownForCooldowns = '1',
+    Sound_EnableErrorSpeech = '0',
 }
 
 ScarletUI.raidProfile = {
@@ -39,6 +43,7 @@ ScarletUI.raidProfile = {
     displayBorder = false,
     displayPowerBar = true,
     displayOnlyDispellableDebuffs = true,
+    displayMainTankAndAssist = false,
     healthText = 'perc',
     frameHeight = 46,
     frameWidth = 90,
@@ -61,18 +66,11 @@ function ScarletUI:SetupCVars()
 
     -- Check and apply CVars
     local CVarsChanged = false
-    for key, value in pairs(ScarletUI.CVars) do
-        if tostring(GetCVar(key)) ~= tostring(value) then
-            SetCVar(key, value)
+    for k, v in pairs(self.CVars) do
+        if GetCVar(k) ~= v then
+            SetCVar(k, v)
             CVarsChanged = true;
-        end
-    end
-
-    -- Check and apply Raid Profile settings
-    for key, value in pairs(ScarletUI.raidProfile) do
-        if tostring(GetRaidProfileOption('Primary', key)) ~= tostring(value) then
-            SetRaidProfileOption('Primary', key, value)
-            CVarsChanged = true;
+            print(GetCVar(k) .. '('..type(GetCVar(k))..')' .. ' : ' .. '('..type(v)..')' .. v)
         end
     end
 
@@ -82,42 +80,60 @@ function ScarletUI:SetupCVars()
     end
 end
 
-function ScarletUI:GetContainerNumSlots(BagID)
-    if GetContainerNumSlots then
-        return GetContainerNumSlots(BagID)
-    else
-        return C_Container.GetContainerNumSlots(BagID)
+function ScarletUI:SetupRaidProfiles()
+    local profiles = { 'Party', 'Raid' }
+    for _, profile in ipairs(profiles) do
+        -- Create a new raid profile if it doesn't exist
+        if not RaidProfileExists(profile) then
+            CreateNewRaidProfile(profile)
+        end
+
+        -- Set profile settings
+        if profile == 'Party' then
+            SetRaidProfileSavedPosition(profile, false, 'TOP', 450, 'BOTTOM', 295, 'LEFT', 635)
+        elseif profile == 'Raid' then
+            SetRaidProfileSavedPosition(profile, false, 'TOP', 375, 'BOTTOM', 90, 'LEFT', 165)
+            SetRaidProfileOption(profile, "keepGroupsTogether", '1')
+            SetRaidProfileOption(profile, "horizontalGroups", '1')
+        end
+
+        -- Check and apply Raid Profile settings
+        local settingsChanged = false
+        for k, v in pairs(self.raidProfile) do
+            if GetRaidProfileOption(profile, k) ~= v then
+                SetRaidProfileOption(profile, k, v)
+                settingsChanged = true;
+                --print(GetRaidProfileOption(profile, k) .. '('..type(GetRaidProfileOption('Primary', k))..')' .. ' : ' .. '('..type(v)..')' .. v)
+            end
+        end
+    end
+
+    -- Show popup to reload if any Raid Profile settings are updated
+    if (settingsChanged) then
+        StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
     end
 end
 
-function ScarletUI:GetContainerItemLink(BagID, BagSlot)
-    if GetContainerItemLink then
-        return GetContainerItemLink(BagID, BagSlot)
-    else
-        return C_Container.GetContainerItemLink(BagID, BagSlot)
+function ScarletUI:UpdateMainBar()
+    if not InCombatLockdown() and (MainMenuExpBar:IsShown() or ReputationWatchBar:IsShown()) then
+        MainMenuBar:ClearAllPoints()
+        MainMenuBar:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 15)
     end
 end
 
-function ScarletUI:GetContainerItemInfo(BagID, BagSlot)
-    if GetContainerItemInfo then
-        return GetContainerItemInfo(BagID, BagSlot)
-    else
-        return C_Container.GetContainerItemInfo(BagID, BagSlot)
-    end
-end
+function ScarletUI:SwapActionbar(sourceBar, destinationBar)
+    for i = 1, 12 do
+        local sourceButton = _G[sourceBar.."Button"..i].action
+        local destinationButton = _G[destinationBar.."Button"..i].action
 
-function ScarletUI:GetItemInfo(ItemLink)
-    if GetItemInfo then
-        return GetItemInfo(ItemLink)
-    else
-        return C_Container.GetItemInfo(ItemLink)
-    end
-end
-
-function ScarletUI:UseContainerItem(BagID, BagSlot)
-    if UseContainerItem then
-        return UseContainerItem(BagID, BagSlot)
-    else
-        return C_Container.UseContainerItem(BagID, BagSlot)
+        PickupAction(sourceButton)
+        if GetCursorInfo() ~= nil then
+            PlaceAction(destinationButton)
+            PlaceAction(sourceButton)
+        else
+            PickupAction(destinationButton)
+            PlaceAction(sourceButton)
+            PlaceAction(destinationButton)
+        end
     end
 end
