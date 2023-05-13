@@ -25,6 +25,8 @@ Libs\AceSerializer-3.0\AceSerializer-3.0.xml
 
 ## Load the addon
 ScarletUI.lua
+Modules\Dialogs.lua
+Modules\Pages.lua
 Modules\Helpers.lua
 Modules\UnitFrames.lua
 Modules\Actionbars.lua

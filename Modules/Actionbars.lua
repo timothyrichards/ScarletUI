@@ -14,6 +14,7 @@ local function mainMenuBar()
     ActionBarUpButton:Hide()
     ActionBarDownButton:Hide()
 
+    ScarletUI.Frame:RegisterEvent("ACTIONBAR_UPDATE_STATE")
     ScarletUI:UpdateMainBar()
 
     for i = 1, 12 do
@@ -84,6 +85,11 @@ local function multiBarBottomRight()
 end
 
 local function multiBarRight()
+    for i=1,12 do
+        local background = _G["MultiBarRightButton"..i.."FloatingBG"]
+        background:Hide()
+    end
+
     local childrenMultiBarRight = { MultiBarRight:GetChildren() }
     local previousChildMultiBarRight;
     for _, child in ipairs(childrenMultiBarRight) do
@@ -104,49 +110,66 @@ local function multiBarRight()
     MultiBarRight:ClearAllPoints()
     MultiBarRight:SetWidth(500)
     MultiBarRight:SetHeight(40)
-    if MainMenuExpBar:IsShown() or ReputationWatchBar:IsShown() then
-        MultiBarRight:SetPoint("BOTTOM", UIParent, "BOTTOM", 3, 101)
-    else
-        MultiBarRight:SetPoint("BOTTOM", UIParent, "BOTTOM", 3, 85)
-    end
+    MultiBarRight:SetPoint("BOTTOM", MultiBarBottomRight, "TOP", 0, 0)
     --MultiBarRight.SetPoint = function() end
 end
 
 local function multiBarLeft()
+    for i=1,12 do
+        local background = _G["MultiBarLeftButton"..i.."FloatingBG"]
+        background:Hide()
+    end
+
+    local childrenMultiBarLeft = { MultiBarLeft:GetChildren() }
+    local previousChildMultiBarLeft;
+    for _, child in ipairs(childrenMultiBarLeft) do
+        child:ClearAllPoints()
+
+        if previousChildMultiBarLeft then
+            child:SetPoint("LEFT", previousChildMultiBarLeft, "RIGHT", 6, 0)
+        else
+            child:SetPoint("LEFT", MultiBarLeft, "LEFT", 0, 0)
+        end
+
+        previousChildMultiBarLeft = child
+    end
+
     MultiBarLeft:SetMovable(true)
     MultiBarLeft:SetUserPlaced(true)
     MultiBarLeft:UnregisterAllEvents();
     MultiBarLeft:ClearAllPoints()
-    MultiBarLeft:SetPoint("RIGHT", UIParent, "RIGHT", -2, 0)
+    MultiBarLeft:SetWidth(500)
+    MultiBarLeft:SetHeight(40)
+    MultiBarLeft:SetPoint("BOTTOM", MultiBarRight, "TOP", 0, 2)
     --MultiBarLeft.SetPoint = function() end
 end
 
-local function stanceBar()
+local function stanceBar(parent)
     StanceBarFrame:SetMovable(true)
     StanceBarFrame:SetUserPlaced(true)
     StanceBarFrame:UnregisterAllEvents();
     StanceBarFrame:ClearAllPoints()
-    StanceBarFrame:SetPoint("BOTTOMLEFT", MultiBarBottomRight, "TOPLEFT", 0, 1)
+    StanceBarFrame:SetPoint("BOTTOMLEFT", parent, "TOPLEFT", 0, 1)
     --StanceBarFrame.SetPoint = function() end
 end
 
-local function multiCastBar()
+local function multiCastBar(parent)
     if MultiCastActionBarFrame then
         MultiCastActionBarFrame:SetMovable(true)
         MultiCastActionBarFrame:SetUserPlaced(true)
         MultiCastActionBarFrame:UnregisterAllEvents();
         MultiCastActionBarFrame:ClearAllPoints()
-        MultiCastActionBarFrame:SetPoint("BOTTOMLEFT", MultiBarBottomRight, "TOPLEFT", 0, 1)
+        MultiCastActionBarFrame:SetPoint("BOTTOMLEFT", parent, "TOPLEFT", 0, 1)
         --StanceBarFrame.SetPoint = function() end
     end
 end
 
-local function petActionBar()
+local function petActionBar(parent)
     PetActionBarFrame:SetMovable(true)
     PetActionBarFrame:SetUserPlaced(true)
     --PetActionBarFrame:UnregisterAllEvents();
     PetActionBarFrame:ClearAllPoints()
-    PetActionBarFrame:SetPoint("BOTTOM", MultiBarBottomRight, "TOP", 0, 1)
+    PetActionBarFrame:SetPoint("BOTTOM", parent, "TOP", 0, 1)
     --PetActionBarFrame.SetPoint = function() end
 end
 
@@ -181,18 +204,30 @@ local function reputationBar()
 end
 
 function ScarletUI:SetupActionbars()
-    mainMenuBar()
-    microBar()
-    bagBar()
-    multiBarBottomLeft()
-    multiBarBottomRight()
-    --multiBarRight()
-    --multiBarLeft()
-    stanceBar()
-    multiCastBar()
-    petActionBar()
-    experienceBar()
-    reputationBar()
+    local actionbarsModule = ScarletUI.db.global.actionbarsModule;
 
-    self:TidyIcons_Update()
+    local multiBarBottomLeftValue = InterfaceOptionsActionBarsPanelBottomLeft.value == '1'
+    local multiBarBottomRightValue = InterfaceOptionsActionBarsPanelBottomRight.value == '1'
+    if actionbarsModule.stackActionbars and multiBarBottomLeftValue and multiBarBottomRightValue then
+        mainMenuBar()
+        microBar()
+        bagBar()
+        multiBarBottomLeft()
+        multiBarBottomRight()
+
+        local parent = MultiBarBottomRight;
+        local multiBarLeftValue = InterfaceOptionsActionBarsPanelBottomLeft.value == '1'
+        local multiBarRightValue = InterfaceOptionsActionBarsPanelBottomRight.value == '1'
+        if actionbarsModule.stackSidebars and multiBarLeftValue and multiBarRightValue then
+            multiBarRight()
+            multiBarLeft()
+            parent = MultiBarLeft;
+        end
+
+        stanceBar(parent)
+        multiCastBar(parent)
+        petActionBar(parent)
+        experienceBar()
+        reputationBar()
+    end
 end

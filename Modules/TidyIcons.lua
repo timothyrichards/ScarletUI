@@ -2,6 +2,18 @@ local function trimIcon(icon)
     icon:SetTexCoord(.08, .92, .08, .92)
 end
 
+local function untrimIcon(icon)
+    icon:SetTexCoord(0, 0, 0, 1, 1, 0, 1, 1)
+end
+
+local function toggleTrim(icon)
+    if ScarletUI.db.global.tidyIconsEnabled then
+        trimIcon(icon)
+    else
+        untrimIcon(icon)
+    end
+end
+
 function ScarletUI:TidyIcons_MacroFrame_Update()
     if (MacroFrame:IsShown()) then
         for i = 1, 120 do
@@ -10,7 +22,7 @@ function ScarletUI:TidyIcons_MacroFrame_Update()
                 local name = button:GetName()
                 local icon = _G[name .. "Icon"]
 
-                trimIcon(icon)
+                toggleTrim(icon)
             end
         end
     end
@@ -38,9 +50,9 @@ function ScarletUI:TidyIcons_Update()
             local name = button:GetName()
             local icon = _G[name .. "Icon"]
 
-            trimIcon(icon)
+            toggleTrim(icon)
         end
     end
 
-    ScarletUI:TidyIcons_MacroFrame_Update()
+    self:TidyIcons_MacroFrame_Update()
 end
