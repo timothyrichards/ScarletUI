@@ -2,15 +2,15 @@ function ScarletUI:SetupUnitFrames()
     local unitFramesModule = ScarletUI.db.global.unitFramesModule
 
     if unitFramesModule.playerFrame.move then
-        ScarletUI:SetupPlayerFrame(unitFramesModule)
+        self:SetupPlayerFrame(unitFramesModule)
     end
 
     if unitFramesModule.targetFrame.move then
-        ScarletUI:SetupTargetFrame(unitFramesModule)
+        self:SetupTargetFrame(unitFramesModule)
     end
 
     if unitFramesModule.focusFrame.move then
-        ScarletUI:SetupFocusFrame(unitFramesModule)
+        self:SetupFocusFrame(unitFramesModule)
     end
 
     -- Change health bar to class color
@@ -123,6 +123,38 @@ function ScarletUI:SetupFocusFrame(unitFramesModule)
     end
 end
 
+function ScarletUI:SetupRaidProfiles()
+    local profiles = { 'Party', 'Raid' }
+    for _, profile in ipairs(profiles) do
+        -- Create a new raid profile if it doesn't exist
+        if not RaidProfileExists(profile) then
+            CreateNewRaidProfile(profile)
+        end
+
+        -- Set profile settings
+        if profile == 'Party' then
+            SetRaidProfileSavedPosition(profile, false, 'TOP', 450, 'BOTTOM', 295, 'LEFT', 535)
+            SetRaidProfileOption(profile, "displayPets", '1')
+        elseif profile == 'Raid' then
+            SetRaidProfileSavedPosition(profile, false, 'TOP', 375, 'BOTTOM', 90, 'LEFT', 165)
+            SetRaidProfileOption(profile, "keepGroupsTogether", '1')
+            SetRaidProfileOption(profile, "horizontalGroups", '1')
+        end
+
+        -- Check and apply Raid Profile settings
+        for k, v in pairs(self.raidProfile) do
+            local currentValue = tostring(GetRaidProfileOption(profile, k))
+            local targetValue = tostring(v)
+            if currentValue ~= targetValue then
+                SetRaidProfileOption(profile, k, v)
+            end
+        end
+    end
+
+    -- Update active raid profile
+    ScarletUI:UpdateActiveRaidProfile()
+end
+
 function ScarletUI:SetupClassColoredFrames()
     -- Create background frame for player frame
     local PlayFN = CreateFrame("FRAME", nil, PlayerFrame)
@@ -178,11 +210,13 @@ function ScarletUI:UpdateActiveRaidProfile()
     end
 
     local activeRaidProfile = GetActiveRaidProfile()
+    local targetProfile = 'Party'
     if IsInRaid() and activeRaidProfile ~= 'Raid' then
         ScarletUI.settings:Print("Setting Raid Profile to 'Raid'.")
-        CompactUnitFrameProfiles_ActivateRaidProfile('Raid')
+        targetProfile = 'Raid'
     elseif not IsInRaid() and activeRaidProfile ~= 'Party' then
         ScarletUI.settings:Print("Setting Raid Profile to 'Party'.")
-        CompactUnitFrameProfiles_ActivateRaidProfile('Party')
+        targetProfile = 'Party'
     end
+    CompactUnitFrameProfiles_ActivateRaidProfile(targetProfile)
 end

@@ -1,6 +1,18 @@
 -- Can remove when addons are fixed from P3 WotLK PTR
 GetAddOnMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
 
+ScarletUI.frameAnchors = {
+    'BOTTOM',
+    'BOTTOMLEFT',
+    'BOTTOMRIGHT',
+    'CENTER',
+    'LEFT',
+    'RIGHT',
+    'TOP',
+    'TOPLEFT',
+    'TOPRIGHT',
+}
+
 ScarletUI.CVars = {
     -- UI CVars
     useUiScale =  '1',
@@ -34,7 +46,7 @@ ScarletUI.CVars = {
 
     -- Misc CVars
     nameplateShowEnemies = '1',
-    countdownForCooldowns = '1',
+    countdownForCooldowns = '0',
     Sound_EnableErrorSpeech = '0',
 }
 
@@ -53,18 +65,21 @@ ScarletUI.reloadExceptionCVars = {
     'autoLootDefault',
     'nameplateShowEnemies',
     'useCompactPartyFrames',
+    'countdownForCooldowns'
 }
 
 function ScarletUI:SetupCVars()
     -- Check and apply CVars
     local CVarsChanged = false
     for k, v in pairs(self.CVars) do
-        if GetCVar(k) ~= v then
-            print(k .. ': ' .. GetCVar(k) .. '('..type(GetCVar(k))..')' .. ' : ' .. v .. '('..type(v)..')')
+        local currentValue = tostring(GetCVar(k))
+        local targetValue = tostring(v)
+        if currentValue ~= targetValue then
             SetCVar(k, v)
 
-            if not ScarletUI:ArrayHasValue(self.reloadExceptionCVars, v) then
+            if not self:ArrayHasValue(self.reloadExceptionCVars, k) then
                 CVarsChanged = true;
+                print('(CVar) - ' .. k .. ': ' .. currentValue .. '('..type(GetCVar(k))..')' .. ' : ' .. targetValue .. '('..type(v)..')')
             end
         end
     end
@@ -75,56 +90,19 @@ function ScarletUI:SetupCVars()
     end
 end
 
-function ScarletUI:SetupRaidProfiles()
-    local profiles = { 'Party', 'Raid' }
-    for _, profile in ipairs(profiles) do
-        -- Create a new raid profile if it doesn't exist
-        if not RaidProfileExists(profile) then
-            CreateNewRaidProfile(profile)
-        end
-
-        -- Set profile settings
-        if profile == 'Party' then
-            SetRaidProfileSavedPosition(profile, false, 'TOP', 450, 'BOTTOM', 295, 'LEFT', 635)
-        elseif profile == 'Raid' then
-            SetRaidProfileSavedPosition(profile, false, 'TOP', 375, 'BOTTOM', 90, 'LEFT', 165)
-            SetRaidProfileOption(profile, "keepGroupsTogether", '1')
-            SetRaidProfileOption(profile, "horizontalGroups", '1')
-        end
-
-        -- Check and apply Raid Profile settings
-        local settingsChanged = false
-        for k, v in pairs(self.raidProfile) do
-            if GetRaidProfileOption(profile, k) ~= v then
-                SetRaidProfileOption(profile, k, v)
-                settingsChanged = true;
-                --print(GetRaidProfileOption(profile, k) .. '('..type(GetRaidProfileOption('Primary', k))..')' .. ' : ' .. '('..type(v)..')' .. v)
+function ScarletUI:SpellBookPageScrolling()
+    -- Allow spell book page scrolling
+    local frame = SpellBookFrame
+    frame:EnableMouseWheel(true)
+    frame:SetScript("OnMouseWheel", function(_, delta)
+        if not InCombatLockdown() then
+            if delta > 0 then
+                SpellBookPrevPageButton:Click()
+            else
+                SpellBookNextPageButton:Click()
             end
         end
-    end
-
-    -- Show popup to reload if any Raid Profile settings are updated
-    if (settingsChanged) then
-        StaticPopup_Show('SCARLET_UI_CVAR_DIALOG')
-    end
-
-    -- Update active raid profile
-    ScarletUI:UpdateActiveRaidProfile()
-end
-
-function ScarletUI:UpdateMainBar()
-    if not InCombatLockdown() and (MainMenuExpBar:IsShown() or ReputationWatchBar:IsShown()) then
-        MainMenuBar:ClearAllPoints()
-        MainMenuBar:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 15)
-    end
-end
-
-function ScarletUI:SettingDisabled(moduleEnabled)
-    if ScarletUI.inCombat then
-        return true
-    else
-        return not moduleEnabled
-    end
+    end)
 end
 
 function ScarletUI:SwapActionbar(sourceBar, destinationBar)
@@ -144,6 +122,14 @@ function ScarletUI:SwapActionbar(sourceBar, destinationBar)
     end
 end
 
+function ScarletUI:SettingDisabled(moduleEnabled)
+    if ScarletUI.inCombat then
+        return true
+    else
+        return not moduleEnabled
+    end
+end
+
 function ScarletUI:DumpTable(table, indent)
     indent = indent or ""
     for key, value in pairs(table) do
@@ -159,7 +145,7 @@ end
 
 function ScarletUI:ArrayHasValue(array, value)
     for _, v in ipairs(array) do
-        if v == value then
+        if tostring(v) == tostring(value) then
             return true
         end
     end

@@ -41,7 +41,7 @@ function ScarletUI:GetModuleSettingsPage(order)
                         name = "Bigger Icons",
                         desc = "Make icons bigger to fill their actionbar slots.",
                         type = "toggle",
-                        width = 2,
+                        width = 1,
                         order = 0,
                         get = function(_)
                             return self.db.global.tidyIconsEnabled
@@ -51,18 +51,18 @@ function ScarletUI:GetModuleSettingsPage(order)
                             self:TidyIcons_Update()
                         end,
                     },
-                    tidyIcons = {
-                        name = "Bigger Icons",
-                        desc = "Make icons bigger to fill their actionbar slots.",
+                    scrollSpellBook = {
+                        name = "Scroll Spellbook",
+                        desc = "Allows you to use the scroll wheel to change pages in your spellbook.",
                         type = "toggle",
-                        width = 2,
+                        width = 1,
                         order = 0,
                         get = function(_)
-                            return self.db.global.tidyIconsEnabled
+                            return self.db.global.scrollSpellBook
                         end,
                         set = function(_, val)
-                            self.db.global.tidyIconsEnabled = val
-                            self:TidyIcons_Update()
+                            self.db.global.scrollSpellBook = val
+                            self:SpellBookPageScrolling()
                         end,
                     },
                 },
@@ -227,7 +227,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(order)
                         hidden = function() return not FocusFrame end,
                         disabled = function() return ScarletUI:SettingDisabled(unitFramesModule.enabled) end,
                         inline = true,
-                        order = 2,
+                        order = 3,
                         args = {
                             moveFrame = {
                                 name = "Move Frame",
@@ -325,7 +325,11 @@ function ScarletUI:GetActionbarsModuleSettingsPage(order)
                                 get = function(_) return actionbarsModule.stackActionbars end,
                                 set = function(_, val)
                                     actionbarsModule.stackActionbars = val
-                                    StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                                    if not val then
+                                        StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                                    else
+                                        self:SetupActionbars()
+                                    end
                                 end,
                             },
                             stackSidebars = {
@@ -338,7 +342,12 @@ function ScarletUI:GetActionbarsModuleSettingsPage(order)
                                 get = function(_) return actionbarsModule.stackSidebars end,
                                 set = function(_, val)
                                     actionbarsModule.stackSidebars = val
-                                    StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                                    if not val then
+                                        self:RevertSidebars()
+                                        self:SetupActionbars()
+                                    else
+                                        self:SetupActionbars()
+                                    end
                                 end,
                             },
                         }

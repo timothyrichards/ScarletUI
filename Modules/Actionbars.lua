@@ -1,14 +1,17 @@
 local function mainMenuBar()
     MainMenuBarLeftEndCap:Hide()
     MainMenuBarRightEndCap:Hide()
+    MainMenuBarMaxLevelBar:UnregisterAllEvents()
     MainMenuBarMaxLevelBar:Hide()
     MainMenuBarPerformanceBarFrame:Hide()
-    MainMenuBarTexture0:Hide()
-    MainMenuBarTexture1:Hide()
+    MainMenuBarTexture0:ClearAllPoints()
+    MainMenuBarTexture0:SetPoint("BOTTOMLEFT", MainMenuBarArtFrame, "BOTTOMLEFT", 0, 0)
+    MainMenuBarTexture1:ClearAllPoints()
+    MainMenuBarTexture1:SetPoint("BOTTOMLEFT", MainMenuBarTexture0, "BOTTOMRIGHT", 0, 0)
     MainMenuBarTexture2:Hide()
     MainMenuBarTexture3:Hide()
     MainMenuBar:SetWidth(510)
-    ActionButton1:SetPoint("BOTTOMLEFT", MainMenuBarArtFrame, "BOTTOMLEFT", 7, 4)
+    ActionButton1:SetPoint("BOTTOMLEFT", MainMenuBarArtFrame, "BOTTOMLEFT", 8, 4)
 
     MainMenuBarPageNumber:Hide()
     ActionBarUpButton:Hide()
@@ -53,27 +56,16 @@ local function bagBar()
 end
 
 local function multiBarBottomLeft()
-    for i=1,12 do
-        local background = _G["MultiBarBottomLeftButton"..i.."FloatingBG"]
-        background:Hide()
-    end
-
     MultiBarBottomLeft:SetMovable(true)
     MultiBarBottomLeft:SetUserPlaced(true)
     MultiBarBottomLeft:UnregisterAllEvents();
     MultiBarBottomLeft:ClearAllPoints()
     MultiBarBottomLeft:SetWidth(500)
     MultiBarBottomLeft:SetHeight(40)
-    MultiBarBottomLeft:SetPoint("BOTTOM", MainMenuBar, "TOP", 2, -6)
-    --MultiBarBottomLeft.SetPoint = function() end
+    MultiBarBottomLeft:SetPoint("BOTTOM", MainMenuBar, "TOP", 3, -6)
 end
 
 local function multiBarBottomRight()
-    for i=1,12 do
-        local background = _G["MultiBarBottomRightButton"..i.."FloatingBG"]
-        background:Hide()
-    end
-
     MultiBarBottomRight:SetMovable(true)
     MultiBarBottomRight:SetUserPlaced(true)
     MultiBarBottomRight:UnregisterAllEvents();
@@ -81,15 +73,9 @@ local function multiBarBottomRight()
     MultiBarBottomRight:SetWidth(500)
     MultiBarBottomRight:SetHeight(40)
     MultiBarBottomRight:SetPoint("BOTTOM", MultiBarBottomLeft, "TOP", 0, 2)
-    --MultiBarBottomRight.SetPoint = function() end
 end
 
 local function multiBarRight()
-    for i=1,12 do
-        local background = _G["MultiBarRightButton"..i.."FloatingBG"]
-        background:Hide()
-    end
-
     local childrenMultiBarRight = { MultiBarRight:GetChildren() }
     local previousChildMultiBarRight;
     for _, child in ipairs(childrenMultiBarRight) do
@@ -111,15 +97,9 @@ local function multiBarRight()
     MultiBarRight:SetWidth(500)
     MultiBarRight:SetHeight(40)
     MultiBarRight:SetPoint("BOTTOM", MultiBarBottomRight, "TOP", 0, 0)
-    --MultiBarRight.SetPoint = function() end
 end
 
 local function multiBarLeft()
-    for i=1,12 do
-        local background = _G["MultiBarLeftButton"..i.."FloatingBG"]
-        background:Hide()
-    end
-
     local childrenMultiBarLeft = { MultiBarLeft:GetChildren() }
     local previousChildMultiBarLeft;
     for _, child in ipairs(childrenMultiBarLeft) do
@@ -141,7 +121,6 @@ local function multiBarLeft()
     MultiBarLeft:SetWidth(500)
     MultiBarLeft:SetHeight(40)
     MultiBarLeft:SetPoint("BOTTOM", MultiBarRight, "TOP", 0, 2)
-    --MultiBarLeft.SetPoint = function() end
 end
 
 local function stanceBar(parent)
@@ -150,7 +129,6 @@ local function stanceBar(parent)
     StanceBarFrame:UnregisterAllEvents();
     StanceBarFrame:ClearAllPoints()
     StanceBarFrame:SetPoint("BOTTOMLEFT", parent, "TOPLEFT", 0, 1)
-    --StanceBarFrame.SetPoint = function() end
 end
 
 local function multiCastBar(parent)
@@ -160,17 +138,14 @@ local function multiCastBar(parent)
         MultiCastActionBarFrame:UnregisterAllEvents();
         MultiCastActionBarFrame:ClearAllPoints()
         MultiCastActionBarFrame:SetPoint("BOTTOMLEFT", parent, "TOPLEFT", 0, 1)
-        --StanceBarFrame.SetPoint = function() end
     end
 end
 
 local function petActionBar(parent)
     PetActionBarFrame:SetMovable(true)
     PetActionBarFrame:SetUserPlaced(true)
-    --PetActionBarFrame:UnregisterAllEvents();
     PetActionBarFrame:ClearAllPoints()
     PetActionBarFrame:SetPoint("BOTTOM", parent, "TOP", 0, 1)
-    --PetActionBarFrame.SetPoint = function() end
 end
 
 local function experienceBar()
@@ -183,24 +158,29 @@ local function experienceBar()
     MainMenuXPBarTexture2:Hide()
     MainMenuXPBarTexture3:ClearAllPoints()
     MainMenuXPBarTexture3:SetPoint("LEFT", MainMenuXPBarTexture0, "RIGHT", 0, 0)
-    MainMenuExpBar:ClearAllPoints()
-    MainMenuExpBar:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 0)
-    --MainMenuExpBar.SetPoint = function() end
 end
 
 local function reputationBar()
     ReputationWatchBar:SetWidth(510)
     ReputationWatchBar.StatusBar:SetWidth(510)
-    ReputationWatchBar.StatusBar.XPBarTexture1:Hide()
-    ReputationWatchBar.StatusBar.XPBarTexture2:Hide()
-    ReputationWatchBar.StatusBar.XPBarTexture3:ClearAllPoints()
-    ReputationWatchBar.StatusBar.XPBarTexture3:SetPoint("LEFT", ReputationWatchBar.StatusBar.XPBarTexture0, "RIGHT", 0, 0)
-    ReputationWatchBar:SetMovable(true)
-    ReputationWatchBar:SetUserPlaced(true)
-    ReputationWatchBar:UnregisterAllEvents();
-    ReputationWatchBar:ClearAllPoints()
-    ReputationWatchBar:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 0)
-    --ReputationWatchBar.SetPoint = function() end
+    ReputationWatchBar.StatusBar.WatchBarTexture1:Hide()
+    ReputationWatchBar.StatusBar.WatchBarTexture2:Hide()
+    ReputationWatchBar.StatusBar.WatchBarTexture3:ClearAllPoints()
+    ReputationWatchBar.StatusBar.WatchBarTexture3:SetPoint("LEFT", ReputationWatchBar.StatusBar.WatchBarTexture0, "RIGHT", 0, 0)
+end
+
+function ScarletUI:UpdateMainBar()
+    if not InCombatLockdown() then
+        local point, relativeTo, relativePoint, offsetX, _ = MultiBarBottomLeft:GetPoint()
+        if MainMenuExpBar:IsShown() and ReputationWatchBar:IsShown() then
+            MultiBarBottomLeft:SetPoint(point, relativeTo, relativePoint, offsetX, 12)
+        elseif MainMenuExpBar:IsShown() or ReputationWatchBar:IsShown() then
+            MultiBarBottomLeft:SetPoint(point, relativeTo, relativePoint, offsetX, 4)
+        end
+    end
+
+    experienceBar()
+    reputationBar()
 end
 
 function ScarletUI:SetupActionbars()
@@ -227,7 +207,52 @@ function ScarletUI:SetupActionbars()
         stanceBar(parent)
         multiCastBar(parent)
         petActionBar(parent)
-        experienceBar()
-        reputationBar()
     end
+
+    ScarletUI:UpdateMainBar()
+end
+
+function ScarletUI:RevertSidebars()
+    local childrenMultiBarRight = { MultiBarRight:GetChildren() }
+    local previousChildMultiBarRight;
+    for _, child in ipairs(childrenMultiBarRight) do
+        child:ClearAllPoints()
+
+        if previousChildMultiBarRight then
+            child:SetPoint("TOP", previousChildMultiBarRight, "BOTTOM", 0, -6)
+        else
+            child:SetPoint("TOPRIGHT", MultiBarRight, "TOPRIGHT", -2, -3)
+        end
+
+        previousChildMultiBarRight = child
+    end
+
+    MultiBarRight:SetWidth(40)
+    MultiBarRight:SetHeight(500)
+    MultiBarRight:ClearAllPoints()
+    MultiBarRight:SetPoint("TOPRIGHT", VerticalMultiBarsContainer, "TOPRIGHT", 0, 0)
+
+    for i=1,12 do
+        local background = _G["MultiBarLeftButton"..i.."FloatingBG"]
+        background:Show()
+    end
+
+    local childrenMultiBarLeft = { MultiBarLeft:GetChildren() }
+    local previousChildMultiBarLeft;
+    for _, child in ipairs(childrenMultiBarLeft) do
+        child:ClearAllPoints()
+
+        if previousChildMultiBarLeft then
+            child:SetPoint("TOP", previousChildMultiBarLeft, "BOTTOM", 0, -6)
+        else
+            child:SetPoint("TOPRIGHT", MultiBarLeft, "TOPRIGHT", -2, -3)
+        end
+
+        previousChildMultiBarLeft = child
+    end
+
+    MultiBarLeft:SetWidth(40)
+    MultiBarLeft:SetHeight(500)
+    MultiBarLeft:ClearAllPoints()
+    MultiBarLeft:SetPoint("TOPRIGHT", MultiBarRight, "TOPLEFT", -2, 0)
 end

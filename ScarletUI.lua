@@ -18,6 +18,7 @@ function ScarletUI:Setup()
         self.defaults = {
             global = {
                 tidyIconsEnabled = true,
+                scrollSpellBook = true,
                 unitFramesModule = {
                     enabled = true,
                     playerFrame = {
@@ -54,10 +55,6 @@ function ScarletUI:Setup()
 
         -- Register the chat command
         self.settings:RegisterChatCommand("sui", function() AceConfigDialog:Open("ScarletUI") end)
-        --self.settings:RegisterChatCommand("sui", function()
-        --    InterfaceOptionsFrame_OpenToCategory("ScarletUI")
-        --    InterfaceOptionsFrame_OpenToCategory("ScarletUI")
-        --end)
 
         -- Register the options table
         AceConfig:RegisterOptionsTable("ScarletUI", function() return ScarletUI:Options() end)
@@ -86,6 +83,7 @@ function ScarletUI:Setup()
     end
     self:TidyIcons_Update()
     self:SetupCVars()
+    self:SpellBookPageScrolling()
 
     self.settings:Print("Scarlet UI setup successful, use the command /sui to open the options panel.")
 end
@@ -107,7 +105,7 @@ local function OnEvent(_, event, ...)
         AceConfigRegistry:NotifyChange("ScarletUI")
     elseif event == "ACTIONBAR_UPDATE_STATE" then
         ScarletUI:UpdateMainBar()
-    elseif event == "GROUP_ROSTER_UPDATE" then
+    elseif event == "COMPACT_UNIT_FRAME_PROFILES_LOADED" or event == "GROUP_ROSTER_UPDATE" then
         ScarletUI:UpdateActiveRaidProfile()
     end
 end
