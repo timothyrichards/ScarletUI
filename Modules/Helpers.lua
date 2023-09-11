@@ -13,6 +13,63 @@ ScarletUI.frameAnchors = {
     'TOPRIGHT',
 }
 
+ScarletUI.defaults = {
+    global = {
+        tidyIconsEnabled = true,
+        itemLevel = true,
+        scrollSpellBook = true,
+        unitFramesModule = {
+            enabled = true,
+            playerFrame = {
+                move = true,
+                frameAnchor = 9,
+                screenAnchor = 4,
+                x = -65,
+                y = -190,
+            },
+            targetFrame = {
+                mirrorPlayerFrame = true;
+                move = true,
+                frameAnchor = 8,
+                screenAnchor = 4,
+                x = 65,
+                y = -190,
+            },
+            focusFrame = {
+                move = true,
+                frameAnchor = 9,
+                screenAnchor = 4,
+                x = -65,
+                y = -190,
+            },
+        },
+        actionbarsModule = {
+            enabled = true,
+            stackActionbars = true,
+            stackSidebars = false
+        },
+        chatModule = {
+            enabled = true,
+            fontSize = 14
+        },
+        raidFramesModule = {
+            enabled = true,
+            partyFrames = {
+                move = true,
+                x = 535,
+                y = 450,
+                height = 295
+            },
+            raidFrames = {
+                move = true,
+                x = 165,
+                y = 375,
+                height = 90
+            }
+        },
+    }
+}
+
 ScarletUI.CVars = {
     -- UI CVars
     useUiScale =  '1',
@@ -34,7 +91,7 @@ ScarletUI.CVars = {
     chatMouseScroll = '1',
 
     -- Floating Combat Text
-    enableFloatingCombatText = '1',
+    enableFloatingCombatText = '0',
     floatingCombatTextLowManaHealth = '1',
     floatingCombatTextDodgeParryMiss = '1',
     floatingCombatTextCombatState = '1',
@@ -46,26 +103,12 @@ ScarletUI.CVars = {
 
     -- Misc CVars
     nameplateShowEnemies = '1',
-    countdownForCooldowns = '0',
+    countdownForCooldowns = '1',
     Sound_EnableErrorSpeech = '0',
 }
 
-ScarletUI.raidProfile = {
-    useClassColors = true,
-    displayBorder = false,
-    displayPowerBar = true,
-    displayOnlyDispellableDebuffs = true,
-    displayMainTankAndAssist = false,
-    healthText = 'perc',
-    frameHeight = 46,
-    frameWidth = 90,
-}
-
-ScarletUI.reloadExceptionCVars = {
-    'autoLootDefault',
-    'nameplateShowEnemies',
-    'useCompactPartyFrames',
-    'countdownForCooldowns'
+ScarletUI.reloadCVars = {
+    'XpBarText',
 }
 
 function ScarletUI:SetupCVars()
@@ -75,9 +118,13 @@ function ScarletUI:SetupCVars()
         local currentValue = tostring(GetCVar(k))
         local targetValue = tostring(v)
         if currentValue ~= targetValue then
-            SetCVar(k, v)
+            if k == 'countdownForCooldowns' and IsAddOnLoaded('OmniCC') then
+                SetCVar(k, '0')
+            else
+                SetCVar(k, v)
+            end
 
-            if not self:ArrayHasValue(self.reloadExceptionCVars, k) then
+            if self:ArrayHasValue(self.reloadCVars, k) then
                 CVarsChanged = true;
                 print('(CVar) - ' .. k .. ': ' .. currentValue .. '('..type(GetCVar(k))..')' .. ' : ' .. targetValue .. '('..type(v)..')')
             end
@@ -91,16 +138,12 @@ function ScarletUI:SetupCVars()
 end
 
 function ScarletUI:SpellBookPageScrolling()
-    -- Allow spell book page scrolling
-    local frame = SpellBookFrame
-    frame:EnableMouseWheel(true)
-    frame:SetScript("OnMouseWheel", function(_, delta)
-        if not InCombatLockdown() then
-            if delta > 0 then
-                SpellBookPrevPageButton:Click()
-            else
-                SpellBookNextPageButton:Click()
-            end
+    SpellBookFrame:EnableMouseWheel(true)
+    SpellBookFrame:HookScript("OnMouseWheel", function(_, delta)
+        if delta > 0 then
+            SpellBookPrevPageButton:Click()
+        else
+            SpellBookNextPageButton:Click()
         end
     end)
 end
@@ -119,6 +162,29 @@ function ScarletUI:SwapActionbar(sourceBar, destinationBar)
             PlaceAction(sourceButton)
             PlaceAction(destinationButton)
         end
+    end
+end
+
+function ScarletUI:OppositeFrameAnchor(index)
+    local anchor = self.frameAnchors[index]
+    if anchor == "BOTTOM" then
+        return "TOP"
+    elseif anchor == "BOTTOMLEFT" then
+        return "BOTTOMRIGHT"
+    elseif anchor == "BOTTOMRIGHT" then
+        return "BOTTOMLEFT"
+    elseif anchor == "CENTER" then
+        return "CENTER"
+    elseif anchor == "LEFT" then
+        return "RIGHT"
+    elseif anchor == "RIGHT" then
+        return "LEFT"
+    elseif anchor == "TOP" then
+        return "BOTTOM"
+    elseif anchor == "TOPLEFT" then
+        return "TOPRIGHT"
+    elseif anchor == "TOPRIGHT" then
+        return "TOPLEFT"
     end
 end
 

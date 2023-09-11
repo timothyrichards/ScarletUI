@@ -1,24 +1,31 @@
-function ScarletUI:SetupChat()
-    -- Process normal and existing chat frames
-    for i = 1, 50 do
-        if _G["ChatFrame" .. i] then
-            _G["ChatFrame" .. i]:SetFading(false)
+local function chatTabExists(table, value)
+    for k, v in ipairs(table) do
+        local name, _ = GetChatWindowInfo(k);
+        if name == value then
+            return true
         end
     end
-    -- Process temporary frames
-    hooksecurefunc("FCF_OpenTemporaryWindow", function()
-        local cf = FCF_GetCurrentChatFrame():GetName() or nil
-        if cf then
-            _G[cf]:SetFading(false)
-        end
-    end)
+    return false
+end
+
+function ScarletUI:SetupChat()
+    local chatModule = self.db.global.chatModule;
+    if not chatModule.enabled then
+        return
+    end
 
     -- Reset chat to Blizzard defaults
-    FCF_ResetChatWindows()
+    --FCF_ResetChatWindows()
 
-    -- Open 2 new tabs
-    FCF_OpenNewWindow()
-    FCF_OpenNewWindow()
+    -- Open new tabs if they dont exist
+    if not chatTabExists(_G.CHAT_FRAMES, "Trade") then
+        FCF_OpenNewWindow("Trade")
+    end
+    if not self.retail then
+        if not chatTabExists(_G.CHAT_FRAMES, "LFG") then
+            FCF_OpenNewWindow("LFG")
+        end
+    end
 
     -- Rename and color all tabs
     for _, name in ipairs(_G.CHAT_FRAMES) do
@@ -26,35 +33,46 @@ function ScarletUI:SetupChat()
         local id = frame:GetID()
 
         -- Set chat font size
-        FCF_SetChatWindowFontSize(nil, frame, 14)
+        FCF_SetChatWindowFontSize(nil, frame, chatModule.fontSize)
 
-        if id == 1 then
-            FCF_SetWindowName(frame, 'General')
+        if frame.name == 'General' then
             ChatFrame_RemoveChannel(frame, 'Trade')
             ChatFrame_RemoveChannel(frame, 'LookingForGroup')
             ChatFrame_RemoveMessageGroup(frame, 'IGNORED')
-        elseif id == 2 then
-            FCF_SetWindowName(frame, 'Log')
-        elseif (id == 3) then
+        elseif frame.name == 'Voice' then
             VoiceTranscriptionFrame_UpdateVisibility(frame)
             VoiceTranscriptionFrame_UpdateVoiceTab(frame)
             VoiceTranscriptionFrame_UpdateEditBox(frame)
-        elseif (id == 4) then
+        elseif frame.name == 'LFG' then
             ChatFrame_RemoveAllMessageGroups(frame)
-            FCF_SetWindowName(frame, 'LFG')
+            JoinChannelByName('LookingForGroup', nil, id, 0)
+            ChatFrame_AddChannel(frame, 'LookingForGroup')
             if IsAddOnLoaded("Hardcore") then
+                JoinChannelByName('hclfg', nil, id, 0)
                 ChatFrame_AddChannel(frame, 'hclfg')
             end
-            ChatFrame_AddChannel(frame, 'LookingForGroup')
-        elseif (id == 5) then
+        elseif frame.name == 'Trade' then
             ChatFrame_RemoveAllMessageGroups(frame)
-            FCF_SetWindowName(frame, 'Trade')
             ChatFrame_AddChannel(frame, 'Trade')
         end
     end
 
     -- Jump back to main tab
     FCFDock_SelectWindow(_G.GENERAL_CHAT_DOCK, _G.ChatFrame1)
+
+    if not self.chatEventRegistered then
+        self.chatEventRegistered = true
+        self.Frame:RegisterEvent("UPDATE_CHAT_COLOR_NAME_BY_CLASS")
+        self.Frame:HookScript("OnEvent", function(_, event, type, set, ...)
+            if event == "UPDATE_CHAT_COLOR_NAME_BY_CLASS" then
+                if not set then SetChatColorNameByClass(type,true); end
+            end
+        end)
+    end
+
+    if self.lightWeightMode then
+        return
+    end
 
     ChatFrame1:SetMovable(true)
     ChatFrame1:SetUserPlaced(true)

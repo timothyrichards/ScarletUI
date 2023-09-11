@@ -1,8 +1,6 @@
 local function mainMenuBar()
     MainMenuBarLeftEndCap:Hide()
     MainMenuBarRightEndCap:Hide()
-    MainMenuBarMaxLevelBar:UnregisterAllEvents()
-    MainMenuBarMaxLevelBar:Hide()
     MainMenuBarPerformanceBarFrame:Hide()
     MainMenuBarTexture0:ClearAllPoints()
     MainMenuBarTexture0:SetPoint("BOTTOMLEFT", MainMenuBarArtFrame, "BOTTOMLEFT", 0, 0)
@@ -16,9 +14,6 @@ local function mainMenuBar()
     MainMenuBarPageNumber:Hide()
     ActionBarUpButton:Hide()
     ActionBarDownButton:Hide()
-
-    ScarletUI.Frame:RegisterEvent("ACTIONBAR_UPDATE_STATE")
-    ScarletUI:UpdateMainBar()
 
     for i = 1, 12 do
         local button = _G["ActionButton"..i]
@@ -76,20 +71,7 @@ local function multiBarBottomRight()
 end
 
 local function multiBarRight()
-    local childrenMultiBarRight = { MultiBarRight:GetChildren() }
-    local previousChildMultiBarRight;
-    for _, child in ipairs(childrenMultiBarRight) do
-        child:ClearAllPoints()
-
-        if previousChildMultiBarRight then
-            child:SetPoint("LEFT", previousChildMultiBarRight, "RIGHT", 6, 0)
-        else
-            child:SetPoint("LEFT", MultiBarRight, "LEFT", 0, 0)
-        end
-
-        previousChildMultiBarRight = child
-    end
-
+    ScarletUI:ConvertBarToHorizontal(MultiBarRight)
     MultiBarRight:SetMovable(true)
     MultiBarRight:SetUserPlaced(true)
     MultiBarRight:UnregisterAllEvents();
@@ -100,20 +82,7 @@ local function multiBarRight()
 end
 
 local function multiBarLeft()
-    local childrenMultiBarLeft = { MultiBarLeft:GetChildren() }
-    local previousChildMultiBarLeft;
-    for _, child in ipairs(childrenMultiBarLeft) do
-        child:ClearAllPoints()
-
-        if previousChildMultiBarLeft then
-            child:SetPoint("LEFT", previousChildMultiBarLeft, "RIGHT", 6, 0)
-        else
-            child:SetPoint("LEFT", MultiBarLeft, "LEFT", 0, 0)
-        end
-
-        previousChildMultiBarLeft = child
-    end
-
+    ScarletUI:ConvertBarToHorizontal(MultiBarLeft)
     MultiBarLeft:SetMovable(true)
     MultiBarLeft:SetUserPlaced(true)
     MultiBarLeft:UnregisterAllEvents();
@@ -149,7 +118,19 @@ local function petActionBar(parent)
 end
 
 local function experienceBar()
+    if not ScarletUI.experienceBarEventRegistered then
+        ScarletUI.experienceBarEventRegistered = true
+        MainMenuExpBar:HookScript('OnShow', function()
+            ScarletUI:UpdateMainBar()
+        end)
+        MainMenuExpBar:HookScript('OnHide', function()
+            ScarletUI:UpdateMainBar()
+        end)
+    end
     MainMenuExpBar:SetWidth(510)
+    MainMenuBarMaxLevelBar.Show = function()
+        MainMenuBarMaxLevelBar:Hide()
+    end
     ExhaustionLevelFillBar:SetPoint("TOPRIGHT", MainMenuExpBar, "TOPLEFT", 510, 0)
     ExhaustionTick:SetPoint("CENTER", MainMenuExpBar, "LEFT", 510, 0)
     MainMenuXPBarTexture0:ClearAllPoints()
@@ -161,30 +142,33 @@ local function experienceBar()
 end
 
 local function reputationBar()
+    if not ScarletUI.reputationBarEventRegistered then
+        ScarletUI.reputationBarEventRegistered = true
+        ReputationWatchBar:HookScript('OnShow', function()
+            ScarletUI:UpdateMainBar()
+        end)
+        ReputationWatchBar:HookScript('OnHide', function()
+            ScarletUI:UpdateMainBar()
+        end)
+    end
     ReputationWatchBar:SetWidth(510)
     ReputationWatchBar.StatusBar:SetWidth(510)
-    ReputationWatchBar.StatusBar.WatchBarTexture1:Hide()
+    ReputationWatchBar.StatusBar.WatchBarTexture1.Show = function()
+        ReputationWatchBar.StatusBar.WatchBarTexture1:Hide()
+    end
+    ReputationWatchBar.StatusBar.WatchBarTexture2.Show = function()
+        ReputationWatchBar.StatusBar.WatchBarTexture2:Hide()
+    end
     ReputationWatchBar.StatusBar.WatchBarTexture2:Hide()
     ReputationWatchBar.StatusBar.WatchBarTexture3:ClearAllPoints()
     ReputationWatchBar.StatusBar.WatchBarTexture3:SetPoint("LEFT", ReputationWatchBar.StatusBar.WatchBarTexture0, "RIGHT", 0, 0)
 end
 
-function ScarletUI:UpdateMainBar()
-    if not InCombatLockdown() then
-        local point, relativeTo, relativePoint, offsetX, _ = MultiBarBottomLeft:GetPoint()
-        if MainMenuExpBar:IsShown() and ReputationWatchBar:IsShown() then
-            MultiBarBottomLeft:SetPoint(point, relativeTo, relativePoint, offsetX, 12)
-        elseif MainMenuExpBar:IsShown() or ReputationWatchBar:IsShown() then
-            MultiBarBottomLeft:SetPoint(point, relativeTo, relativePoint, offsetX, 4)
-        end
-    end
-
-    experienceBar()
-    reputationBar()
-end
-
 function ScarletUI:SetupActionbars()
-    local actionbarsModule = ScarletUI.db.global.actionbarsModule;
+    local actionbarsModule = self.db.global.actionbarsModule;
+    if not actionbarsModule.enabled then
+        return
+    end
 
     local multiBarBottomLeftValue = InterfaceOptionsActionBarsPanelBottomLeft.value == '1'
     local multiBarBottomRightValue = InterfaceOptionsActionBarsPanelBottomRight.value == '1'
@@ -207,9 +191,21 @@ function ScarletUI:SetupActionbars()
         stanceBar(parent)
         multiCastBar(parent)
         petActionBar(parent)
+        experienceBar()
+        reputationBar()
+        ScarletUI:UpdateMainBar()
     end
+end
 
-    ScarletUI:UpdateMainBar()
+function ScarletUI:UpdateMainBar()
+    if not InCombatLockdown() then
+        local point, relativeTo, relativePoint, offsetX, _ = MultiBarBottomLeft:GetPoint()
+        if MainMenuExpBar:IsShown() and ReputationWatchBar:IsShown() then
+            MultiBarBottomLeft:SetPoint(point, relativeTo, relativePoint, offsetX, 12)
+        elseif MainMenuExpBar:IsShown() or ReputationWatchBar:IsShown() then
+            MultiBarBottomLeft:SetPoint(point, relativeTo, relativePoint, offsetX, 4)
+        end
+    end
 end
 
 function ScarletUI:RevertSidebars()
@@ -255,4 +251,20 @@ function ScarletUI:RevertSidebars()
     MultiBarLeft:SetHeight(500)
     MultiBarLeft:ClearAllPoints()
     MultiBarLeft:SetPoint("TOPRIGHT", MultiBarRight, "TOPLEFT", -2, 0)
+end
+
+function ScarletUI:ConvertBarToHorizontal(bar)
+    local children = { bar:GetChildren() }
+    local previousChild;
+    for _, child in ipairs(children) do
+        child:ClearAllPoints()
+
+        if previousChild then
+            child:SetPoint("LEFT", previousChild, "RIGHT", 6, 0)
+        else
+            child:SetPoint("LEFT", bar, "LEFT", 0, 0)
+        end
+
+        previousChild = child
+    end
 end

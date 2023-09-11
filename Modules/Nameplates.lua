@@ -1,0 +1,4 @@
+--local _, class = UnitClass(unitId)
+--local classColor = RAID_CLASS_COLORS[class]
+--print(class)
+--nameplate.UnitFrame.healthBar:SetStatusBarColor(classColor.r, classColor.g, classColor.b, 1)

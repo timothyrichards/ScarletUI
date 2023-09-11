@@ -1,129 +1,118 @@
+ScarletUI.raidProfile = {
+    useClassColors = true,
+    displayBorder = false,
+    displayPowerBar = true,
+    displayOnlyDispellableDebuffs = true,
+    displayMainTankAndAssist = false,
+    healthText = 'perc',
+    frameHeight = 46,
+    frameWidth = 90,
+}
+
 function ScarletUI:SetupUnitFrames()
-    local unitFramesModule = ScarletUI.db.global.unitFramesModule
-
-    if unitFramesModule.playerFrame.move then
-        self:SetupPlayerFrame(unitFramesModule)
+    local unitFramesModule = self.db.global.unitFramesModule
+    if not unitFramesModule.enabled then
+        return
     end
 
-    if unitFramesModule.targetFrame.move then
-        self:SetupTargetFrame(unitFramesModule)
+    self:SetupPlayerFrame(unitFramesModule)
+    self:SetupTargetFrame(unitFramesModule)
+    self:SetupFocusFrame(unitFramesModule)
+
+    if not self.unitFramesEventRegistered then
+        self.unitFramesEventRegistered = true
+        self.Frame:RegisterEvent("COMPACT_UNIT_FRAME_PROFILES_LOADED")
+        self.Frame:RegisterEvent("GROUP_ROSTER_UPDATE")
+        self.Frame:HookScript("OnEvent", function(_, event, ...)
+            if event == "COMPACT_UNIT_FRAME_PROFILES_LOADED" or event == "GROUP_ROSTER_UPDATE" then
+                ScarletUI:UpdateActiveRaidProfile()
+            end
+        end)
     end
 
-    if unitFramesModule.focusFrame.move then
-        self:SetupFocusFrame(unitFramesModule)
+    if CompactArenaFrame then
+        CompactArenaFrame.Show = function() end
+        CompactArenaFrame.Frame:HookScript("OnShow", function()
+            CompactArenaFrame:Hide()
+        end)
     end
 
-    -- Change health bar to class color
-    --hooksecurefunc("UnitFrameHealthBar_Update", function(self)
-    --    if UnitIsPlayer(self.unit) then
-    --        local _, class = UnitClass(self.unit)
-    --        local c = RAID_CLASS_COLORS[class]
-    --        if c then
-    --            self:SetStatusBarColor(c.r, c.g, c.b)
-    --            if self.t then
-    --                self.t:Hide()
-    --            end
-    --        end
-    --    else
-    --        local reaction = UnitReaction("target", "player")
-    --        local c = FACTION_BAR_COLORS[reaction]
-    --        if c then
-    --            self:SetStatusBarColor(c.r, c.g, c.b)
-    --            if self.t then
-    --                self.t:Hide()
-    --            end
-    --        end
-    --    end
-    --end)
+    self:SetupRaidProfiles()
 end
 
 function ScarletUI:SetupPlayerFrame(unitFramesModule)
+    local playerFrame = unitFramesModule.playerFrame
+    if not playerFrame.move then
+        return
+    end
+
     PlayerFrame:SetMovable(true)
     PlayerFrame:SetUserPlaced(true)
     PlayerFrame:ClearAllPoints()
-    PlayerFrame:SetPoint("TOPRIGHT", UIParent, "CENTER", unitFramesModule.playerFrame.x, unitFramesModule.playerFrame.y)
-
-    -- Move mana bar to health bar position
-    --local _, _, _, x, y = PlayerFrameHealthBar:GetPoint()
-    --PlayerFrameManaBar:SetPoint("TOPLEFT", PlayerFrame, "TOPLEFT", x, y)
-    --
-    --PlayerFrameManaBarTextLeft:ClearAllPoints()
-    --PlayerFrameManaBarTextLeft:SetPoint("LEFT", PlayerFrameManaBar, "LEFT", 5, 0)
-    --
-    --PlayerFrameManaBarTextRight:ClearAllPoints()
-    --PlayerFrameManaBarTextRight:SetPoint("RIGHT", PlayerFrameManaBar, "RIGHT", 0, 0)
-
-    -- Move health bar to name bar position
-    --PlayerFrameHealthBar:SetWidth(TargetFrameNameBackground:GetWidth())
-    --PlayerFrameHealthBar:SetHeight(TargetFrameNameBackground:GetHeight())
-    --
-    --local _, _, _, x, y = TargetFrameNameBackground:GetPoint()
-    --PlayerFrameHealthBar:SetPoint("TOPLEFT", PlayerFrame, "TOPLEFT", -x, y)
-    --PlayerFrameHealthBar.t = PlayerFrameHealthBar:CreateTexture(nil, "BORDER")
-    --PlayerFrameHealthBar.t:SetAllPoints()
-    --PlayerFrameHealthBar.t:SetTexture("Interface\\TargetingFrame\\UI-TargetingFrame-LevelBackground")
-    --
-    --PlayerFrameHealthBarTextLeft:ClearAllPoints()
-    --PlayerFrameHealthBarTextLeft:SetPoint("LEFT", PlayerFrameHealthBar, "LEFT", 5, 0)
-    --
-    --PlayerFrameHealthBarTextRight:ClearAllPoints()
-    --PlayerFrameHealthBarTextRight:SetPoint("RIGHT", PlayerFrameHealthBar, "RIGHT", 0, 0)
-
-    -- Move name
-    --PlayerName:ClearAllPoints()
-    --PlayerName:SetPoint("BOTTOM", PlayerFrameHealthBar, "TOP", 0, 5)
+    PlayerFrame:SetPoint(
+            self.frameAnchors[playerFrame.frameAnchor],
+            UIParent,
+            self.frameAnchors[playerFrame.screenAnchor],
+            playerFrame.x,
+            playerFrame.y
+    )
 end
 
 function ScarletUI:SetupTargetFrame(unitFramesModule)
+    local playerFrame = unitFramesModule.playerFrame
+    local targetFrame = unitFramesModule.targetFrame
+    if not targetFrame.move then
+        return
+    end
+
     TargetFrame:SetMovable(true)
     TargetFrame:SetUserPlaced(true)
     TargetFrame:ClearAllPoints()
-    if not unitFramesModule.targetFrame.mirrorPlayerFrame then
-        TargetFrame:SetPoint("TOPLEFT", UIParent, "CENTER", unitFramesModule.targetFrame.x, unitFramesModule.targetFrame.y)
+    if not targetFrame.mirrorPlayerFrame then
+        TargetFrame:SetPoint(
+                self.frameAnchors[targetFrame.frameAnchor],
+                UIParent,
+                self.frameAnchors[targetFrame.screenAnchor],
+                targetFrame.x,
+                targetFrame.y
+        )
     else
-        TargetFrame:SetPoint("TOPLEFT", UIParent, "CENTER", unitFramesModule.playerFrame.x * -1, unitFramesModule.playerFrame.y)
+        TargetFrame:SetPoint(
+                self:OppositeFrameAnchor(playerFrame.frameAnchor),
+                UIParent,
+                self:OppositeFrameAnchor(playerFrame.screenAnchor),
+                unitFramesModule.playerFrame.x * -1,
+                unitFramesModule.playerFrame.y
+        )
     end
-
-    -- Move mana bar to health bar position
-    --local _, _, _, x, y = TargetFrameHealthBar:GetPoint()
-    --TargetFrameManaBar:SetPoint("TOPRIGHT", TargetFrame, "TOPRIGHT", x, y)
-    --
-    --TargetFrameManaBarTextLeft:ClearAllPoints()
-    --TargetFrameManaBarTextLeft:SetPoint("LEFT", TargetFrameManaBar, "LEFT", 5, 0)
-    --
-    --TargetFrameManaBarTextRight:ClearAllPoints()
-    --TargetFrameManaBarTextRight:SetPoint("RIGHT", TargetFrameManaBar, "RIGHT", 0, 0)
-
-    -- Move health bar to name bar position
-    --TargetFrameHealthBar:SetWidth(TargetFrameNameBackground:GetWidth())
-    --TargetFrameHealthBar:SetHeight(TargetFrameNameBackground:GetHeight())
-    --
-    --local _, _, _, x, y = TargetFrameNameBackground:GetPoint()
-    --TargetFrameHealthBar:SetPoint("TOPRIGHT", TargetFrame, "TOPRIGHT", x, y)
-    --TargetFrameHealthBar.t = TargetFrameHealthBar:CreateTexture(nil, "BORDER")
-    --TargetFrameHealthBar.t:SetAllPoints()
-    --TargetFrameHealthBar.t:SetTexture("Interface\\TargetingFrame\\UI-TargetingFrame-LevelBackground")
-    --
-    --TargetFrameHealthBarTextLeft:ClearAllPoints()
-    --TargetFrameHealthBarTextLeft:SetPoint("LEFT", TargetFrameHealthBar, "LEFT", 5, 0)
-    --
-    --TargetFrameHealthBarTextRight:ClearAllPoints()
-    --TargetFrameHealthBarTextRight:SetPoint("RIGHT", TargetFrameHealthBar, "RIGHT", 0, 0)
-    --
-    --TargetFrameTextureFrameName:ClearAllPoints()
-    --TargetFrameTextureFrameName:SetPoint("BOTTOM", TargetFrameHealthBar, "TOP", 0, 5)
 end
 
 function ScarletUI:SetupFocusFrame(unitFramesModule)
+    local focusFrame = unitFramesModule.focusFrame
+    if not focusFrame.move then
+        return
+    end
+
     if FocusFrame then
         FocusFrame:SetMovable(true)
         FocusFrame:SetUserPlaced(true)
         FocusFrame:ClearAllPoints()
-        FocusFrame:SetPoint("TOPLEFT", UIParent, "CENTER", unitFramesModule.focusFrame.x, unitFramesModule.focusFrame.y)
+        FocusFrame:SetPoint(
+                self.frameAnchors[focusFrame.frameAnchor],
+                UIParent,
+                self.frameAnchors[focusFrame.screenAnchor],
+                focusFrame.x,
+                focusFrame.y
+        )
     end
 end
 
 function ScarletUI:SetupRaidProfiles()
+    local raidFramesModule = self.db.global.raidFramesModule
+    if not raidFramesModule.enabled then
+        return
+    end
+
     local profiles = { 'Party', 'Raid' }
     for _, profile in ipairs(profiles) do
         -- Create a new raid profile if it doesn't exist
@@ -155,68 +144,20 @@ function ScarletUI:SetupRaidProfiles()
     ScarletUI:UpdateActiveRaidProfile()
 end
 
-function ScarletUI:SetupClassColoredFrames()
-    -- Create background frame for player frame
-    local PlayFN = CreateFrame("FRAME", nil, PlayerFrame)
-    PlayFN:SetWidth(TargetFrameNameBackground:GetWidth())
-    PlayFN:SetHeight(TargetFrameNameBackground:GetHeight())
-
-    local _, _, _, x, y = TargetFrameNameBackground:GetPoint()
-    PlayFN:SetPoint("TOPLEFT", PlayerFrame, "TOPLEFT", -x, y)
-
-    PlayFN.t = PlayFN:CreateTexture(nil, "BORDER")
-    PlayFN.t:SetAllPoints()
-    PlayFN.t:SetTexture("Interface\\TargetingFrame\\UI-TargetingFrame-LevelBackground")
-
-    local c = RAID_CLASS_COLORS[select(2, UnitClass("player"))]
-    if c then PlayFN.t:SetVertexColor(c.r, c.g, c.b) end
-
-    -- Create color function for target and focus frames
-    local function TargetFrameCol()
-        if UnitIsPlayer("target") then
-            local targetColor = RAID_CLASS_COLORS[select(2, UnitClass("target"))]
-            if targetColor then TargetFrameNameBackground:SetVertexColor(c.r, c.g, c.b) end
-        end
-        if UnitIsPlayer("focus") then
-            local focusColor = RAID_CLASS_COLORS[select(2, UnitClass("focus"))]
-            if focusColor then FocusFrameNameBackground:SetVertexColor(c.r, c.g, c.b) end
-        end
-    end
-
-    local ColTar = CreateFrame("FRAME")
-    ColTar:SetScript("OnEvent", TargetFrameCol) -- Events are registered if target option is enabled
-
-    -- Refresh color if focus frame size changes
-    if FocusFrame_SetSmallSize then
-        hooksecurefunc("FocusFrame_SetSmallSize", function()
-            TargetFrameCol()
-        end)
-    end
-
-    -- Player frame
-    PlayFN:Show()
-
-    -- Target and focus frames
-    ColTar:RegisterEvent("GROUP_ROSTER_UPDATE")
-    ColTar:RegisterEvent("PLAYER_TARGET_CHANGED")
-    ColTar:RegisterEvent("PLAYER_FOCUS_CHANGED")
-    ColTar:RegisterEvent("UNIT_FACTION")
-    TargetFrameCol()
-end
-
 function ScarletUI:UpdateActiveRaidProfile()
     if not IsAddOnLoaded('Blizzard_CUFProfiles') then
         LoadAddOn("Blizzard_CUFProfiles")
     end
 
     local activeRaidProfile = GetActiveRaidProfile()
-    local targetProfile = 'Party'
     if IsInRaid() and activeRaidProfile ~= 'Raid' then
         ScarletUI.settings:Print("Setting Raid Profile to 'Raid'.")
-        targetProfile = 'Raid'
+        CompactUnitFrameProfiles_ActivateRaidProfile('Raid')
     elseif not IsInRaid() and activeRaidProfile ~= 'Party' then
         ScarletUI.settings:Print("Setting Raid Profile to 'Party'.")
-        targetProfile = 'Party'
+        CompactUnitFrameProfiles_ActivateRaidProfile('Party')
+    elseif activeRaidProfile ~= 'Party' and activeRaidProfile ~= 'Raid' then
+        ScarletUI.settings:Print("Setting Raid Profile to 'Party'.")
+        CompactUnitFrameProfiles_ActivateRaidProfile('Party')
     end
-    CompactUnitFrameProfiles_ActivateRaidProfile(targetProfile)
 end

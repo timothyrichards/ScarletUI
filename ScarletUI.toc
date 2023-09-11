@@ -1,4 +1,4 @@
-## Interface: 11403; 30401
+## Interface: 11404; 30402; 100100
 ## Title: Scarlet UI
 ## Author: ScarletPaladin
 ## Notes: Misc UI features/modifications preferred by ScarletPaladin
@@ -25,10 +25,11 @@ Libs\AceSerializer-3.0\AceSerializer-3.0.xml
 
 ## Load the addon
 ScarletUI.lua
-Modules\Dialogs.lua
-Modules\Pages.lua
-Modules\Helpers.lua
-Modules\UnitFrames.lua
 Modules\Actionbars.lua
-Modules\TidyIcons.lua
 Modules\Chat.lua
+Modules\Dialogs.lua
+Modules\Helpers.lua
+Modules\ItemLevel.lua
+Modules\Pages.lua
+Modules\TidyIcons.lua
+Modules\UnitFrames.lua
