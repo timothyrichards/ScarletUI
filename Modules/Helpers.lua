@@ -50,7 +50,14 @@ ScarletUI.defaults = {
         },
         chatModule = {
             enabled = true,
-            fontSize = 14
+            fontSize = 14,
+            chatFrame = {
+                move = true,
+                frameAnchor = 2,
+                screenAnchor = 2,
+                x = 0,
+                y = 75,
+            }
         },
         raidFramesModule = {
             enabled = true,

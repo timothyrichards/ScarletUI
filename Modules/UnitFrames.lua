@@ -21,10 +21,11 @@ function ScarletUI:SetupUnitFrames()
 
     if not self.unitFramesEventRegistered then
         self.unitFramesEventRegistered = true
-        self.Frame:RegisterEvent("COMPACT_UNIT_FRAME_PROFILES_LOADED")
+        self.Frame:RegisterEvent("GROUP_JOINED")
+        self.Frame:RegisterEvent("GROUP_FORMED")
         self.Frame:RegisterEvent("GROUP_ROSTER_UPDATE")
         self.Frame:HookScript("OnEvent", function(_, event, ...)
-            if event == "COMPACT_UNIT_FRAME_PROFILES_LOADED" or event == "GROUP_ROSTER_UPDATE" then
+            if event == "GROUP_JOINED" or event == "GROUP_FORMED" or event == "GROUP_ROSTER_UPDATE" then
                 ScarletUI:UpdateActiveRaidProfile()
             end
         end)
@@ -145,19 +146,12 @@ function ScarletUI:SetupRaidProfiles()
 end
 
 function ScarletUI:UpdateActiveRaidProfile()
-    if not IsAddOnLoaded('Blizzard_CUFProfiles') then
-        LoadAddOn("Blizzard_CUFProfiles")
-    end
-
     local activeRaidProfile = GetActiveRaidProfile()
-    if IsInRaid() and activeRaidProfile ~= 'Raid' then
-        ScarletUI.settings:Print("Setting Raid Profile to 'Raid'.")
+    if IsInRaid() then
         CompactUnitFrameProfiles_ActivateRaidProfile('Raid')
-    elseif not IsInRaid() and activeRaidProfile ~= 'Party' then
-        ScarletUI.settings:Print("Setting Raid Profile to 'Party'.")
+    elseif not IsInRaid() then
         CompactUnitFrameProfiles_ActivateRaidProfile('Party')
     elseif activeRaidProfile ~= 'Party' and activeRaidProfile ~= 'Raid' then
-        ScarletUI.settings:Print("Setting Raid Profile to 'Party'.")
         CompactUnitFrameProfiles_ActivateRaidProfile('Party')
     end
 end

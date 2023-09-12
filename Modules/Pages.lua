@@ -86,6 +86,8 @@ end
 
 function ScarletUI:GetChatModuleSettingsPage(order)
     local chatModule = self.db.global.chatModule;
+    local screenWidth = GetScreenWidth()
+    local screenHeight = GetScreenHeight()
     return {
         name = "Chat Module",
         type = "group",
@@ -122,14 +124,104 @@ function ScarletUI:GetChatModuleSettingsPage(order)
                         max = 20,
                         step = 1,
                         width = 1,
-                        order = 6,
+                        order = 1,
                         get = function(_) return chatModule.fontSize end,
                         set = function(_, val)
                             chatModule.fontSize = val
                             self:SetupChat()
                         end,
-                    }
+                    },
                 },
+            },
+            chatFrame = {
+                name = "Chat Frame",
+                type = "group",
+                disabled = function() return ScarletUI:SettingDisabled(chatModule.enabled) end,
+                hidden = function(_) return self.lightWeightMode end,
+                inline = true,
+                order = 1,
+                args = {
+                    moveFrame = {
+                        name = "Move Frame",
+                        desc = "Allows you to choose the X and Y position of the frame.",
+                        type = "toggle",
+                        width = 1,
+                        order = 0,
+                        get = function(_) return chatModule.chatFrame.move end,
+                        set = function(_, val)
+                            chatModule.chatFrame.move = val
+                            self:SetupChat()
+                        end,
+                    },
+                    spacer1 = {
+                        name = "",
+                        type = "description",
+                        width = "full",
+                        order = 1,
+                    },
+                    frameAnchor = {
+                        name = "Frame Anchor",
+                        desc = "Anchor point of the frame.\n(Default " .. self.frameAnchors[self.defaults.global.chatModule.chatFrame.frameAnchor] .. ")",
+                        type = "select",
+                        width = 1,
+                        order = 2,
+                        values = function() return self.frameAnchors end,
+                        get = function(_) return chatModule.chatFrame.frameAnchor end,
+                        set = function(_, val)
+                            chatModule.chatFrame.frameAnchor = val
+                            self:SetupChat()
+                        end,
+                    },
+                    screenAnchor = {
+                        name = "Screen Anchor",
+                        desc = "Anchor point of the frame relative to the screen.\n(Default " .. self.frameAnchors[self.defaults.global.chatModule.chatFrame.screenAnchor] .. ")",
+                        type = "select",
+                        width = 1,
+                        order = 3,
+                        values = function() return self.frameAnchors end,
+                        get = function(_) return chatModule.chatFrame.screenAnchor end,
+                        set = function(_, val)
+                            chatModule.chatFrame.screenAnchor = val
+                            self:SetupChat()
+                        end,
+                    },
+                    spacer2 = {
+                        name = "",
+                        type = "description",
+                        width = "full",
+                        order = 4,
+                    },
+                    x = {
+                        name = "Frame X",
+                        desc = "Must be a number, this is the X position of the frame relative to the center of the screen.\n(Default " .. self.defaults.global.chatModule.chatFrame.x .. ")",
+                        type = "range",
+                        min = math.floor(screenWidth) * -1,
+                        max = math.floor(screenWidth),
+                        step = 1,
+                        width = 1,
+                        order = 5,
+                        get = function(_) return chatModule.chatFrame.x end,
+                        set = function(_, val)
+                            chatModule.chatFrame.x = val
+                            self:SetupChat()
+                        end,
+                    },
+                    y = {
+                        name = "Frame Y",
+                        desc = "Must be a number, this is the Y position of the frame relative to the center of the screen.\n(Default " .. self.defaults.global.chatModule.chatFrame.y .. ")",
+                        type = "range",
+                        min = math.floor(screenHeight) * -1,
+                        max = math.floor(screenHeight),
+                        step = 1,
+                        width = 1,
+                        order = 6,
+                        get = function(_) return chatModule.chatFrame.y end,
+                        set = function(_, val)
+                            chatModule.chatFrame.y = val
+                            self:SetupChat()
+                        end,
+                    }
+                }
             },
         }
     }
