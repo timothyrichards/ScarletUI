@@ -7,7 +7,7 @@ local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 function ScarletUI:Setup()
     -- Add the ace modules to the addon object
     if not self.settings then
-        self.settings = self:NewModule("SUISettings", "AceConsole-3.0")
+        self.settings = self:NewModule("Settings", "AceConsole-3.0")
     end
 
     -- Check if lightWeightMode should be enabled
@@ -41,7 +41,6 @@ function ScarletUI:Setup()
     if not self.lightWeightMode then
         self:SetupActionbars()
         self:SetupUnitFrames()
-        self:SetupRaidProfiles()
         self:SetupTidyIcons()
         self:SpellBookPageScrolling()
     end

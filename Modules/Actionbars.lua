@@ -20,15 +20,6 @@ local function mainMenuBar()
         button:SetAttribute("showgrid", 1)
         ActionButton_Update(button)
     end
-
-    --[[
-    TODO: fix this stupid hack
-    the code above makes the main actionbar action slots show all the time,
-    but the change doesn't apply till an ability is moved on the bars,
-    so the code below forcefully picks up and places down the same ability just to satisfy that condition
-    ]]--
-    PickupAction(_G["ActionButton1"].action)
-    PlaceAction(_G["ActionButton1"].action)
 end
 
 local function microBar()
@@ -198,7 +189,7 @@ function ScarletUI:SetupActionbars()
 end
 
 function ScarletUI:UpdateMainBar()
-    if not InCombatLockdown() then
+    if not self.inCombat then
         local point, relativeTo, relativePoint, offsetX, _ = MultiBarBottomLeft:GetPoint()
         if MainMenuExpBar:IsShown() and ReputationWatchBar:IsShown() then
             MultiBarBottomLeft:SetPoint(point, relativeTo, relativePoint, offsetX, 12)

@@ -21,24 +21,19 @@ function ScarletUI:SetupUnitFrames()
 
     if not self.unitFramesEventRegistered then
         self.unitFramesEventRegistered = true
+        self.Frame:RegisterEvent("COMPACT_UNIT_FRAME_PROFILES_LOADED")
         self.Frame:RegisterEvent("GROUP_JOINED")
         self.Frame:RegisterEvent("GROUP_FORMED")
         self.Frame:RegisterEvent("GROUP_ROSTER_UPDATE")
         self.Frame:HookScript("OnEvent", function(_, event, ...)
-            if event == "GROUP_JOINED" or event == "GROUP_FORMED" or event == "GROUP_ROSTER_UPDATE" then
+            if event == "COMPACT_UNIT_FRAME_PROFILES_LOADED" then
+                ScarletUI.cufLoaded = true;
+                ScarletUI:SetupRaidProfiles()
+            elseif event == "GROUP_JOINED" or event == "GROUP_FORMED" or event == "GROUP_ROSTER_UPDATE" or event == "PLAYER_REGEN_ENABLED" then
                 ScarletUI:UpdateActiveRaidProfile()
             end
         end)
     end
-
-    if CompactArenaFrame then
-        CompactArenaFrame.Show = function() end
-        CompactArenaFrame.Frame:HookScript("OnShow", function()
-            CompactArenaFrame:Hide()
-        end)
-    end
-
-    self:SetupRaidProfiles()
 end
 
 function ScarletUI:SetupPlayerFrame(unitFramesModule)
@@ -110,7 +105,7 @@ end
 
 function ScarletUI:SetupRaidProfiles()
     local raidFramesModule = self.db.global.raidFramesModule
-    if not raidFramesModule.enabled then
+    if not raidFramesModule.enabled or not self.cufLoaded or self.inCombat then
         return
     end
 
@@ -119,24 +114,34 @@ function ScarletUI:SetupRaidProfiles()
         -- Create a new raid profile if it doesn't exist
         if not RaidProfileExists(profile) then
             CreateNewRaidProfile(profile)
-        end
 
-        -- Set profile settings
-        if profile == 'Party' then
-            SetRaidProfileSavedPosition(profile, false, 'TOP', 450, 'BOTTOM', 295, 'LEFT', 535)
-            SetRaidProfileOption(profile, "displayPets", '1')
-        elseif profile == 'Raid' then
-            SetRaidProfileSavedPosition(profile, false, 'TOP', 375, 'BOTTOM', 90, 'LEFT', 165)
-            SetRaidProfileOption(profile, "keepGroupsTogether", '1')
-            SetRaidProfileOption(profile, "horizontalGroups", '1')
-        end
+            -- Set profile settings
+            SetRaidProfileOption(profile, "autoActivatePvE", '1')
+            SetRaidProfileOption(profile, "autoActivatePvP", '1')
 
-        -- Check and apply Raid Profile settings
-        for k, v in pairs(self.raidProfile) do
-            local currentValue = tostring(GetRaidProfileOption(profile, k))
-            local targetValue = tostring(v)
-            if currentValue ~= targetValue then
-                SetRaidProfileOption(profile, k, v)
+            if profile == 'Party' then
+                SetRaidProfileSavedPosition(profile, false, 'TOP', 450, 'BOTTOM', 295, 'LEFT', 535)
+                SetRaidProfileOption(profile, "displayPets", '1')
+                SetRaidProfileOption(profile, "autoActivate2Players", '1')
+                SetRaidProfileOption(profile, "autoActivate3Players", '1')
+                SetRaidProfileOption(profile, "autoActivate5Players", '1')
+            elseif profile == 'Raid' then
+                SetRaidProfileSavedPosition(profile, false, 'TOP', 375, 'BOTTOM', 90, 'LEFT', 165)
+                SetRaidProfileOption(profile, "keepGroupsTogether", '1')
+                SetRaidProfileOption(profile, "horizontalGroups", '1')
+                SetRaidProfileOption(profile, "autoActivate10Players", '1')
+                SetRaidProfileOption(profile, "autoActivate15Players", '1')
+                SetRaidProfileOption(profile, "autoActivate20Players", '1')
+                SetRaidProfileOption(profile, "autoActivate40Players", '1')
+            end
+
+            -- Check and apply Raid Profile settings
+            for k, v in pairs(self.raidProfile) do
+                local currentValue = tostring(GetRaidProfileOption(profile, k))
+                local targetValue = tostring(v)
+                if currentValue ~= targetValue then
+                    SetRaidProfileOption(profile, k, v)
+                end
             end
         end
     end
@@ -146,6 +151,10 @@ function ScarletUI:SetupRaidProfiles()
 end
 
 function ScarletUI:UpdateActiveRaidProfile()
+    if not self.cufLoaded or self.inCombat then
+        return
+    end
+
     local activeRaidProfile = GetActiveRaidProfile()
     if IsInRaid() then
         CompactUnitFrameProfiles_ActivateRaidProfile('Raid')

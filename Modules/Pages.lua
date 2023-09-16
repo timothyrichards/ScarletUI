@@ -13,7 +13,7 @@ function ScarletUI:Options()
             defaultSettings = {
                 name = "Restore Defaults",
                 type = "execute",
-                disabled = function() return InCombatLockdown() end,
+                disabled = function() return self.inCombat end,
                 order = 5,
                 width = 1,
                 func = function()
@@ -33,7 +33,7 @@ function ScarletUI:GetModuleSettingsPage(order)
             settings = {
                 name = "Settings",
                 type = "group",
-                disabled = function() return InCombatLockdown() end,
+                disabled = function() return self.inCombat end,
                 inline = true,
                 order = 0,
                 args = {
@@ -96,7 +96,7 @@ function ScarletUI:GetChatModuleSettingsPage(order)
             chatModule = {
                 name = "Chat Module",
                 type = "group",
-                disabled = function() return InCombatLockdown() end,
+                disabled = function() return self.inCombat end,
                 inline = true,
                 order = 0,
                 args = {
@@ -238,7 +238,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(order)
             actionbarModule = {
                 name = "Actionbar Module",
                 type = "group",
-                disabled = function() return InCombatLockdown() end,
+                disabled = function() return self.inCombat end,
                 inline = true,
                 order = 0,
                 args = {
@@ -321,7 +321,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(order)
             unitFramesModule = {
                 name = "Unit Frames Module",
                 type = "group",
-                disabled = function() return InCombatLockdown() end,
+                disabled = function() return self.inCombat end,
                 inline = true,
                 order = 0,
                 args = {
@@ -329,7 +329,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(order)
                         name = "Enabled",
                         desc = "Manage the position of your unit frames.",
                         type = "toggle",
-                        disabled = function() return InCombatLockdown() end,
+                        disabled = function() return self.inCombat end,
                         width = "full",
                         order = 0,
                         get = function(_) return unitFramesModule.enabled end,
@@ -646,7 +646,7 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(order)
             raidFramesModule = {
                 name = "Raid Frames Module",
                 type = "group",
-                disabled = function() return InCombatLockdown() end,
+                disabled = function() return self.inCombat end,
                 inline = true,
                 order = 0,
                 args = {
