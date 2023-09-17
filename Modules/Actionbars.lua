@@ -27,15 +27,37 @@ local function mainMenuBar()
     end)
 end
 
-local function microBar()
+local function microBar(actionbarsModule)
+    local microBarSettings = actionbarsModule.microBar;
+    if not microBarSettings.move then
+        return
+    end
+
     CharacterMicroButton:ClearAllPoints()
-    CharacterMicroButton:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 2, 2)
-    CharacterMicroButton.SetPoint = function() end
+    CharacterMicroButton:SetPoint(
+            ScarletUI.frameAnchors[microBarSettings.frameAnchor],
+            UIParent,
+            ScarletUI.frameAnchors[microBarSettings.screenAnchor],
+            microBarSettings.x,
+            microBarSettings.y
+    )
+    --CharacterMicroButton.SetPoint = function() end
 end
 
-local function bagBar()
+local function bagBar(actionbarsModule)
+    local bagBarSettings = actionbarsModule.bagBar;
+    if not bagBarSettings.move then
+        return
+    end
+
     MainMenuBarBackpackButton:ClearAllPoints();
-    MainMenuBarBackpackButton:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -2, 2);
+    MainMenuBarBackpackButton:SetPoint(
+            ScarletUI.frameAnchors[bagBarSettings.frameAnchor],
+            UIParent,
+            ScarletUI.frameAnchors[bagBarSettings.screenAnchor],
+            bagBarSettings.x,
+            bagBarSettings.y
+    );
     MainMenuBarBackpackButtonNormalTexture:Hide()
 
     CharacterBag0Slot:ClearAllPoints()
@@ -171,8 +193,8 @@ function ScarletUI:SetupActionbars()
     local multiBarBottomRightValue = InterfaceOptionsActionBarsPanelBottomRight.value == '1'
     if actionbarsModule.stackActionbars and multiBarBottomLeftValue and multiBarBottomRightValue then
         mainMenuBar()
-        microBar()
-        bagBar()
+        microBar(actionbarsModule)
+        bagBar(actionbarsModule)
         multiBarBottomLeft()
         multiBarBottomRight()
 

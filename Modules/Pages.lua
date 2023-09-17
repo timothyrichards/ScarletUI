@@ -229,6 +229,8 @@ end
 
 function ScarletUI:GetActionbarsModuleSettingsPage(order)
     local actionbarsModule = self.db.global.actionbarsModule;
+    local screenWidth = GetScreenWidth()
+    local screenHeight = GetScreenHeight()
     return {
         name = "Actionbar Module",
         type = "group",
@@ -303,7 +305,187 @@ function ScarletUI:GetActionbarsModuleSettingsPage(order)
                         end,
                     },
                 }
-            }
+            },
+            microBar = {
+                name = "Micro Bar",
+                type = "group",
+                disabled = function() return ScarletUI:SettingDisabled(actionbarsModule.enabled) end,
+                hidden = function(_) return self.lightWeightMode end,
+                inline = true,
+                order = 2,
+                args = {
+                    moveFrame = {
+                        name = "Move Frame",
+                        desc = "Allows you to choose the X and Y position of the frame.",
+                        type = "toggle",
+                        width = 1,
+                        order = 0,
+                        get = function(_) return actionbarsModule.microBar.move end,
+                        set = function(_, val)
+                            actionbarsModule.microBar.move = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    spacer1 = {
+                        name = "",
+                        type = "description",
+                        width = "full",
+                        order = 1,
+                    },
+                    frameAnchor = {
+                        name = "Frame Anchor",
+                        desc = "Anchor point of the frame.\n(Default " .. self.frameAnchors[self.defaults.global.actionbarsModule.microBar.frameAnchor] .. ")",
+                        type = "select",
+                        width = 1,
+                        order = 2,
+                        values = function() return self.frameAnchors end,
+                        get = function(_) return actionbarsModule.microBar.frameAnchor end,
+                        set = function(_, val)
+                            actionbarsModule.microBar.frameAnchor = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    screenAnchor = {
+                        name = "Screen Anchor",
+                        desc = "Anchor point of the frame relative to the screen.\n(Default " .. self.frameAnchors[self.defaults.global.actionbarsModule.microBar.screenAnchor] .. ")",
+                        type = "select",
+                        width = 1,
+                        order = 3,
+                        values = function() return self.frameAnchors end,
+                        get = function(_) return actionbarsModule.microBar.screenAnchor end,
+                        set = function(_, val)
+                            actionbarsModule.microBar.screenAnchor = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    spacer2 = {
+                        name = "",
+                        type = "description",
+                        width = "full",
+                        order = 4,
+                    },
+                    x = {
+                        name = "Frame X",
+                        desc = "Must be a number, this is the X position of the frame relative to the center of the screen.\n(Default " .. self.defaults.global.actionbarsModule.microBar.x .. ")",
+                        type = "range",
+                        min = math.floor(screenWidth) * -1,
+                        max = math.floor(screenWidth),
+                        step = 1,
+                        width = 1,
+                        order = 5,
+                        get = function(_) return actionbarsModule.microBar.x end,
+                        set = function(_, val)
+                            actionbarsModule.microBar.x = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    y = {
+                        name = "Frame Y",
+                        desc = "Must be a number, this is the Y position of the frame relative to the center of the screen.\n(Default " .. self.defaults.global.actionbarsModule.microBar.y .. ")",
+                        type = "range",
+                        min = math.floor(screenHeight) * -1,
+                        max = math.floor(screenHeight),
+                        step = 1,
+                        width = 1,
+                        order = 6,
+                        get = function(_) return actionbarsModule.microBar.y end,
+                        set = function(_, val)
+                            actionbarsModule.microBar.y = val
+                            self:SetupActionbars()
+                        end,
+                    }
+                }
+            },
+            bagBar = {
+                name = "Bag Bar",
+                type = "group",
+                disabled = function() return ScarletUI:SettingDisabled(actionbarsModule.enabled) end,
+                hidden = function(_) return self.lightWeightMode end,
+                inline = true,
+                order = 3,
+                args = {
+                    moveFrame = {
+                        name = "Move Frame",
+                        desc = "Allows you to choose the X and Y position of the frame.",
+                        type = "toggle",
+                        width = 1,
+                        order = 0,
+                        get = function(_) return actionbarsModule.bagBar.move end,
+                        set = function(_, val)
+                            actionbarsModule.bagBar.move = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    spacer1 = {
+                        name = "",
+                        type = "description",
+                        width = "full",
+                        order = 1,
+                    },
+                    frameAnchor = {
+                        name = "Frame Anchor",
+                        desc = "Anchor point of the frame.\n(Default " .. self.frameAnchors[self.defaults.global.actionbarsModule.bagBar.frameAnchor] .. ")",
+                        type = "select",
+                        width = 1,
+                        order = 2,
+                        values = function() return self.frameAnchors end,
+                        get = function(_) return actionbarsModule.bagBar.frameAnchor end,
+                        set = function(_, val)
+                            actionbarsModule.bagBar.frameAnchor = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    screenAnchor = {
+                        name = "Screen Anchor",
+                        desc = "Anchor point of the frame relative to the screen.\n(Default " .. self.frameAnchors[self.defaults.global.actionbarsModule.bagBar.screenAnchor] .. ")",
+                        type = "select",
+                        width = 1,
+                        order = 3,
+                        values = function() return self.frameAnchors end,
+                        get = function(_) return actionbarsModule.bagBar.screenAnchor end,
+                        set = function(_, val)
+                            actionbarsModule.bagBar.screenAnchor = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    spacer2 = {
+                        name = "",
+                        type = "description",
+                        width = "full",
+                        order = 4,
+                    },
+                    x = {
+                        name = "Frame X",
+                        desc = "Must be a number, this is the X position of the frame relative to the center of the screen.\n(Default " .. self.defaults.global.actionbarsModule.bagBar.x .. ")",
+                        type = "range",
+                        min = math.floor(screenWidth) * -1,
+                        max = math.floor(screenWidth),
+                        step = 1,
+                        width = 1,
+                        order = 5,
+                        get = function(_) return actionbarsModule.bagBar.x end,
+                        set = function(_, val)
+                            actionbarsModule.bagBar.x = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    y = {
+                        name = "Frame Y",
+                        desc = "Must be a number, this is the Y position of the frame relative to the center of the screen.\n(Default " .. self.defaults.global.actionbarsModule.bagBar.y .. ")",
+                        type = "range",
+                        min = math.floor(screenHeight) * -1,
+                        max = math.floor(screenHeight),
+                        step = 1,
+                        width = 1,
+                        order = 6,
+                        get = function(_) return actionbarsModule.bagBar.y end,
+                        set = function(_, val)
+                            actionbarsModule.bagBar.y = val
+                            self:SetupActionbars()
+                        end,
+                    }
+                }
+            },
         }
     }
 end

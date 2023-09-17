@@ -46,7 +46,21 @@ ScarletUI.defaults = {
         actionbarsModule = {
             enabled = true,
             stackActionbars = true,
-            stackSidebars = false
+            stackSidebars = false,
+            microBar = {
+                move = true,
+                frameAnchor = 2,
+                screenAnchor = 2,
+                x = 2,
+                y = 2,
+            },
+            bagBar = {
+                move = true,
+                frameAnchor = 3,
+                screenAnchor = 3,
+                x = -2,
+                y = 2,
+            }
         },
         chatModule = {
             enabled = true,
