@@ -122,17 +122,10 @@ function ScarletUI:SetupRaidProfiles()
             if profile == 'Party' then
                 SetRaidProfileSavedPosition(profile, false, 'TOP', 450, 'BOTTOM', 295, 'LEFT', 535)
                 SetRaidProfileOption(profile, "displayPets", '1')
-                SetRaidProfileOption(profile, "autoActivate2Players", '1')
-                SetRaidProfileOption(profile, "autoActivate3Players", '1')
-                SetRaidProfileOption(profile, "autoActivate5Players", '1')
             elseif profile == 'Raid' then
                 SetRaidProfileSavedPosition(profile, false, 'TOP', 375, 'BOTTOM', 90, 'LEFT', 165)
                 SetRaidProfileOption(profile, "keepGroupsTogether", '1')
                 SetRaidProfileOption(profile, "horizontalGroups", '1')
-                SetRaidProfileOption(profile, "autoActivate10Players", '1')
-                SetRaidProfileOption(profile, "autoActivate15Players", '1')
-                SetRaidProfileOption(profile, "autoActivate20Players", '1')
-                SetRaidProfileOption(profile, "autoActivate40Players", '1')
             end
 
             -- Check and apply Raid Profile settings
@@ -143,6 +136,8 @@ function ScarletUI:SetupRaidProfiles()
                     SetRaidProfileOption(profile, k, v)
                 end
             end
+
+            StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
         end
     end
 

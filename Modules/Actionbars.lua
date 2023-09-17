@@ -20,6 +20,11 @@ local function mainMenuBar()
         button:SetAttribute("showgrid", 1)
         ActionButton_Update(button)
     end
+
+    MainMenuBarVehicleLeaveButton:SetPoint("LEFT", MainMenuBarArtFrame, "RIGHT", 5, -5)
+    MainMenuBarVehicleLeaveButton:HookScript('OnShow', function()
+        MainMenuBarVehicleLeaveButton:SetPoint("LEFT", MainMenuBarArtFrame, "RIGHT", 5, -5)
+    end)
 end
 
 local function microBar()
@@ -119,6 +124,7 @@ local function experienceBar()
         end)
     end
     MainMenuExpBar:SetWidth(510)
+    MainMenuBarMaxLevelBar:Hide()
     MainMenuBarMaxLevelBar.Show = function()
         MainMenuBarMaxLevelBar:Hide()
     end
