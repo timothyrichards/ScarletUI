@@ -54,21 +54,19 @@ function ScarletUI:ResetDefaults()
     AceConfigRegistry:NotifyChange("ScarletUI")
 end
 
-local function OnEvent(_, event, ...)
+ScarletUI.Frame = CreateFrame("Frame")
+ScarletUI.Frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+ScarletUI.Frame:RegisterEvent("PLAYER_REGEN_DISABLED")
+ScarletUI.Frame:RegisterEvent("PLAYER_REGEN_ENABLED")
+ScarletUI.Frame:SetScript("OnEvent", function (_, event, ...)
     if event == "PLAYER_ENTERING_WORLD" then
         ScarletUI:Setup()
     elseif event == "PLAYER_REGEN_DISABLED" or event == "PLAYER_REGEN_ENABLED" then
         ScarletUI.inCombat = event == "PLAYER_REGEN_DISABLED";
         AceConfigRegistry:NotifyChange("ScarletUI")
     end
-end
+end)
 
-ScarletUI.Frame = CreateFrame("Frame")
-ScarletUI.Frame:RegisterEvent("PLAYER_ENTERING_WORLD")
-ScarletUI.Frame:RegisterEvent("PLAYER_REGEN_DISABLED")
-ScarletUI.Frame:RegisterEvent("PLAYER_REGEN_ENABLED")
-ScarletUI.Frame:SetScript("OnEvent", OnEvent)
-
---hooksecurefunc("SetCVar", function(k, v)
---    print("CVar", k, "changed to", v)
---end)
+hooksecurefunc("SetCVar", function(k, v)
+    print("CVar", k, "changed to", v)
+end)
