@@ -27,7 +27,6 @@ function ScarletUI:SetupUnitFrames()
         self.Frame:RegisterEvent("GROUP_ROSTER_UPDATE")
         self.Frame:HookScript("OnEvent", function(_, event, ...)
             if event == "COMPACT_UNIT_FRAME_PROFILES_LOADED" then
-                ScarletUI.cufLoaded = true;
                 ScarletUI:SetupRaidProfiles()
             elseif event == "GROUP_JOINED" or event == "GROUP_FORMED" or event == "GROUP_ROSTER_UPDATE" or event == "PLAYER_REGEN_ENABLED" then
                 ScarletUI:UpdateActiveRaidProfile()
@@ -105,7 +104,7 @@ end
 
 function ScarletUI:SetupRaidProfiles()
     local raidFramesModule = self.db.global.raidFramesModule
-    if not raidFramesModule.enabled or not self.cufLoaded or self.inCombat then
+    if not raidFramesModule.enabled or self.inCombat then
         return
     end
 
@@ -146,7 +145,7 @@ function ScarletUI:SetupRaidProfiles()
 end
 
 function ScarletUI:UpdateActiveRaidProfile()
-    if not self.cufLoaded or self.inCombat then
+    if self.inCombat then
         return
     end
 

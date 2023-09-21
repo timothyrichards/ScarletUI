@@ -67,6 +67,6 @@ ScarletUI.Frame:SetScript("OnEvent", function (_, event, ...)
     end
 end)
 
-hooksecurefunc("SetCVar", function(k, v)
-    print("CVar", k, "changed to", v)
-end)
+--hooksecurefunc("SetCVar", function(k, v)
+--    print("CVar", k, "changed to", v)
+--end)

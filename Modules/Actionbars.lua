@@ -88,28 +88,6 @@ local function multiBarBottomRight()
     MultiBarBottomRight:SetPoint("BOTTOM", MultiBarBottomLeft, "TOP", 0, 2)
 end
 
-local function multiBarRight()
-    ScarletUI:ConvertBarToHorizontal(MultiBarRight)
-    MultiBarRight:SetMovable(true)
-    MultiBarRight:SetUserPlaced(true)
-    MultiBarRight:UnregisterAllEvents();
-    MultiBarRight:ClearAllPoints()
-    MultiBarRight:SetWidth(500)
-    MultiBarRight:SetHeight(40)
-    MultiBarRight:SetPoint("BOTTOM", MultiBarBottomRight, "TOP", 0, 0)
-end
-
-local function multiBarLeft()
-    ScarletUI:ConvertBarToHorizontal(MultiBarLeft)
-    MultiBarLeft:SetMovable(true)
-    MultiBarLeft:SetUserPlaced(true)
-    MultiBarLeft:UnregisterAllEvents();
-    MultiBarLeft:ClearAllPoints()
-    MultiBarLeft:SetWidth(500)
-    MultiBarLeft:SetHeight(40)
-    MultiBarLeft:SetPoint("BOTTOM", MultiBarRight, "TOP", 0, 2)
-end
-
 local function stanceBar(parent)
     StanceBarFrame:SetMovable(true)
     StanceBarFrame:SetUserPlaced(true)
@@ -189,9 +167,14 @@ function ScarletUI:SetupActionbars()
         return
     end
 
-    local multiBarBottomLeftValue = InterfaceOptionsActionBarsPanelBottomLeft.value == '1'
-    local multiBarBottomRightValue = InterfaceOptionsActionBarsPanelBottomRight.value == '1'
-    if actionbarsModule.stackActionbars and multiBarBottomLeftValue and multiBarBottomRightValue then
+    if actionbarsModule.stackActionbars then
+        local bar2, bar3, bar4, bar5, lock, cooldowns, show = GetActionBarToggles()
+        if bar2 == false or bar3 == false then
+            SetActionBarToggles(1, 1, bar4, bar5, lock, cooldowns, show)
+            StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+            return
+        end
+
         mainMenuBar()
         microBar(actionbarsModule)
         bagBar(actionbarsModule)
@@ -199,14 +182,6 @@ function ScarletUI:SetupActionbars()
         multiBarBottomRight()
 
         local parent = MultiBarBottomRight;
-        local multiBarLeftValue = InterfaceOptionsActionBarsPanelBottomLeft.value == '1'
-        local multiBarRightValue = InterfaceOptionsActionBarsPanelBottomRight.value == '1'
-        if actionbarsModule.stackSidebars and multiBarLeftValue and multiBarRightValue then
-            multiBarRight()
-            multiBarLeft()
-            parent = MultiBarLeft;
-        end
-
         stanceBar(parent)
         multiCastBar(parent)
         petActionBar(parent)

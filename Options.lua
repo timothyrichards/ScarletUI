@@ -16,11 +16,12 @@ function ScarletUI:Options()
             actionbarsModuleSettings = self:GetActionbarsModuleSettingsPage(database.actionbarsModule, defaults.actionbarsModule, 2),
             unitFramesModuleSettings = self:GetUnitFramesModuleSettingsPage(database.unitFramesModule, defaults.unitFramesModule, 3),
             raidFramesModuleSettings = self:GetRaidFramesModuleSettingsPage(database.raidFramesModule, defaults.raidFramesModule, 4),
+            cVarModuleSettings = self:GetCVarModuleSettingsPage(database.cVarModule, defaults.cVarModule, 5),
             defaultSettings = {
                 name = "Restore Defaults",
                 type = "execute",
                 disabled = function() return self.inCombat end,
-                order = 5,
+                order = 6,
                 width = 1,
                 func = function()
                     StaticPopup_Show('SCARLET_RESTORE_DEFAULTS_DIALOG')
@@ -307,24 +308,6 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                             module.stackActionbars = val
                             if not val then
                                 StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
-                            else
-                                self:SetupActionbars()
-                            end
-                        end,
-                    },
-                    stackSidebars = {
-                        name = "Stack Sidebars",
-                        desc = "Stack your sidebars with your other three bars.",
-                        type = "toggle",
-                        disabled = function() return ScarletUI:SettingDisabled(module.enabled and module.stackActionbars) end,
-                        width = 1.5,
-                        order = 0,
-                        get = function(_) return module.stackSidebars end,
-                        set = function(_, val)
-                            module.stackSidebars = val
-                            if not val then
-                                self:RevertSidebars()
-                                self:SetupActionbars()
                             else
                                 self:SetupActionbars()
                             end
@@ -995,6 +978,61 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
                     }
                 }
             },
+        }
+    }
+end
+
+function ScarletUI:GetCVarModuleSettingsPage(module, defaults, order)
+    return {
+        name = "CVar Settings Module",
+        type = "group",
+        order = order,
+        args = {
+            cVarModule = {
+                name = "CVar Settings Module",
+                type = "group",
+                disabled = function() return self.inCombat end,
+                inline = true,
+                order = 0,
+                args = {
+                    enabled = {
+                        name = "Enabled",
+                        desc = "Manage your cVars.",
+                        type = "toggle",
+                        width = 1.5,
+                        order = 0,
+                        get = function(_) return module.enabled end,
+                        set = function(_, val)
+                            module.enabled = val
+                            if not val then
+                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                            else
+                                ScarletUI:SetupCVars()
+                            end
+                        end,
+                    },
+                },
+            },
+            --cVars = {
+            --    name = "CVar Settings",
+            --    type = "group",
+            --    disabled = function() return self.inCombat end,
+            --    inline = true,
+            --    order = 1,
+            --    args = {
+            --        useUiScale = {
+            --            name = "",
+            --            desc = "",
+            --            type = "toggle",
+            --            width = 1.5,
+            --            order = 1,
+            --            get = function(_) return module.useUiScale end,
+            --            set = function(_, val)
+            --                ScarletUI:SetupCVars()
+            --            end,
+            --        },
+            --    },
+            --},
         }
     }
 end
