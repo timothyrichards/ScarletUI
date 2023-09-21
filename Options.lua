@@ -315,12 +315,101 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                     },
                 }
             },
+            mainBar = {
+                name = "Main Bar",
+                type = "group",
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
+                hidden = function(_) return self.lightWeightMode end,
+                order = 2,
+                args = {
+                    moveFrame = {
+                        name = "Move Frame",
+                        desc = "Allows you to choose the X and Y position of the frame.",
+                        type = "toggle",
+                        width = 1,
+                        order = 0,
+                        get = function(_) return module.mainBar.move end,
+                        set = function(_, val)
+                            module.mainBar.move = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    spacer1 = {
+                        name = "",
+                        type = "description",
+                        width = "full",
+                        order = 1,
+                    },
+                    frameAnchor = {
+                        name = "Frame Anchor",
+                        desc = "Anchor point of the frame.\n(Default " .. self.frameAnchors[defaults.mainBar.frameAnchor] .. ")",
+                        type = "select",
+                        width = 1,
+                        order = 2,
+                        values = function() return self.frameAnchors end,
+                        get = function(_) return module.mainBar.frameAnchor end,
+                        set = function(_, val)
+                            module.mainBar.frameAnchor = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    screenAnchor = {
+                        name = "Screen Anchor",
+                        desc = "Anchor point of the frame relative to the screen.\n(Default " .. self.frameAnchors[defaults.mainBar.screenAnchor] .. ")",
+                        type = "select",
+                        width = 1,
+                        order = 3,
+                        values = function() return self.frameAnchors end,
+                        get = function(_) return module.mainBar.screenAnchor end,
+                        set = function(_, val)
+                            module.mainBar.screenAnchor = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    spacer2 = {
+                        name = "",
+                        type = "description",
+                        width = "full",
+                        order = 4,
+                    },
+                    x = {
+                        name = "Frame X",
+                        desc = "Must be a number, this is the X position of the frame relative to the center of the screen.\n(Default " .. defaults.mainBar.x .. ")",
+                        type = "range",
+                        min = math.floor(screenWidth) * -1,
+                        max = math.floor(screenWidth),
+                        step = 1,
+                        width = 1,
+                        order = 5,
+                        get = function(_) return module.mainBar.x end,
+                        set = function(_, val)
+                            module.mainBar.x = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    y = {
+                        name = "Frame Y",
+                        desc = "Must be a number, this is the Y position of the frame relative to the center of the screen.\n(Default " .. defaults.mainBar.y .. ")",
+                        type = "range",
+                        min = math.floor(screenHeight) * -1,
+                        max = math.floor(screenHeight),
+                        step = 1,
+                        width = 1,
+                        order = 6,
+                        get = function(_) return module.mainBar.y end,
+                        set = function(_, val)
+                            module.mainBar.y = val
+                            self:SetupActionbars()
+                        end,
+                    }
+                }
+            },
             microBar = {
                 name = "Micro Bar",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
                 hidden = function(_) return self.lightWeightMode end,
-                order = 2,
+                order = 3,
                 args = {
                     moveFrame = {
                         name = "Move Frame",
@@ -409,7 +498,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
                 hidden = function(_) return self.lightWeightMode end,
-                order = 3,
+                order = 4,
                 args = {
                     moveFrame = {
                         name = "Move Frame",

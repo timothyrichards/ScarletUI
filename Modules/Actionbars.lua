@@ -167,6 +167,18 @@ function ScarletUI:SetupActionbars()
         return
     end
 
+    local mainBarSettings = actionbarsModule.mainBar;
+    if mainBarSettings.move then
+        MainMenuBar:ClearAllPoints()
+        MainMenuBar:SetPoint(
+                ScarletUI.frameAnchors[mainBarSettings.frameAnchor],
+                UIParent,
+                ScarletUI.frameAnchors[mainBarSettings.screenAnchor],
+                mainBarSettings.x,
+                mainBarSettings.y
+        )
+    end
+
     if actionbarsModule.stackActionbars then
         local bar2, bar3, bar4, bar5, lock, cooldowns, show = GetActionBarToggles()
         if bar2 == false or bar3 == false then
@@ -175,7 +187,7 @@ function ScarletUI:SetupActionbars()
             return
         end
 
-        mainMenuBar()
+        mainMenuBar(actionbarsModule)
         microBar(actionbarsModule)
         bagBar(actionbarsModule)
         multiBarBottomLeft()

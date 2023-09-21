@@ -46,6 +46,13 @@ ScarletUI.defaults = {
         actionbarsModule = {
             enabled = true,
             stackActionbars = true,
+            mainBar = {
+                move = true,
+                frameAnchor = 1,
+                screenAnchor = 1,
+                x = 0,
+                y = 0,
+            },
             microBar = {
                 move = true,
                 frameAnchor = 2,
