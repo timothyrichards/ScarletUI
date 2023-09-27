@@ -22,7 +22,7 @@ local function mainMenuBar()
     end
 
     MainMenuBarVehicleLeaveButton:SetPoint("LEFT", MainMenuBarArtFrame, "RIGHT", 5, -5)
-    MainMenuBarVehicleLeaveButton:HookScript('OnShow', function()
+    MainMenuBarVehicleLeaveButton:HookScript("OnShow", function()
         MainMenuBarVehicleLeaveButton:SetPoint("LEFT", MainMenuBarArtFrame, "RIGHT", 5, -5)
     end)
 end
@@ -33,6 +33,8 @@ local function microBar(actionbarsModule)
         return
     end
 
+    CharacterMicroButton:SetMovable(true)
+    CharacterMicroButton:SetUserPlaced(true)
     CharacterMicroButton:ClearAllPoints()
     CharacterMicroButton:SetPoint(
             ScarletUI.frameAnchors[microBarSettings.frameAnchor],
@@ -50,6 +52,8 @@ local function bagBar(actionbarsModule)
         return
     end
 
+    MainMenuBarBackpackButton:SetMovable(true);
+    MainMenuBarBackpackButton:SetUserPlaced(true);
     MainMenuBarBackpackButton:ClearAllPoints();
     MainMenuBarBackpackButton:SetPoint(
             ScarletUI.frameAnchors[bagBarSettings.frameAnchor],
@@ -60,6 +64,8 @@ local function bagBar(actionbarsModule)
     );
     MainMenuBarBackpackButtonNormalTexture:Hide()
 
+    CharacterBag0Slot:SetMovable(true)
+    CharacterBag0Slot:SetUserPlaced(true)
     CharacterBag0Slot:ClearAllPoints()
     CharacterBag0Slot:SetPoint("RIGHT", MainMenuBarBackpackButton, "LEFT", -5, 0)
     CharacterBag0SlotNormalTexture:Hide()
@@ -116,10 +122,10 @@ end
 local function experienceBar()
     if not ScarletUI.experienceBarEventRegistered then
         ScarletUI.experienceBarEventRegistered = true
-        MainMenuExpBar:HookScript('OnShow', function()
+        MainMenuExpBar:HookScript("OnShow", function()
             ScarletUI:UpdateMainBar()
         end)
-        MainMenuExpBar:HookScript('OnHide', function()
+        MainMenuExpBar:HookScript("OnHide", function()
             ScarletUI:UpdateMainBar()
         end)
     end
@@ -141,10 +147,10 @@ end
 local function reputationBar()
     if not ScarletUI.reputationBarEventRegistered then
         ScarletUI.reputationBarEventRegistered = true
-        ReputationWatchBar:HookScript('OnShow', function()
+        ReputationWatchBar:HookScript("OnShow", function()
             ScarletUI:UpdateMainBar()
         end)
-        ReputationWatchBar:HookScript('OnHide', function()
+        ReputationWatchBar:HookScript("OnHide", function()
             ScarletUI:UpdateMainBar()
         end)
     end
@@ -163,7 +169,7 @@ end
 
 function ScarletUI:SetupActionbars()
     local actionbarsModule = self.db.global.actionbarsModule;
-    if not actionbarsModule.enabled then
+    if not actionbarsModule.enabled or self.lightWeightMode then
         return
     end
 
@@ -211,66 +217,5 @@ function ScarletUI:UpdateMainBar()
         elseif MainMenuExpBar:IsShown() or ReputationWatchBar:IsShown() then
             MultiBarBottomLeft:SetPoint(point, relativeTo, relativePoint, offsetX, 4)
         end
-    end
-end
-
-function ScarletUI:RevertSidebars()
-    local childrenMultiBarRight = { MultiBarRight:GetChildren() }
-    local previousChildMultiBarRight;
-    for _, child in ipairs(childrenMultiBarRight) do
-        child:ClearAllPoints()
-
-        if previousChildMultiBarRight then
-            child:SetPoint("TOP", previousChildMultiBarRight, "BOTTOM", 0, -6)
-        else
-            child:SetPoint("TOPRIGHT", MultiBarRight, "TOPRIGHT", -2, -3)
-        end
-
-        previousChildMultiBarRight = child
-    end
-
-    MultiBarRight:SetWidth(40)
-    MultiBarRight:SetHeight(500)
-    MultiBarRight:ClearAllPoints()
-    MultiBarRight:SetPoint("TOPRIGHT", VerticalMultiBarsContainer, "TOPRIGHT", 0, 0)
-
-    for i=1,12 do
-        local background = _G["MultiBarLeftButton"..i.."FloatingBG"]
-        background:Show()
-    end
-
-    local childrenMultiBarLeft = { MultiBarLeft:GetChildren() }
-    local previousChildMultiBarLeft;
-    for _, child in ipairs(childrenMultiBarLeft) do
-        child:ClearAllPoints()
-
-        if previousChildMultiBarLeft then
-            child:SetPoint("TOP", previousChildMultiBarLeft, "BOTTOM", 0, -6)
-        else
-            child:SetPoint("TOPRIGHT", MultiBarLeft, "TOPRIGHT", -2, -3)
-        end
-
-        previousChildMultiBarLeft = child
-    end
-
-    MultiBarLeft:SetWidth(40)
-    MultiBarLeft:SetHeight(500)
-    MultiBarLeft:ClearAllPoints()
-    MultiBarLeft:SetPoint("TOPRIGHT", MultiBarRight, "TOPLEFT", -2, 0)
-end
-
-function ScarletUI:ConvertBarToHorizontal(bar)
-    local children = { bar:GetChildren() }
-    local previousChild;
-    for _, child in ipairs(children) do
-        child:ClearAllPoints()
-
-        if previousChild then
-            child:SetPoint("LEFT", previousChild, "RIGHT", 6, 0)
-        else
-            child:SetPoint("LEFT", bar, "LEFT", 0, 0)
-        end
-
-        previousChild = child
     end
 end

@@ -7,6 +7,10 @@ local function toggleTrim(icon)
 end
 
 function ScarletUI:SetupTidyIcons()
+    if self.lightWeightMode then
+        return
+    end
+
     -- Ensure MacroPopupFrame frame is loaded first, so we don't get an error
     if not IsAddOnLoaded("Blizzard_MacroUI") then
         LoadAddOn("Blizzard_MacroUI")

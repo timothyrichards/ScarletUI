@@ -58,7 +58,7 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                     },
                     itemLevel = {
                         name = "Item Level",
-                        desc = "Display item level for items in your character window, and inspect frame.",
+                        desc = "Display item level for items in your character window, and inspect frame, and bags.",
                         type = "toggle",
                         width = 1,
                         order = 1,
@@ -70,19 +70,6 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                             else
                                 StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
                             end
-                        end,
-                    },
-                    scrollSpellBook = {
-                        name = "Scroll Spellbook",
-                        desc = "Allows you to use the scroll wheel to change pages in your spellbook.",
-                        type = "toggle",
-                        hidden = function(_) return self.lightWeightMode end,
-                        width = 1,
-                        order = 2,
-                        get = function(_) return database.scrollSpellBook end,
-                        set = function(_, val)
-                            database.scrollSpellBook = val
-                            self:SpellBookPageScrolling()
                         end,
                     },
                 },
@@ -952,7 +939,7 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
                         get = function(_) return module.partyFrames.move end,
                         set = function(_, val)
                             module.partyFrames.move = val
-                            self:SetupRaidProfiles()
+                            self:UpdateProfilePositions()
                         end,
                     },
                     x = {
@@ -967,7 +954,7 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
                         get = function(_) return module.partyFrames.x end,
                         set = function(_, val)
                             module.partyFrames.x = val
-                            self:SetupRaidProfiles()
+                            self:UpdateProfilePositions()
                         end,
                     },
                     y = {
@@ -982,7 +969,7 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
                         get = function(_) return module.partyFrames.y end,
                         set = function(_, val)
                             module.partyFrames.y = val
-                            self:SetupRaidProfiles()
+                            self:UpdateProfilePositions()
                         end,
                     },
                     height = {
@@ -997,7 +984,7 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
                         get = function(_) return module.partyFrames.height end,
                         set = function(_, val)
                             module.partyFrames.height = val
-                            self:SetupRaidProfiles()
+                            self:UpdateProfilePositions()
                         end,
                     }
                 }
@@ -1017,7 +1004,7 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
                         get = function(_) return module.raidFrames.move end,
                         set = function(_, val)
                             module.raidFrames.move = val
-                            self:SetupRaidProfiles()
+                            self:UpdateProfilePositions()
                         end,
                     },
                     x = {
@@ -1032,7 +1019,7 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
                         get = function(_) return module.raidFrames.x end,
                         set = function(_, val)
                             module.raidFrames.x = val
-                            self:SetupRaidProfiles()
+                            self:UpdateProfilePositions()
                         end,
                     },
                     y = {
@@ -1047,7 +1034,7 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
                         get = function(_) return module.raidFrames.y end,
                         set = function(_, val)
                             module.raidFrames.y = val
-                            self:SetupRaidProfiles()
+                            self:UpdateProfilePositions()
                         end,
                     },
                     height = {
@@ -1062,7 +1049,7 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
                         get = function(_) return module.raidFrames.height end,
                         set = function(_, val)
                             module.raidFrames.height = val
-                            self:SetupRaidProfiles()
+                            self:UpdateProfilePositions()
                         end,
                     }
                 }

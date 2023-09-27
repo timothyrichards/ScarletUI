@@ -62,20 +62,16 @@ function ScarletUI:SetupChat()
 
     if not self.chatEventRegistered then
         self.chatEventRegistered = true
-        self.Frame:RegisterEvent("UPDATE_CHAT_COLOR_NAME_BY_CLASS")
-        self.Frame:HookScript("OnEvent", function(_, event, type, set, ...)
+        self.frame:RegisterEvent("UPDATE_CHAT_COLOR_NAME_BY_CLASS")
+        self.frame:HookScript("OnEvent", function(_, event, type, set, ...)
             if event == "UPDATE_CHAT_COLOR_NAME_BY_CLASS" then
                 if not set then SetChatColorNameByClass(type,true); end
             end
         end)
     end
 
-    if self.lightWeightMode then
-        return
-    end
-
     local chatFrame = chatModule.chatFrame
-    if not chatFrame.move then
+    if not chatFrame.move or self.lightWeightMode then
         return
     end
 

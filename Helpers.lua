@@ -17,7 +17,6 @@ ScarletUI.defaults = {
     global = {
         tidyIconsEnabled = true,
         itemLevel = true,
-        scrollSpellBook = true,
         unitFramesModule = {
             enabled = true,
             playerFrame = {
@@ -199,17 +198,6 @@ function ScarletUI:SetupCVars()
     end
 end
 
-function ScarletUI:SpellBookPageScrolling()
-    SpellBookFrame:EnableMouseWheel(true)
-    SpellBookFrame:HookScript("OnMouseWheel", function(_, delta)
-        if delta > 0 then
-            SpellBookPrevPageButton:Click()
-        else
-            SpellBookNextPageButton:Click()
-        end
-    end)
-end
-
 function ScarletUI:SwapActionbar(sourceBar, destinationBar)
     for i = 1, 12 do
         local sourceButton = _G[sourceBar.."Button"..i].action
@@ -224,6 +212,22 @@ function ScarletUI:SwapActionbar(sourceBar, destinationBar)
             PlaceAction(sourceButton)
             PlaceAction(destinationButton)
         end
+    end
+end
+
+function ScarletUI:ConvertBarToHorizontal(bar)
+    local children = { bar:GetChildren() }
+    local previousChild;
+    for _, child in ipairs(children) do
+        child:ClearAllPoints()
+
+        if previousChild then
+            child:SetPoint("LEFT", previousChild, "RIGHT", 6, 0)
+        else
+            child:SetPoint("LEFT", bar, "LEFT", 0, 0)
+        end
+
+        previousChild = child
     end
 end
 

@@ -57,29 +57,6 @@ local function ItemLevelText(itemLink, itemButton)
     end
 end
 
-function ScarletUI:SetupItemLevels()
-    if not self.db.global.itemLevel then
-        return
-    end
-
-    self.Frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
-    self.Frame:RegisterEvent("INSPECT_READY")
-    self.Frame:HookScript('OnEvent', function(_, event, ...)
-        if event == "PLAYER_EQUIPMENT_CHANGED" or event == "UNIT_INVENTORY_CHANGED" then
-            self:CharacterFrameItemLevel()
-        elseif event == "INSPECT_READY" then
-            if not self.inspectOpened then
-                self:InspectFrameItemLevel()
-            else
-                self.inspectOpened = false
-            end
-        end
-    end)
-    CharacterFrame:HookScript('OnShow', function()
-        self:CharacterFrameItemLevel()
-    end)
-end
-
 function ScarletUI:CharacterFrameItemLevel()
     for _, slotName in ipairs(slots) do
         local slotID = GetInventorySlotInfo(slotName .. "Slot")
@@ -105,17 +82,43 @@ function ScarletUI:InspectFrameItemLevel()
 end
 
 function ScarletUI:BagItemLevel()
-    local frame = "ContainerFrame"
-    --if IsAddOnLoaded("Bagnon") then
-    --    print('bagnon loaded')
-    --    frame = "BagnonInventoryFrame"
-    --end
-    --for bag = 1, NUM_BAG_SLOTS do
-    --    for slot = 1, GetContainerNumSlots(bag) do
-    --        local itemLink = GetContainerItemLink(bag, slot)
-    --        local itemButton = _G[frame .. bag .. "Item" .. slot]
-    --        print(frame .. bag .. "Item" .. slot)
-    --        ItemLevelText(itemLink, itemButton)
-    --    end
-    --end
+    for bag = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
+        if GetContainerNumSlots then
+            for slot = 1, GetContainerNumSlots(bag) do
+                local itemLink = GetContainerItemLink(bag, slot)
+                local adjustedSlot = GetContainerNumSlots(bag) - slot + 1
+                local itemButton = _G["ContainerFrame" .. (bag + 1) .. "Item" .. adjustedSlot]
+                ItemLevelText(itemLink, itemButton)
+            end
+        end
+    end
+end
+
+function ScarletUI:SetupItemLevels()
+    if not self.db.global.itemLevel then
+        return
+    end
+
+    self.frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+    self.frame:RegisterEvent("INSPECT_READY")
+    self.frame:RegisterEvent("BAG_UPDATE")
+    self.frame:HookScript("OnEvent", function(_, event, ...)
+        if event == "PLAYER_EQUIPMENT_CHANGED" or event == "UNIT_INVENTORY_CHANGED" then
+            self:CharacterFrameItemLevel()
+        elseif event == "INSPECT_READY" then
+            if not self.inspectOpened then
+                self:InspectFrameItemLevel()
+            else
+                self.inspectOpened = false
+            end
+        elseif event == "BAG_UPDATE" then
+            self:BagItemLevel()
+        end
+    end)
+
+    CharacterFrame:HookScript("OnShow", function()
+        self:CharacterFrameItemLevel()
+    end)
+
+    self:BagItemLevel()
 end
