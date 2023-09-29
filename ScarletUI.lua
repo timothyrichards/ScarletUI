@@ -77,6 +77,7 @@ function ScarletUI:Setup()
     self:SetupUnitFrames()
     self:SetupRaidProfiles()
     self:SetupTidyIcons()
+    self:SetupNameplates()
 
     self.settings:Print("Scarlet UI setup successful, use the command /sui to open the options panel.")
 end

@@ -13,9 +13,11 @@ embeds.xml
 ScarletUI.lua
 Options.lua
 Helpers.lua
-Modules\ItemLevel.lua
-Modules\TidyIcons.lua
 Modules\Actionbars.lua
 Modules\Chat.lua
-Modules\UnitFrames.lua
+Modules\CVars.lua
+Modules\ItemLevel.lua
+Modules\Nameplates.lua
 Modules\RaidFrames.lua
+Modules\TidyIcons.lua
+Modules\UnitFrames.lua

@@ -16,12 +16,13 @@ function ScarletUI:Options()
             actionbarsModuleSettings = self:GetActionbarsModuleSettingsPage(database.actionbarsModule, defaults.actionbarsModule, 2),
             unitFramesModuleSettings = self:GetUnitFramesModuleSettingsPage(database.unitFramesModule, defaults.unitFramesModule, 3),
             raidFramesModuleSettings = self:GetRaidFramesModuleSettingsPage(database.raidFramesModule, defaults.raidFramesModule, 4),
-            cVarModuleSettings = self:GetCVarModuleSettingsPage(database.cVarModule, defaults.cVarModule, 5),
+            nameplatesModuleSettings = self:GetNameplatesModuleSettingsPage(database.nameplatesModule, defaults.nameplatesModule, 5),
+            CVarModuleSettings = self:GetCVarModuleSettingsPage(database.CVarModule, defaults.CVarModule, 6),
             defaultSettings = {
                 name = "Restore Defaults",
                 type = "execute",
                 disabled = function() return self.inCombat end,
-                order = 6,
+                order = 7,
                 width = 1,
                 func = function()
                     StaticPopup_Show('SCARLET_RESTORE_DEFAULTS_DIALOG')
@@ -1053,6 +1054,197 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
                         end,
                     }
                 }
+            },
+        }
+    }
+end
+
+function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
+    return {
+        name = "Nameplates Settings Module",
+        type = "group",
+        order = order,
+        args = {
+            nameplatesModule = {
+                name = "Nameplates Settings Module",
+                type = "group",
+                disabled = function() return self.inCombat end,
+                inline = true,
+                order = 0,
+                args = {
+                    enabled = {
+                        name = "Enabled",
+                        desc = "Manage your Nameplates and threat colors.",
+                        type = "toggle",
+                        width = 1.5,
+                        order = 0,
+                        get = function(_) return module.enabled end,
+                        set = function(_, val)
+                            module.enabled = val
+                            if not val then
+                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                            else
+                                ScarletUI:SetupNameplates()
+                            end
+                        end,
+                    },
+                },
+            },
+            nonTankThreatColors = {
+                name = "Non-Tank Threat Colors",
+                type = "group",
+                disabled = function() return self.inCombat end,
+                inline = true,
+                order = 1,
+                args = {
+                    noThreat = {
+                        name = "No Threat",
+                        type = "color",
+                        desc = "Choose a color",
+                        width = 0.75,
+                        disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
+                        hasAlpha = true,
+                        order = 0,
+                        get = function(_)
+                            local r, g, b, a = unpack(module.nonTankThreatColors.noThreat)
+                            return r, g, b, a
+                        end,
+                        set = function(_, r, g, b, a)
+                            module.nonTankThreatColors.noThreat = {r, g, b, a}
+                        end,
+                    },
+                    lowThreat = {
+                        name = "Low Threat",
+                        type = "color",
+                        desc = "Choose a color",
+                        width = 0.75,
+                        disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
+                        hasAlpha = true,
+                        order = 1,
+                        get = function(_)
+                            local r, g, b, a = unpack(module.nonTankThreatColors.lowThreat)
+                            return r, g, b, a
+                        end,
+                        set = function(_, r, g, b, a)
+                            module.nonTankThreatColors.lowThreat = {r, g, b, a}
+                        end,
+                    },
+                    threat = {
+                        name = "Threat",
+                        type = "color",
+                        desc = "Choose a color",
+                        width = 0.75,
+                        hasAlpha = true,
+                        order = 2,
+                        get = function(_)
+                            local r, g, b, a = unpack(module.nonTankThreatColors.threat)
+                            return r, g, b, a
+                        end,
+                        set = function(_, r, g, b, a)
+                            module.nonTankThreatColors.threat = {r, g, b, a}
+                        end,
+                    },
+                    tankThreat = {
+                        name = "Tank Threat",
+                        type = "color",
+                        desc = "Choose a color",
+                        width = 0.75,
+                        hasAlpha = true,
+                        order = 3,
+                        get = function(_)
+                            local r, g, b, a = unpack(module.nonTankThreatColors.tank)
+                            return r, g, b, a
+                        end,
+                        set = function(_, r, g, b, a)
+                            module.nonTankThreatColors.tank = {r, g, b, a}
+                        end,
+                    },
+                },
+            },
+            tankThreatColors = {
+                name = "Tank Threat Colors",
+                type = "group",
+                disabled = function() return self.inCombat end,
+                inline = true,
+                order = 2,
+                args = {
+                    noThreat = {
+                        name = "No Threat",
+                        type = "color",
+                        desc = "Choose a color",
+                        width = 0.75,
+                        disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
+                        hasAlpha = true,
+                        order = 0,
+                        get = function(_)
+                            local r, g, b, a = unpack(module.tankThreatColors.noThreat)
+                            return r, g, b, a
+                        end,
+                        set = function(_, r, g, b, a)
+                            module.tankThreatColors.noThreat = {r, g, b, a}
+                        end,
+                    },
+                    lowThreat = {
+                        name = "Low Threat",
+                        type = "color",
+                        desc = "Choose a color",
+                        width = 0.75,
+                        disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
+                        hasAlpha = true,
+                        order = 1,
+                        get = function(_)
+                            local r, g, b, a = unpack(module.tankThreatColors.lowThreat)
+                            return r, g, b, a
+                        end,
+                        set = function(_, r, g, b, a)
+                            module.tankThreatColors.lowThreat = {r, g, b, a}
+                        end,
+                    },
+                    threat = {
+                        name = "Threat",
+                        type = "color",
+                        desc = "Choose a color",
+                        width = 0.75,
+                        hasAlpha = true,
+                        order = 2,
+                        get = function(_)
+                            local r, g, b, a = unpack(module.tankThreatColors.threat)
+                            return r, g, b, a
+                        end,
+                        set = function(_, r, g, b, a)
+                            module.tankThreatColors.threat = {r, g, b, a}
+                        end,
+                    },
+                    tankThreat = {
+                        name = "Tank Threat",
+                        type = "color",
+                        desc = "Choose a color",
+                        width = 0.75,
+                        hasAlpha = true,
+                        order = 3,
+                        get = function(_)
+                            local r, g, b, a = unpack(module.tankThreatColors.tank)
+                            return r, g, b, a
+                        end,
+                        set = function(_, r, g, b, a)
+                            module.tankThreatColors.tank = {r, g, b, a}
+                        end,
+                    },
+                },
+            },
+            tankNames = {
+                name = "Tank Names",
+                type = "input",
+                desc = "Add a comma seperated list of player names you wish to manually designate as tanks, for example: Tank1,Tank2,Tank3",
+                multiline = 5,
+                width = "full",
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
+                order = 3,
+                get = function(_) return module.tankNames end,
+                set = function(_, value)
+                    self:SetupTanks()
+                    module.tankNames = value
+                end,
             },
         }
     }

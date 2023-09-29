@@ -93,9 +93,25 @@ ScarletUI.defaults = {
                 height = 90
             }
         },
-        cVarModule = {
+        nameplatesModule = {
+            enabled = true,
+            nonTankThreatColors = {
+                noThreat = { 0.0824, 1, 0, 1 },
+                lowThreat = { 1, 0.9176, 0, 1 },
+                threat = { 1, 0.0353, 0, 1 },
+                tank = { 0, 0.7020, 1, 1 }
+            },
+            tankThreatColors = {
+                noThreat = { 1, 0.0353, 0, 1 },
+                lowThreat = { 1, 0.9176, 0, 1 },
+                threat = { 0.0824, 1, 0, 1 },
+                tank = { 0, 0.7020, 1, 1 }
+            },
+            tankNames = ""
+        },
+        CVarModule = {
             enabled = false,
-            cVars = {
+            CVars = {
                 -- UI CVars
                 useUiScale =  '1',
                 UIScale =  '0.75',
@@ -127,6 +143,7 @@ ScarletUI.defaults = {
                 useCompactPartyFrames = '1',
 
                 -- Nameplate CVars
+                UnitNameOwn = '1',
                 nameplateMotion = '1',
                 nameplateShowEnemies = '1',
 
@@ -138,7 +155,7 @@ ScarletUI.defaults = {
     }
 }
 
-ScarletUI.reloadcVars = {
+ScarletUI.reloadCVars = {
     'XpBarText',
 }
 
@@ -164,37 +181,6 @@ function ScarletUI:ImportWeakAuras(weakAura)
 
     if not successful and error then
         print("There was a problem importing the WeakAura:", error)
-    end
-end
-
-function ScarletUI:SetupCVars()
-    local cVarModule = self.db.global.cVarModule
-    if not cVarModule.enabled or self.inCombat then
-        return
-    end
-
-    -- Check and apply CVars
-    local cVarsChanged = false
-    for k, v in pairs(cVarModule.cVars) do
-        local currentValue = tostring(GetCVar(k))
-        local targetValue = tostring(v)
-        if currentValue ~= targetValue then
-            if k == 'countdownForCooldowns' and IsAddOnLoaded('OmniCC') then
-                SetCVar(k, '0')
-            else
-                SetCVar(k, v)
-            end
-
-            if self:ArrayHasValue(self.reloadcVars, k) then
-                cVarsChanged = true;
-                print('(CVar) - ' .. k .. ': ' .. currentValue .. '('..type(GetCVar(k))..')' .. ' : ' .. targetValue .. '('..type(v)..')')
-            end
-        end
-    end
-
-    -- Show popup to reload if any CVars are updated
-    if (cVarsChanged) then
-        StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
     end
 end
 
