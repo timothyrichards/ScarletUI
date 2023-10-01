@@ -36,14 +36,14 @@ local function microBar(actionbarsModule)
     CharacterMicroButton:SetMovable(true)
     CharacterMicroButton:SetUserPlaced(true)
     CharacterMicroButton:ClearAllPoints()
-    CharacterMicroButton:SetPoint(
+    ScarletUI:SetPoint(
+            CharacterMicroButton,
             ScarletUI.frameAnchors[microBarSettings.frameAnchor],
             UIParent,
             ScarletUI.frameAnchors[microBarSettings.screenAnchor],
             microBarSettings.x,
             microBarSettings.y
     )
-    --CharacterMicroButton.SetPoint = function() end
 end
 
 local function bagBar(actionbarsModule)
@@ -129,13 +129,13 @@ local function experienceBar()
             ScarletUI:UpdateMainBar()
         end)
     end
-    MainMenuExpBar:SetWidth(510)
+    MainMenuExpBar:SetSize(510, 11)
     MainMenuBarMaxLevelBar:Hide()
     MainMenuBarMaxLevelBar.Show = function()
         MainMenuBarMaxLevelBar:Hide()
     end
     ExhaustionLevelFillBar:SetPoint("TOPRIGHT", MainMenuExpBar, "TOPLEFT", 510, 0)
-    ExhaustionTick:SetPoint("CENTER", MainMenuExpBar, "LEFT", 510, 0)
+    ExhaustionTick:SetPoint("CENTER", ExhaustionLevelFillBar, "RIGHT", 510, 0)
     MainMenuXPBarTexture0:ClearAllPoints()
     MainMenuXPBarTexture0:SetPoint("LEFT", MainMenuExpBar, "LEFT", 0, 0)
     MainMenuXPBarTexture1:Hide()
@@ -156,6 +156,8 @@ local function reputationBar()
     end
     ReputationWatchBar:SetWidth(510)
     ReputationWatchBar.StatusBar:SetWidth(510)
+
+    -- Leveling rep bar
     ReputationWatchBar.StatusBar.WatchBarTexture1.Show = function()
         ReputationWatchBar.StatusBar.WatchBarTexture1:Hide()
     end
@@ -165,6 +167,17 @@ local function reputationBar()
     ReputationWatchBar.StatusBar.WatchBarTexture2:Hide()
     ReputationWatchBar.StatusBar.WatchBarTexture3:ClearAllPoints()
     ReputationWatchBar.StatusBar.WatchBarTexture3:SetPoint("LEFT", ReputationWatchBar.StatusBar.WatchBarTexture0, "RIGHT", 0, 0)
+
+    -- Max level rep bar
+    ReputationWatchBar.StatusBar.XPBarTexture1.Show = function()
+        ReputationWatchBar.StatusBar.XPBarTexture1:Hide()
+    end
+    ReputationWatchBar.StatusBar.XPBarTexture2.Show = function()
+        ReputationWatchBar.StatusBar.XPBarTexture2:Hide()
+    end
+    ReputationWatchBar.StatusBar.XPBarTexture2:Hide()
+    ReputationWatchBar.StatusBar.XPBarTexture3:ClearAllPoints()
+    ReputationWatchBar.StatusBar.XPBarTexture3:SetPoint("LEFT", ReputationWatchBar.StatusBar.XPBarTexture0, "RIGHT", 0, 0)
 end
 
 function ScarletUI:SetupActionbars()

@@ -248,6 +248,17 @@ function ScarletUI:SettingDisabled(moduleEnabled)
     end
 end
 
+function ScarletUI:SetPoint(frame, frameAnchor, frameParent, parentAnchor, x, y)
+    if not frame.SetPointBackup then
+        frame.SetPointBackup = frame.SetPoint
+    else
+        frame.SetPoint = frame.SetPointBackup
+    end
+
+    frame:SetPoint(frameAnchor, frameParent, parentAnchor, x, y)
+    frame.SetPoint = function() end
+end
+
 function ScarletUI:DumpTable(table, indent)
     indent = indent or ""
     for key, value in pairs(table) do

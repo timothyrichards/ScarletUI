@@ -7,10 +7,10 @@ function ScarletUI:SetupRaidProfiles()
 
     if not self.raidProfileEventRegistered then
         self.raidProfileEventRegistered = true;
-        self.frame:RegisterEvent("COMPACT_UNIT_FRAME_PROFILES_LOADED")
-        self.frame:SetScript("OnEvent", function (_, event, ...)
+        local frame = CreateFrame("Frame", "SUI_ItemLevelFrame", SUI_Frame)
+        frame:RegisterEvent("COMPACT_UNIT_FRAME_PROFILES_LOADED")
+        frame:SetScript("OnEvent", function (_, event, ...)
             if event == "COMPACT_UNIT_FRAME_PROFILES_LOADED" then
-                print("COMPACT_UNIT_FRAME_PROFILES_LOADED")
                 ScarletUI:SetupRaidProfiles()
             end
         end)

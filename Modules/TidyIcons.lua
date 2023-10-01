@@ -16,7 +16,7 @@ function ScarletUI:SetupTidyIcons()
         LoadAddOn("Blizzard_MacroUI")
     end
     MacroFrame:HookScript("OnShow", function()
-        self:TidyIcons_Update()
+        ScarletUI:TidyIcons_Update()
     end)
 
     self:TidyIcons_Update()

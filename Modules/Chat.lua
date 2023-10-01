@@ -62,8 +62,9 @@ function ScarletUI:SetupChat()
 
     if not self.chatEventRegistered then
         self.chatEventRegistered = true
-        self.frame:RegisterEvent("UPDATE_CHAT_COLOR_NAME_BY_CLASS")
-        self.frame:HookScript("OnEvent", function(_, event, type, set, ...)
+        local frame = CreateFrame("Frame", "SUI_ChatFrame", SUI_Frame)
+        frame:RegisterEvent("UPDATE_CHAT_COLOR_NAME_BY_CLASS")
+        frame:SetScript("OnEvent", function(_, event, type, set, ...)
             if event == "UPDATE_CHAT_COLOR_NAME_BY_CLASS" then
                 if not set then SetChatColorNameByClass(type,true); end
             end
@@ -80,7 +81,8 @@ function ScarletUI:SetupChat()
     ChatFrame1:SetHeight(150)
     ChatFrame1:SetWidth(400)
     ChatFrame1:ClearAllPoints()
-    ChatFrame1:SetPoint(
+    ScarletUI:SetPoint(
+            ChatFrame1,
             self.frameAnchors[chatFrame.frameAnchor],
             UIParent,
             self.frameAnchors[chatFrame.screenAnchor],

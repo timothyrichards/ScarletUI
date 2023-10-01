@@ -99,26 +99,31 @@ function ScarletUI:SetupItemLevels()
         return
     end
 
-    self.frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
-    self.frame:RegisterEvent("INSPECT_READY")
-    self.frame:RegisterEvent("BAG_UPDATE")
-    self.frame:HookScript("OnEvent", function(_, event, ...)
-        if event == "PLAYER_EQUIPMENT_CHANGED" or event == "UNIT_INVENTORY_CHANGED" then
-            self:CharacterFrameItemLevel()
-        elseif event == "INSPECT_READY" then
-            if not self.inspectOpened then
-                self:InspectFrameItemLevel()
-            else
-                self.inspectOpened = false
+    if not self.itemLevelEventRegistered then
+        self.itemLevelEventRegistered = true;
+        local frame = CreateFrame("Frame", "SUI_ItemLevelFrame", SUI_Frame)
+        frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+        frame:RegisterEvent("UNIT_INVENTORY_CHANGED")
+        frame:RegisterEvent("INSPECT_READY")
+        frame:RegisterEvent("BAG_UPDATE")
+        frame:SetScript("OnEvent", function(_, event, ...)
+            if event == "PLAYER_EQUIPMENT_CHANGED" or event == "UNIT_INVENTORY_CHANGED" then
+                ScarletUI:CharacterFrameItemLevel()
+            elseif event == "INSPECT_READY" then
+                if not ScarletUI.inspectOpened then
+                    ScarletUI:InspectFrameItemLevel()
+                else
+                    ScarletUI.inspectOpened = false
+                end
+            elseif event == "BAG_UPDATE" then
+                ScarletUI:BagItemLevel()
             end
-        elseif event == "BAG_UPDATE" then
-            self:BagItemLevel()
-        end
-    end)
+        end)
 
-    CharacterFrame:HookScript("OnShow", function()
-        self:CharacterFrameItemLevel()
-    end)
+        CharacterFrame:HookScript("OnShow", function()
+            ScarletUI:CharacterFrameItemLevel()
+        end)
+    end
 
     self:BagItemLevel()
 end
