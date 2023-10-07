@@ -11,7 +11,7 @@ ScarletUI.raidProfile = {
 
 function ScarletUI:SetupUnitFrames()
     local unitFramesModule = self.db.global.unitFramesModule
-    if not unitFramesModule.enabled then
+    if not unitFramesModule.enabled or self.lightWeightMode or self.retail then
         return
     end
 

@@ -9,7 +9,7 @@ function ScarletUI:Options()
         name = "Scarlet UI",
         handler = self,
         type = "group",
-        childGroups = "tab",
+        childGroups = "tree",
         args = {
             moduleSettings = self:GetModuleSettingsPage(database, 0),
             chatModuleSettings = self:GetChatModuleSettingsPage(database.chatModule, defaults.chatModule, 1),
@@ -49,6 +49,8 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                         name = "Bigger Icons",
                         desc = "Make icons bigger to fill their actionbar slots.",
                         type = "toggle",
+                        disabled = function() return self.lightWeightMode end,
+                        hidden = function() return self.retail end,
                         width = 1,
                         order = 0,
                         get = function(_) return database.tidyIconsEnabled end,
@@ -134,6 +136,7 @@ function ScarletUI:GetChatModuleSettingsPage(module, defaults, order)
                 name = "General Settings",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
+                inline = true,
                 order = 1,
                 args = {
                     fontSize = {
@@ -156,8 +159,9 @@ function ScarletUI:GetChatModuleSettingsPage(module, defaults, order)
             chatFrame = {
                 name = "Chat Frame",
                 type = "group",
-                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
-                hidden = function(_) return self.lightWeightMode end,
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled) or self.lightWeightMode end,
+                hidden = function(_) return self.retail end,
+                inline = true,
                 order = 2,
                 args = {
                     moveFrame = {
@@ -252,6 +256,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
         type = "group",
         order = order,
         disabled = function() return self.lightWeightMode end,
+        hidden = function() return self.retail end,
         args = {
             actionbarModule = {
                 name = "Actionbar Module",
@@ -283,6 +288,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                 name = "General Settings",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
+                inline = true,
                 order = 1,
                 args = {
                     stackActionbars = {
@@ -307,7 +313,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                 name = "Main Bar",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
-                hidden = function(_) return self.lightWeightMode end,
+                inline = true,
                 order = 2,
                 args = {
                     moveFrame = {
@@ -396,7 +402,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                 name = "Micro Bar",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
-                hidden = function(_) return self.lightWeightMode end,
+                inline = true,
                 order = 3,
                 args = {
                     moveFrame = {
@@ -485,7 +491,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                 name = "Bag Bar",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
-                hidden = function(_) return self.lightWeightMode end,
+                inline = true,
                 order = 4,
                 args = {
                     moveFrame = {
@@ -580,6 +586,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(module, defaults, order)
         type = "group",
         order = order,
         disabled = function() return self.lightWeightMode end,
+        hidden = function() return self.retail end,
         args = {
             unitFramesModule = {
                 name = "Unit Frames Module",
@@ -611,6 +618,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(module, defaults, order)
                 name = "Player Frame",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
+                inline = true,
                 order = 1,
                 args = {
                     moveFrame = {
@@ -699,6 +707,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(module, defaults, order)
                 name = "Target Frame",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
+                inline = true,
                 order = 2,
                 args = {
                     mirrorPlayerFrame = {
@@ -805,6 +814,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(module, defaults, order)
                 type = "group",
                 hidden = function() return not FocusFrame end,
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
+                inline = true,
                 order = 3,
                 args = {
                     moveFrame = {
@@ -899,6 +909,7 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
         type = "group",
         order = order,
         disabled = function() return self.lightWeightMode end,
+        hidden = function() return self.retail end,
         args = {
             raidFramesModule = {
                 name = "Raid Frames Module",
@@ -929,6 +940,7 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
                 name = "Party Frames",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
+                inline = true,
                 order = 1,
                 args = {
                     moveFrame = {
@@ -994,6 +1006,7 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
                 name = "Raid Frames",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
+                inline = true,
                 order = 1,
                 args = {
                     moveFrame = {
@@ -1061,12 +1074,12 @@ end
 
 function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
     return {
-        name = "Nameplates Settings Module",
+        name = "Nameplates Module",
         type = "group",
         order = order,
         args = {
             nameplatesModule = {
-                name = "Nameplates Settings Module",
+                name = "Nameplates Module",
                 type = "group",
                 disabled = function() return self.inCombat end,
                 inline = true,
@@ -1242,8 +1255,8 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                 order = 3,
                 get = function(_) return module.tankNames end,
                 set = function(_, value)
-                    self:SetupTanks()
                     module.tankNames = value
+                    self:SetupTanks()
                 end,
             },
         }
@@ -1252,12 +1265,12 @@ end
 
 function ScarletUI:GetCVarModuleSettingsPage(module, defaults, order)
     return {
-        name = "CVar Settings Module",
+        name = "CVar Module",
         type = "group",
         order = order,
         args = {
             cVarModule = {
-                name = "CVar Settings Module",
+                name = "CVar Module",
                 type = "group",
                 disabled = function() return self.inCombat end,
                 inline = true,

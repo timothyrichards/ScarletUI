@@ -2,12 +2,14 @@ local function mainMenuBar()
     MainMenuBarLeftEndCap:Hide()
     MainMenuBarRightEndCap:Hide()
     MainMenuBarPerformanceBarFrame:Hide()
+
     MainMenuBarTexture0:ClearAllPoints()
     MainMenuBarTexture0:SetPoint("BOTTOMLEFT", MainMenuBarArtFrame, "BOTTOMLEFT", 0, 0)
     MainMenuBarTexture1:ClearAllPoints()
     MainMenuBarTexture1:SetPoint("BOTTOMLEFT", MainMenuBarTexture0, "BOTTOMRIGHT", 0, 0)
     MainMenuBarTexture2:Hide()
     MainMenuBarTexture3:Hide()
+
     MainMenuBar:SetWidth(510)
     ActionButton1:SetPoint("BOTTOMLEFT", MainMenuBarArtFrame, "BOTTOMLEFT", 8, 4)
 
@@ -182,7 +184,7 @@ end
 
 function ScarletUI:SetupActionbars()
     local actionbarsModule = self.db.global.actionbarsModule;
-    if not actionbarsModule.enabled or self.lightWeightMode then
+    if not actionbarsModule.enabled or self.lightWeightMode or self.retail then
         return
     end
 

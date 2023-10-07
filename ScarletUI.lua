@@ -46,7 +46,6 @@ function ScarletUI:Setup()
     -- Check if lightWeightMode should be enabled
     local _, _, _, interfaceVersion = GetBuildInfo()
     if tonumber(interfaceVersion) >= 100100 then
-        self.lightWeightMode = true;
         self.retail = true;
     elseif IsAddOnLoaded("ElvUI") then
         self.lightWeightMode = true;
@@ -60,6 +59,7 @@ function ScarletUI:Setup()
         self:SetupFrame()
 
         -- Register the chat commands
+        AceConfigDialog:SetDefaultSize("ScarletUI", 775, 500)
         self.settings:RegisterChatCommand("sui", function() AceConfigDialog:Open("ScarletUI") end)
 
         -- Register the options table

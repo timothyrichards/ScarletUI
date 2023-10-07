@@ -59,18 +59,22 @@ end
 
 function ScarletUI:CharacterFrameItemLevel()
     for _, slotName in ipairs(slots) do
-        local slotID = GetInventorySlotInfo(slotName .. "Slot")
-        if (slotID ~= nil) then
-            local itemLink = GetInventoryItemLink("player", slotID)
-            local itemButton = _G["Character" .. slotName .. "Slot"]
-            ItemLevelText(itemLink, itemButton)
+        if self.retail and slotName == "Ranged" then
+            -- nothing
+        else
+            local slotID = GetInventorySlotInfo(slotName .. "Slot")
+            if (slotID ~= nil) then
+                local itemLink = GetInventoryItemLink("player", slotID)
+                local itemButton = _G["Character" .. slotName .. "Slot"]
+                ItemLevelText(itemLink, itemButton)
+            end
         end
     end
 end
 
 function ScarletUI:InspectFrameItemLevel()
     for _, slotName in ipairs(slots) do
-        if self.lightWeightMode and slotName == "Ranged" then
+        if self.retail and slotName == "Ranged" then
             -- nothing
         else
             local slotID = GetInventorySlotInfo(slotName .. "Slot")
@@ -87,6 +91,13 @@ function ScarletUI:BagItemLevel()
             for slot = 1, GetContainerNumSlots(bag) do
                 local itemLink = GetContainerItemLink(bag, slot)
                 local adjustedSlot = GetContainerNumSlots(bag) - slot + 1
+                local itemButton = _G["ContainerFrame" .. (bag + 1) .. "Item" .. adjustedSlot]
+                ItemLevelText(itemLink, itemButton)
+            end
+        elseif C_Container.GetContainerNumSlots then
+            for slot = 1, C_Container.GetContainerNumSlots(bag) do
+                local itemLink = C_Container.GetContainerItemLink(bag, slot)
+                local adjustedSlot = C_Container.GetContainerNumSlots(bag) - slot + 1
                 local itemButton = _G["ContainerFrame" .. (bag + 1) .. "Item" .. adjustedSlot]
                 ItemLevelText(itemLink, itemButton)
             end

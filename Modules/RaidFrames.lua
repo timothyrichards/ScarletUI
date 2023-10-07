@@ -1,7 +1,7 @@
 function ScarletUI:SetupRaidProfiles()
     local cufLoaded = IsAddOnLoaded("Blizzard_CompactRaidFrames");
     local raidFramesModule = self.db.global.raidFramesModule
-    if not cufLoaded or not raidFramesModule.enabled or self.inCombat then
+    if not cufLoaded or not raidFramesModule.enabled or self.lightWeightMode or self.retail or self.inCombat then
         return
     end
 

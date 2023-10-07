@@ -1,5 +1,5 @@
 local function chatTabExists(table, value)
-    for k, v in ipairs(table) do
+    for k, _ in ipairs(table) do
         local name, _ = GetChatWindowInfo(k);
         if name == value then
             return true
@@ -72,7 +72,7 @@ function ScarletUI:SetupChat()
     end
 
     local chatFrame = chatModule.chatFrame
-    if not chatFrame.move or self.lightWeightMode then
+    if not chatFrame.move or self.lightWeightMode or self.retail then
         return
     end
 
