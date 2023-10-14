@@ -59,15 +59,24 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                             self:TidyIcons_Update()
                         end,
                     },
-                    itemLevel = {
-                        name = "Item Level",
-                        desc = "Display item level for items in your character window, and inspect frame, and bags.",
+                },
+            },
+            itemLevel = {
+                name = "Item Level",
+                type = "group",
+                disabled = function() return self.inCombat end,
+                inline = true,
+                order = 1,
+                args = {
+                    itemLevelCharacter = {
+                        name = "Character Window",
+                        desc = "Display item level for items in your character window.",
                         type = "toggle",
                         width = 1,
-                        order = 1,
-                        get = function(_) return database.itemLevel end,
+                        order = 0,
+                        get = function(_) return database.itemLevelCharacter end,
                         set = function(_, val)
-                            database.itemLevel = val
+                            database.itemLevelCharacter = val
                             if val then
                                 self:SetupItemLevels()
                             else
@@ -75,24 +84,36 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                             end
                         end,
                     },
-                },
-            },
-            weakAuras = {
-                name = "WeakAuras",
-                type = "group",
-                disabled = function() return self.inCombat end,
-                hidden = true,
-                inline = true,
-                order = 1,
-                args = {
-                    defaultSettings = {
-                        name = "Install Nameplate WA",
-                        type = "execute",
-                        disabled = function() return self.inCombat end,
-                        order = 0,
+                    itemLevelInspect = {
+                        name = "Inspect Window",
+                        desc = "Display item level for items in the inspect window.",
+                        type = "toggle",
                         width = 1,
-                        func = function()
-                            self:ImportWeakAuras(self.threatNameplatesWA)
+                        order = 1,
+                        get = function(_) return database.itemLevelInspect end,
+                        set = function(_, val)
+                            database.itemLevelInspect = val
+                            if val then
+                                self:SetupItemLevels()
+                            else
+                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                            end
+                        end,
+                    },
+                    itemLevelBag = {
+                        name = "Bags",
+                        desc = "Display item level for items in your bags.",
+                        type = "toggle",
+                        width = 1,
+                        order = 2,
+                        get = function(_) return database.itemLevelBag end,
+                        set = function(_, val)
+                            database.itemLevelBag = val
+                            if val then
+                                self:SetupItemLevels()
+                            else
+                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                            end
                         end,
                     },
                 },
@@ -1089,7 +1110,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                         name = "Enabled",
                         desc = "Manage your Nameplates and threat colors.",
                         type = "toggle",
-                        width = 1.5,
+                        width = 1,
                         order = 0,
                         get = function(_) return module.enabled end,
                         set = function(_, val)
@@ -1099,6 +1120,17 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                             else
                                 ScarletUI:SetupNameplates()
                             end
+                        end,
+                    },
+                    targetIndicator = {
+                        name = "Target Indicator",
+                        desc = "Add target indicator to nameplates.",
+                        type = "toggle",
+                        width = 1,
+                        order = 1,
+                        get = function(_) return module.targetIndicator end,
+                        set = function(_, val)
+                            module.targetIndicator = val
                         end,
                     },
                 },

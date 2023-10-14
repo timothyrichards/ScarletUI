@@ -10,6 +10,10 @@ local function mainMenuBar()
     MainMenuBarTexture2:Hide()
     MainMenuBarTexture3:Hide()
 
+    if MainMenuBarTextureExtender then
+        MainMenuBarTextureExtender:Hide()
+    end
+
     MainMenuBar:SetWidth(510)
     ActionButton1:SetPoint("BOTTOMLEFT", MainMenuBarArtFrame, "BOTTOMLEFT", 8, 4)
 

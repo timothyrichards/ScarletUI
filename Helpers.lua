@@ -16,7 +16,9 @@ ScarletUI.frameAnchors = {
 ScarletUI.defaults = {
     global = {
         tidyIconsEnabled = true,
-        itemLevel = true,
+        itemLevelCharacter = true,
+        itemLevelInspect = true,
+        itemLevelBag = true,
         unitFramesModule = {
             enabled = true,
             playerFrame = {
@@ -38,8 +40,8 @@ ScarletUI.defaults = {
                 move = true,
                 frameAnchor = 9,
                 screenAnchor = 4,
-                x = -65,
-                y = -190,
+                x = -220,
+                y = -255,
             },
         },
         actionbarsModule = {
@@ -95,6 +97,7 @@ ScarletUI.defaults = {
         },
         nameplatesModule = {
             enabled = true,
+            targetIndicator = true,
             nonTankThreatColors = {
                 noThreat = { 0.0824, 1, 0, 1 },
                 lowThreat = { 1, 0.9176, 0, 1 },
@@ -158,31 +161,6 @@ ScarletUI.defaults = {
 ScarletUI.reloadCVars = {
     'XpBarText',
 }
-
-ScarletUI.threatNameplatesWA = ""
-
-function ScarletUI:ImportWeakAuras(weakAura)
-    -- Serialize the table to a string
-    local serializedData = AceSerializer:Serialize(weakAura)
-
-    -- Compress the serialized string
-    local compressedData = LibDeflate:CompressDeflate(serializedData)
-
-    -- Encode the compressed string
-    local encodedData = LibDeflate:EncodeForPrint(compressedData)
-
-    -- Prepare the inData table
-    local inData = {
-        d = encodedData  -- Encoded and compressed data
-    }
-
-    -- Import the WeakAura
-    local successful, error = WeakAuras.Import(inData)
-
-    if not successful and error then
-        print("There was a problem importing the WeakAura:", error)
-    end
-end
 
 function ScarletUI:SwapActionbar(sourceBar, destinationBar)
     for i = 1, 12 do

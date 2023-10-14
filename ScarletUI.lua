@@ -86,25 +86,27 @@ function ScarletUI:SetupFrame()
     self.frame:SetSize(200, 100)
     self.frame:SetPoint("TOP", UIParent, "TOP", 0, -250)
 
-    --self.frame:CreateFontString("SUI_FrameTitle", "OVERLAY", "GameFontWhite")
-    --self.frameTitle:SetPoint("BOTTOM", self.frame, "TOP")
-    --self.frameTitle:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
-    --self.frameTitle:SetText("ScarletUI Frame")
-    --
-    --self.frame:CreateFontString("SUI_RetailPropertyText", "OVERLAY", "GameFontWhite")
-    --SUI_RetailPropertyText:SetPoint("TOPLEFT", self.frame, "TOPLEFT")
-    --SUI_RetailPropertyText:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
-    --SUI_RetailPropertyText:SetText("- retail: " .. tostring(self.retail))
-    --
-    --self.frame:CreateFontString("SUI_LightWeightPropertyText", "OVERLAY", "GameFontWhite")
-    --SUI_LightWeightPropertyText:SetPoint("TOPLEFT", SUI_RetailPropertyText, "BOTTOMLEFT")
-    --SUI_LightWeightPropertyText:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
-    --SUI_LightWeightPropertyText:SetText("- lightWeightMode: " .. tostring(self.lightWeightMode))
-    --
-    --self.frame:CreateFontString("SUI_CombatPropertyText", "OVERLAY", "GameFontWhite")
-    --SUI_CombatPropertyText:SetPoint("TOPLEFT", SUI_LightWeightPropertyText, "BOTTOMLEFT")
-    --SUI_CombatPropertyText:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
-    --SUI_CombatPropertyText:SetText("- inCombat: false")
+    self.frame:CreateFontString("SUI_FrameTitle", "OVERLAY", "GameFontWhite")
+    SUI_FrameTitle:SetPoint("BOTTOM", self.frame, "TOP")
+    SUI_FrameTitle:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
+    SUI_FrameTitle:SetText("ScarletUI Frame")
+
+    self.frame:CreateFontString("SUI_RetailPropertyText", "OVERLAY", "GameFontWhite")
+    SUI_RetailPropertyText:SetPoint("TOPLEFT", self.frame, "TOPLEFT")
+    SUI_RetailPropertyText:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
+    SUI_RetailPropertyText:SetText("- retail: " .. tostring(self.retail))
+
+    self.frame:CreateFontString("SUI_LightWeightPropertyText", "OVERLAY", "GameFontWhite")
+    SUI_LightWeightPropertyText:SetPoint("TOPLEFT", SUI_RetailPropertyText, "BOTTOMLEFT")
+    SUI_LightWeightPropertyText:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
+    SUI_LightWeightPropertyText:SetText("- lightWeightMode: " .. tostring(self.lightWeightMode))
+
+    self.frame:CreateFontString("SUI_CombatPropertyText", "OVERLAY", "GameFontWhite")
+    SUI_CombatPropertyText:SetPoint("TOPLEFT", SUI_LightWeightPropertyText, "BOTTOMLEFT")
+    SUI_CombatPropertyText:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
+    SUI_CombatPropertyText:SetText("- inCombat: false")
+
+    self.frame:Hide()
 end
 
 function ScarletUI:ResetDefaults()
@@ -122,7 +124,7 @@ ScarletUI.frame:SetScript("OnEvent", function (_, event, ...)
         ScarletUI:Setup()
     elseif event == "PLAYER_REGEN_DISABLED" or event == "PLAYER_REGEN_ENABLED" then
         ScarletUI.inCombat = event == "PLAYER_REGEN_DISABLED";
-        --SUI_CombatPropertyText:SetText("- inCombat: " .. tostring(ScarletUI.inCombat))
+        SUI_CombatPropertyText:SetText("- inCombat: " .. tostring(ScarletUI.inCombat))
         AceConfigRegistry:NotifyChange("ScarletUI")
     end
 end)

@@ -58,6 +58,10 @@ local function ItemLevelText(itemLink, itemButton)
 end
 
 function ScarletUI:CharacterFrameItemLevel()
+    if not self.db.global.itemLevelCharacter then
+        return
+    end
+
     for _, slotName in ipairs(slots) do
         if self.retail and slotName == "Ranged" then
             -- nothing
@@ -73,6 +77,10 @@ function ScarletUI:CharacterFrameItemLevel()
 end
 
 function ScarletUI:InspectFrameItemLevel()
+    if not self.db.global.itemLevelInspect then
+        return
+    end
+
     for _, slotName in ipairs(slots) do
         if self.retail and slotName == "Ranged" then
             -- nothing
@@ -86,18 +94,22 @@ function ScarletUI:InspectFrameItemLevel()
 end
 
 function ScarletUI:BagItemLevel()
+    if not self.db.global.itemLevelBag then
+        return
+    end
+
     for bag = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
-        if GetContainerNumSlots then
-            for slot = 1, GetContainerNumSlots(bag) do
-                local itemLink = GetContainerItemLink(bag, slot)
-                local adjustedSlot = GetContainerNumSlots(bag) - slot + 1
-                local itemButton = _G["ContainerFrame" .. (bag + 1) .. "Item" .. adjustedSlot]
-                ItemLevelText(itemLink, itemButton)
-            end
-        elseif C_Container.GetContainerNumSlots then
+        if C_Container.GetContainerNumSlots then
             for slot = 1, C_Container.GetContainerNumSlots(bag) do
                 local itemLink = C_Container.GetContainerItemLink(bag, slot)
                 local adjustedSlot = C_Container.GetContainerNumSlots(bag) - slot + 1
+                local itemButton = _G["ContainerFrame" .. (bag + 1) .. "Item" .. adjustedSlot]
+                ItemLevelText(itemLink, itemButton)
+            end
+        elseif GetContainerNumSlots then
+            for slot = 1, GetContainerNumSlots(bag) do
+                local itemLink = GetContainerItemLink(bag, slot)
+                local adjustedSlot = GetContainerNumSlots(bag) - slot + 1
                 local itemButton = _G["ContainerFrame" .. (bag + 1) .. "Item" .. adjustedSlot]
                 ItemLevelText(itemLink, itemButton)
             end
@@ -106,10 +118,6 @@ function ScarletUI:BagItemLevel()
 end
 
 function ScarletUI:SetupItemLevels()
-    if not self.db.global.itemLevel then
-        return
-    end
-
     if not self.itemLevelEventRegistered then
         self.itemLevelEventRegistered = true;
         local frame = CreateFrame("Frame", "SUI_ItemLevelFrame", SUI_Frame)
