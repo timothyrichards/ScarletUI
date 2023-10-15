@@ -192,6 +192,17 @@ function ScarletUI:SetupActionbars()
         return
     end
 
+    if not self.actionbarEventRegistered then
+        self.actionbarEventRegistered = true;
+        local frame = CreateFrame("Frame", "SUI_ActionbarFrame", SUI_Frame)
+        frame:RegisterEvent("UPDATE_FACTION")
+        frame:SetScript("OnEvent", function(_, event, ...)
+            if event == "UPDATE_FACTION" then
+                ScarletUI:UpdateMainBar()
+            end
+        end)
+    end
+
     local mainBarSettings = actionbarsModule.mainBar;
     if mainBarSettings.move then
         MainMenuBar:ClearAllPoints()
@@ -235,6 +246,8 @@ function ScarletUI:UpdateMainBar()
             MultiBarBottomLeft:SetPoint(point, relativeTo, relativePoint, offsetX, 12)
         elseif MainMenuExpBar:IsShown() or ReputationWatchBar:IsShown() then
             MultiBarBottomLeft:SetPoint(point, relativeTo, relativePoint, offsetX, 4)
+        else
+            MultiBarBottomLeft:SetPoint(point, relativeTo, relativePoint, offsetX, -6)
         end
     end
 end

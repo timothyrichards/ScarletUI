@@ -97,7 +97,12 @@ ScarletUI.defaults = {
         },
         nameplatesModule = {
             enabled = true,
-            targetIndicator = true,
+            targetIndicator = {
+                show = true,
+                indicatorSize = 30,
+                indicatorDistance = -5,
+                indicatorHeight = 0,
+            },
             nonTankThreatColors = {
                 noThreat = { 0.0824, 1, 0, 1 },
                 lowThreat = { 1, 0.9176, 0, 1 },

@@ -106,8 +106,9 @@ local function HideTargetArrows()
     end
 end
 
-local function UpdateTargetArrows()
-    if not ScarletUI.db.global.nameplatesModule.targetIndicator then
+function ScarletUI:UpdateTargetArrows()
+    local module = ScarletUI.db.global.nameplatesModule
+    if not module.targetIndicator.show then
         HideTargetArrows()
         return
     end
@@ -119,21 +120,24 @@ local function UpdateTargetArrows()
     if nameplate then
         -- Get the name text region of the nameplate.
         local healthBarRegion = nameplate and nameplate.UnitFrame and nameplate.UnitFrame.healthBar.border
+        local size = module.targetIndicator.indicatorSize
+        local spacer = module.targetIndicator.indicatorDistance * -1
+        local height = module.targetIndicator.indicatorHeight
 
         if healthBarRegion then
             -- Left texture
             local leftTexture = nameplate:CreateTexture(nil, "OVERLAY")
             leftTexture:SetTexture("interface/minimap/minimaparrow.blp")
-            leftTexture:SetSize(30, 30)
-            leftTexture:SetPoint("RIGHT", healthBarRegion, "LEFT", 0, 0)
+            leftTexture:SetSize(size, size)
+            leftTexture:SetPoint("RIGHT", healthBarRegion, "LEFT", spacer, height)
             leftTexture:SetTexCoord(0, 1, 1, 1, 0, 0, 1, 0)
             nameplate.leftArrow = leftTexture
 
             -- Right texture
             local rightTexture = nameplate:CreateTexture(nil, "OVERLAY")
             rightTexture:SetTexture("interface/minimap/minimaparrow.blp")
-            rightTexture:SetSize(30, 30)
-            rightTexture:SetPoint("LEFT", healthBarRegion, "RIGHT", 0, 0)
+            rightTexture:SetSize(size, size)
+            rightTexture:SetPoint("LEFT", healthBarRegion, "RIGHT", spacer * -1, height)
             rightTexture:SetTexCoord(1, 0, 0, 0, 1, 1, 0, 1)
             nameplate.rightArrow = rightTexture
         end
@@ -160,10 +164,10 @@ function ScarletUI:SetupNameplates()
     self.frame:RegisterEvent("PLAYER_TARGET_CHANGED")
     self.frame:HookScript("OnEvent", function(_, event, unitId)
         if event == "PLAYER_TARGET_CHANGED" then
-            UpdateTargetArrows()
+            ScarletUI:UpdateTargetArrows()
         else
             if event == "NAME_PLATE_UNIT_ADDED" then
-                UpdateTargetArrows()
+                ScarletUI:UpdateTargetArrows()
             end
 
             if not unitId or not UnitExists(unitId) then

@@ -59,7 +59,7 @@ function ScarletUI:Setup()
         self:SetupFrame()
 
         -- Register the chat commands
-        AceConfigDialog:SetDefaultSize("ScarletUI", 775, 500)
+        AceConfigDialog:SetDefaultSize("ScarletUI", 780, 550)
         self.settings:RegisterChatCommand("sui", function() AceConfigDialog:Open("ScarletUI") end)
 
         -- Register the options table

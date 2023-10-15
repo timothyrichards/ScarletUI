@@ -1122,17 +1122,72 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                             end
                         end,
                     },
-                    targetIndicator = {
-                        name = "Target Indicator",
+                },
+            },
+            targetIndicator = {
+                name = "Target Indicator",
+                type = "group",
+                disabled = function() return self.inCombat end,
+                inline = true,
+                order = 1,
+                args = {
+                    show = {
+                        name = "Show",
                         desc = "Add target indicator to nameplates.",
                         type = "toggle",
-                        width = 1,
+                        width = "full",
                         order = 1,
-                        get = function(_) return module.targetIndicator end,
+                        get = function(_) return module.targetIndicator.show end,
                         set = function(_, val)
-                            module.targetIndicator = val
+                            module.targetIndicator.show = val
+                            ScarletUI:UpdateTargetArrows()
                         end,
                     },
+                    indicatorSize = {
+                        name = "Indicator Size",
+                        desc = "Must be a number, this is the size of the target arrows around the nameplate.\n(Default " .. defaults.targetIndicator.indicatorSize .. ")",
+                        type = "range",
+                        min = -100,
+                        max = 100,
+                        step = 1,
+                        width = 1,
+                        order = 2,
+                        get = function(_) return module.targetIndicator.indicatorSize end,
+                        set = function(_, val)
+                            module.targetIndicator.indicatorSize = val
+                            ScarletUI:UpdateTargetArrows()
+                        end,
+                    },
+                    indicatorDistance = {
+                        name = "Indicator Distance",
+                        desc = "Must be a number, this is the space of the target arrows around the nameplate.\n(Default " .. defaults.targetIndicator.indicatorDistance .. ")",
+                        type = "range",
+                        min = -100,
+                        max = 100,
+                        step = 1,
+                        width = 1,
+                        order = 3,
+                        get = function(_) return module.targetIndicator.indicatorDistance end,
+                        set = function(_, val)
+                            module.targetIndicator.indicatorDistance = val
+                            ScarletUI:UpdateTargetArrows()
+                        end,
+                    },
+                    indicatorHeight = {
+                        name = "Indicator Height",
+                        desc = "Must be a number, this is the height of the target arrows on the nameplate.\n(Default " .. defaults.targetIndicator.indicatorHeight .. ")",
+                        type = "range",
+                        min = -100,
+                        max = 100,
+                        step = 1,
+                        width = 1,
+                        order = 4,
+                        get = function(_) return module.targetIndicator.indicatorHeight end,
+                        set = function(_, val)
+                            module.targetIndicator.indicatorHeight = val
+                            ScarletUI:UpdateTargetArrows()
+                        end,
+                    }
                 },
             },
             nonTankThreatColors = {
@@ -1140,7 +1195,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                 type = "group",
                 disabled = function() return self.inCombat end,
                 inline = true,
-                order = 1,
+                order = 2,
                 args = {
                     noThreat = {
                         name = "No Threat",
@@ -1211,7 +1266,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                 type = "group",
                 disabled = function() return self.inCombat end,
                 inline = true,
-                order = 2,
+                order = 3,
                 args = {
                     noThreat = {
                         name = "No Threat",
@@ -1284,7 +1339,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                 multiline = 5,
                 width = "full",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
-                order = 3,
+                order = 4,
                 get = function(_) return module.tankNames end,
                 set = function(_, value)
                     module.tankNames = value
