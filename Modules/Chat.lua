@@ -76,6 +76,7 @@ function ScarletUI:SetupChat()
         return
     end
 
+    self:CreateMover(ChatFrame1, chatFrame)
     ChatFrame1:SetMovable(true)
     ChatFrame1:SetUserPlaced(true)
     ChatFrame1:SetHeight(chatModule.height)

@@ -11,23 +11,33 @@ function ScarletUI:Options()
         type = "group",
         childGroups = "tree",
         args = {
-            moduleSettings = self:GetModuleSettingsPage(database, 0),
-            chatModuleSettings = self:GetChatModuleSettingsPage(database.chatModule, defaults.chatModule, 1),
-            actionbarsModuleSettings = self:GetActionbarsModuleSettingsPage(database.actionbarsModule, defaults.actionbarsModule, 2),
-            unitFramesModuleSettings = self:GetUnitFramesModuleSettingsPage(database.unitFramesModule, defaults.unitFramesModule, 3),
-            raidFramesModuleSettings = self:GetRaidFramesModuleSettingsPage(database.raidFramesModule, defaults.raidFramesModule, 4),
-            nameplatesModuleSettings = self:GetNameplatesModuleSettingsPage(database.nameplatesModule, defaults.nameplatesModule, 5),
-            CVarModuleSettings = self:GetCVarModuleSettingsPage(database.CVarModule, defaults.CVarModule, 6),
+            toggleMovers = {
+                name = "Toggle Movers",
+                type = "execute",
+                disabled = function() return self.inCombat end,
+                order = 1,
+                width = 1,
+                func = function()
+                    self:ToggleMovers()
+                end,
+            },
             defaultSettings = {
                 name = "Restore Defaults",
                 type = "execute",
                 disabled = function() return self.inCombat end,
-                order = 7,
+                order = 2,
                 width = 1,
                 func = function()
                     StaticPopup_Show('SCARLET_RESTORE_DEFAULTS_DIALOG')
                 end,
             },
+            moduleSettings = self:GetModuleSettingsPage(database, 0),
+            chatModuleSettings = self:GetChatModuleSettingsPage(database.chatModule, defaults.chatModule, 3),
+            actionbarsModuleSettings = self:GetActionbarsModuleSettingsPage(database.actionbarsModule, defaults.actionbarsModule, 4),
+            unitFramesModuleSettings = self:GetUnitFramesModuleSettingsPage(database.unitFramesModule, defaults.unitFramesModule, 5),
+            raidFramesModuleSettings = self:GetRaidFramesModuleSettingsPage(database.raidFramesModule, defaults.raidFramesModule, 6),
+            nameplatesModuleSettings = self:GetNameplatesModuleSettingsPage(database.nameplatesModule, defaults.nameplatesModule, 7),
+            CVarModuleSettings = self:GetCVarModuleSettingsPage(database.CVarModule, defaults.CVarModule, 8),
         },
     }
 end
@@ -118,32 +128,22 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                     },
                 },
             },
-        }
-    }
-end
-
-function ScarletUI:GetChatModuleSettingsPage(module, defaults, order)
-    return {
-        name = "Chat Module",
-        type = "group",
-        order = order,
-        args = {
-            chatModule = {
-                name = "Chat Module",
+            modules = {
+                name = "Enabled Modules",
                 type = "group",
                 disabled = function() return self.inCombat end,
                 inline = true,
-                order = 0,
+                order = 2,
                 args = {
-                    enabled = {
-                        name = "Enabled",
+                    chatModuleEnabled = {
+                        name = "Chat",
                         desc = "Manage the settings and position of your chat window.",
                         type = "toggle",
-                        width = 1.5,
+                        width = 1,
                         order = 0,
-                        get = function(_) return module.enabled end,
+                        get = function(_) return database.chatModule.enabled end,
                         set = function(_, val)
-                            module.enabled = val
+                            database.chatModule.enabled = val
                             if not val then
                                 StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
                             else
@@ -151,8 +151,100 @@ function ScarletUI:GetChatModuleSettingsPage(module, defaults, order)
                             end
                         end,
                     },
+                    actionbarsModuleEnabled = {
+                        name = "Actionbars",
+                        desc = "Manage the position of your actionbars.",
+                        type = "toggle",
+                        width = 1,
+                        order = 1,
+                        get = function(_) return database.actionbarsModule.enabled end,
+                        set = function(_, val)
+                            database.actionbarsModule.enabled = val
+                            if not val then
+                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                            else
+                                self:SetupActionbars()
+                            end
+                        end,
+                    },
+                    unitFramesModuleEnabled = {
+                        name = "Unit Frames",
+                        desc = "Manage the position of your unit frames.",
+                        type = "toggle",
+                        disabled = function() return self.inCombat end,
+                        width = 1,
+                        order = 2,
+                        get = function(_) return database.unitFramesModule.enabled end,
+                        set = function(_, val)
+                            database.unitFramesModule.enabled = val
+                            if not val then
+                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                            else
+                                self:SetupUnitFrames()
+                            end
+                        end,
+                    },
+                    raidFramesModuleEnabled = {
+                        name = "Raid Frames",
+                        desc = "Manage the settings and position of your raid frames.",
+                        type = "toggle",
+                        width = 1,
+                        order = 3,
+                        get = function(_) return database.raidFramesModule.enabled end,
+                        set = function(_, val)
+                            database.raidFramesModule.enabled = val
+                            if not val then
+                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                            else
+                                self:SetupRaidProfiles()
+                            end
+                        end,
+                    },
+                    nameplatesModuleEnabled = {
+                        name = "Nameplates",
+                        desc = "Manage your Nameplates and threat colors.",
+                        type = "toggle",
+                        width = 1,
+                        order = 4,
+                        get = function(_) return database.nameplatesModule.enabled end,
+                        set = function(_, val)
+                            database.nameplatesModule.enabled = val
+                            if not val then
+                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                            else
+                                ScarletUI:SetupNameplates()
+                            end
+                        end,
+                    },
+                    cVarModuleEnabled = {
+                        name = "CVars",
+                        desc = "Manage your cVars.",
+                        type = "toggle",
+                        width = 1,
+                        order = 5,
+                        get = function(_) return database.CVarModule.enabled end,
+                        set = function(_, val)
+                            database.CVarModule.enabled = val
+                            if not val then
+                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                            else
+                                ScarletUI:SetupCVars()
+                            end
+                        end,
+                    },
                 },
             },
+        }
+    }
+end
+
+function ScarletUI:GetChatModuleSettingsPage(module, defaults, order)
+    return {
+        name = "Chat",
+        type = "group",
+        order = order,
+        disabled = function() return not module.enabled end,
+        args = {
             generalSettings = {
                 name = "General Settings",
                 type = "group",
@@ -303,39 +395,13 @@ end
 
 function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
     return {
-        name = "Actionbar Module",
+        name = "Actionbars",
         type = "group",
         childGroups = "tree",
         order = order,
-        disabled = function() return self.lightWeightMode end,
+        disabled = function() return not module.enabled or self.lightWeightMode end,
         hidden = function() return self.retail end,
         args = {
-            actionbarModule = {
-                name = "Actionbar Module",
-                type = "group",
-                disabled = function() return self.inCombat end,
-                inline = true,
-                order = 0,
-                args = {
-                    enabled = {
-                        name = "Enabled",
-                        desc = "Manage the position of your actionbars.",
-                        type = "toggle",
-                        width = 1.5,
-                        order = 0,
-                        get = function(_) return module.enabled end,
-                        set = function(_, val)
-                            module.enabled = val
-                            if not val then
-                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
-                            else
-                                self:SetupActionbars()
-                            end
-                        end,
-                    },
-
-                },
-            },
             generalSettings = {
                 name = "General Settings",
                 type = "group",
@@ -371,13 +437,29 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                             self:SetupActionbars()
                         end,
                     },
+                    microBag = {
+                        name = "Micro Bag",
+                        desc = "Hide all non backpack bag icons.",
+                        type = "toggle",
+                        width = 1,
+                        order = 2,
+                        get = function(_) return module.microBag end,
+                        set = function(_, val)
+                            module.microBag = val
+                            if val then
+                                self:SetupActionbars()
+                            else
+                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                            end
+                        end,
+                    },
                 }
             },
             mainBar = {
                 name = "Main Bar",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
-                --inline = true,
+                inline = true,
                 order = 2,
                 args = {
                     moveFrame = {
@@ -489,11 +571,11 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                         order = 1,
                         get = function(_) return module.stanceBar.hide end,
                         set = function(_, val)
+                            module.stanceBar.hide = val
                             if val then
-                                module.stanceBar.hide = val
                                 self:SetupActionbars()
                             else
-
+                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
                             end
                         end,
                     },
@@ -751,38 +833,12 @@ end
 
 function ScarletUI:GetUnitFramesModuleSettingsPage(module, defaults, order)
     return {
-        name = "Unit Frame Module",
+        name = "Unit Frames",
         type = "group",
         order = order,
-        disabled = function() return self.lightWeightMode end,
+        disabled = function() return not module.enabled or self.lightWeightMode end,
         hidden = function() return self.retail end,
         args = {
-            unitFramesModule = {
-                name = "Unit Frames Module",
-                type = "group",
-                disabled = function() return self.inCombat end,
-                inline = true,
-                order = 0,
-                args = {
-                    enabled = {
-                        name = "Enabled",
-                        desc = "Manage the position of your unit frames.",
-                        type = "toggle",
-                        disabled = function() return self.inCombat end,
-                        width = "full",
-                        order = 0,
-                        get = function(_) return module.enabled end,
-                        set = function(_, val)
-                            module.enabled = val
-                            if not val then
-                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
-                            else
-                                self:SetupUnitFrames()
-                            end
-                        end,
-                    },
-                },
-            },
             playerFrame = {
                 name = "Player Frame",
                 type = "group",
@@ -1074,37 +1130,12 @@ end
 
 function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
     return {
-        name = "Raid Frames Module",
+        name = "Raid Frames",
         type = "group",
         order = order,
-        disabled = function() return self.lightWeightMode end,
+        disabled = function() return not module.enabled or self.lightWeightMode end,
         hidden = function() return self.retail end,
         args = {
-            raidFramesModule = {
-                name = "Raid Frames Module",
-                type = "group",
-                disabled = function() return self.inCombat end,
-                inline = true,
-                order = 0,
-                args = {
-                    enabled = {
-                        name = "Enabled",
-                        desc = "Manage the settings and position of your raid frames.",
-                        type = "toggle",
-                        width = 1.5,
-                        order = 0,
-                        get = function(_) return module.enabled end,
-                        set = function(_, val)
-                            module.enabled = val
-                            if not val then
-                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
-                            else
-                                self:SetupRaidProfiles()
-                            end
-                        end,
-                    },
-                },
-            },
             partyFrames = {
                 name = "Party Frames",
                 type = "group",
@@ -1124,9 +1155,9 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
                             self:UpdateProfilePositions()
                         end,
                     },
-                    x = {
-                        name = "Frame X",
-                        desc = "Must be a number, this is the X position of the frame relative to the center of the screen.\n(Default " .. defaults.partyFrames.x .. ")",
+                    left = {
+                        name = "Frame Left",
+                        desc = "Must be a number, this is the distance of the raid frame container from the left side of the screen.\n(Default " .. defaults.partyFrames.x .. ")",
                         type = "range",
                         min = math.floor(screenWidth) * -1,
                         max = math.floor(screenWidth),
@@ -1139,9 +1170,9 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
                             self:UpdateProfilePositions()
                         end,
                     },
-                    y = {
-                        name = "Frame Y",
-                        desc = "Must be a number, this is the Y position of the frame relative to the center of the screen.\n(Default " .. defaults.partyFrames.y .. ")",
+                    top = {
+                        name = "Frame Top",
+                        desc = "Must be a number, this is the distance of the raid frame container from the top of the screen.\n(Default " .. defaults.partyFrames.y .. ")",
                         type = "range",
                         min = math.floor(screenHeight) * -1,
                         max = math.floor(screenHeight),
@@ -1154,9 +1185,9 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
                             self:UpdateProfilePositions()
                         end,
                     },
-                    height = {
-                        name = "Height",
-                        desc = "Must be a number, this is the height of the party frames container.\n(Default " .. defaults.partyFrames.height .. ")",
+                    bottom = {
+                        name = "Frame Bottom",
+                        desc = "Must be a number, this is the distance of the raid frame container from the bottom of the screen.\n(Default " .. defaults.partyFrames.height .. ")",
                         type = "range",
                         min = math.floor(screenHeight) * -1,
                         max = math.floor(screenHeight),
@@ -1190,9 +1221,9 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
                             self:UpdateProfilePositions()
                         end,
                     },
-                    x = {
-                        name = "Frame X",
-                        desc = "Must be a number, this is the X position of the frame relative to the center of the screen.\n(Default " .. defaults.raidFrames.x .. ")",
+                    left = {
+                        name = "Frame Left",
+                        desc = "Must be a number, this is the distance of the raid frame container from the left side of the screen.\n(Default " .. defaults.raidFrames.x .. ")",
                         type = "range",
                         min = math.floor(screenWidth) * -1,
                         max = math.floor(screenWidth),
@@ -1205,9 +1236,9 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
                             self:UpdateProfilePositions()
                         end,
                     },
-                    y = {
-                        name = "Frame Y",
-                        desc = "Must be a number, this is the Y position of the frame relative to the center of the screen.\n(Default " .. defaults.raidFrames.y .. ")",
+                    top = {
+                        name = "Frame Top",
+                        desc = "Must be a number, this is the distance of the raid frame container from the top of the screen.\n(Default " .. defaults.raidFrames.y .. ")",
                         type = "range",
                         min = math.floor(screenHeight) * -1,
                         max = math.floor(screenHeight),
@@ -1220,9 +1251,9 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
                             self:UpdateProfilePositions()
                         end,
                     },
-                    height = {
-                        name = "Height",
-                        desc = "Must be a number, this is the height of the raid frames container.\n(Default " .. defaults.raidFrames.height .. ")",
+                    bottom = {
+                        name = "Frame Bottom",
+                        desc = "Must be a number, this is the distance of the raid frame container from the bottom of the screen.\n(Default " .. defaults.raidFrames.height .. ")",
                         type = "range",
                         min = math.floor(screenHeight) * -1,
                         max = math.floor(screenHeight),
@@ -1243,35 +1274,11 @@ end
 
 function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
     return {
-        name = "Nameplates Module",
+        name = "Nameplates",
         type = "group",
         order = order,
+        disabled = function() return not module.enabled end,
         args = {
-            nameplatesModule = {
-                name = "Nameplates Module",
-                type = "group",
-                disabled = function() return self.inCombat end,
-                inline = true,
-                order = 0,
-                args = {
-                    enabled = {
-                        name = "Enabled",
-                        desc = "Manage your Nameplates and threat colors.",
-                        type = "toggle",
-                        width = 1,
-                        order = 0,
-                        get = function(_) return module.enabled end,
-                        set = function(_, val)
-                            module.enabled = val
-                            if not val then
-                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
-                            else
-                                ScarletUI:SetupNameplates()
-                            end
-                        end,
-                    },
-                },
-            },
             targetIndicator = {
                 name = "Target Indicator",
                 type = "group",
@@ -1536,35 +1543,11 @@ end
 
 function ScarletUI:GetCVarModuleSettingsPage(module, defaults, order)
     return {
-        name = "CVar Module",
+        name = "CVars",
         type = "group",
         order = order,
+        disabled = function() return not module.enabled end,
         args = {
-            cVarModule = {
-                name = "CVar Module",
-                type = "group",
-                disabled = function() return self.inCombat end,
-                inline = true,
-                order = 0,
-                args = {
-                    enabled = {
-                        name = "Enabled",
-                        desc = "Manage your cVars.",
-                        type = "toggle",
-                        width = 1.5,
-                        order = 0,
-                        get = function(_) return module.enabled end,
-                        set = function(_, val)
-                            module.enabled = val
-                            if not val then
-                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
-                            else
-                                ScarletUI:SetupCVars()
-                            end
-                        end,
-                    },
-                },
-            },
             --cVars = {
             --    name = "CVar Settings",
             --    type = "group",

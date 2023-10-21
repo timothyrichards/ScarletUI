@@ -1,3 +1,5 @@
+local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
+
 ScarletUI.frameAnchors = {
     'BOTTOM',
     'BOTTOMLEFT',
@@ -45,6 +47,7 @@ ScarletUI.defaults = {
             enabled = true,
             stackActionbars = true,
             showGryphons = false,
+            microBag = false,
             mainBar = {
                 move = true,
                 frameAnchor = 1,
@@ -179,6 +182,8 @@ ScarletUI.reloadCVars = {
     'XpBarText',
 }
 
+ScarletUI.movers = {}
+
 function ScarletUI:SwapActionbar(sourceBar, destinationBar)
     for i = 1, 12 do
         local sourceButton = _G[sourceBar.."Button"..i].action
@@ -243,15 +248,16 @@ function ScarletUI:SettingDisabled(moduleEnabled)
     end
 end
 
-function ScarletUI:CreateMover(targetFrame)
+function ScarletUI:CreateMover(targetFrame, module)
     if targetFrame.mover then
         return targetFrame.mover
     end
 
     local mover = CreateFrame("Frame", nil, UIParent)
+    mover.targetFrame = targetFrame
     mover:SetSize(targetFrame:GetWidth(), targetFrame:GetHeight())
     mover:SetPoint("BOTTOM", targetFrame, "BOTTOM", 0, 0)
-    mover:SetFrameStrata("TOOLTIP")
+    mover:SetFrameStrata("FULLSCREEN_DIALOG")
 
     -- Background
     local bg = mover:CreateTexture(nil, "BACKGROUND")
@@ -300,12 +306,56 @@ function ScarletUI:CreateMover(targetFrame)
 
     mover:SetScript("OnMouseUp", function(_, _)
         targetFrame:StopMovingOrSizing()
+        self:UpdateFramePositionSettings(targetFrame, module)
     end)
 
     mover:Hide()
 
+    -- Hook into the SetSize method
+    hooksecurefunc(targetFrame, "SetSize", function()
+        mover:SetSize(targetFrame:GetWidth(), targetFrame:GetHeight())
+    end)
+
+    -- Hook into the SetWidth method (in case width is adjusted independently)
+    hooksecurefunc(targetFrame, "SetWidth", function()
+        mover:SetWidth(targetFrame:GetWidth())
+    end)
+
+    -- Hook into the SetHeight method (in case height is adjusted independently)
+    hooksecurefunc(targetFrame, "SetHeight", function()
+        mover:SetHeight(targetFrame:GetHeight())
+    end)
+
     targetFrame.mover = mover
+    self.movers[targetFrame:GetName()] = mover
     return mover
+end
+
+function ScarletUI:ToggleMovers()
+    if self.moversEnabled then
+        self.moversEnabled = false
+    elseif not self.moversEnabled then
+        self.moversEnabled = true
+    end
+
+    for k, v in pairs(self.movers) do
+        if self.moversEnabled then
+            v:SetMovable(true)
+            v:Show()
+        else
+            v:SetMovable(false)
+            v:Hide()
+        end
+    end
+end
+
+function ScarletUI:UpdateFramePositionSettings(frame, module)
+    local point, _, relativePoint, xOffset, yOffset = frame:GetPoint()
+    module.frameAnchor = self:GetArrayIndex(point)
+    module.screenAnchor = self:GetArrayIndex(relativePoint)
+    module.x = xOffset
+    module.y = yOffset
+    AceConfigRegistry:NotifyChange("ScarletUI")
 end
 
 function ScarletUI:SetPoint(frame, frameAnchor, frameParent, parentAnchor, x, y)
@@ -344,4 +394,14 @@ function ScarletUI:ArrayHasValue(array, value)
     end
 
     return false
+end
+
+function ScarletUI:GetArrayIndex(value)
+    for index, v in ipairs(ScarletUI.frameAnchors) do
+        if v == value then
+            return index
+        end
+    end
+
+    return nil
 end

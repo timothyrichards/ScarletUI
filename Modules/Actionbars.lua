@@ -12,7 +12,8 @@ local function mainMenuBar(module)
         MainMenuBarTextureExtender:Hide()
     end
 
-    MainMenuBar:SetWidth(511)
+    MainMenuBar:SetMovable(true)
+    MainMenuBar:SetWidth(512)
     ActionButton1:SetPoint("BOTTOMLEFT", MainMenuBarArtFrame, "BOTTOMLEFT", 8, 4)
 
     MainMenuBarPageNumber:Hide()
@@ -27,15 +28,12 @@ local function mainMenuBar(module)
 
     if not module.showGryphons then
         MainMenuBarLeftEndCap:Hide()
+        MainMenuBarRightEndCap:Hide()
     else
         MainMenuBarLeftEndCap:Show()
         MainMenuBarLeftEndCap:ClearAllPoints()
         MainMenuBarLeftEndCap:SetPoint("BOTTOMRIGHT", MainMenuBarArtFrame, "BOTTOMLEFT", 30, 0)
-    end
 
-    if not module.showGryphons then
-        MainMenuBarRightEndCap:Hide()
-    else
         MainMenuBarRightEndCap:Show()
         MainMenuBarRightEndCap:ClearAllPoints()
         MainMenuBarRightEndCap:SetPoint("BOTTOMLEFT", MainMenuBarArtFrame, "BOTTOMRIGHT", -30, 0)
@@ -45,6 +43,9 @@ local function mainMenuBar(module)
     MainMenuBarVehicleLeaveButton:HookScript("OnShow", function()
         MainMenuBarVehicleLeaveButton:SetPoint("LEFT", MainMenuBarArtFrame, "RIGHT", 5, -5)
     end)
+
+    local mainBarSettings = module.mainBar;
+    ScarletUI:CreateMover(MainMenuBar, mainBarSettings)
 end
 
 local function microBar(actionbarsModule)
@@ -64,6 +65,8 @@ local function microBar(actionbarsModule)
             microBarSettings.x,
             microBarSettings.y
     )
+
+    ScarletUI:CreateMover(CharacterMicroButton, microBarSettings)
 end
 
 local function bagBar(actionbarsModule)
@@ -92,6 +95,17 @@ local function bagBar(actionbarsModule)
     CharacterBag1SlotNormalTexture:Hide()
     CharacterBag2SlotNormalTexture:Hide()
     CharacterBag3SlotNormalTexture:Hide()
+
+    if actionbarsModule.microBag then
+        CharacterBag0Slot:Hide()
+        CharacterBag1Slot:Hide()
+        CharacterBag2Slot:Hide()
+        CharacterBag3Slot:Hide()
+        KeyRingButton:ClearAllPoints()
+        KeyRingButton:SetPoint("RIGHT", MainMenuBarBackpackButton, "LEFT", -5, 0)
+    end
+
+    ScarletUI:CreateMover(MainMenuBarBackpackButton, bagBarSettings)
 end
 
 local function multiBarBottomLeft()
@@ -116,11 +130,12 @@ end
 
 local function stanceBar(module, parent)
     local stanceBarSettings = module.stanceBar;
-    if module.stanceBar.hide then
+
+    if stanceBarSettings.hide then
         ScarletUI.stanceBar = CreateFrame("FRAME", "SUI_StanceBar", UIParent)
         ScarletUI.stanceBar:Hide()
         StanceBarFrame:UnregisterAllEvents()
-        StanceBarFrame:SetParent(stanceBarFrame)
+        StanceBarFrame:SetParent(ScarletUI.stanceBar)
     else
         StanceBarFrame:SetMovable(true)
         StanceBarFrame:SetUserPlaced(true)

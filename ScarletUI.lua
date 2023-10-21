@@ -124,6 +124,11 @@ ScarletUI.frame:SetScript("OnEvent", function (_, event, ...)
         ScarletUI:Setup()
     elseif event == "PLAYER_REGEN_DISABLED" or event == "PLAYER_REGEN_ENABLED" then
         ScarletUI.inCombat = event == "PLAYER_REGEN_DISABLED";
+
+        if ScarletUI.inCombat and ScarletUI.moversEnabled then
+            ScarletUI:ToggleMovers()
+        end
+
         SUI_CombatPropertyText:SetText("- inCombat: " .. tostring(ScarletUI.inCombat))
         AceConfigRegistry:NotifyChange("ScarletUI")
     end

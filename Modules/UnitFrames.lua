@@ -26,6 +26,7 @@ function ScarletUI:SetupPlayerFrame(unitFramesModule)
         return
     end
 
+    self:CreateMover(PlayerFrame, playerFrame)
     PlayerFrame:SetMovable(true)
     PlayerFrame:SetUserPlaced(true)
     PlayerFrame:ClearAllPoints()
@@ -45,6 +46,7 @@ function ScarletUI:SetupTargetFrame(unitFramesModule)
         return
     end
 
+    self:CreateMover(TargetFrame, targetFrame)
     TargetFrame:SetMovable(true)
     TargetFrame:SetUserPlaced(true)
     TargetFrame:ClearAllPoints()
@@ -73,6 +75,7 @@ function ScarletUI:SetupFocusFrame(unitFramesModule)
         return
     end
 
+    self:CreateMover(FocusFrame, focusFrame)
     if FocusFrame then
         FocusFrame:SetMovable(true)
         FocusFrame:SetUserPlaced(true)

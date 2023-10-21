@@ -72,16 +72,16 @@ function ScarletUI:UpdateProfilePositions()
     local party = raidFramesModule.partyFrames;
     local raid = raidFramesModule.raidFrames;
 
-    CompactRaidFrameContainer:ClearAllPoints()
+    CompactRaidFrameManagerContainerResizeFrame:ClearAllPoints()
     local activeRaidProfile = GetActiveRaidProfile()
     if activeRaidProfile == "Party" then
-        self:SetPoint(CompactRaidFrameContainer, "TOP", UIParent, "TOP", 0, party.y * -1)
-        self:SetPoint(CompactRaidFrameContainer, "BOTTOM", UIParent, "BOTTOM", 0, party.height)
-        self:SetPoint(CompactRaidFrameContainer, "LEFT", UIParent, "LEFT", party.x, 0)
+        self:SetPoint(CompactRaidFrameManagerContainerResizeFrame, "TOP", UIParent, "TOP", 0, party.y * -1)
+        self:SetPoint(CompactRaidFrameManagerContainerResizeFrame, "BOTTOM", UIParent, "BOTTOM", 0, party.height)
+        self:SetPoint(CompactRaidFrameManagerContainerResizeFrame, "LEFT", UIParent, "LEFT", party.x, 0)
     elseif activeRaidProfile == "Raid" then
-        self:SetPoint(CompactRaidFrameContainer, "TOP", UIParent, "TOP", 0, raid.y * -1)
-        self:SetPoint(CompactRaidFrameContainer, "BOTTOM", UIParent, "BOTTOM", 0, raid.height)
-        self:SetPoint(CompactRaidFrameContainer, "LEFT", UIParent, "LEFT", raid.x, 0)
+        self:SetPoint(CompactRaidFrameManagerContainerResizeFrame, "TOP", UIParent, "TOP", 0, raid.y * -1)
+        self:SetPoint(CompactRaidFrameManagerContainerResizeFrame, "BOTTOM", UIParent, "BOTTOM", 0, raid.height)
+        self:SetPoint(CompactRaidFrameManagerContainerResizeFrame, "LEFT", UIParent, "LEFT", raid.x, 0)
     end
 
     -- Update positions
