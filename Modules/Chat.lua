@@ -78,8 +78,8 @@ function ScarletUI:SetupChat()
 
     ChatFrame1:SetMovable(true)
     ChatFrame1:SetUserPlaced(true)
-    ChatFrame1:SetHeight(150)
-    ChatFrame1:SetWidth(400)
+    ChatFrame1:SetHeight(chatModule.height)
+    ChatFrame1:SetWidth(chatModule.width)
     ChatFrame1:ClearAllPoints()
     ScarletUI:SetPoint(
             ChatFrame1,

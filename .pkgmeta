@@ -14,6 +14,5 @@ externals:
     Libs/AceDBOptions-3.0:       https://repos.curseforge.com/wow/ace3/trunk/AceDBOptions-3.0
     Libs/AceGUI-3.0:             https://repos.curseforge.com/wow/ace3/trunk/AceGUI-3.0
     Libs/CallbackHandler-1.0:    https://repos.curseforge.com/wow/ace3/trunk/CallbackHandler-1.0
-    Libs/LibDeflate:             https://github.com/SafeteeWoW/LibDeflate
     Libs/LibSerialize:           https://github.com/rossnichols/LibSerialize
     Libs/LibStub:                https://repos.curseforge.com/wow/libstub/trunk

@@ -1,6 +1,3 @@
-local AceSerializer = LibStub("AceSerializer-3.0")
-local LibDeflate = LibStub("LibDeflate")
-
 ScarletUI.frameAnchors = {
     'BOTTOM',
     'BOTTOMLEFT',
@@ -47,10 +44,19 @@ ScarletUI.defaults = {
         actionbarsModule = {
             enabled = true,
             stackActionbars = true,
+            showGryphons = false,
             mainBar = {
                 move = true,
                 frameAnchor = 1,
                 screenAnchor = 1,
+                x = 0,
+                y = 0,
+            },
+            stanceBar = {
+                move = true,
+                hide = false,
+                frameAnchor = 2,
+                screenAnchor = 8,
                 x = 0,
                 y = 0,
             },
@@ -72,6 +78,8 @@ ScarletUI.defaults = {
         chatModule = {
             enabled = true,
             fontSize = 14,
+            height = 150,
+            width = 400,
             chatFrame = {
                 move = true,
                 frameAnchor = 2,
@@ -102,6 +110,10 @@ ScarletUI.defaults = {
                 indicatorSize = 30,
                 indicatorDistance = -5,
                 indicatorHeight = 0,
+            },
+            castBarText = {
+                show = true,
+                fontSize = 10,
             },
             nonTankThreatColors = {
                 noThreat = { 0.0824, 1, 0, 1 },
@@ -231,7 +243,76 @@ function ScarletUI:SettingDisabled(moduleEnabled)
     end
 end
 
+function ScarletUI:CreateMover(targetFrame)
+    if targetFrame.mover then
+        return targetFrame.mover
+    end
+
+    local mover = CreateFrame("Frame", nil, UIParent)
+    mover:SetSize(targetFrame:GetWidth(), targetFrame:GetHeight())
+    mover:SetPoint("BOTTOM", targetFrame, "BOTTOM", 0, 0)
+    mover:SetFrameStrata("TOOLTIP")
+
+    -- Background
+    local bg = mover:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetColorTexture(0.4, 0.6, 1, 0.5) -- light blue background
+
+    -- Border
+    local borderSize = 4
+    local borders = {
+        mover:CreateTexture(nil, "BORDER"), -- Top
+        mover:CreateTexture(nil, "BORDER"), -- Bottom
+        mover:CreateTexture(nil, "BORDER"), -- Left
+        mover:CreateTexture(nil, "BORDER"), -- Right
+    }
+
+    for _, border in ipairs(borders) do
+        border:SetColorTexture(0.2, 0.4, 0.8, 1)
+    end
+
+    borders[1]:SetPoint("TOPLEFT", mover, "TOPLEFT")
+    borders[1]:SetPoint("TOPRIGHT", mover, "TOPRIGHT")
+    borders[1]:SetHeight(borderSize)
+
+    borders[2]:SetPoint("BOTTOMLEFT", mover, "BOTTOMLEFT")
+    borders[2]:SetPoint("BOTTOMRIGHT", mover, "BOTTOMRIGHT")
+    borders[2]:SetHeight(borderSize)
+
+    borders[3]:SetPoint("TOPLEFT", mover, "TOPLEFT")
+    borders[3]:SetPoint("BOTTOMLEFT", mover, "BOTTOMLEFT")
+    borders[3]:SetWidth(borderSize)
+
+    borders[4]:SetPoint("TOPRIGHT", mover, "TOPRIGHT")
+    borders[4]:SetPoint("BOTTOMRIGHT", mover, "BOTTOMRIGHT")
+    borders[4]:SetWidth(borderSize)
+
+    -- Display the frame's name in the center of the mover
+    local text = mover:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    text:SetText(targetFrame:GetName())
+    text:SetPoint("CENTER", mover, "CENTER")
+
+    mover:SetScript("OnMouseDown", function(_, button)
+        if button == "LeftButton" and targetFrame:IsMovable() then
+            targetFrame:StartMoving()
+        end
+    end)
+
+    mover:SetScript("OnMouseUp", function(_, _)
+        targetFrame:StopMovingOrSizing()
+    end)
+
+    mover:Hide()
+
+    targetFrame.mover = mover
+    return mover
+end
+
 function ScarletUI:SetPoint(frame, frameAnchor, frameParent, parentAnchor, x, y)
+    if self.inCombat then
+        return
+    end
+
     if not frame.SetPointBackup then
         frame.SetPointBackup = frame.SetPoint
     else

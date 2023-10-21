@@ -68,6 +68,26 @@ function ScarletUI:UpdateProfilePositions()
         return
     end
 
-    self:SetupRaidProfiles()
+    local raidFramesModule = self.db.global.raidFramesModule
+    local party = raidFramesModule.partyFrames;
+    local raid = raidFramesModule.raidFrames;
+
+    CompactRaidFrameContainer:ClearAllPoints()
+    local activeRaidProfile = GetActiveRaidProfile()
+    if activeRaidProfile == "Party" then
+        self:SetPoint(CompactRaidFrameContainer, "TOP", UIParent, "TOP", 0, party.y * -1)
+        self:SetPoint(CompactRaidFrameContainer, "BOTTOM", UIParent, "BOTTOM", 0, party.height)
+        self:SetPoint(CompactRaidFrameContainer, "LEFT", UIParent, "LEFT", party.x, 0)
+    elseif activeRaidProfile == "Raid" then
+        self:SetPoint(CompactRaidFrameContainer, "TOP", UIParent, "TOP", 0, raid.y * -1)
+        self:SetPoint(CompactRaidFrameContainer, "BOTTOM", UIParent, "BOTTOM", 0, raid.height)
+        self:SetPoint(CompactRaidFrameContainer, "LEFT", UIParent, "LEFT", raid.x, 0)
+    end
+
+    -- Update positions
+    SetRaidProfileSavedPosition("Party", false, 'TOP', party.y, 'BOTTOM', party.height, 'LEFT', party.x)
+    SetRaidProfileSavedPosition("Raid", false, 'TOP', raid.y, 'BOTTOM', raid.height, 'LEFT', raid.x)
+
+    -- Prompt a reload
     StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
 end

@@ -1,6 +1,4 @@
-local function mainMenuBar()
-    MainMenuBarLeftEndCap:Hide()
-    MainMenuBarRightEndCap:Hide()
+local function mainMenuBar(module)
     MainMenuBarPerformanceBarFrame:Hide()
 
     MainMenuBarTexture0:ClearAllPoints()
@@ -14,7 +12,7 @@ local function mainMenuBar()
         MainMenuBarTextureExtender:Hide()
     end
 
-    MainMenuBar:SetWidth(510)
+    MainMenuBar:SetWidth(511)
     ActionButton1:SetPoint("BOTTOMLEFT", MainMenuBarArtFrame, "BOTTOMLEFT", 8, 4)
 
     MainMenuBarPageNumber:Hide()
@@ -25,6 +23,22 @@ local function mainMenuBar()
         local button = _G["ActionButton"..i]
         button:SetAttribute("showgrid", 1)
         ActionButton_Update(button)
+    end
+
+    if not module.showGryphons then
+        MainMenuBarLeftEndCap:Hide()
+    else
+        MainMenuBarLeftEndCap:Show()
+        MainMenuBarLeftEndCap:ClearAllPoints()
+        MainMenuBarLeftEndCap:SetPoint("BOTTOMRIGHT", MainMenuBarArtFrame, "BOTTOMLEFT", 30, 0)
+    end
+
+    if not module.showGryphons then
+        MainMenuBarRightEndCap:Hide()
+    else
+        MainMenuBarRightEndCap:Show()
+        MainMenuBarRightEndCap:ClearAllPoints()
+        MainMenuBarRightEndCap:SetPoint("BOTTOMLEFT", MainMenuBarArtFrame, "BOTTOMRIGHT", -30, 0)
     end
 
     MainMenuBarVehicleLeaveButton:SetPoint("LEFT", MainMenuBarArtFrame, "RIGHT", 5, -5)
@@ -100,12 +114,26 @@ local function multiBarBottomRight()
     MultiBarBottomRight:SetPoint("BOTTOM", MultiBarBottomLeft, "TOP", 0, 2)
 end
 
-local function stanceBar(parent)
-    StanceBarFrame:SetMovable(true)
-    StanceBarFrame:SetUserPlaced(true)
-    StanceBarFrame:UnregisterAllEvents();
-    StanceBarFrame:ClearAllPoints()
-    StanceBarFrame:SetPoint("BOTTOMLEFT", parent, "TOPLEFT", 0, 1)
+local function stanceBar(module, parent)
+    local stanceBarSettings = module.stanceBar;
+    if module.stanceBar.hide then
+        ScarletUI.stanceBar = CreateFrame("FRAME", "SUI_StanceBar", UIParent)
+        ScarletUI.stanceBar:Hide()
+        StanceBarFrame:UnregisterAllEvents()
+        StanceBarFrame:SetParent(stanceBarFrame)
+    else
+        StanceBarFrame:SetMovable(true)
+        StanceBarFrame:SetUserPlaced(true)
+        StanceBarFrame:UnregisterAllEvents();
+        StanceBarFrame:ClearAllPoints()
+        StanceBarFrame:SetPoint(
+                ScarletUI.frameAnchors[stanceBarSettings.frameAnchor],
+                parent,
+                ScarletUI.frameAnchors[stanceBarSettings.screenAnchor],
+                stanceBarSettings.x,
+                stanceBarSettings.y
+        )
+    end
 end
 
 local function multiCastBar(parent)
@@ -230,7 +258,7 @@ function ScarletUI:SetupActionbars()
         multiBarBottomRight()
 
         local parent = MultiBarBottomRight;
-        stanceBar(parent)
+        stanceBar(actionbarsModule, parent)
         multiCastBar(parent)
         petActionBar(parent)
         experienceBar()

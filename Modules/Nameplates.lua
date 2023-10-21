@@ -89,20 +89,45 @@ local function IsTank(playerName)
     return otherTanks[playerName]
 end
 
-local function GetTargetNameplate()
-    local nameplates = C_NamePlate.GetNamePlates()
-    for _, nameplate in ipairs(nameplates) do
-        if UnitIsUnit(nameplate.namePlateUnitToken, "target") then
-            return nameplate
-        end
-    end
-    return nil
-end
-
 local function HideTargetArrows()
     if lastNameplate and lastNameplate.leftArrow and lastNameplate.rightArrow then
         lastNameplate.leftArrow:Hide()
         lastNameplate.rightArrow:Hide()
+    end
+end
+
+function ScarletUI:UpdateCustomText(castBar)
+    if castBar then
+        local abilityName = castBar.Text and castBar.Text:GetText()
+        if castBar.customText then
+            castBar.customText:SetText(abilityName)
+        end
+    end
+end
+
+local function SetupNameplate(nameplate)
+    local module = ScarletUI.db.global.nameplatesModule
+    if not module.castBarText.show then
+        return
+    end
+
+    local castBar = nameplate.UnitFrame and nameplate.UnitFrame.CastBar
+    if castBar then
+        -- Create a font string if it doesn't exist
+        if not castBar.customText then
+            castBar.customText = castBar:CreateFontString(nil, "OVERLAY", "GameFontWhite")
+            castBar.customText:SetPoint("CENTER")
+            castBar.customText:SetFont("Fonts\\FRIZQT__.TTF", module.castBarText.fontSize, "OUTLINE")
+        end
+        ScarletUI:UpdateCustomText(castBar)
+
+        -- Hook into the OnValueChanged script to update the text during casting
+        if not castBar.customTextHooked then
+            castBar:HookScript("OnValueChanged", function(self)
+                ScarletUI:UpdateCustomText(self)
+            end)
+            castBar.customTextHooked = true
+        end
     end
 end
 
@@ -116,7 +141,7 @@ function ScarletUI:UpdateTargetArrows()
     -- Hide arrows on the previous nameplate
     HideTargetArrows()
 
-    local nameplate = GetTargetNameplate()
+    local nameplate = C_NamePlate.GetNamePlateForUnit("target")
     if nameplate then
         -- Get the name text region of the nameplate.
         local healthBarRegion = nameplate and nameplate.UnitFrame and nameplate.UnitFrame.healthBar.border
@@ -168,6 +193,10 @@ function ScarletUI:SetupNameplates()
         else
             if event == "NAME_PLATE_UNIT_ADDED" then
                 ScarletUI:UpdateTargetArrows()
+                local nameplate = C_NamePlate.GetNamePlateForUnit(unitId)
+                if nameplate then
+                    SetupNameplate(nameplate)
+                end
             end
 
             if not unitId or not UnitExists(unitId) then

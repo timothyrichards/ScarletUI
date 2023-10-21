@@ -168,10 +168,40 @@ function ScarletUI:GetChatModuleSettingsPage(module, defaults, order)
                         max = 20,
                         step = 1,
                         width = 1,
-                        order = 1,
+                        order = 0,
                         get = function(_) return module.fontSize end,
                         set = function(_, val)
                             module.fontSize = val
+                            self:SetupChat()
+                        end,
+                    },
+                    height = {
+                        name = "Chat Height",
+                        desc = "Desired height for the chat window.\n(Default " .. defaults.height .. ")",
+                        type = "range",
+                        min = 0,
+                        max = math.floor(screenHeight),
+                        step = 1,
+                        width = 1,
+                        order = 1,
+                        get = function(_) return module.height end,
+                        set = function(_, val)
+                            module.height = val
+                            self:SetupChat()
+                        end,
+                    },
+                    width = {
+                        name = "Chat Width",
+                        desc = "Desired width for the chat window.\n(Default " .. defaults.width .. ")",
+                        type = "range",
+                        min = 0,
+                        max = math.floor(screenWidth),
+                        step = 1,
+                        width = 1,
+                        order = 2,
+                        get = function(_) return module.width end,
+                        set = function(_, val)
+                            module.width = val
                             self:SetupChat()
                         end,
                     },
@@ -237,7 +267,7 @@ function ScarletUI:GetChatModuleSettingsPage(module, defaults, order)
                     },
                     x = {
                         name = "Frame X",
-                        desc = "Must be a number, this is the X position of the frame relative to the center of the screen.\n(Default " .. defaults.chatFrame.x .. ")",
+                        desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.chatFrame.x .. ")",
                         type = "range",
                         min = math.floor(screenWidth) * -1,
                         max = math.floor(screenWidth),
@@ -252,7 +282,7 @@ function ScarletUI:GetChatModuleSettingsPage(module, defaults, order)
                     },
                     y = {
                         name = "Frame Y",
-                        desc = "Must be a number, this is the Y position of the frame relative to the center of the screen.\n(Default " .. defaults.chatFrame.y .. ")",
+                        desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.chatFrame.y .. ")",
                         type = "range",
                         min = math.floor(screenHeight) * -1,
                         max = math.floor(screenHeight),
@@ -275,6 +305,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
     return {
         name = "Actionbar Module",
         type = "group",
+        childGroups = "tree",
         order = order,
         disabled = function() return self.lightWeightMode end,
         hidden = function() return self.retail end,
@@ -316,7 +347,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                         name = "Stack Actionbars",
                         desc = "Stack your main, bottom left, and bottom right actionbars.",
                         type = "toggle",
-                        width = 1.5,
+                        width = 1,
                         order = 0,
                         get = function(_) return module.stackActionbars end,
                         set = function(_, val)
@@ -328,13 +359,25 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                             end
                         end,
                     },
+                    showGryphons = {
+                        name = "Show Gryphons",
+                        desc = "Show the gryphon graphics on the sides of your main bar.",
+                        type = "toggle",
+                        width = 1,
+                        order = 1,
+                        get = function(_) return module.showGryphons end,
+                        set = function(_, val)
+                            module.showGryphons = val
+                            self:SetupActionbars()
+                        end,
+                    },
                 }
             },
             mainBar = {
                 name = "Main Bar",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
-                inline = true,
+                --inline = true,
                 order = 2,
                 args = {
                     moveFrame = {
@@ -389,7 +432,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                     },
                     x = {
                         name = "Frame X",
-                        desc = "Must be a number, this is the X position of the frame relative to the center of the screen.\n(Default " .. defaults.mainBar.x .. ")",
+                        desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.mainBar.x .. ")",
                         type = "range",
                         min = math.floor(screenWidth) * -1,
                         max = math.floor(screenWidth),
@@ -404,7 +447,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                     },
                     y = {
                         name = "Frame Y",
-                        desc = "Must be a number, this is the Y position of the frame relative to the center of the screen.\n(Default " .. defaults.mainBar.y .. ")",
+                        desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.mainBar.y .. ")",
                         type = "range",
                         min = math.floor(screenHeight) * -1,
                         max = math.floor(screenHeight),
@@ -419,12 +462,117 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                     }
                 }
             },
+            stanceBar = {
+                name = "Stance Bar",
+                type = "group",
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
+                inline = true,
+                order = 3,
+                args = {
+                    moveFrame = {
+                        name = "Move Frame",
+                        desc = "Allows you to choose the X and Y position of the frame.",
+                        type = "toggle",
+                        width = 1,
+                        order = 0,
+                        get = function(_) return module.stanceBar.move end,
+                        set = function(_, val)
+                            module.stanceBar.move = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    hide = {
+                        name = "Hide Frame",
+                        desc = "Allows you to hide the stance bar frame.",
+                        type = "toggle",
+                        width = 1,
+                        order = 1,
+                        get = function(_) return module.stanceBar.hide end,
+                        set = function(_, val)
+                            if val then
+                                module.stanceBar.hide = val
+                                self:SetupActionbars()
+                            else
+
+                            end
+                        end,
+                    },
+                    spacer1 = {
+                        name = "",
+                        type = "description",
+                        width = "full",
+                        order = 2,
+                    },
+                    frameAnchor = {
+                        name = "Frame Anchor",
+                        desc = "Anchor point of the frame.\n(Default " .. self.frameAnchors[defaults.stanceBar.frameAnchor] .. ")",
+                        type = "select",
+                        width = 1,
+                        order = 3,
+                        values = function() return self.frameAnchors end,
+                        get = function(_) return module.stanceBar.frameAnchor end,
+                        set = function(_, val)
+                            module.stanceBar.frameAnchor = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    parentAnchor = {
+                        name = "Parent Anchor",
+                        desc = "Anchor point of the frame relative to its parent frame.\n(Default " .. self.frameAnchors[defaults.stanceBar.screenAnchor] .. ")",
+                        type = "select",
+                        width = 1,
+                        order = 4,
+                        values = function() return self.frameAnchors end,
+                        get = function(_) return module.stanceBar.screenAnchor end,
+                        set = function(_, val)
+                            module.stanceBar.screenAnchor = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    spacer2 = {
+                        name = "",
+                        type = "description",
+                        width = "full",
+                        order = 5,
+                    },
+                    x = {
+                        name = "Frame X",
+                        desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.stanceBar.x .. ")",
+                        type = "range",
+                        min = math.floor(screenWidth) * -1,
+                        max = math.floor(screenWidth),
+                        step = 1,
+                        width = 1,
+                        order = 6,
+                        get = function(_) return module.stanceBar.x end,
+                        set = function(_, val)
+                            module.stanceBar.x = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    y = {
+                        name = "Frame Y",
+                        desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.stanceBar.y .. ")",
+                        type = "range",
+                        min = math.floor(screenHeight) * -1,
+                        max = math.floor(screenHeight),
+                        step = 1,
+                        width = 1,
+                        order = 7,
+                        get = function(_) return module.stanceBar.y end,
+                        set = function(_, val)
+                            module.stanceBar.y = val
+                            self:SetupActionbars()
+                        end,
+                    }
+                }
+            },
             microBar = {
                 name = "Micro Bar",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
                 inline = true,
-                order = 3,
+                order = 4,
                 args = {
                     moveFrame = {
                         name = "Move Frame",
@@ -478,7 +626,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                     },
                     x = {
                         name = "Frame X",
-                        desc = "Must be a number, this is the X position of the frame relative to the center of the screen.\n(Default " .. defaults.microBar.x .. ")",
+                        desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.microBar.x .. ")",
                         type = "range",
                         min = math.floor(screenWidth) * -1,
                         max = math.floor(screenWidth),
@@ -493,7 +641,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                     },
                     y = {
                         name = "Frame Y",
-                        desc = "Must be a number, this is the Y position of the frame relative to the center of the screen.\n(Default " .. defaults.microBar.y .. ")",
+                        desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.microBar.y .. ")",
                         type = "range",
                         min = math.floor(screenHeight) * -1,
                         max = math.floor(screenHeight),
@@ -513,7 +661,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
                 inline = true,
-                order = 4,
+                order = 5,
                 args = {
                     moveFrame = {
                         name = "Move Frame",
@@ -567,7 +715,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                     },
                     x = {
                         name = "Frame X",
-                        desc = "Must be a number, this is the X position of the frame relative to the center of the screen.\n(Default " .. defaults.bagBar.x .. ")",
+                        desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.bagBar.x .. ")",
                         type = "range",
                         min = math.floor(screenWidth) * -1,
                         max = math.floor(screenWidth),
@@ -582,7 +730,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                     },
                     y = {
                         name = "Frame Y",
-                        desc = "Must be a number, this is the Y position of the frame relative to the center of the screen.\n(Default " .. defaults.bagBar.y .. ")",
+                        desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.bagBar.y .. ")",
                         type = "range",
                         min = math.floor(screenHeight) * -1,
                         max = math.floor(screenHeight),
@@ -694,7 +842,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(module, defaults, order)
                     },
                     x = {
                         name = "Frame X",
-                        desc = "Must be a number, this is the X position of the frame relative to the center of the screen.\n(Default " .. defaults.playerFrame.x .. ")",
+                        desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.playerFrame.x .. ")",
                         type = "range",
                         min = math.floor(screenWidth) * -1,
                         max = math.floor(screenWidth),
@@ -709,7 +857,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(module, defaults, order)
                     },
                     y = {
                         name = "Frame Y",
-                        desc = "Must be a number, this is the Y position of the frame relative to the center of the screen.\n(Default " .. defaults.playerFrame.y .. ")",
+                        desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.playerFrame.y .. ")",
                         type = "range",
                         min = math.floor(screenHeight) * -1,
                         max = math.floor(screenHeight),
@@ -798,7 +946,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(module, defaults, order)
                     },
                     x = {
                         name = "Frame X",
-                        desc = "Must be a number, this is the X position of the frame relative to the center of the screen.\n(Default " .. defaults.targetFrame.x .. ")",
+                        desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.targetFrame.x .. ")",
                         type = "range",
                         disabled = function() return ScarletUI:SettingDisabled(not module.targetFrame.mirrorPlayerFrame) end,
                         min = math.floor(screenWidth) * -1,
@@ -814,7 +962,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(module, defaults, order)
                     },
                     y = {
                         name = "Frame Y",
-                        desc = "Must be a number, this is the Y position of the frame relative to the center of the screen.\n(Default " .. defaults.targetFrame.y .. ")",
+                        desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.targetFrame.y .. ")",
                         type = "range",
                         disabled = function() return ScarletUI:SettingDisabled(not module.targetFrame.mirrorPlayerFrame) end,
                         min = math.floor(screenHeight) * -1,
@@ -890,7 +1038,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(module, defaults, order)
                     },
                     x = {
                         name = "Frame X",
-                        desc = "Must be a number, this is the X position of the frame relative to the center of the screen.\n(Default " .. defaults.focusFrame.x .. ")",
+                        desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.focusFrame.x .. ")",
                         type = "range",
                         min = math.floor(screenWidth) * -1,
                         max = math.floor(screenWidth),
@@ -905,7 +1053,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(module, defaults, order)
                     },
                     y = {
                         name = "Frame Y",
-                        desc = "Must be a number, this is the Y position of the frame relative to the center of the screen.\n(Default " .. defaults.focusFrame.y .. ")",
+                        desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.focusFrame.y .. ")",
                         type = "range",
                         min = math.floor(screenHeight) * -1,
                         max = math.floor(screenHeight),
@@ -1190,12 +1338,48 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                     }
                 },
             },
+            castBarText = {
+                name = "Cast Bar Text",
+                type = "group",
+                disabled = function() return self.inCombat end,
+                inline = true,
+                order = 2,
+                args = {
+                    show = {
+                        name = "Show",
+                        desc = "Add cast text to cast bar on nameplates.",
+                        type = "toggle",
+                        width = "full",
+                        order = 1,
+                        get = function(_) return module.castBarText.show end,
+                        set = function(_, val)
+                            module.castBarText.show = val
+                            ScarletUI:UpdateCustomText()
+                        end,
+                    },
+                    fontSize = {
+                        name = "Font Size",
+                        desc = "Desired font size for cast bar text.\n(Default " .. defaults.castBarText.fontSize .. ")",
+                        type = "range",
+                        min = 6,
+                        max = 20,
+                        step = 1,
+                        width = 1,
+                        order = 4,
+                        get = function(_) return module.castBarText.fontSize end,
+                        set = function(_, val)
+                            module.castBarText.fontSize = val
+                            ScarletUI:UpdateCustomText()
+                        end,
+                    }
+                },
+            },
             nonTankThreatColors = {
                 name = "Non-Tank Threat Colors",
                 type = "group",
                 disabled = function() return self.inCombat end,
                 inline = true,
-                order = 2,
+                order = 3,
                 args = {
                     noThreat = {
                         name = "No Threat",
@@ -1266,7 +1450,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                 type = "group",
                 disabled = function() return self.inCombat end,
                 inline = true,
-                order = 3,
+                order = 4,
                 args = {
                     noThreat = {
                         name = "No Threat",
@@ -1339,7 +1523,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                 multiline = 5,
                 width = "full",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
-                order = 4,
+                order = 5,
                 get = function(_) return module.tankNames end,
                 set = function(_, value)
                     module.tankNames = value

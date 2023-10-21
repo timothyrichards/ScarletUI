@@ -6,7 +6,7 @@ local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 
 -- Dialog to reload after addon settings are changed
 StaticPopupDialogs['SCARLET_UI_RELOAD_DIALOG'] = {
-    text = '<Scarlet UI>\n\nRequires a reload to properly configure your UI, if you do not reload you will experience lua errors.',
+    text = '<Scarlet UI>\n\nRequires a reload to properly configure=.\n\nIF YOU DO NOT RELOAD YOU WILL EXPERIENCE LUA ERRORS.',
     button1 = 'Reload',
     button2 = 'Close',
     OnAccept = function()
@@ -132,3 +132,5 @@ end)
 --hooksecurefunc("SetCVar", function(k, v)
 --    print("CVar", k, "changed to", v)
 --end)
+
+--adjust side bar column/row length
