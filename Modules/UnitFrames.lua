@@ -75,7 +75,6 @@ function ScarletUI:SetupFocusFrame(unitFramesModule)
         return
     end
 
-    self:CreateMover(FocusFrame, focusFrame)
     if FocusFrame then
         FocusFrame:SetMovable(true)
         FocusFrame:SetUserPlaced(true)
@@ -87,5 +86,6 @@ function ScarletUI:SetupFocusFrame(unitFramesModule)
                 focusFrame.x,
                 focusFrame.y
         )
+        self:CreateMover(FocusFrame, focusFrame)
     end
 end

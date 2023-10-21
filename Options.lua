@@ -1279,6 +1279,26 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
         order = order,
         disabled = function() return not module.enabled end,
         args = {
+            generalSettings = {
+                name = "General Settings",
+                type = "group",
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
+                inline = true,
+                order = 0,
+                args = {
+                    classColored = {
+                        name = "Class Colored Nameplates",
+                        desc = "Change player nameplates to match their class color.",
+                        type = "toggle",
+                        width = 1.25,
+                        order = 0,
+                        get = function(_) return module.classColored end,
+                        set = function(_, val)
+                            module.classColored = val
+                        end,
+                    },
+                }
+            },
             targetIndicator = {
                 name = "Target Indicator",
                 type = "group",

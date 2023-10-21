@@ -39,11 +39,6 @@ local function mainMenuBar(module)
         MainMenuBarRightEndCap:SetPoint("BOTTOMLEFT", MainMenuBarArtFrame, "BOTTOMRIGHT", -30, 0)
     end
 
-    MainMenuBarVehicleLeaveButton:SetPoint("LEFT", MainMenuBarArtFrame, "RIGHT", 5, -5)
-    MainMenuBarVehicleLeaveButton:HookScript("OnShow", function()
-        MainMenuBarVehicleLeaveButton:SetPoint("LEFT", MainMenuBarArtFrame, "RIGHT", 5, -5)
-    end)
-
     local mainBarSettings = module.mainBar;
     ScarletUI:CreateMover(MainMenuBar, mainBarSettings)
 end
@@ -119,6 +114,11 @@ local function multiBarBottomLeft()
 end
 
 local function multiBarBottomRight()
+    MainMenuBarVehicleLeaveButton:SetPoint("BOTTOM", MultiBarBottomRightButton12, "BOTTOM", 0, 0)
+    MainMenuBarVehicleLeaveButton:HookScript("OnShow", function()
+        MainMenuBarVehicleLeaveButton:SetPoint("BOTTOM", MultiBarBottomRightButton12, "BOTTOM", 0, 0)
+    end)
+
     MultiBarBottomRight:SetMovable(true)
     MultiBarBottomRight:SetUserPlaced(true)
     MultiBarBottomRight:UnregisterAllEvents();

@@ -108,6 +108,7 @@ ScarletUI.defaults = {
         },
         nameplatesModule = {
             enabled = true,
+            classColored = true,
             targetIndicator = {
                 show = true,
                 indicatorSize = 30,

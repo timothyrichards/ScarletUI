@@ -229,7 +229,7 @@ function ScarletUI:SetupNameplates()
                     threatStatus = 4
                 end
 
-                if UnitIsPlayer(unitId) then
+                if UnitIsPlayer(unitId) and nameplatesModule.classColored then
                     local _, class = UnitClass(unitId)
                     local color = RAID_CLASS_COLORS[class]
                     nameplate.UnitFrame.healthBar:SetStatusBarColor(color.r, color.g, color.b)
