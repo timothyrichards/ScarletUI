@@ -13,6 +13,7 @@ function ScarletUI:Options()
         args = {
             toggleMovers = {
                 name = "Toggle Movers",
+                desc = "Enables mover frames so you can drag various UI elements to a new position.",
                 type = "execute",
                 disabled = function() return self.inCombat end,
                 order = 1,
@@ -21,23 +22,35 @@ function ScarletUI:Options()
                     self:ToggleMovers()
                 end,
             },
-            defaultSettings = {
-                name = "Restore Defaults",
+            restoreFramePositions = {
+                name = "Restore Positions",
+                desc = "Restores frame positions back to default positions.",
                 type = "execute",
                 disabled = function() return self.inCombat end,
                 order = 2,
+                width = 1,
+                func = function()
+                    self:ResetPositions()
+                end,
+            },
+            defaultSettings = {
+                name = "Restore Defaults",
+                desc = "Restores all settings back to default settings.",
+                type = "execute",
+                disabled = function() return self.inCombat end,
+                order = 3,
                 width = 1,
                 func = function()
                     StaticPopup_Show('SCARLET_RESTORE_DEFAULTS_DIALOG')
                 end,
             },
             moduleSettings = self:GetModuleSettingsPage(database, 0),
-            chatModuleSettings = self:GetChatModuleSettingsPage(database.chatModule, defaults.chatModule, 3),
-            actionbarsModuleSettings = self:GetActionbarsModuleSettingsPage(database.actionbarsModule, defaults.actionbarsModule, 4),
-            unitFramesModuleSettings = self:GetUnitFramesModuleSettingsPage(database.unitFramesModule, defaults.unitFramesModule, 5),
-            raidFramesModuleSettings = self:GetRaidFramesModuleSettingsPage(database.raidFramesModule, defaults.raidFramesModule, 6),
-            nameplatesModuleSettings = self:GetNameplatesModuleSettingsPage(database.nameplatesModule, defaults.nameplatesModule, 7),
-            CVarModuleSettings = self:GetCVarModuleSettingsPage(database.CVarModule, defaults.CVarModule, 8),
+            chatModuleSettings = self:GetChatModuleSettingsPage(database.chatModule, defaults.chatModule, 4),
+            actionbarsModuleSettings = self:GetActionbarsModuleSettingsPage(database.actionbarsModule, defaults.actionbarsModule, 5),
+            unitFramesModuleSettings = self:GetUnitFramesModuleSettingsPage(database.unitFramesModule, defaults.unitFramesModule, 6),
+            raidFramesModuleSettings = self:GetRaidFramesModuleSettingsPage(database.raidFramesModule, defaults.raidFramesModule, 7),
+            nameplatesModuleSettings = self:GetNameplatesModuleSettingsPage(database.nameplatesModule, defaults.nameplatesModule, 8),
+            CVarModuleSettings = self:GetCVarModuleSettingsPage(database.CVarModule, defaults.CVarModule, 9),
         },
     }
 end
@@ -45,6 +58,7 @@ end
 function ScarletUI:GetModuleSettingsPage(database, order)
     return {
         name = "General Settings",
+        desc = "Miscellaneous ScarletUI settings.",
         type = "group",
         order = order,
         args = {
@@ -218,7 +232,7 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                     },
                     cVarModuleEnabled = {
                         name = "CVars",
-                        desc = "Manage your cVars.",
+                        desc = "Manage your cVars. (WORK IN PROGRESS)",
                         type = "toggle",
                         width = 1,
                         order = 5,
@@ -241,6 +255,7 @@ end
 function ScarletUI:GetChatModuleSettingsPage(module, defaults, order)
     return {
         name = "Chat",
+        desc = "Chat Module settings.",
         type = "group",
         order = order,
         disabled = function() return not module.enabled end,
@@ -396,6 +411,7 @@ end
 function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
     return {
         name = "Actionbars",
+        desc = "Actionbars Module settings.",
         type = "group",
         childGroups = "tree",
         order = order,
@@ -827,6 +843,246 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                     }
                 }
             },
+            multiBarLeft = {
+                name = "MultiBarLeft Bar",
+                type = "group",
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
+                hidden = true,
+                inline = true,
+                order = 6,
+                args = {
+                    moveFrame = {
+                        name = "Move Frame",
+                        desc = "Allows you to choose the X and Y position of the frame.",
+                        type = "toggle",
+                        width = 1,
+                        order = 0,
+                        get = function(_) return module.multiBarLeft.move end,
+                        set = function(_, val)
+                            module.multiBarLeft.move = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    spacer1 = {
+                        name = "",
+                        type = "description",
+                        width = "full",
+                        order = 1,
+                    },
+                    frameAnchor = {
+                        name = "Frame Anchor",
+                        desc = "Anchor point of the frame.\n(Default " .. self.frameAnchors[defaults.multiBarLeft.frameAnchor] .. ")",
+                        type = "select",
+                        width = 1,
+                        order = 2,
+                        values = function() return self.frameAnchors end,
+                        get = function(_) return module.multiBarLeft.frameAnchor end,
+                        set = function(_, val)
+                            module.multiBarLeft.frameAnchor = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    screenAnchor = {
+                        name = "Screen Anchor",
+                        desc = "Anchor point of the frame relative to the screen.\n(Default " .. self.frameAnchors[defaults.multiBarLeft.screenAnchor] .. ")",
+                        type = "select",
+                        width = 1,
+                        order = 3,
+                        values = function() return self.frameAnchors end,
+                        get = function(_) return module.multiBarLeft.screenAnchor end,
+                        set = function(_, val)
+                            module.multiBarLeft.screenAnchor = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    spacer2 = {
+                        name = "",
+                        type = "description",
+                        width = "full",
+                        order = 4,
+                    },
+                    x = {
+                        name = "Frame X",
+                        desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.multiBarLeft.x .. ")",
+                        type = "range",
+                        min = math.floor(screenWidth) * -1,
+                        max = math.floor(screenWidth),
+                        step = 1,
+                        width = 1,
+                        order = 5,
+                        get = function(_) return module.multiBarLeft.x end,
+                        set = function(_, val)
+                            module.multiBarLeft.x = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    y = {
+                        name = "Frame Y",
+                        desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.multiBarLeft.y .. ")",
+                        type = "range",
+                        min = math.floor(screenHeight) * -1,
+                        max = math.floor(screenHeight),
+                        step = 1,
+                        width = 1,
+                        order = 6,
+                        get = function(_) return module.multiBarLeft.y end,
+                        set = function(_, val)
+                            module.multiBarLeft.y = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    buttonsPerColumn = {
+                        name = "Buttons Per Column",
+                        desc = "Must be a number, this is the number of buttons you want per column, new columns will automatically be created with the overflow.\n(Default " .. defaults.multiBarLeft.buttonsPerColumn .. ")",
+                        type = "range",
+                        min = 1,
+                        max = 12,
+                        step = 1,
+                        width = 1,
+                        order = 7,
+                        get = function(_) return module.multiBarLeft.buttonsPerColumn end,
+                        set = function(_, val)
+                            module.multiBarLeft.buttonsPerColumn = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    spacing = {
+                        name = "Spacing",
+                        desc = "Must be a number, spacing between each of the buttons.\n(Default " .. defaults.multiBarLeft.spacing .. ")",
+                        type = "range",
+                        min = 0,
+                        max = 100,
+                        step = 1,
+                        width = 1,
+                        order = 8,
+                        get = function(_) return module.multiBarLeft.spacing end,
+                        set = function(_, val)
+                            module.multiBarLeft.spacing = val
+                            self:SetupActionbars()
+                        end,
+                    }
+                }
+            },
+            multiBarRight = {
+                name = "MultiBarRight Bar",
+                type = "group",
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
+                hidden = true,
+                inline = true,
+                order = 7,
+                args = {
+                    moveFrame = {
+                        name = "Move Frame",
+                        desc = "Allows you to choose the X and Y position of the frame.",
+                        type = "toggle",
+                        width = 1,
+                        order = 0,
+                        get = function(_) return module.multiBarRight.move end,
+                        set = function(_, val)
+                            module.multiBarRight.move = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    spacer1 = {
+                        name = "",
+                        type = "description",
+                        width = "full",
+                        order = 1,
+                    },
+                    frameAnchor = {
+                        name = "Frame Anchor",
+                        desc = "Anchor point of the frame.\n(Default " .. self.frameAnchors[defaults.multiBarRight.frameAnchor] .. ")",
+                        type = "select",
+                        width = 1,
+                        order = 2,
+                        values = function() return self.frameAnchors end,
+                        get = function(_) return module.multiBarRight.frameAnchor end,
+                        set = function(_, val)
+                            module.multiBarRight.frameAnchor = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    screenAnchor = {
+                        name = "Screen Anchor",
+                        desc = "Anchor point of the frame relative to the screen.\n(Default " .. self.frameAnchors[defaults.multiBarRight.screenAnchor] .. ")",
+                        type = "select",
+                        width = 1,
+                        order = 3,
+                        values = function() return self.frameAnchors end,
+                        get = function(_) return module.multiBarRight.screenAnchor end,
+                        set = function(_, val)
+                            module.multiBarRight.screenAnchor = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    spacer2 = {
+                        name = "",
+                        type = "description",
+                        width = "full",
+                        order = 4,
+                    },
+                    x = {
+                        name = "Frame X",
+                        desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.multiBarRight.x .. ")",
+                        type = "range",
+                        min = math.floor(screenWidth) * -1,
+                        max = math.floor(screenWidth),
+                        step = 1,
+                        width = 1,
+                        order = 5,
+                        get = function(_) return module.multiBarRight.x end,
+                        set = function(_, val)
+                            module.multiBarRight.x = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    y = {
+                        name = "Frame Y",
+                        desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.multiBarRight.y .. ")",
+                        type = "range",
+                        min = math.floor(screenHeight) * -1,
+                        max = math.floor(screenHeight),
+                        step = 1,
+                        width = 1,
+                        order = 6,
+                        get = function(_) return module.multiBarRight.y end,
+                        set = function(_, val)
+                            module.multiBarRight.y = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    buttonsPerColumn = {
+                        name = "Buttons Per Column",
+                        desc = "Must be a number, this is the number of buttons you want per column, new columns will automatically be created with the overflow.\n(Default " .. defaults.multiBarRight.buttonsPerColumn .. ")",
+                        type = "range",
+                        min = 1,
+                        max = 12,
+                        step = 1,
+                        width = 1,
+                        order = 7,
+                        get = function(_) return module.multiBarRight.buttonsPerColumn end,
+                        set = function(_, val)
+                            module.multiBarRight.buttonsPerColumn = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    spacing = {
+                        name = "Spacing",
+                        desc = "Must be a number, spacing between each of the buttons.\n(Default " .. defaults.multiBarRight.spacing .. ")",
+                        type = "range",
+                        min = 0,
+                        max = 100,
+                        step = 1,
+                        width = 1,
+                        order = 8,
+                        get = function(_) return module.multiBarRight.spacing end,
+                        set = function(_, val)
+                            module.multiBarRight.spacing = val
+                            self:SetupActionbars()
+                        end,
+                    }
+                }
+            },
         }
     }
 end
@@ -834,6 +1090,7 @@ end
 function ScarletUI:GetUnitFramesModuleSettingsPage(module, defaults, order)
     return {
         name = "Unit Frames",
+        desc = "Unit Frames Module settings.",
         type = "group",
         order = order,
         disabled = function() return not module.enabled or self.lightWeightMode end,
@@ -1131,6 +1388,7 @@ end
 function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
     return {
         name = "Raid Frames",
+        desc = "Raid Frames Module settings.",
         type = "group",
         order = order,
         disabled = function() return not module.enabled or self.lightWeightMode end,
@@ -1275,6 +1533,7 @@ end
 function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
     return {
         name = "Nameplates",
+        desc = "Nameplates Module settings.",
         type = "group",
         order = order,
         disabled = function() return not module.enabled end,
@@ -1564,6 +1823,7 @@ end
 function ScarletUI:GetCVarModuleSettingsPage(module, defaults, order)
     return {
         name = "CVars",
+        desc = "CVars Module settings. (WORK IN PROGRESS)",
         type = "group",
         order = order,
         disabled = function() return not module.enabled end,

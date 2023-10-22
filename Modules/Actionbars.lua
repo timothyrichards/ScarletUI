@@ -49,11 +49,16 @@ local function microBar(actionbarsModule)
         return
     end
 
-    CharacterMicroButton:SetMovable(true)
-    CharacterMicroButton:SetUserPlaced(true)
-    CharacterMicroButton:ClearAllPoints()
-    ScarletUI:SetPoint(
-            CharacterMicroButton,
+    -- Create or retrieve the MicroBar frame
+    local MicroBar = _G["MicroBar"] or CreateFrame("Frame", "MicroBar", UIParent)
+    local buttonSpacing = 1
+    local buttonWidth, buttonHeight = CharacterMicroButton:GetWidth(), CharacterMicroButton:GetHeight()
+    local totalWidth = buttonWidth * (11 - buttonSpacing)
+
+    -- Set dimensions and position of MicroBar
+    MicroBar:ClearAllPoints()
+    MicroBar:SetSize(totalWidth, buttonHeight)
+    MicroBar:SetPoint(
             ScarletUI.frameAnchors[microBarSettings.frameAnchor],
             UIParent,
             ScarletUI.frameAnchors[microBarSettings.screenAnchor],
@@ -61,7 +66,13 @@ local function microBar(actionbarsModule)
             microBarSettings.y
     )
 
-    ScarletUI:CreateMover(CharacterMicroButton, microBarSettings)
+    -- Make CharacterMicroButton movable
+    CharacterMicroButton:SetMovable(true)
+    CharacterMicroButton:SetUserPlaced(true)
+    CharacterMicroButton:ClearAllPoints()
+    ScarletUI:SetPoint(CharacterMicroButton, "LEFT", MicroBar, "LEFT", 0, 0)
+
+    ScarletUI:CreateMover(MicroBar, microBarSettings)
 end
 
 local function bagBar(actionbarsModule)
@@ -70,22 +81,36 @@ local function bagBar(actionbarsModule)
         return
     end
 
-    MainMenuBarBackpackButton:SetMovable(true);
-    MainMenuBarBackpackButton:SetUserPlaced(true);
-    MainMenuBarBackpackButton:ClearAllPoints();
-    MainMenuBarBackpackButton:SetPoint(
+    -- Create or retrieve the BagBar frame
+    local BagBar = _G["BagBar"] or CreateFrame("Frame", "BagBar", UIParent)
+    local buttonSpacing = 5  -- Spacing between buttons, you can adjust this as needed
+    local buttonWidth, buttonHeight = MainMenuBarBackpackButton:GetWidth(), MainMenuBarBackpackButton:GetHeight()
+    local totalButtons = 5  -- Backpack + 4 Bag Slots + KeyRing
+    local totalWidth = buttonWidth * totalButtons + buttonSpacing * (totalButtons - 1)
+
+    -- Set dimensions and position of BagBar
+    BagBar:ClearAllPoints()
+    BagBar:SetSize(totalWidth, buttonHeight)
+    BagBar:SetPoint(
             ScarletUI.frameAnchors[bagBarSettings.frameAnchor],
             UIParent,
             ScarletUI.frameAnchors[bagBarSettings.screenAnchor],
             bagBarSettings.x,
             bagBarSettings.y
-    );
+    )
+
+    -- Move the Backpack button to the new BagBar frame
+    MainMenuBarBackpackButton:SetMovable(true)
+    MainMenuBarBackpackButton:SetUserPlaced(true)
+    MainMenuBarBackpackButton:ClearAllPoints()
+    MainMenuBarBackpackButton:SetPoint("RIGHT", BagBar, "RIGHT", 0, 0)
     MainMenuBarBackpackButtonNormalTexture:Hide()
 
+    -- Position the other bag buttons relative to the Backpack button
     CharacterBag0Slot:SetMovable(true)
     CharacterBag0Slot:SetUserPlaced(true)
     CharacterBag0Slot:ClearAllPoints()
-    CharacterBag0Slot:SetPoint("RIGHT", MainMenuBarBackpackButton, "LEFT", -5, 0)
+    CharacterBag0Slot:SetPoint("RIGHT", MainMenuBarBackpackButton, "LEFT", -buttonSpacing, 0)
     CharacterBag0SlotNormalTexture:Hide()
     CharacterBag1SlotNormalTexture:Hide()
     CharacterBag2SlotNormalTexture:Hide()
@@ -100,7 +125,7 @@ local function bagBar(actionbarsModule)
         KeyRingButton:SetPoint("RIGHT", MainMenuBarBackpackButton, "LEFT", -5, 0)
     end
 
-    ScarletUI:CreateMover(MainMenuBarBackpackButton, bagBarSettings)
+    ScarletUI:CreateMover(BagBar, bagBarSettings)
 end
 
 local function multiBarBottomLeft()

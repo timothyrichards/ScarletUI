@@ -76,7 +76,25 @@ ScarletUI.defaults = {
                 screenAnchor = 3,
                 x = -2,
                 y = 2,
-            }
+            },
+            multiBarLeft = {
+                move = true,
+                buttonsPerColumn = 1,
+                spacing = 6,
+                frameAnchor = 6,
+                screenAnchor = 6,
+                x = -42,
+                y = 0,
+            },
+            multiBarRight = {
+                move = true,
+                buttonsPerColumn = 4,
+                spacing = 6,
+                frameAnchor = 6,
+                screenAnchor = 6,
+                x = 0,
+                y = 0,
+            },
         },
         chatModule = {
             enabled = true,
@@ -254,24 +272,29 @@ function ScarletUI:CreateMover(targetFrame, module)
         return targetFrame.mover
     end
 
-    local mover = CreateFrame("Frame", nil, UIParent)
+    local targetFrameName = targetFrame:GetName()
+
+    targetFrame:SetMovable(true)
+    targetFrame:SetClampedToScreen(true)
+
+    local mover = CreateFrame("Frame", targetFrameName .. "Mover", UIParent)
     mover.targetFrame = targetFrame
     mover:SetSize(targetFrame:GetWidth(), targetFrame:GetHeight())
     mover:SetPoint("BOTTOM", targetFrame, "BOTTOM", 0, 0)
     mover:SetFrameStrata("FULLSCREEN_DIALOG")
 
     -- Background
-    local bg = mover:CreateTexture(nil, "BACKGROUND")
+    local bg = mover:CreateTexture("Background", "BACKGROUND")
     bg:SetAllPoints()
     bg:SetColorTexture(0.4, 0.6, 1, 0.5) -- light blue background
 
     -- Border
     local borderSize = 4
     local borders = {
-        mover:CreateTexture(nil, "BORDER"), -- Top
-        mover:CreateTexture(nil, "BORDER"), -- Bottom
-        mover:CreateTexture(nil, "BORDER"), -- Left
-        mover:CreateTexture(nil, "BORDER"), -- Right
+        mover:CreateTexture("TopBorder", "BORDER"),
+        mover:CreateTexture("BottomBorder", "BORDER"),
+        mover:CreateTexture("LeftBorder", "BORDER"),
+        mover:CreateTexture("RightBorder", "BORDER"),
     }
 
     for _, border in ipairs(borders) do
@@ -295,8 +318,8 @@ function ScarletUI:CreateMover(targetFrame, module)
     borders[4]:SetWidth(borderSize)
 
     -- Display the frame's name in the center of the mover
-    local text = mover:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    text:SetText(targetFrame:GetName())
+    local text = mover:CreateFontString("FrameName", "OVERLAY", "GameFontNormal")
+    text:SetText(targetFrameName)
     text:SetPoint("CENTER", mover, "CENTER")
 
     mover:SetScript("OnMouseDown", function(_, button)
@@ -307,7 +330,9 @@ function ScarletUI:CreateMover(targetFrame, module)
 
     mover:SetScript("OnMouseUp", function(_, _)
         targetFrame:StopMovingOrSizing()
-        self:UpdateFramePositionSettings(targetFrame, module)
+        if module ~= nil then
+            self:UpdateFramePositionSettings(targetFrame, module)
+        end
     end)
 
     mover:Hide()
@@ -328,8 +353,54 @@ function ScarletUI:CreateMover(targetFrame, module)
     end)
 
     targetFrame.mover = mover
-    self.movers[targetFrame:GetName()] = mover
+    self.movers[targetFrameName] = mover
     return mover
+end
+
+function ScarletUI:ArrangeActionBarIntoGrid(bar, buttonsPerColumn, spacing)
+    local barName = bar:GetName()
+    local button
+    local totalButtons = 12
+    local firstButtonInPrevColumn
+
+    -- Calculate number of columns based on buttonsPerColumn
+    local columns = math.ceil(totalButtons / buttonsPerColumn)
+
+    local totalWidth, totalHeight = 0, 0
+    local buttonWidth, buttonHeight = 0, 0
+
+    for i = 1, totalButtons do
+        button = _G[barName .. "Button" .. i]
+
+        if not button then
+            break
+        end
+
+        if i == 1 then
+            -- Get the dimensions of the first button to determine the size for all buttons
+            buttonWidth, buttonHeight = button:GetWidth(), button:GetHeight()
+            totalWidth = columns * buttonWidth + (columns - 1) * spacing
+            totalHeight = buttonsPerColumn * buttonHeight + (buttonsPerColumn - 1) * spacing
+        end
+
+        button:ClearAllPoints()
+        button:SetParent(bar)
+
+        if i == 1 then
+            -- The first button defines the start point
+            button:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
+            firstButtonInPrevColumn = button
+        elseif (i - 1) % buttonsPerColumn == 0 then
+            -- Start of a new column
+            button:SetPoint("TOPLEFT", firstButtonInPrevColumn, "TOPRIGHT", spacing, 0)
+            firstButtonInPrevColumn = button
+        else
+            -- Position button below the previous one
+            button:SetPoint("TOP", _G[barName .. "Button" .. (i-1)], "BOTTOM", 0, -spacing)
+        end
+    end
+
+    bar:SetSize(totalWidth, totalHeight)
 end
 
 function ScarletUI:ToggleMovers()
@@ -339,7 +410,7 @@ function ScarletUI:ToggleMovers()
         self.moversEnabled = true
     end
 
-    for k, v in pairs(self.movers) do
+    for _, v in pairs(self.movers) do
         if self.moversEnabled then
             v:SetMovable(true)
             v:Show()
