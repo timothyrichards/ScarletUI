@@ -109,51 +109,6 @@ function ScarletUI:SetupFrame()
     self.frame:Hide()
 end
 
-function ScarletUI:ResetPositions()
-    local db = self.db.global
-    local defaults = self.defaults.global
-    local frames = {
-        "unitFramesModule.playerFrame",
-        "unitFramesModule.targetFrame",
-        "unitFramesModule.focusFrame",
-        "actionbarsModule.mainBar",
-        "actionbarsModule.stanceBar",
-        "actionbarsModule.microBar",
-        "actionbarsModule.bagBar",
-        "chatModule.chatFrame",
-        "raidFramesModule.partyFrames",
-        "raidFramesModule.raidFrames",
-    }
-    local settings = {
-        "frameAnchor",
-        "screenAnchor",
-        "x",
-        "y",
-    }
-
-    for _, framePath in ipairs(frames) do
-        local frameParts = {}
-        for part in string.gmatch(framePath, "[^.]+") do
-            table.insert(frameParts, part)
-        end
-        local frameCategory, frameName = frameParts[1], frameParts[2]
-        for _, setting in ipairs(settings) do
-            if defaults[frameCategory] and defaults[frameCategory][frameName] and defaults[frameCategory][frameName][setting] then
-                db[frameCategory][frameName][setting] = defaults[frameCategory][frameName][setting]
-            end
-        end
-    end
-
-    self:Setup()
-    AceConfigRegistry:NotifyChange("ScarletUI")
-end
-
-function ScarletUI:ResetDefaults()
-    self.db:ResetDB()
-    self:Setup()
-    AceConfigRegistry:NotifyChange("ScarletUI")
-end
-
 ScarletUI.frame = CreateFrame("Frame", "SUI_Frame", UIParent)
 ScarletUI.frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 ScarletUI.frame:RegisterEvent("PLAYER_REGEN_DISABLED")

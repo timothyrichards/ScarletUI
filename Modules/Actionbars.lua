@@ -70,7 +70,7 @@ local function microBar(actionbarsModule)
     CharacterMicroButton:SetMovable(true)
     CharacterMicroButton:SetUserPlaced(true)
     CharacterMicroButton:ClearAllPoints()
-    ScarletUI:SetPoint(CharacterMicroButton, "LEFT", MicroBar, "LEFT", 0, 0)
+    CharacterMicroButton:SetPoint("LEFT", MicroBar, "LEFT", 0, 0)
 
     ScarletUI:CreateMover(MicroBar, microBarSettings)
 end
@@ -260,17 +260,6 @@ function ScarletUI:SetupActionbars()
         return
     end
 
-    if not self.actionbarEventRegistered then
-        self.actionbarEventRegistered = true;
-        local frame = CreateFrame("Frame", "SUI_ActionbarFrame", SUI_Frame)
-        frame:RegisterEvent("UPDATE_FACTION")
-        frame:SetScript("OnEvent", function(_, event, ...)
-            if event == "UPDATE_FACTION" then
-                ScarletUI:UpdateMainBar()
-            end
-        end)
-    end
-
     local mainBarSettings = actionbarsModule.mainBar;
     if mainBarSettings.move then
         MainMenuBar:ClearAllPoints()
@@ -304,6 +293,22 @@ function ScarletUI:SetupActionbars()
         experienceBar()
         reputationBar()
         ScarletUI:UpdateMainBar()
+    end
+
+    if not self.actionbarEventRegistered then
+        self.actionbarEventRegistered = true;
+        local frame = CreateFrame("Frame", "SUI_ActionbarFrame", SUI_Frame)
+        frame:RegisterEvent("UPDATE_FACTION")
+        frame:RegisterEvent("UNIT_EXITED_VEHICLE")
+        frame:SetScript("OnEvent", function(_, event, ...)
+            if event == "UPDATE_FACTION" then
+                ScarletUI:UpdateMainBar()
+            elseif event == "UNIT_EXITED_VEHICLE" then
+                if actionbarsModule.stackActionbars then
+                    microBar(actionbarsModule)
+                end
+            end
+        end)
     end
 end
 

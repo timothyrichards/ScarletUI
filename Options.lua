@@ -16,7 +16,7 @@ function ScarletUI:Options()
                 desc = "Enables mover frames so you can drag various UI elements to a new position.",
                 type = "execute",
                 disabled = function() return self.inCombat end,
-                order = 1,
+                order = 0,
                 width = 1,
                 func = function()
                     self:ToggleMovers()
@@ -27,7 +27,7 @@ function ScarletUI:Options()
                 desc = "Restores frame positions back to default positions.",
                 type = "execute",
                 disabled = function() return self.inCombat end,
-                order = 2,
+                order = 1,
                 width = 1,
                 func = function()
                     self:ResetPositions()
@@ -38,19 +38,19 @@ function ScarletUI:Options()
                 desc = "Restores all settings back to default settings.",
                 type = "execute",
                 disabled = function() return self.inCombat end,
-                order = 3,
+                order = 2,
                 width = 1,
                 func = function()
                     StaticPopup_Show('SCARLET_RESTORE_DEFAULTS_DIALOG')
                 end,
             },
-            moduleSettings = self:GetModuleSettingsPage(database, 0),
+            moduleSettings = self:GetModuleSettingsPage(database, 3),
             chatModuleSettings = self:GetChatModuleSettingsPage(database.chatModule, defaults.chatModule, 4),
             actionbarsModuleSettings = self:GetActionbarsModuleSettingsPage(database.actionbarsModule, defaults.actionbarsModule, 5),
             unitFramesModuleSettings = self:GetUnitFramesModuleSettingsPage(database.unitFramesModule, defaults.unitFramesModule, 6),
             raidFramesModuleSettings = self:GetRaidFramesModuleSettingsPage(database.raidFramesModule, defaults.raidFramesModule, 7),
             nameplatesModuleSettings = self:GetNameplatesModuleSettingsPage(database.nameplatesModule, defaults.nameplatesModule, 8),
-            CVarModuleSettings = self:GetCVarModuleSettingsPage(database.CVarModule, defaults.CVarModule, 9),
+            CVarModuleSettings = self:GetCVarModuleSettingsPage(database.CVarModule, 9),
         },
     }
 end
@@ -265,7 +265,7 @@ function ScarletUI:GetChatModuleSettingsPage(module, defaults, order)
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
                 inline = true,
-                order = 1,
+                order = 0,
                 args = {
                     fontSize = {
                         name = "Chat Font Size",
@@ -309,6 +309,51 @@ function ScarletUI:GetChatModuleSettingsPage(module, defaults, order)
                         get = function(_) return module.width end,
                         set = function(_, val)
                             module.width = val
+                            self:SetupChat()
+                        end,
+                    },
+                }
+            },
+            tabs = {
+                name = "Tabs",
+                type = "group",
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
+                inline = true,
+                order = 1,
+                args = {
+                    loot = {
+                        name = "Loot Tab",
+                        desc = "Create tab for loot.",
+                        type = "toggle",
+                        width = 1,
+                        order = 0,
+                        get = function(_) return module.tabs.loot end,
+                        set = function(_, val)
+                            module.tabs.loot = val
+                            self:SetupChat()
+                        end,
+                    },
+                    lfg = {
+                        name = "LFG Tab",
+                        desc = "Create tab for lfg.",
+                        type = "toggle",
+                        width = 1,
+                        order = 1,
+                        get = function(_) return module.tabs.lfg end,
+                        set = function(_, val)
+                            module.tabs.lfg = val
+                            self:SetupChat()
+                        end,
+                    },
+                    trade = {
+                        name = "Trade Tab",
+                        desc = "Create tab for trade.",
+                        type = "toggle",
+                        width = 1,
+                        order = 2,
+                        get = function(_) return module.tabs.trade end,
+                        set = function(_, val)
+                            module.tabs.trade = val
                             self:SetupChat()
                         end,
                     },
@@ -445,6 +490,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                         name = "Show Gryphons",
                         desc = "Show the gryphon graphics on the sides of your main bar.",
                         type = "toggle",
+                        disabled = function() return not module.stackActionbars end;
                         width = 1,
                         order = 1,
                         get = function(_) return module.showGryphons end,
@@ -457,6 +503,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                         name = "Micro Bag",
                         desc = "Hide all non backpack bag icons.",
                         type = "toggle",
+                        disabled = function() return not module.stackActionbars end;
                         width = 1,
                         order = 2,
                         get = function(_) return module.microBag end,
@@ -838,246 +885,6 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                         get = function(_) return module.bagBar.y end,
                         set = function(_, val)
                             module.bagBar.y = val
-                            self:SetupActionbars()
-                        end,
-                    }
-                }
-            },
-            multiBarLeft = {
-                name = "MultiBarLeft Bar",
-                type = "group",
-                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
-                hidden = true,
-                inline = true,
-                order = 6,
-                args = {
-                    moveFrame = {
-                        name = "Move Frame",
-                        desc = "Allows you to choose the X and Y position of the frame.",
-                        type = "toggle",
-                        width = 1,
-                        order = 0,
-                        get = function(_) return module.multiBarLeft.move end,
-                        set = function(_, val)
-                            module.multiBarLeft.move = val
-                            self:SetupActionbars()
-                        end,
-                    },
-                    spacer1 = {
-                        name = "",
-                        type = "description",
-                        width = "full",
-                        order = 1,
-                    },
-                    frameAnchor = {
-                        name = "Frame Anchor",
-                        desc = "Anchor point of the frame.\n(Default " .. self.frameAnchors[defaults.multiBarLeft.frameAnchor] .. ")",
-                        type = "select",
-                        width = 1,
-                        order = 2,
-                        values = function() return self.frameAnchors end,
-                        get = function(_) return module.multiBarLeft.frameAnchor end,
-                        set = function(_, val)
-                            module.multiBarLeft.frameAnchor = val
-                            self:SetupActionbars()
-                        end,
-                    },
-                    screenAnchor = {
-                        name = "Screen Anchor",
-                        desc = "Anchor point of the frame relative to the screen.\n(Default " .. self.frameAnchors[defaults.multiBarLeft.screenAnchor] .. ")",
-                        type = "select",
-                        width = 1,
-                        order = 3,
-                        values = function() return self.frameAnchors end,
-                        get = function(_) return module.multiBarLeft.screenAnchor end,
-                        set = function(_, val)
-                            module.multiBarLeft.screenAnchor = val
-                            self:SetupActionbars()
-                        end,
-                    },
-                    spacer2 = {
-                        name = "",
-                        type = "description",
-                        width = "full",
-                        order = 4,
-                    },
-                    x = {
-                        name = "Frame X",
-                        desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.multiBarLeft.x .. ")",
-                        type = "range",
-                        min = math.floor(screenWidth) * -1,
-                        max = math.floor(screenWidth),
-                        step = 1,
-                        width = 1,
-                        order = 5,
-                        get = function(_) return module.multiBarLeft.x end,
-                        set = function(_, val)
-                            module.multiBarLeft.x = val
-                            self:SetupActionbars()
-                        end,
-                    },
-                    y = {
-                        name = "Frame Y",
-                        desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.multiBarLeft.y .. ")",
-                        type = "range",
-                        min = math.floor(screenHeight) * -1,
-                        max = math.floor(screenHeight),
-                        step = 1,
-                        width = 1,
-                        order = 6,
-                        get = function(_) return module.multiBarLeft.y end,
-                        set = function(_, val)
-                            module.multiBarLeft.y = val
-                            self:SetupActionbars()
-                        end,
-                    },
-                    buttonsPerColumn = {
-                        name = "Buttons Per Column",
-                        desc = "Must be a number, this is the number of buttons you want per column, new columns will automatically be created with the overflow.\n(Default " .. defaults.multiBarLeft.buttonsPerColumn .. ")",
-                        type = "range",
-                        min = 1,
-                        max = 12,
-                        step = 1,
-                        width = 1,
-                        order = 7,
-                        get = function(_) return module.multiBarLeft.buttonsPerColumn end,
-                        set = function(_, val)
-                            module.multiBarLeft.buttonsPerColumn = val
-                            self:SetupActionbars()
-                        end,
-                    },
-                    spacing = {
-                        name = "Spacing",
-                        desc = "Must be a number, spacing between each of the buttons.\n(Default " .. defaults.multiBarLeft.spacing .. ")",
-                        type = "range",
-                        min = 0,
-                        max = 100,
-                        step = 1,
-                        width = 1,
-                        order = 8,
-                        get = function(_) return module.multiBarLeft.spacing end,
-                        set = function(_, val)
-                            module.multiBarLeft.spacing = val
-                            self:SetupActionbars()
-                        end,
-                    }
-                }
-            },
-            multiBarRight = {
-                name = "MultiBarRight Bar",
-                type = "group",
-                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
-                hidden = true,
-                inline = true,
-                order = 7,
-                args = {
-                    moveFrame = {
-                        name = "Move Frame",
-                        desc = "Allows you to choose the X and Y position of the frame.",
-                        type = "toggle",
-                        width = 1,
-                        order = 0,
-                        get = function(_) return module.multiBarRight.move end,
-                        set = function(_, val)
-                            module.multiBarRight.move = val
-                            self:SetupActionbars()
-                        end,
-                    },
-                    spacer1 = {
-                        name = "",
-                        type = "description",
-                        width = "full",
-                        order = 1,
-                    },
-                    frameAnchor = {
-                        name = "Frame Anchor",
-                        desc = "Anchor point of the frame.\n(Default " .. self.frameAnchors[defaults.multiBarRight.frameAnchor] .. ")",
-                        type = "select",
-                        width = 1,
-                        order = 2,
-                        values = function() return self.frameAnchors end,
-                        get = function(_) return module.multiBarRight.frameAnchor end,
-                        set = function(_, val)
-                            module.multiBarRight.frameAnchor = val
-                            self:SetupActionbars()
-                        end,
-                    },
-                    screenAnchor = {
-                        name = "Screen Anchor",
-                        desc = "Anchor point of the frame relative to the screen.\n(Default " .. self.frameAnchors[defaults.multiBarRight.screenAnchor] .. ")",
-                        type = "select",
-                        width = 1,
-                        order = 3,
-                        values = function() return self.frameAnchors end,
-                        get = function(_) return module.multiBarRight.screenAnchor end,
-                        set = function(_, val)
-                            module.multiBarRight.screenAnchor = val
-                            self:SetupActionbars()
-                        end,
-                    },
-                    spacer2 = {
-                        name = "",
-                        type = "description",
-                        width = "full",
-                        order = 4,
-                    },
-                    x = {
-                        name = "Frame X",
-                        desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.multiBarRight.x .. ")",
-                        type = "range",
-                        min = math.floor(screenWidth) * -1,
-                        max = math.floor(screenWidth),
-                        step = 1,
-                        width = 1,
-                        order = 5,
-                        get = function(_) return module.multiBarRight.x end,
-                        set = function(_, val)
-                            module.multiBarRight.x = val
-                            self:SetupActionbars()
-                        end,
-                    },
-                    y = {
-                        name = "Frame Y",
-                        desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.multiBarRight.y .. ")",
-                        type = "range",
-                        min = math.floor(screenHeight) * -1,
-                        max = math.floor(screenHeight),
-                        step = 1,
-                        width = 1,
-                        order = 6,
-                        get = function(_) return module.multiBarRight.y end,
-                        set = function(_, val)
-                            module.multiBarRight.y = val
-                            self:SetupActionbars()
-                        end,
-                    },
-                    buttonsPerColumn = {
-                        name = "Buttons Per Column",
-                        desc = "Must be a number, this is the number of buttons you want per column, new columns will automatically be created with the overflow.\n(Default " .. defaults.multiBarRight.buttonsPerColumn .. ")",
-                        type = "range",
-                        min = 1,
-                        max = 12,
-                        step = 1,
-                        width = 1,
-                        order = 7,
-                        get = function(_) return module.multiBarRight.buttonsPerColumn end,
-                        set = function(_, val)
-                            module.multiBarRight.buttonsPerColumn = val
-                            self:SetupActionbars()
-                        end,
-                    },
-                    spacing = {
-                        name = "Spacing",
-                        desc = "Must be a number, spacing between each of the buttons.\n(Default " .. defaults.multiBarRight.spacing .. ")",
-                        type = "range",
-                        min = 0,
-                        max = 100,
-                        step = 1,
-                        width = 1,
-                        order = 8,
-                        get = function(_) return module.multiBarRight.spacing end,
-                        set = function(_, val)
-                            module.multiBarRight.spacing = val
                             self:SetupActionbars()
                         end,
                     }
@@ -1820,34 +1627,49 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
     }
 end
 
-function ScarletUI:GetCVarModuleSettingsPage(module, defaults, order)
-    return {
+function ScarletUI:GetCVarModuleSettingsPage(module, order)
+    local CVars = module.CVars
+    local options = {
         name = "CVars",
         desc = "CVars Module settings. (WORK IN PROGRESS)",
         type = "group",
         order = order,
         disabled = function() return not module.enabled end,
-        args = {
-            --cVars = {
-            --    name = "CVar Settings",
-            --    type = "group",
-            --    disabled = function() return self.inCombat end,
-            --    inline = true,
-            --    order = 1,
-            --    args = {
-            --        useUiScale = {
-            --            name = "",
-            --            desc = "",
-            --            type = "toggle",
-            --            width = 1.5,
-            --            order = 1,
-            --            get = function(_) return module.useUiScale end,
-            --            set = function(_, val)
-            --                ScarletUI:SetupCVars()
-            --            end,
-            --        },
-            --    },
-            --},
-        }
+        args = {}
     }
+    local orderCounter = 0
+    for k, v in pairs(CVars) do
+        orderCounter = orderCounter + 1
+        local labelName = "label" .. orderCounter
+        local spacerName = "spacer" .. orderCounter
+
+        options.args[labelName] = {
+            name = k,
+            type = "description",
+            width = 1.25,
+            order = orderCounter * 3 - 2,
+        }
+
+        options.args[k] = {
+            name = "",
+            desc = "",
+            type = "input",
+            width = 0.5,
+            order = orderCounter * 3 - 1,
+            get = function(_) return CVars[k] end,
+            set = function(_, val)
+                CVars[k] = val
+                ScarletUI:SetupCVars()
+            end,
+        }
+
+        options.args[spacerName] = {
+            name = "",
+            type = "description",
+            width = "full",
+            order = orderCounter * 3,
+        }
+    end
+
+    return options
 end

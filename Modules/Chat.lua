@@ -10,6 +10,7 @@ end
 
 function ScarletUI:SetupChat()
     local chatModule = self.db.global.chatModule;
+    local tabs = chatModule.tabs
     if not chatModule.enabled then
         return
     end
@@ -18,10 +19,13 @@ function ScarletUI:SetupChat()
     --FCF_ResetChatWindows()
 
     -- Open new tabs if they dont exist
-    if not chatTabExists(_G.CHAT_FRAMES, "Trade") then
+    if tabs.loot and not chatTabExists(_G.CHAT_FRAMES, "Loot") then
+        FCF_OpenNewWindow("Loot")
+    end
+    if tabs.trade and not chatTabExists(_G.CHAT_FRAMES, "Trade") then
         FCF_OpenNewWindow("Trade")
     end
-    if not self.retail then
+    if tabs.lfg and not self.retail then
         if not chatTabExists(_G.CHAT_FRAMES, "LFG") then
             FCF_OpenNewWindow("LFG")
         end
@@ -43,14 +47,13 @@ function ScarletUI:SetupChat()
             VoiceTranscriptionFrame_UpdateVisibility(frame)
             VoiceTranscriptionFrame_UpdateVoiceTab(frame)
             VoiceTranscriptionFrame_UpdateEditBox(frame)
+        elseif frame.name == 'Loot' then
+            ChatFrame_RemoveAllMessageGroups(frame)
+            ChatFrame_AddMessageGroup(frame, "LOOT")
         elseif frame.name == 'LFG' then
             ChatFrame_RemoveAllMessageGroups(frame)
             JoinChannelByName('LookingForGroup', nil, id, 0)
             ChatFrame_AddChannel(frame, 'LookingForGroup')
-            if IsAddOnLoaded("Hardcore") then
-                JoinChannelByName('hclfg', nil, id, 0)
-                ChatFrame_AddChannel(frame, 'hclfg')
-            end
         elseif frame.name == 'Trade' then
             ChatFrame_RemoveAllMessageGroups(frame)
             ChatFrame_AddChannel(frame, 'Trade')
@@ -82,8 +85,7 @@ function ScarletUI:SetupChat()
     ChatFrame1:SetHeight(chatModule.height)
     ChatFrame1:SetWidth(chatModule.width)
     ChatFrame1:ClearAllPoints()
-    ScarletUI:SetPoint(
-            ChatFrame1,
+    ChatFrame1:SetPoint(
             self.frameAnchors[chatFrame.frameAnchor],
             UIParent,
             self.frameAnchors[chatFrame.screenAnchor],

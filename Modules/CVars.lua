@@ -1,3 +1,12 @@
+ScarletUI.booleanOptions = {
+    "true",
+    "false"
+}
+
+ScarletUI.reloadCVars = {
+    'XpBarText',
+}
+
 function ScarletUI:SetupCVars()
     local CVarModule = self.db.global.CVarModule
     if not CVarModule.enabled or self.inCombat then
