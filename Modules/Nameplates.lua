@@ -1,22 +1,23 @@
 local allstates = {}
-local otherTanks = {}
+local tanks = {}
+local specialUnits = {}
 local lastNameplate
+
+local function trim(s)
+    return s:match("^%s*(.-)%s*$")
+end
 
 local function split(input)
     input = input or ""
     local ret = {}
-    local split, element = true
-    split = input:find("[,%s]")
-    while(split) do
-        element, input = input:sub(1, split-1), input:sub(split+1)
-        if(element ~= "") then
+
+    for element in input:gmatch("[^,]+") do
+        element = trim(element)
+        if element ~= "" then
             ret[element] = true
         end
-        split = input:find("[,%s]")
     end
-    if(input ~= "") then
-        ret[input] = true
-    end
+
     return ret
 end
 
@@ -86,7 +87,7 @@ local function IsTank(playerName)
     end
 
     -- If not in WotLK Classic or no roles assigned, check if the player's name is in the otherTanks list
-    return otherTanks[playerName]
+    return tanks[playerName]
 end
 
 local function HideTargetArrows()
@@ -173,7 +174,12 @@ end
 
 function ScarletUI:SetupTanks()
     local nameplatesModule = self.db.global.nameplatesModule
-    otherTanks = split(nameplatesModule.tankNames)
+    tanks = split(nameplatesModule.tankNames)
+end
+
+function ScarletUI:SetupSpecialUnits()
+    local nameplatesModule = self.db.global.nameplatesModule
+    specialUnits = split(nameplatesModule.specialUnitNames)
 end
 
 function ScarletUI:SetupNameplates()
@@ -182,7 +188,8 @@ function ScarletUI:SetupNameplates()
         return
     end
 
-    self:SetupTanks(nameplatesModule)
+    self:SetupTanks()
+    self:SetupSpecialUnits()
     self.frame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
     self.frame:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
     self.frame:RegisterEvent("UNIT_THREAT_LIST_UPDATE")
@@ -191,15 +198,21 @@ function ScarletUI:SetupNameplates()
         if event == "PLAYER_TARGET_CHANGED" then
             ScarletUI:UpdateTargetArrows()
         else
+            if not unitId or not UnitExists(unitId) then
+                return
+            end
+
+            local nameplate = C_NamePlate.GetNamePlateForUnit(unitId)
+            local unitName, _ = UnitName(unitId)
             if event == "NAME_PLATE_UNIT_ADDED" then
                 ScarletUI:UpdateTargetArrows()
-                local nameplate = C_NamePlate.GetNamePlateForUnit(unitId)
                 if nameplate then
                     SetupNameplate(nameplate)
                 end
             end
 
-            if not unitId or not UnitExists(unitId) then
+            if specialUnits[unitName] and nameplate.UnitFrame then
+                nameplate.UnitFrame.healthBar:SetStatusBarColor(unpack(nameplatesModule.specialUnitColor))
                 return
             end
 
@@ -213,7 +226,7 @@ function ScarletUI:SetupNameplates()
             else
                 local isTanking, threatStatus, _, _, threatValue = UnitDetailedThreatSituation("player", unitId)
                 local firstUnit, firstThreat, secondUnit, secondThreat = ThreatFunc(unitId)
-                local nameplate = C_NamePlate.GetNamePlateForUnit(unitId)
+
                 local displayValue
 
                 if not nameplate then
@@ -256,7 +269,7 @@ function ScarletUI:SetupNameplates()
                     displayValue = threatValue - secondThreat
                 else
                     displayValue = threatValue - firstThreat
-                    if firstUnit and not UnitIsUnit(firstUnit, "Player") and otherTanks[UnitName(firstUnit)] then
+                    if firstUnit and not UnitIsUnit(firstUnit, "Player") and tanks[UnitName(firstUnit)] then
                         threatStatus = 4
                     end
                 end

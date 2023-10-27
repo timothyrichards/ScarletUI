@@ -92,8 +92,8 @@ ScarletUI.defaults = {
             width = 400,
             tabs = {
                 loot = true,
-                lfg = true,
                 trade = true,
+                lfg = true,
             },
             chatFrame = {
                 move = true,
@@ -143,7 +143,9 @@ ScarletUI.defaults = {
                 threat = { 0.0824, 1, 0, 1 },
                 tank = { 0, 0.7020, 1, 1 }
             },
-            tankNames = ""
+            tankNames = "",
+            specialUnitColor = { 1, 0, 1, 1 },
+            specialUnitNames = ""
         },
         CVarModule = {
             enabled = false,

@@ -333,18 +333,6 @@ function ScarletUI:GetChatModuleSettingsPage(module, defaults, order)
                             self:SetupChat()
                         end,
                     },
-                    lfg = {
-                        name = "LFG Tab",
-                        desc = "Create tab for lfg.",
-                        type = "toggle",
-                        width = 1,
-                        order = 1,
-                        get = function(_) return module.tabs.lfg end,
-                        set = function(_, val)
-                            module.tabs.lfg = val
-                            self:SetupChat()
-                        end,
-                    },
                     trade = {
                         name = "Trade Tab",
                         desc = "Create tab for trade.",
@@ -354,6 +342,18 @@ function ScarletUI:GetChatModuleSettingsPage(module, defaults, order)
                         get = function(_) return module.tabs.trade end,
                         set = function(_, val)
                             module.tabs.trade = val
+                            self:SetupChat()
+                        end,
+                    },
+                    lfg = {
+                        name = "LFG Tab",
+                        desc = "Create tab for lfg.",
+                        type = "toggle",
+                        width = 1,
+                        order = 1,
+                        get = function(_) return module.tabs.lfg end,
+                        set = function(_, val)
+                            module.tabs.lfg = val
                             self:SetupChat()
                         end,
                     },
@@ -1623,6 +1623,44 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                     self:SetupTanks()
                 end,
             },
+            specialUnits = {
+                name = "Special Units",
+                type = "group",
+                disabled = function() return self.inCombat end,
+                inline = true,
+                order = 6,
+                args = {
+                    specialUnitColor = {
+                        name = "Special Unit Color",
+                        type = "color",
+                        desc = "Choose a color",
+                        width = 1,
+                        hasAlpha = true,
+                        order = 0,
+                        get = function(_)
+                            local r, g, b, a = unpack(module.specialUnitColor)
+                            return r, g, b, a
+                        end,
+                        set = function(_, r, g, b, a)
+                            module.specialUnitColor = {r, g, b, a}
+                        end,
+                    },
+                    specialUnitNames = {
+                        name = "Special Unit Names",
+                        type = "input",
+                        desc = "Add a comma seperated list of enemy unit names you wish to manually designate as special units, for example: Unit1,Unit2,Unit3",
+                        multiline = 5,
+                        width = "full",
+                        disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
+                        order = 1,
+                        get = function(_) return module.specialUnitNames end,
+                        set = function(_, value)
+                            module.specialUnitNames = value
+                            self:SetupSpecialUnits()
+                        end,
+                    },
+                }
+            },
         }
     }
 end
@@ -1631,7 +1669,7 @@ function ScarletUI:GetCVarModuleSettingsPage(module, order)
     local CVars = module.CVars
     local options = {
         name = "CVars",
-        desc = "CVars Module settings. (WORK IN PROGRESS)",
+        desc = "(WORK IN PROGRESS) CVars Module for advanced users to change console variables (hidden settings).",
         type = "group",
         order = order,
         disabled = function() return not module.enabled end,

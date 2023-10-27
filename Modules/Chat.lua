@@ -40,8 +40,15 @@ function ScarletUI:SetupChat()
         FCF_SetChatWindowFontSize(nil, frame, chatModule.fontSize)
 
         if frame.name == 'General' then
-            ChatFrame_RemoveChannel(frame, 'Trade')
-            ChatFrame_RemoveChannel(frame, 'LookingForGroup')
+            if tabs.loot then
+                ChatFrame_RemoveMessageGroup(frame, "LOOT")
+            end
+            if tabs.trade then
+                ChatFrame_RemoveChannel(frame, 'Trade')
+            end
+            if tabs.lfg then
+                ChatFrame_RemoveChannel(frame, 'LookingForGroup')
+            end
             ChatFrame_RemoveMessageGroup(frame, 'IGNORED')
         elseif frame.name == 'Voice' then
             VoiceTranscriptionFrame_UpdateVisibility(frame)
@@ -50,13 +57,13 @@ function ScarletUI:SetupChat()
         elseif frame.name == 'Loot' then
             ChatFrame_RemoveAllMessageGroups(frame)
             ChatFrame_AddMessageGroup(frame, "LOOT")
+        elseif frame.name == 'Trade' then
+            ChatFrame_RemoveAllMessageGroups(frame)
+            ChatFrame_AddChannel(frame, 'Trade')
         elseif frame.name == 'LFG' then
             ChatFrame_RemoveAllMessageGroups(frame)
             JoinChannelByName('LookingForGroup', nil, id, 0)
             ChatFrame_AddChannel(frame, 'LookingForGroup')
-        elseif frame.name == 'Trade' then
-            ChatFrame_RemoveAllMessageGroups(frame)
-            ChatFrame_AddChannel(frame, 'Trade')
         end
     end
 
