@@ -1,3 +1,5 @@
+local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
+
 ScarletUI.defaults = {
     global = {
         tidyIconsEnabled = true,
