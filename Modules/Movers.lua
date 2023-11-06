@@ -168,6 +168,7 @@ function ScarletUI:ResetPositions()
 
     self:Setup()
     AceConfigRegistry:NotifyChange("ScarletUI")
+    StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
 end
 
 function ScarletUI:SetPoint(frame, frameAnchor, frameParent, parentAnchor, x, y)

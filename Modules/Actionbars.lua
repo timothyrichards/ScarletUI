@@ -178,11 +178,20 @@ end
 
 local function multiCastBar(parent)
     if MultiCastActionBarFrame then
-        MultiCastActionBarFrame:SetMovable(true)
-        MultiCastActionBarFrame:SetUserPlaced(true)
-        MultiCastActionBarFrame:UnregisterAllEvents();
-        MultiCastActionBarFrame:ClearAllPoints()
-        MultiCastActionBarFrame:SetPoint("BOTTOMLEFT", parent, "TOPLEFT", 0, 1)
+        local movingTotemBar = false
+        hooksecurefunc(MultiCastActionBarFrame, "SetPoint", function()
+            if movingTotemBar or InCombatLockdown() then
+                return
+            end
+
+            movingTotemBar = true
+            MultiCastActionBarFrame:SetMovable(true)
+            MultiCastActionBarFrame:SetUserPlaced(true)
+            MultiCastActionBarFrame:UnregisterAllEvents();
+            MultiCastActionBarFrame:ClearAllPoints()
+            MultiCastActionBarFrame:SetPoint("BOTTOMLEFT", parent, "TOPLEFT", 0, 1)
+            movingTotemBar = nil
+        end)
     end
 end
 
@@ -300,10 +309,11 @@ function ScarletUI:SetupActionbars()
         local frame = CreateFrame("Frame", "SUI_ActionbarFrame", SUI_Frame)
         frame:RegisterEvent("UPDATE_FACTION")
         frame:RegisterEvent("UNIT_EXITED_VEHICLE")
+        frame:RegisterEvent("CINEMATIC_STOP")
         frame:SetScript("OnEvent", function(_, event, ...)
             if event == "UPDATE_FACTION" then
                 ScarletUI:UpdateMainBar()
-            elseif event == "UNIT_EXITED_VEHICLE" then
+            elseif event == "UNIT_EXITED_VEHICLE" or event == "CINEMATIC_STOP" then
                 if actionbarsModule.stackActionbars then
                     microBar(actionbarsModule)
                 end
