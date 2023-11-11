@@ -6,7 +6,7 @@ local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 
 -- Dialog to reload after addon settings are changed
 StaticPopupDialogs['SCARLET_UI_RELOAD_DIALOG'] = {
-    text = '<Scarlet UI>\n\nRequires a reload to properly configure=.\n\nIF YOU DO NOT RELOAD YOU WILL EXPERIENCE LUA ERRORS.',
+    text = '<Scarlet UI>\n\nRequires a reload to properly configure.\n\nIF YOU DO NOT RELOAD YOU WILL EXPERIENCE LUA ERRORS.',
     button1 = 'Reload',
     button2 = 'Close',
     OnAccept = function()

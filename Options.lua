@@ -74,7 +74,6 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                         desc = "Make icons bigger to fill their actionbar slots.",
                         type = "toggle",
                         disabled = function() return self.lightWeightMode end,
-                        hidden = function() return self.retail end,
                         width = 1,
                         order = 0,
                         get = function(_) return database.tidyIconsEnabled end,
@@ -1209,8 +1208,8 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
                 order = 1,
                 args = {
                     moveFrame = {
-                        name = "Move Frame",
-                        desc = "Allows you to choose the X and Y position of the frame.",
+                        name = "Move Party Frames",
+                        desc = "Allows you to choose the position of the party frames.",
                         type = "toggle",
                         width = "full",
                         order = 0,
@@ -1275,8 +1274,8 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
                 order = 1,
                 args = {
                     moveFrame = {
-                        name = "Move Frame",
-                        desc = "Allows you to choose the X and Y position of the frame.",
+                        name = "Move Raid Frames",
+                        desc = "Allows you to choose the position of the raid frames.",
                         type = "toggle",
                         width = "full",
                         order = 0,
@@ -1645,21 +1644,21 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                             module.specialUnitColor = {r, g, b, a}
                         end,
                     },
-                    specialUnitNames = {
-                        name = "Special Unit Names",
-                        type = "input",
-                        desc = "Add a comma seperated list of enemy unit names you wish to manually designate as special units, for example: Unit1,Unit2,Unit3",
-                        multiline = 5,
-                        width = "full",
-                        disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
-                        order = 1,
-                        get = function(_) return module.specialUnitNames end,
-                        set = function(_, value)
-                            module.specialUnitNames = value
-                            self:SetupSpecialUnits()
-                        end,
-                    },
                 }
+            },
+            specialUnitNames = {
+                name = "Special Unit Names",
+                type = "input",
+                desc = "Add a comma seperated list of enemy unit names you wish to manually designate as special units, for example: Unit1,Unit2,Unit3",
+                multiline = 5,
+                width = "full",
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
+                order = 7,
+                get = function(_) return module.specialUnitNames end,
+                set = function(_, value)
+                    module.specialUnitNames = value
+                    self:SetupSpecialUnits()
+                end,
             },
         }
     }

@@ -15,7 +15,7 @@ function ScarletUI:SetupTidyIcons()
 end
 
 function ScarletUI:TidyIcons_Update()
-    if self.lightWeightMode or self.retail then
+    if self.lightWeightMode then
         return
     end
 

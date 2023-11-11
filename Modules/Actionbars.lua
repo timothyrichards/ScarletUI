@@ -66,11 +66,59 @@ local function microBar(actionbarsModule)
             microBarSettings.y
     )
 
-    -- Make CharacterMicroButton movable
-    CharacterMicroButton:SetMovable(true)
-    CharacterMicroButton:SetUserPlaced(true)
-    CharacterMicroButton:ClearAllPoints()
-    CharacterMicroButton:SetPoint("LEFT", MicroBar, "LEFT", 0, 0)
+    local microButtons = {
+        "CharacterMicroButton",
+        "SpellbookMicroButton",
+        "TalentMicroButton",
+        "AchievementMicroButton",
+        "QuestLogMicroButton",
+        "SocialsMicroButton",
+        "CollectionsMicroButton",
+        "PVPMicroButton",
+        "LFGMicroButton",
+        "MainMenuMicroButton",
+        "HelpMicroButton",
+    }
+
+    local previousButton
+    for _, buttonName in ipairs(microButtons) do
+        local Frame = _G[buttonName]
+        local movingBar = false
+
+        if Frame then
+            local function createMoveButtonFunction(previousButton)
+                return function()
+                    if movingBar or InCombatLockdown() then
+                        return
+                    end
+
+                    movingBar = true
+                    Frame:SetMovable(true)
+                    Frame:SetUserPlaced(true)
+                    Frame:ClearAllPoints()
+                    if buttonName == "CharacterMicroButton" then
+                        CharacterMicroButton:SetPoint("LEFT", MicroBar, "LEFT", 0, 0)
+                    elseif previousButton then
+                        Frame:SetPoint("LEFT", previousButton, "RIGHT", -3, 0)
+                    else
+                        Frame:SetPoint("LEFT", UIParent, "LEFT", 0, 0)
+                    end
+                    movingBar = nil
+                end
+            end
+
+            -- Pass the current previousButton to the function
+            local moveButtonFunction = createMoveButtonFunction(previousButton)
+            if not ScarletUI.microBarEventRegistered then
+                hooksecurefunc(Frame, "SetPoint", moveButtonFunction)
+                ScarletUI.microBarEventRegistered = true
+            end
+            moveButtonFunction()
+
+            -- Update the reference to the previous button
+            previousButton = Frame
+        end
+    end
 
     ScarletUI:CreateMover(MicroBar, microBarSettings)
 end
@@ -310,13 +358,12 @@ function ScarletUI:SetupActionbars()
         frame:RegisterEvent("UPDATE_FACTION")
         frame:RegisterEvent("UNIT_EXITED_VEHICLE")
         frame:RegisterEvent("CINEMATIC_STOP")
+        frame:RegisterEvent("PLAYER_REGEN_DISABLED")
         frame:SetScript("OnEvent", function(_, event, ...)
             if event == "UPDATE_FACTION" then
                 ScarletUI:UpdateMainBar()
-            elseif event == "UNIT_EXITED_VEHICLE" or event == "CINEMATIC_STOP" then
-                if actionbarsModule.stackActionbars then
-                    microBar(actionbarsModule)
-                end
+            elseif event == "PLAYER_REGEN_DISABLED" then
+                microBar(actionbarsModule)
             end
         end)
     end

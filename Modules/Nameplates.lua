@@ -193,6 +193,7 @@ function ScarletUI:SetupNameplates()
     self.frame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
     self.frame:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
     self.frame:RegisterEvent("UNIT_THREAT_LIST_UPDATE")
+    self.frame:RegisterEvent("UNIT_THREAT_SITUATION_UPDATE")
     self.frame:RegisterEvent("PLAYER_TARGET_CHANGED")
     self.frame:HookScript("OnEvent", function(_, event, unitId)
         if event == "PLAYER_TARGET_CHANGED" then

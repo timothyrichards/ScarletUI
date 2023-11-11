@@ -1,10 +1,15 @@
+local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
+
 function ScarletUI:SetupRaidProfiles()
     local cufLoaded = IsAddOnLoaded("Blizzard_CompactRaidFrames");
     local raidFramesModule = self.db.global.raidFramesModule
+    local party = raidFramesModule.partyFrames;
+    local raid = raidFramesModule.raidFrames;
     if not cufLoaded or not raidFramesModule.enabled or self.lightWeightMode or self.retail or self.inCombat then
         return
     end
 
+    self.movingRaidFrames = false
     if not self.raidProfileEventRegistered then
         self.raidProfileEventRegistered = true;
         local frame = CreateFrame("Frame", "SUI_ItemLevelFrame", SUI_Frame)
@@ -14,6 +19,26 @@ function ScarletUI:SetupRaidProfiles()
                 ScarletUI:SetupRaidProfiles()
             end
         end)
+
+        hooksecurefunc("SetRaidProfileSavedPosition", function()
+            local profile = GetActiveRaidProfile()
+            local _, _, top, _, bottom, _, left = GetRaidProfileSavedPosition(profile)
+
+            if not self.movingRaidFrames then
+                if profile == "Party" and raidFramesModule.move then
+                    party.y = top
+                    party.height = bottom
+                    party.x = left
+                elseif profile == "Raid" and raidFramesModule.move then
+                    raid.y = top
+                    raid.height = bottom
+                    raid.x = left
+                end
+
+                AceConfigRegistry:NotifyChange("ScarletUI")
+            end
+        end)
+
         return
     end
 
@@ -46,8 +71,6 @@ function ScarletUI:SetupRaidProfiles()
             end
 
             -- Update positions
-            local party = raidFramesModule.partyFrames;
-            local raid = raidFramesModule.raidFrames;
             SetRaidProfileSavedPosition("Party", false, 'TOP', party.y, 'BOTTOM', party.height, 'LEFT', party.x)
             SetRaidProfileSavedPosition("Raid", false, 'TOP', raid.y, 'BOTTOM', raid.height, 'LEFT', raid.x)
 
@@ -68,6 +91,7 @@ function ScarletUI:UpdateProfilePositions()
         return
     end
 
+    self.movingRaidFrames = true
     local raidFramesModule = self.db.global.raidFramesModule
     local party = raidFramesModule.partyFrames;
     local raid = raidFramesModule.raidFrames;
@@ -90,4 +114,5 @@ function ScarletUI:UpdateProfilePositions()
 
     -- Prompt a reload
     StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+    self.movingRaidFrames = false
 end
