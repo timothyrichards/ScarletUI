@@ -24,12 +24,12 @@ function ScarletUI:SetupRaidProfiles()
             local profile = GetActiveRaidProfile()
             local _, _, top, _, bottom, _, left = GetRaidProfileSavedPosition(profile)
 
-            if not self.movingRaidFrames then
-                if profile == "Party" and raidFramesModule.move then
+            if not ScarletUI.movingRaidFrames then
+                if profile == "Party" and party.move then
                     party.y = top
                     party.height = bottom
                     party.x = left
-                elseif profile == "Raid" and raidFramesModule.move then
+                elseif profile == "Raid" and raid.move then
                     raid.y = top
                     raid.height = bottom
                     raid.x = left

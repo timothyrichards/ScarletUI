@@ -129,6 +129,10 @@ ScarletUI.defaults = {
                 indicatorDistance = -5,
                 indicatorHeight = 0,
             },
+            healthBarText = {
+                show = true,
+                fontSize = 10,
+            },
             castBarText = {
                 show = true,
                 fontSize = 10,

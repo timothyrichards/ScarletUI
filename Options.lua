@@ -1430,12 +1430,48 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                     }
                 },
             },
+            healthBarText = {
+                name = "Health Bar Text",
+                type = "group",
+                disabled = function() return self.inCombat end,
+                inline = true,
+                order = 2,
+                args = {
+                    show = {
+                        name = "Show",
+                        desc = "Add health text to health bar on nameplates.",
+                        type = "toggle",
+                        width = "full",
+                        order = 1,
+                        get = function(_) return module.healthBarText.show end,
+                        set = function(_, val)
+                            module.healthBarText.show = val
+                            ScarletUI:UpdateHealthText()
+                        end,
+                    },
+                    fontSize = {
+                        name = "Font Size",
+                        desc = "Desired font size for health bar text.\n(Default " .. defaults.healthBarText.fontSize .. ")",
+                        type = "range",
+                        min = 6,
+                        max = 20,
+                        step = 1,
+                        width = 1,
+                        order = 4,
+                        get = function(_) return module.healthBarText.fontSize end,
+                        set = function(_, val)
+                            module.healthBarText.fontSize = val
+                            ScarletUI:UpdateHealthText()
+                        end,
+                    }
+                },
+            },
             castBarText = {
                 name = "Cast Bar Text",
                 type = "group",
                 disabled = function() return self.inCombat end,
                 inline = true,
-                order = 2,
+                order = 3,
                 args = {
                     show = {
                         name = "Show",
@@ -1471,7 +1507,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                 type = "group",
                 disabled = function() return self.inCombat end,
                 inline = true,
-                order = 3,
+                order = 4,
                 args = {
                     noThreat = {
                         name = "No Threat",
@@ -1542,7 +1578,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                 type = "group",
                 disabled = function() return self.inCombat end,
                 inline = true,
-                order = 4,
+                order = 5,
                 args = {
                     noThreat = {
                         name = "No Threat",
@@ -1615,7 +1651,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                 multiline = 5,
                 width = "full",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
-                order = 5,
+                order = 6,
                 get = function(_) return module.tankNames end,
                 set = function(_, value)
                     module.tankNames = value
@@ -1627,7 +1663,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                 type = "group",
                 disabled = function() return self.inCombat end,
                 inline = true,
-                order = 6,
+                order = 7,
                 args = {
                     specialUnitColor = {
                         name = "Special Unit Color",
@@ -1653,7 +1689,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                 multiline = 5,
                 width = "full",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
-                order = 7,
+                order = 8,
                 get = function(_) return module.specialUnitNames end,
                 set = function(_, value)
                     module.specialUnitNames = value
