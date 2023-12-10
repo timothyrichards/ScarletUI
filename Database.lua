@@ -165,6 +165,7 @@ ScarletUI.defaults = {
                 floatingCombatTextCombatHealing = '1',
                 showTargetOfTarget = '1',
                 doNotFlashLowHealthWarning = '0',
+                showTargetCastbar = '1',
 
                 -- Chat CVars
                 chatStyle = 'classic',

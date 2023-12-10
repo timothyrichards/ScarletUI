@@ -50,6 +50,7 @@ function ScarletUI:SetupTargetFrame(unitFramesModule)
     TargetFrame:SetMovable(true)
     TargetFrame:SetUserPlaced(true)
     TargetFrame:ClearAllPoints()
+    TargetFrame.buffsOnTop = true
     if not targetFrame.mirrorPlayerFrame then
         TargetFrame:SetPoint(
                 self.frameAnchors[targetFrame.frameAnchor],

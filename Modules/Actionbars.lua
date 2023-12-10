@@ -187,9 +187,11 @@ local function multiBarBottomLeft()
 end
 
 local function multiBarBottomRight()
-    MainMenuBarVehicleLeaveButton:SetPoint("BOTTOM", MultiBarBottomRightButton12, "BOTTOM", 0, 0)
+    MainMenuBarVehicleLeaveButton:ClearAllPoints()
+    MainMenuBarVehicleLeaveButton:SetPoint("BOTTOM", MultiBarBottomRightButton12, "TOP", 0, 4)
     MainMenuBarVehicleLeaveButton:HookScript("OnShow", function()
-        MainMenuBarVehicleLeaveButton:SetPoint("BOTTOM", MultiBarBottomRightButton12, "BOTTOM", 0, 0)
+        MainMenuBarVehicleLeaveButton:ClearAllPoints()
+        MainMenuBarVehicleLeaveButton:SetPoint("BOTTOM", MultiBarBottomRightButton12, "TOP", 0, 4)
     end)
 
     MultiBarBottomRight:SetMovable(true)
