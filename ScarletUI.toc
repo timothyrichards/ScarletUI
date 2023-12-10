@@ -1,4 +1,4 @@
-## Interface: 100200; 30402; 11404
+## Interface: 100205; 30403; 11500
 ## Title: Scarlet UI
 ## Author: ScarletPaladin
 ## Notes: Misc UI features/modifications preferred by ScarletPaladin
