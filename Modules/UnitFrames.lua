@@ -26,7 +26,7 @@ function ScarletUI:SetupPlayerFrame(unitFramesModule)
         return
     end
 
-    self:CreateMover(PlayerFrame, playerFrame)
+    local mover = self:CreateMover(PlayerFrame, playerFrame)
     PlayerFrame:SetMovable(true)
     PlayerFrame:SetUserPlaced(true)
     PlayerFrame:ClearAllPoints()
@@ -37,6 +37,10 @@ function ScarletUI:SetupPlayerFrame(unitFramesModule)
             playerFrame.x,
             playerFrame.y
     )
+
+    mover:HookScript("OnMouseUp", function()
+        ScarletUI:SetupTargetFrame(unitFramesModule)
+    end)
 end
 
 function ScarletUI:SetupTargetFrame(unitFramesModule)
@@ -50,7 +54,9 @@ function ScarletUI:SetupTargetFrame(unitFramesModule)
     TargetFrame:SetMovable(true)
     TargetFrame:SetUserPlaced(true)
     TargetFrame:ClearAllPoints()
-    TargetFrame.buffsOnTop = true
+    if targetFrame.buffsOnTop then
+        TargetFrame.buffsOnTop = true
+    end
     if not targetFrame.mirrorPlayerFrame then
         TargetFrame:SetPoint(
                 self.frameAnchors[targetFrame.frameAnchor],

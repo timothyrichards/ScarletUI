@@ -1002,11 +1002,23 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(module, defaults, order)
                         name = "Mirror Player Frame",
                         desc = "Mirrors the X and Y position of the player frame.",
                         type = "toggle",
-                        width = "full",
+                        width = 1,
                         order = 0,
                         get = function(_) return module.targetFrame.mirrorPlayerFrame end,
                         set = function(_, val)
                             module.targetFrame.mirrorPlayerFrame = val
+                            self:SetupUnitFrames()
+                        end,
+                    },
+                    buffsOnTop = {
+                        name = "Buffs On Top",
+                        desc = "Force buffs to show on top of the target frame.",
+                        type = "toggle",
+                        width = 1,
+                        order = 1,
+                        get = function(_) return module.targetFrame.buffsOnTop end,
+                        set = function(_, val)
+                            module.targetFrame.buffsOnTop = val
                             self:SetupUnitFrames()
                         end,
                     },
@@ -1015,8 +1027,8 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(module, defaults, order)
                         desc = "Allows you to choose the X and Y position of the frame.",
                         type = "toggle",
                         disabled = function() return ScarletUI:SettingDisabled(not module.targetFrame.mirrorPlayerFrame) end,
-                        width = 1,
-                        order = 0,
+                        width = "full",
+                        order = 2,
                         get = function(_) return module.targetFrame.move end,
                         set = function(_, val)
                             module.targetFrame.move = val
@@ -1027,7 +1039,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(module, defaults, order)
                         name = "",
                         type = "description",
                         width = "full",
-                        order = 1,
+                        order = 3,
                     },
                     frameAnchor = {
                         name = "Frame Anchor",
@@ -1035,7 +1047,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(module, defaults, order)
                         type = "select",
                         disabled = function() return ScarletUI:SettingDisabled(not module.targetFrame.mirrorPlayerFrame) end,
                         width = 1,
-                        order = 2,
+                        order = 4,
                         values = function() return self.frameAnchors end,
                         get = function(_) return module.targetFrame.frameAnchor end,
                         set = function(_, val)
@@ -1049,7 +1061,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(module, defaults, order)
                         type = "select",
                         disabled = function() return ScarletUI:SettingDisabled(not module.targetFrame.mirrorPlayerFrame) end,
                         width = 1,
-                        order = 3,
+                        order = 5,
                         values = function() return self.frameAnchors end,
                         get = function(_) return module.targetFrame.screenAnchor end,
                         set = function(_, val)
@@ -1061,7 +1073,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(module, defaults, order)
                         name = "",
                         type = "description",
                         width = "full",
-                        order = 4,
+                        order = 6,
                     },
                     x = {
                         name = "Frame X",
@@ -1072,7 +1084,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(module, defaults, order)
                         max = math.floor(screenWidth),
                         step = 1,
                         width = 1,
-                        order = 5,
+                        order = 7,
                         get = function(_) return module.targetFrame.x end,
                         set = function(_, val)
                             module.targetFrame.x = val
@@ -1088,7 +1100,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(module, defaults, order)
                         max = math.floor(screenHeight),
                         step = 1,
                         width = 1,
-                        order = 6,
+                        order = 8,
                         get = function(_) return module.targetFrame.y end,
                         set = function(_, val)
                             module.targetFrame.y = val

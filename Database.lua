@@ -17,6 +17,7 @@ ScarletUI.defaults = {
             },
             targetFrame = {
                 mirrorPlayerFrame = true;
+                buffsOnTop = true;
                 move = true,
                 frameAnchor = 8,
                 screenAnchor = 4,
