@@ -16,8 +16,8 @@ ScarletUI.defaults = {
                 y = -190,
             },
             targetFrame = {
-                mirrorPlayerFrame = true;
-                buffsOnTop = true;
+                mirrorPlayerFrame = true,
+                buffsOnTop = true,
                 move = true,
                 frameAnchor = 8,
                 screenAnchor = 4,
