@@ -62,6 +62,18 @@ function ScarletUI:SettingDisabled(moduleEnabled)
     end
 end
 
+function ScarletUI:FixChatBug()
+    for i = 1, NUM_CHAT_WINDOWS do
+        local cf = _G['ChatFrame'..i]
+        cf.oldAlpha = cf.oldAlpha or 0 -- Fix 'max-bug' in FCF.lua
+        local cfname, _, _, _, _, _, shown, _, _, _ = GetChatWindowInfo(i)
+        if(cfname == iname) then
+            ifound = true
+            break
+        end
+    end
+end
+
 function ScarletUI:DumpTable(table, indent)
     indent = indent or ""
     for key, value in pairs(table) do

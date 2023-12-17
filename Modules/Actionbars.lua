@@ -267,8 +267,22 @@ local function experienceBar()
     MainMenuBarMaxLevelBar.Show = function()
         MainMenuBarMaxLevelBar:Hide()
     end
-    ExhaustionLevelFillBar:SetPoint("TOPRIGHT", MainMenuExpBar, "TOPLEFT", 510, 0)
-    ExhaustionTick:SetPoint("CENTER", ExhaustionLevelFillBar, "RIGHT", 510, 0)
+
+    -- Get Current, Maximum, and Rested Experience
+    local currXP = UnitXP("player")
+    local maxXP = UnitXPMax("player")
+    local restXP = GetXPExhaustion() or 0
+    local mainBarWidth = 510
+    local exhaustionBarStart = (currXP / maxXP) * mainBarWidth
+    local exhaustionBarEnd = ((currXP + restXP) / maxXP) * mainBarWidth
+
+    -- Ensure the exhaustion bar does not exceed the main bar's width
+    exhaustionBarEnd = min(exhaustionBarEnd, mainBarWidth)
+    ExhaustionLevelFillBar:ClearAllPoints()
+    ExhaustionLevelFillBar:SetPoint("TOPLEFT", MainMenuExpBar, "TOPLEFT", exhaustionBarStart, 0)
+    ExhaustionLevelFillBar:SetPoint("BOTTOMRIGHT", MainMenuExpBar, "TOPLEFT", exhaustionBarEnd, -11)
+    ExhaustionTick:SetPoint("CENTER", ExhaustionLevelFillBar, "RIGHT")
+
     MainMenuXPBarTexture0:ClearAllPoints()
     MainMenuXPBarTexture0:SetPoint("LEFT", MainMenuExpBar, "LEFT", 0, 0)
     MainMenuXPBarTexture1:Hide()

@@ -15,6 +15,8 @@ function ScarletUI:SetupChat()
         return
     end
 
+    self:FixChatBug()
+
     --if not self.raidProfileEventRegistered then
     --    self.raidProfileEventRegistered = true;
     --    local frame = CreateFrame("Frame", "SUI_ChatFrame", SUI_Frame)
