@@ -711,12 +711,117 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                     }
                 }
             },
+            petBar = {
+                name = "Pet Bar",
+                type = "group",
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
+                inline = true,
+                order = 4,
+                args = {
+                    moveFrame = {
+                        name = "Move Frame",
+                        desc = "Allows you to choose the X and Y position of the frame.",
+                        type = "toggle",
+                        width = 1,
+                        order = 0,
+                        get = function(_) return module.petBar.move end,
+                        set = function(_, val)
+                            module.petBar.move = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    hide = {
+                        name = "Hide Frame",
+                        desc = "Allows you to hide the stance bar frame.",
+                        type = "toggle",
+                        width = 1,
+                        order = 1,
+                        get = function(_) return module.petBar.hide end,
+                        set = function(_, val)
+                            module.petBar.hide = val
+                            if val then
+                                self:SetupActionbars()
+                            else
+                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                            end
+                        end,
+                    },
+                    spacer1 = {
+                        name = "",
+                        type = "description",
+                        width = "full",
+                        order = 2,
+                    },
+                    frameAnchor = {
+                        name = "Frame Anchor",
+                        desc = "Anchor point of the frame.\n(Default " .. self.frameAnchors[defaults.stanceBar.frameAnchor] .. ")",
+                        type = "select",
+                        width = 1,
+                        order = 3,
+                        values = function() return self.frameAnchors end,
+                        get = function(_) return module.petBar.frameAnchor end,
+                        set = function(_, val)
+                            module.petBar.frameAnchor = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    parentAnchor = {
+                        name = "Parent Anchor",
+                        desc = "Anchor point of the frame relative to its parent frame.\n(Default " .. self.frameAnchors[defaults.stanceBar.screenAnchor] .. ")",
+                        type = "select",
+                        width = 1,
+                        order = 4,
+                        values = function() return self.frameAnchors end,
+                        get = function(_) return module.petBar.screenAnchor end,
+                        set = function(_, val)
+                            module.petBar.screenAnchor = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    spacer2 = {
+                        name = "",
+                        type = "description",
+                        width = "full",
+                        order = 5,
+                    },
+                    x = {
+                        name = "Frame X",
+                        desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.stanceBar.x .. ")",
+                        type = "range",
+                        min = math.floor(screenWidth) * -1,
+                        max = math.floor(screenWidth),
+                        step = 1,
+                        width = 1,
+                        order = 6,
+                        get = function(_) return module.petBar.x end,
+                        set = function(_, val)
+                            module.petBar.x = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    y = {
+                        name = "Frame Y",
+                        desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.stanceBar.y .. ")",
+                        type = "range",
+                        min = math.floor(screenHeight) * -1,
+                        max = math.floor(screenHeight),
+                        step = 1,
+                        width = 1,
+                        order = 7,
+                        get = function(_) return module.petBar.y end,
+                        set = function(_, val)
+                            module.petBar.y = val
+                            self:SetupActionbars()
+                        end,
+                    }
+                }
+            },
             microBar = {
                 name = "Micro Bar",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
                 inline = true,
-                order = 4,
+                order = 5,
                 args = {
                     moveFrame = {
                         name = "Move Frame",
@@ -805,7 +910,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
                 inline = true,
-                order = 5,
+                order = 6,
                 args = {
                     moveFrame = {
                         name = "Move Frame",

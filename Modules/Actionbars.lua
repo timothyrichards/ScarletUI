@@ -207,23 +207,59 @@ local function stanceBar(module, parent)
     local stanceBarSettings = module.stanceBar;
 
     if stanceBarSettings.hide then
-        ScarletUI.stanceBar = CreateFrame("FRAME", "SUI_StanceBar", UIParent)
+        ScarletUI.stanceBar = CreateFrame("FRAME", "StanceBar", UIParent)
         ScarletUI.stanceBar:Hide()
         StanceBarFrame:UnregisterAllEvents()
         StanceBarFrame:SetParent(ScarletUI.stanceBar)
     else
-        StanceBarFrame:SetMovable(true)
-        StanceBarFrame:SetUserPlaced(true)
-        StanceBarFrame:UnregisterAllEvents();
-        StanceBarFrame:ClearAllPoints()
-        StanceBarFrame:SetPoint(
+        local StanceBar = CreateFrame("FRAME", "StanceBar", UIParent)
+
+        -- Set dimensions and position of BagBar
+        StanceBar:ClearAllPoints()
+        StanceBar:SetSize(250, 35)
+        StanceBar:SetPoint(
                 ScarletUI.frameAnchors[stanceBarSettings.frameAnchor],
                 parent,
                 ScarletUI.frameAnchors[stanceBarSettings.screenAnchor],
                 stanceBarSettings.x,
                 stanceBarSettings.y
         )
+
+        StanceBarFrame:SetMovable(true)
+        StanceBarFrame:SetUserPlaced(true)
+        StanceBarFrame:UnregisterAllEvents();
+        StanceBarFrame:ClearAllPoints()
+        StanceBarFrame:SetPoint("LEFT", StanceBar, "LEFT")
+
+        ScarletUI:CreateMover(StanceBar, stanceBarSettings)
     end
+end
+
+local function petActionBar(module, parent)
+    local petBarSettings = module.petBar;
+
+    if petBarSettings.hide then
+        ScarletUI.petBar = CreateFrame("FRAME", "PetBar", UIParent)
+        ScarletUI.petBar:Hide()
+        PetActionBarFrame:UnregisterAllEvents()
+        PetActionBarFrame:SetParent(ScarletUI.petBar)
+    else
+        PetActionBarFrame:SetMovable(true)
+        PetActionBarFrame:SetUserPlaced(true)
+        PetActionBarFrame:ClearAllPoints()
+        PetActionBarFrame:SetPoint(
+                ScarletUI.frameAnchors[petBarSettings.frameAnchor],
+                parent,
+                ScarletUI.frameAnchors[petBarSettings.screenAnchor],
+                petBarSettings.x,
+                petBarSettings.y
+        )
+    end
+
+    PetActionBarFrame:SetMovable(true)
+    PetActionBarFrame:SetUserPlaced(true)
+    PetActionBarFrame:ClearAllPoints()
+    PetActionBarFrame:SetPoint("BOTTOM", parent, "TOP", 0, 1)
 end
 
 local function multiCastBar(parent)
@@ -243,13 +279,6 @@ local function multiCastBar(parent)
             movingTotemBar = nil
         end)
     end
-end
-
-local function petActionBar(parent)
-    PetActionBarFrame:SetMovable(true)
-    PetActionBarFrame:SetUserPlaced(true)
-    PetActionBarFrame:ClearAllPoints()
-    PetActionBarFrame:SetPoint("BOTTOM", parent, "TOP", 0, 1)
 end
 
 local function experienceBar()
@@ -361,8 +390,8 @@ function ScarletUI:SetupActionbars()
 
         local parent = MultiBarBottomRight;
         stanceBar(actionbarsModule, parent)
+        petActionBar(actionbarsModule, parent)
         multiCastBar(parent)
-        petActionBar(parent)
         experienceBar()
         reputationBar()
         ScarletUI:UpdateMainBar()

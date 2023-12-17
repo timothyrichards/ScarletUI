@@ -55,6 +55,14 @@ ScarletUI.defaults = {
                 x = 0,
                 y = 0,
             },
+            petBar = {
+                move = true,
+                hide = false,
+                frameAnchor = 2,
+                screenAnchor = 8,
+                x = 0,
+                y = 0,
+            },
             microBar = {
                 move = true,
                 frameAnchor = 2,
