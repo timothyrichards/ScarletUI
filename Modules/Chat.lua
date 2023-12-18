@@ -106,11 +106,11 @@ function ScarletUI:SetupChat()
     end
 
     self:CreateMover(ChatFrame1, chatFrame)
+    ChatFrame1:ClearAllPoints()
     ChatFrame1:SetMovable(true)
     ChatFrame1:SetUserPlaced(true)
     ChatFrame1:SetHeight(chatModule.height)
     ChatFrame1:SetWidth(chatModule.width)
-    ChatFrame1:ClearAllPoints()
     ChatFrame1:SetPoint(
             self.frameAnchors[chatFrame.frameAnchor],
             UIParent,

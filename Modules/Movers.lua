@@ -140,6 +140,8 @@ function ScarletUI:ResetPositions()
         "unitFramesModule.focusFrame",
         "actionbarsModule.mainBar",
         "actionbarsModule.stanceBar",
+        "actionbarsModule.petBar",
+        "actionbarsModule.multiCastBar",
         "actionbarsModule.microBar",
         "actionbarsModule.bagBar",
         "chatModule.chatFrame",
@@ -166,7 +168,7 @@ function ScarletUI:ResetPositions()
         end
     end
 
-    self:Setup()
+    self:Setup(false)
     AceConfigRegistry:NotifyChange("ScarletUI")
     StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
 end

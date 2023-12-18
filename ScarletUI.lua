@@ -32,7 +32,7 @@ StaticPopupDialogs['SCARLET_RESTORE_DEFAULTS_DIALOG'] = {
     preferredIndex = 3,
 }
 
-function ScarletUI:Setup()
+function ScarletUI:Setup(isLogin)
     -- Add the ace modules to the addon object
     if not self.settings then
         self.settings = self:NewModule("Settings", "AceConsole-3.0")
@@ -79,7 +79,9 @@ function ScarletUI:Setup()
     self:SetupTidyIcons()
     self:SetupNameplates()
 
-    self.settings:Print("Scarlet UI setup successful, use the command /sui to open the options panel.")
+    if isLogin then
+        self.settings:Print("Scarlet UI setup successful, use the command /sui to open the options panel.")
+    end
 end
 
 function ScarletUI:SetupFrame()
@@ -113,9 +115,9 @@ ScarletUI.frame = CreateFrame("Frame", "SUI_Frame", UIParent)
 ScarletUI.frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 ScarletUI.frame:RegisterEvent("PLAYER_REGEN_DISABLED")
 ScarletUI.frame:RegisterEvent("PLAYER_REGEN_ENABLED")
-ScarletUI.frame:SetScript("OnEvent", function (_, event, ...)
+ScarletUI.frame:SetScript("OnEvent", function (_, event, isLogin, ...)
     if event == "PLAYER_ENTERING_WORLD" then
-        ScarletUI:Setup()
+        ScarletUI:Setup(isLogin)
     elseif event == "PLAYER_REGEN_DISABLED" or event == "PLAYER_REGEN_ENABLED" then
         ScarletUI.inCombat = event == "PLAYER_REGEN_DISABLED";
 

@@ -51,17 +51,25 @@ ScarletUI.defaults = {
                 move = true,
                 hide = false,
                 frameAnchor = 2,
-                screenAnchor = 8,
-                x = 0,
-                y = 0,
+                screenAnchor = 1,
+                x = -250,
+                y = 140,
             },
             petBar = {
                 move = true,
                 hide = false,
-                frameAnchor = 2,
-                screenAnchor = 8,
+                frameAnchor = 1,
+                screenAnchor = 1,
                 x = 0,
-                y = 0,
+                y = 140,
+            },
+            multiCastBar = {
+                move = true,
+                hide = false,
+                frameAnchor = 2,
+                screenAnchor = 1,
+                x = -250,
+                y = 140,
             },
             microBar = {
                 move = true,
@@ -212,6 +220,6 @@ ScarletUI.defaults = {
 
 function ScarletUI:ResetDefaults()
     self.db:ResetDB()
-    self:Setup()
+    self:Setup(false)
     AceConfigRegistry:NotifyChange("ScarletUI")
 end

@@ -1,3 +1,4 @@
+local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 local screenWidth = GetScreenWidth()
 local screenHeight = GetScreenHeight()
 
@@ -627,7 +628,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                     },
                     hide = {
                         name = "Hide Frame",
-                        desc = "Allows you to hide the stance bar frame.",
+                        desc = "Allows you to hide the frame.",
                         type = "toggle",
                         width = 1,
                         order = 1,
@@ -732,7 +733,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                     },
                     hide = {
                         name = "Hide Frame",
-                        desc = "Allows you to hide the stance bar frame.",
+                        desc = "Allows you to hide the frame.",
                         type = "toggle",
                         width = 1,
                         order = 1,
@@ -754,7 +755,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                     },
                     frameAnchor = {
                         name = "Frame Anchor",
-                        desc = "Anchor point of the frame.\n(Default " .. self.frameAnchors[defaults.stanceBar.frameAnchor] .. ")",
+                        desc = "Anchor point of the frame.\n(Default " .. self.frameAnchors[defaults.petBar.frameAnchor] .. ")",
                         type = "select",
                         width = 1,
                         order = 3,
@@ -767,7 +768,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                     },
                     parentAnchor = {
                         name = "Parent Anchor",
-                        desc = "Anchor point of the frame relative to its parent frame.\n(Default " .. self.frameAnchors[defaults.stanceBar.screenAnchor] .. ")",
+                        desc = "Anchor point of the frame relative to its parent frame.\n(Default " .. self.frameAnchors[defaults.petBar.screenAnchor] .. ")",
                         type = "select",
                         width = 1,
                         order = 4,
@@ -786,7 +787,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                     },
                     x = {
                         name = "Frame X",
-                        desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.stanceBar.x .. ")",
+                        desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.petBar.x .. ")",
                         type = "range",
                         min = math.floor(screenWidth) * -1,
                         max = math.floor(screenWidth),
@@ -801,7 +802,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                     },
                     y = {
                         name = "Frame Y",
-                        desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.stanceBar.y .. ")",
+                        desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.petBar.y .. ")",
                         type = "range",
                         min = math.floor(screenHeight) * -1,
                         max = math.floor(screenHeight),
@@ -816,12 +817,117 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                     }
                 }
             },
+            multiCastBar = {
+                name = "Multi Cast Bar",
+                type = "group",
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
+                inline = true,
+                order = 5,
+                args = {
+                    moveFrame = {
+                        name = "Move Frame",
+                        desc = "Allows you to choose the X and Y position of the frame.",
+                        type = "toggle",
+                        width = 1,
+                        order = 0,
+                        get = function(_) return module.multiCastBar.move end,
+                        set = function(_, val)
+                            module.multiCastBar.move = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    hide = {
+                        name = "Hide Frame",
+                        desc = "Allows you to hide the frame.",
+                        type = "toggle",
+                        width = 1,
+                        order = 1,
+                        get = function(_) return module.multiCastBar.hide end,
+                        set = function(_, val)
+                            module.multiCastBar.hide = val
+                            if val then
+                                self:SetupActionbars()
+                            else
+                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                            end
+                        end,
+                    },
+                    spacer1 = {
+                        name = "",
+                        type = "description",
+                        width = "full",
+                        order = 2,
+                    },
+                    frameAnchor = {
+                        name = "Frame Anchor",
+                        desc = "Anchor point of the frame.\n(Default " .. self.frameAnchors[defaults.multiCastBar.frameAnchor] .. ")",
+                        type = "select",
+                        width = 1,
+                        order = 3,
+                        values = function() return self.frameAnchors end,
+                        get = function(_) return module.multiCastBar.frameAnchor end,
+                        set = function(_, val)
+                            module.multiCastBar.frameAnchor = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    parentAnchor = {
+                        name = "Parent Anchor",
+                        desc = "Anchor point of the frame relative to its parent frame.\n(Default " .. self.frameAnchors[defaults.multiCastBar.screenAnchor] .. ")",
+                        type = "select",
+                        width = 1,
+                        order = 4,
+                        values = function() return self.frameAnchors end,
+                        get = function(_) return module.multiCastBar.screenAnchor end,
+                        set = function(_, val)
+                            module.multiCastBar.screenAnchor = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    spacer2 = {
+                        name = "",
+                        type = "description",
+                        width = "full",
+                        order = 5,
+                    },
+                    x = {
+                        name = "Frame X",
+                        desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.multiCastBar.x .. ")",
+                        type = "range",
+                        min = math.floor(screenWidth) * -1,
+                        max = math.floor(screenWidth),
+                        step = 1,
+                        width = 1,
+                        order = 6,
+                        get = function(_) return module.multiCastBar.x end,
+                        set = function(_, val)
+                            module.multiCastBar.x = val
+                            self:SetupActionbars()
+                        end,
+                    },
+                    y = {
+                        name = "Frame Y",
+                        desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.multiCastBar.y .. ")",
+                        type = "range",
+                        min = math.floor(screenHeight) * -1,
+                        max = math.floor(screenHeight),
+                        step = 1,
+                        width = 1,
+                        order = 7,
+                        get = function(_) return module.multiCastBar.y end,
+                        set = function(_, val)
+                            module.multiCastBar.y = val
+                            self:SetupActionbars()
+                        end,
+                    }
+                }
+            },
             microBar = {
                 name = "Micro Bar",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
                 inline = true,
-                order = 5,
+                order = 6,
                 args = {
                     moveFrame = {
                         name = "Move Frame",
@@ -910,7 +1016,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
                 inline = true,
-                order = 6,
+                order = 7,
                 args = {
                     moveFrame = {
                         name = "Move Frame",
@@ -1817,16 +1923,41 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
     }
 end
 
+local searchQuery = ""
 function ScarletUI:GetCVarModuleSettingsPage(module, order)
     local CVars = module.CVars
+
+    local function ShouldOptionBeHidden(optionKey)
+        -- If searchQuery is empty, show all options
+        if searchQuery == "" then
+            return false
+        end
+        -- Convert both strings to lower case for case-insensitive comparison
+        return not string.find(string.lower(optionKey), string.lower(searchQuery), 1, true)
+    end
+
     local options = {
         name = "CVars",
         desc = "(WORK IN PROGRESS) CVars Module for advanced users to change console variables (hidden settings).",
         type = "group",
         order = order,
         disabled = function() return not module.enabled end,
-        args = {}
+        args = {
+            search = {
+                order = 0,
+                name = "Search",
+                desc = "Filter CVars",
+                type = "input",
+                get = function() return searchQuery end,
+                set = function(_, val)
+                    searchQuery = val
+                    AceConfigRegistry:NotifyChange("ScarletUI")
+                end,
+                width = "full",
+            },
+        }
     }
+
     local orderCounter = 0
     for k, v in pairs(CVars) do
         orderCounter = orderCounter + 1
@@ -1838,6 +1969,7 @@ function ScarletUI:GetCVarModuleSettingsPage(module, order)
             type = "description",
             width = 1.25,
             order = orderCounter * 3 - 2,
+            hidden = function() return ShouldOptionBeHidden(k) end,
         }
 
         options.args[k] = {
@@ -1851,6 +1983,7 @@ function ScarletUI:GetCVarModuleSettingsPage(module, order)
                 CVars[k] = val
                 ScarletUI:SetupCVars()
             end,
+            hidden = function() return ShouldOptionBeHidden(k) end,
         }
 
         options.args[spacerName] = {
@@ -1858,8 +1991,10 @@ function ScarletUI:GetCVarModuleSettingsPage(module, order)
             type = "description",
             width = "full",
             order = orderCounter * 3,
+            hidden = function() return ShouldOptionBeHidden(k) end,
         }
     end
 
     return options
 end
+

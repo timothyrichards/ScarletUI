@@ -93,9 +93,9 @@ local function microBar(actionbarsModule)
                     end
 
                     movingBar = true
+                    Frame:ClearAllPoints()
                     Frame:SetMovable(true)
                     Frame:SetUserPlaced(true)
-                    Frame:ClearAllPoints()
                     if buttonName == "CharacterMicroButton" then
                         CharacterMicroButton:SetPoint("LEFT", MicroBar, "LEFT", 0, 0)
                     elseif previousButton then
@@ -148,16 +148,16 @@ local function bagBar(actionbarsModule)
     )
 
     -- Move the Backpack button to the new BagBar frame
+    MainMenuBarBackpackButton:ClearAllPoints()
     MainMenuBarBackpackButton:SetMovable(true)
     MainMenuBarBackpackButton:SetUserPlaced(true)
-    MainMenuBarBackpackButton:ClearAllPoints()
     MainMenuBarBackpackButton:SetPoint("RIGHT", BagBar, "RIGHT", 0, 0)
     MainMenuBarBackpackButtonNormalTexture:Hide()
 
     -- Position the other bag buttons relative to the Backpack button
+    CharacterBag0Slot:ClearAllPoints()
     CharacterBag0Slot:SetMovable(true)
     CharacterBag0Slot:SetUserPlaced(true)
-    CharacterBag0Slot:ClearAllPoints()
     CharacterBag0Slot:SetPoint("RIGHT", MainMenuBarBackpackButton, "LEFT", -buttonSpacing, 0)
     CharacterBag0SlotNormalTexture:Hide()
     CharacterBag1SlotNormalTexture:Hide()
@@ -177,10 +177,10 @@ local function bagBar(actionbarsModule)
 end
 
 local function multiBarBottomLeft()
+    MultiBarBottomLeft:ClearAllPoints()
     MultiBarBottomLeft:SetMovable(true)
     MultiBarBottomLeft:SetUserPlaced(true)
     MultiBarBottomLeft:UnregisterAllEvents();
-    MultiBarBottomLeft:ClearAllPoints()
     MultiBarBottomLeft:SetWidth(500)
     MultiBarBottomLeft:SetHeight(40)
     MultiBarBottomLeft:SetPoint("BOTTOM", MainMenuBar, "TOP", 3, -6)
@@ -194,90 +194,98 @@ local function multiBarBottomRight()
         MainMenuBarVehicleLeaveButton:SetPoint("BOTTOM", MultiBarBottomRightButton12, "TOP", 0, 4)
     end)
 
+    MultiBarBottomRight:ClearAllPoints()
     MultiBarBottomRight:SetMovable(true)
     MultiBarBottomRight:SetUserPlaced(true)
     MultiBarBottomRight:UnregisterAllEvents();
-    MultiBarBottomRight:ClearAllPoints()
     MultiBarBottomRight:SetWidth(500)
     MultiBarBottomRight:SetHeight(40)
     MultiBarBottomRight:SetPoint("BOTTOM", MultiBarBottomLeft, "TOP", 0, 2)
 end
 
-local function stanceBar(module, parent)
+local function stanceBar(module)
     local stanceBarSettings = module.stanceBar;
+    if not StanceBarFrame then
+        return
+    end
 
     if stanceBarSettings.hide then
-        ScarletUI.stanceBar = CreateFrame("FRAME", "StanceBar", UIParent)
+        ScarletUI.stanceBar = _G["StanceBar"] or CreateFrame("FRAME", "StanceBar", UIParent)
         ScarletUI.stanceBar:Hide()
         StanceBarFrame:UnregisterAllEvents()
         StanceBarFrame:SetParent(ScarletUI.stanceBar)
     else
-        local StanceBar = CreateFrame("FRAME", "StanceBar", UIParent)
+        local StanceBar = _G["StanceBar"] or CreateFrame("FRAME", "StanceBar", UIParent)
 
-        -- Set dimensions and position of BagBar
+        -- Set dimensions and position of StanceBar
         StanceBar:ClearAllPoints()
         StanceBar:SetSize(250, 35)
         StanceBar:SetPoint(
                 ScarletUI.frameAnchors[stanceBarSettings.frameAnchor],
-                parent,
+                UIParent,
                 ScarletUI.frameAnchors[stanceBarSettings.screenAnchor],
                 stanceBarSettings.x,
                 stanceBarSettings.y
         )
 
+        StanceBarFrame:ClearAllPoints()
         StanceBarFrame:SetMovable(true)
         StanceBarFrame:SetUserPlaced(true)
         StanceBarFrame:UnregisterAllEvents();
-        StanceBarFrame:ClearAllPoints()
         StanceBarFrame:SetPoint("LEFT", StanceBar, "LEFT")
 
         ScarletUI:CreateMover(StanceBar, stanceBarSettings)
     end
 end
 
-local function petActionBar(module, parent)
+local function petActionBar(module)
     local petBarSettings = module.petBar;
 
     if petBarSettings.hide then
-        ScarletUI.petBar = CreateFrame("FRAME", "PetBar", UIParent)
+        ScarletUI.petBar = _G["PetBar"] or CreateFrame("FRAME", "PetBar", UIParent)
         ScarletUI.petBar:Hide()
         PetActionBarFrame:UnregisterAllEvents()
         PetActionBarFrame:SetParent(ScarletUI.petBar)
     else
+        ScarletUI:CreateMover(PetActionBarFrame, petBarSettings)
+        PetActionBarFrame:ClearAllPoints()
         PetActionBarFrame:SetMovable(true)
         PetActionBarFrame:SetUserPlaced(true)
-        PetActionBarFrame:ClearAllPoints()
-        PetActionBarFrame:SetPoint(
+        ScarletUI:SetPoint(
+                PetActionBarFrame,
                 ScarletUI.frameAnchors[petBarSettings.frameAnchor],
-                parent,
+                UIParent,
                 ScarletUI.frameAnchors[petBarSettings.screenAnchor],
                 petBarSettings.x,
                 petBarSettings.y
         )
     end
-
-    PetActionBarFrame:SetMovable(true)
-    PetActionBarFrame:SetUserPlaced(true)
-    PetActionBarFrame:ClearAllPoints()
-    PetActionBarFrame:SetPoint("BOTTOM", parent, "TOP", 0, 1)
 end
 
-local function multiCastBar(parent)
-    if MultiCastActionBarFrame then
-        local movingTotemBar = false
-        hooksecurefunc(MultiCastActionBarFrame, "SetPoint", function()
-            if movingTotemBar or InCombatLockdown() then
-                return
-            end
+local function multiCastBar(module)
+    local multiCastBarSettings = module.multiCastBar;
+    if not MultiCastActionBarFrame then
+        return
+    end
 
-            movingTotemBar = true
-            MultiCastActionBarFrame:SetMovable(true)
-            MultiCastActionBarFrame:SetUserPlaced(true)
-            MultiCastActionBarFrame:UnregisterAllEvents();
-            MultiCastActionBarFrame:ClearAllPoints()
-            MultiCastActionBarFrame:SetPoint("BOTTOMLEFT", parent, "TOPLEFT", 0, 1)
-            movingTotemBar = nil
-        end)
+    if multiCastBarSettings.hide then
+        ScarletUI.multiCastBar = _G["MultiCastBar"] or CreateFrame("FRAME", "MultiCastBar", UIParent)
+        ScarletUI.multiCastBar:Hide()
+        MultiCastActionBarFrame:UnregisterAllEvents()
+        MultiCastActionBarFrame:SetParent(ScarletUI.multiCastBar)
+    else
+        ScarletUI:CreateMover(MultiCastActionBarFrame, multiCastBarSettings)
+        MultiCastActionBarFrame:ClearAllPoints()
+        MultiCastActionBarFrame:SetMovable(true)
+        MultiCastActionBarFrame:SetUserPlaced(true)
+        ScarletUI:SetPoint(
+                MultiCastActionBarFrame,
+                ScarletUI.frameAnchors[multiCastBarSettings.frameAnchor],
+                UIParent,
+                ScarletUI.frameAnchors[multiCastBarSettings.screenAnchor],
+                multiCastBarSettings.x,
+                multiCastBarSettings.y
+        )
     end
 end
 
@@ -387,11 +395,9 @@ function ScarletUI:SetupActionbars()
         bagBar(actionbarsModule)
         multiBarBottomLeft()
         multiBarBottomRight()
-
-        local parent = MultiBarBottomRight;
-        stanceBar(actionbarsModule, parent)
-        petActionBar(actionbarsModule, parent)
-        multiCastBar(parent)
+        stanceBar(actionbarsModule)
+        petActionBar(actionbarsModule)
+        multiCastBar(actionbarsModule)
         experienceBar()
         reputationBar()
         ScarletUI:UpdateMainBar()

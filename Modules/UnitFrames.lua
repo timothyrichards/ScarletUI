@@ -27,9 +27,9 @@ function ScarletUI:SetupPlayerFrame(unitFramesModule)
     end
 
     local mover = self:CreateMover(PlayerFrame, playerFrame)
+    PlayerFrame:ClearAllPoints()
     PlayerFrame:SetMovable(true)
     PlayerFrame:SetUserPlaced(true)
-    PlayerFrame:ClearAllPoints()
     PlayerFrame:SetPoint(
             self.frameAnchors[playerFrame.frameAnchor],
             UIParent,
@@ -51,9 +51,9 @@ function ScarletUI:SetupTargetFrame(unitFramesModule)
     end
 
     self:CreateMover(TargetFrame, targetFrame)
+    TargetFrame:ClearAllPoints()
     TargetFrame:SetMovable(true)
     TargetFrame:SetUserPlaced(true)
-    TargetFrame:ClearAllPoints()
     if targetFrame.buffsOnTop then
         TargetFrame.buffsOnTop = true
     end
@@ -83,9 +83,9 @@ function ScarletUI:SetupFocusFrame(unitFramesModule)
     end
 
     if FocusFrame then
+        FocusFrame:ClearAllPoints()
         FocusFrame:SetMovable(true)
         FocusFrame:SetUserPlaced(true)
-        FocusFrame:ClearAllPoints()
         FocusFrame:SetPoint(
                 self.frameAnchors[focusFrame.frameAnchor],
                 UIParent,
