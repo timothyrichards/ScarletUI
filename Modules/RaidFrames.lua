@@ -3,8 +3,6 @@ local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 function ScarletUI:SetupRaidProfiles()
     local cufLoaded = IsAddOnLoaded("Blizzard_CompactRaidFrames");
     local raidFramesModule = self.db.global.raidFramesModule
-    local party = raidFramesModule.partyFrames;
-    local raid = raidFramesModule.raidFrames;
     if not cufLoaded or not raidFramesModule.enabled or self.lightWeightMode or self.retail or self.inCombat then
         return
     end
@@ -25,14 +23,11 @@ function ScarletUI:SetupRaidProfiles()
             local _, _, top, _, bottom, _, left = GetRaidProfileSavedPosition(profile)
 
             if not ScarletUI.movingRaidFrames then
-                if profile == "Party" and party.move then
-                    party.y = top
-                    party.height = bottom
-                    party.x = left
-                elseif profile == "Raid" and raid.move then
-                    raid.y = top
-                    raid.height = bottom
-                    raid.x = left
+                local options = raidFramesModule.profiles[profile]
+                if options ~= nil and options.move then
+                    options.y = top
+                    options.height = bottom
+                    options.x = left
                 end
 
                 AceConfigRegistry:NotifyChange("ScarletUI")
@@ -42,8 +37,7 @@ function ScarletUI:SetupRaidProfiles()
         return
     end
 
-    local profiles = { 'Party', 'Raid' }
-    for _, profile in ipairs(profiles) do
+    for profile, options in pairs(raidFramesModule.profiles) do
         -- Create a new raid profile if it doesn't exist
         if not RaidProfileExists(profile) then
             CreateNewRaidProfile(profile)
@@ -52,36 +46,19 @@ function ScarletUI:SetupRaidProfiles()
 
         -- Update settings if the profile does exist
         if RaidProfileExists(profile) then
-            -- Set profile settings
-            SetRaidProfileOption(profile, "autoActivatePvE", '1')
-            SetRaidProfileOption(profile, "autoActivatePvP", '1')
-
-            if profile == 'Party' then
-                SetRaidProfileOption(profile, "displayPets", '1')
-                SetRaidProfileOption(profile, "autoActivate2Players", '1')
-                SetRaidProfileOption(profile, "autoActivate3Players", '1')
-                SetRaidProfileOption(profile, "autoActivate5Players", '1')
-            elseif profile == 'Raid' then
-                SetRaidProfileOption(profile, "keepGroupsTogether", '1')
-                SetRaidProfileOption(profile, "horizontalGroups", '1')
-                SetRaidProfileOption(profile, "autoActivate10Players", '1')
-                SetRaidProfileOption(profile, "autoActivate15Players", '1')
-                SetRaidProfileOption(profile, "autoActivate20Players", '1')
-                SetRaidProfileOption(profile, "autoActivate40Players", '1')
-            end
-
-            -- Update positions
-            SetRaidProfileSavedPosition("Party", false, 'TOP', party.y, 'BOTTOM', party.height, 'LEFT', party.x)
-            SetRaidProfileSavedPosition("Raid", false, 'TOP', raid.y, 'BOTTOM', raid.height, 'LEFT', raid.x)
-
             -- Check and apply Raid Profile settings
-            for k, v in pairs(self.raidProfile) do
-                local currentValue = tostring(GetRaidProfileOption(profile, k))
-                local targetValue = tostring(v)
-                if currentValue ~= targetValue then
-                    SetRaidProfileOption(profile, k, v)
+            for k, v in pairs(options) do
+                if not (k == "move" or k == "x" or k == "y" or k == "height") then
+                    local currentValue = tostring(GetRaidProfileOption(profile, k))
+                    local targetValue = tostring(v)
+                    if currentValue ~= targetValue then
+                        SetRaidProfileOption(profile, k, v)
+                    end
                 end
             end
+
+            -- Update position
+            SetRaidProfileSavedPosition(profile, false, 'TOP', options.y, 'BOTTOM', options.height, 'LEFT', options.x)
         end
     end
 end
@@ -93,24 +70,18 @@ function ScarletUI:UpdateProfilePositions()
 
     self.movingRaidFrames = true
     local raidFramesModule = self.db.global.raidFramesModule
-    local party = raidFramesModule.partyFrames;
-    local raid = raidFramesModule.raidFrames;
+    for profile, options in pairs(raidFramesModule.profiles) do
+        CompactRaidFrameManagerContainerResizeFrame:ClearAllPoints()
+        local activeRaidProfile = GetActiveRaidProfile()
+        if activeRaidProfile == profile then
+            self:SetPoint(CompactRaidFrameManagerContainerResizeFrame, "TOP", UIParent, "TOP", 0, options.y * -1)
+            self:SetPoint(CompactRaidFrameManagerContainerResizeFrame, "BOTTOM", UIParent, "BOTTOM", 0, options.height)
+            self:SetPoint(CompactRaidFrameManagerContainerResizeFrame, "LEFT", UIParent, "LEFT", options.x, 0)
+        end
 
-    CompactRaidFrameManagerContainerResizeFrame:ClearAllPoints()
-    local activeRaidProfile = GetActiveRaidProfile()
-    if activeRaidProfile == "Party" then
-        self:SetPoint(CompactRaidFrameManagerContainerResizeFrame, "TOP", UIParent, "TOP", 0, party.y * -1)
-        self:SetPoint(CompactRaidFrameManagerContainerResizeFrame, "BOTTOM", UIParent, "BOTTOM", 0, party.height)
-        self:SetPoint(CompactRaidFrameManagerContainerResizeFrame, "LEFT", UIParent, "LEFT", party.x, 0)
-    elseif activeRaidProfile == "Raid" then
-        self:SetPoint(CompactRaidFrameManagerContainerResizeFrame, "TOP", UIParent, "TOP", 0, raid.y * -1)
-        self:SetPoint(CompactRaidFrameManagerContainerResizeFrame, "BOTTOM", UIParent, "BOTTOM", 0, raid.height)
-        self:SetPoint(CompactRaidFrameManagerContainerResizeFrame, "LEFT", UIParent, "LEFT", raid.x, 0)
+        -- Update positions
+        SetRaidProfileSavedPosition(profile, false, 'TOP', options.y, 'BOTTOM', options.height, 'LEFT', options.x)
     end
-
-    -- Update positions
-    SetRaidProfileSavedPosition("Party", false, 'TOP', party.y, 'BOTTOM', party.height, 'LEFT', party.x)
-    SetRaidProfileSavedPosition("Raid", false, 'TOP', raid.y, 'BOTTOM', raid.height, 'LEFT', raid.x)
 
     -- Prompt a reload
     StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')

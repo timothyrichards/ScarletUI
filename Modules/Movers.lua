@@ -145,8 +145,6 @@ function ScarletUI:ResetPositions()
         "actionbarsModule.microBar",
         "actionbarsModule.bagBar",
         "chatModule.chatFrame",
-        "raidFramesModule.partyFrames",
-        "raidFramesModule.raidFrames",
     }
     local settings = {
         "frameAnchor",

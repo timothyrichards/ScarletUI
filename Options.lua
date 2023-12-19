@@ -1436,54 +1436,54 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
                         type = "toggle",
                         width = "full",
                         order = 0,
-                        get = function(_) return module.partyFrames.move end,
+                        get = function(_) return module.profiles.Party.move end,
                         set = function(_, val)
-                            module.partyFrames.move = val
+                            module.profiles.Party.move = val
                             self:UpdateProfilePositions()
                         end,
                     },
                     left = {
                         name = "Frame Left",
-                        desc = "Must be a number, this is the distance of the raid frame container from the left side of the screen.\n(Default " .. defaults.partyFrames.x .. ")",
+                        desc = "Must be a number, this is the distance of the raid frame container from the left side of the screen.\n(Default " .. defaults.profiles.Party.x .. ")",
                         type = "range",
                         min = math.floor(screenWidth) * -1,
                         max = math.floor(screenWidth),
                         step = 1,
                         width = 1,
                         order = 1,
-                        get = function(_) return module.partyFrames.x end,
+                        get = function(_) return module.profiles.Party.x end,
                         set = function(_, val)
-                            module.partyFrames.x = val
+                            module.profiles.Party.x = val
                             self:UpdateProfilePositions()
                         end,
                     },
                     top = {
                         name = "Frame Top",
-                        desc = "Must be a number, this is the distance of the raid frame container from the top of the screen.\n(Default " .. defaults.partyFrames.y .. ")",
+                        desc = "Must be a number, this is the distance of the raid frame container from the top of the screen.\n(Default " .. defaults.profiles.Party.y .. ")",
                         type = "range",
                         min = math.floor(screenHeight) * -1,
                         max = math.floor(screenHeight),
                         step = 1,
                         width = 1,
                         order = 2,
-                        get = function(_) return module.partyFrames.y end,
+                        get = function(_) return module.profiles.Party.y end,
                         set = function(_, val)
-                            module.partyFrames.y = val
+                            module.profiles.Party.y = val
                             self:UpdateProfilePositions()
                         end,
                     },
                     bottom = {
                         name = "Frame Bottom",
-                        desc = "Must be a number, this is the distance of the raid frame container from the bottom of the screen.\n(Default " .. defaults.partyFrames.height .. ")",
+                        desc = "Must be a number, this is the distance of the raid frame container from the bottom of the screen.\n(Default " .. defaults.profiles.Party.height .. ")",
                         type = "range",
                         min = math.floor(screenHeight) * -1,
                         max = math.floor(screenHeight),
                         step = 1,
                         width = 1,
                         order = 3,
-                        get = function(_) return module.partyFrames.height end,
+                        get = function(_) return module.profiles.Party.height end,
                         set = function(_, val)
-                            module.partyFrames.height = val
+                            module.profiles.Party.height = val
                             self:UpdateProfilePositions()
                         end,
                     }
@@ -1502,54 +1502,54 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
                         type = "toggle",
                         width = "full",
                         order = 0,
-                        get = function(_) return module.raidFrames.move end,
+                        get = function(_) return module.profiles.Raid.move end,
                         set = function(_, val)
-                            module.raidFrames.move = val
+                            module.profiles.Raid.move = val
                             self:UpdateProfilePositions()
                         end,
                     },
                     left = {
                         name = "Frame Left",
-                        desc = "Must be a number, this is the distance of the raid frame container from the left side of the screen.\n(Default " .. defaults.raidFrames.x .. ")",
+                        desc = "Must be a number, this is the distance of the raid frame container from the left side of the screen.\n(Default " .. defaults.profiles.Raid.x .. ")",
                         type = "range",
                         min = math.floor(screenWidth) * -1,
                         max = math.floor(screenWidth),
                         step = 1,
                         width = 1,
                         order = 1,
-                        get = function(_) return module.raidFrames.x end,
+                        get = function(_) return module.profiles.Raid.x end,
                         set = function(_, val)
-                            module.raidFrames.x = val
+                            module.profiles.Raid.x = val
                             self:UpdateProfilePositions()
                         end,
                     },
                     top = {
                         name = "Frame Top",
-                        desc = "Must be a number, this is the distance of the raid frame container from the top of the screen.\n(Default " .. defaults.raidFrames.y .. ")",
+                        desc = "Must be a number, this is the distance of the raid frame container from the top of the screen.\n(Default " .. defaults.profiles.Raid.y .. ")",
                         type = "range",
                         min = math.floor(screenHeight) * -1,
                         max = math.floor(screenHeight),
                         step = 1,
                         width = 1,
                         order = 2,
-                        get = function(_) return module.raidFrames.y end,
+                        get = function(_) return module.profiles.Raid.y end,
                         set = function(_, val)
-                            module.raidFrames.y = val
+                            module.profiles.Raid.y = val
                             self:UpdateProfilePositions()
                         end,
                     },
                     bottom = {
                         name = "Frame Bottom",
-                        desc = "Must be a number, this is the distance of the raid frame container from the bottom of the screen.\n(Default " .. defaults.raidFrames.height .. ")",
+                        desc = "Must be a number, this is the distance of the raid frame container from the bottom of the screen.\n(Default " .. defaults.profiles.Raid.height .. ")",
                         type = "range",
                         min = math.floor(screenHeight) * -1,
                         max = math.floor(screenHeight),
                         step = 1,
                         width = 1,
                         order = 3,
-                        get = function(_) return module.raidFrames.height end,
+                        get = function(_) return module.profiles.Raid.height end,
                         set = function(_, val)
-                            module.raidFrames.height = val
+                            module.profiles.Raid.height = val
                             self:UpdateProfilePositions()
                         end,
                     }

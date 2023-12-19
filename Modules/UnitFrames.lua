@@ -1,14 +1,3 @@
-ScarletUI.raidProfile = {
-    useClassColors = true,
-    displayBorder = false,
-    displayPowerBar = true,
-    displayOnlyDispellableDebuffs = true,
-    displayMainTankAndAssist = false,
-    healthText = 'perc',
-    frameHeight = 46,
-    frameWidth = 90,
-}
-
 function ScarletUI:SetupUnitFrames()
     local unitFramesModule = self.db.global.unitFramesModule
     if not unitFramesModule.enabled or self.lightWeightMode or self.retail then

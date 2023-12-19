@@ -13,7 +13,7 @@ ScarletUI.defaults = {
                 frameAnchor = 9,
                 screenAnchor = 4,
                 x = -65,
-                y = -190,
+                y = -190
             },
             targetFrame = {
                 mirrorPlayerFrame = true,
@@ -22,18 +22,18 @@ ScarletUI.defaults = {
                 frameAnchor = 8,
                 screenAnchor = 4,
                 x = 65,
-                y = -190,
+                y = -190
             },
             focusFrame = {
                 move = true,
                 frameAnchor = 9,
                 screenAnchor = 4,
                 x = -220,
-                y = -255,
+                y = -255
             },
         },
         moversModule = {
-            enabled = true,
+            enabled = true
         },
         actionbarsModule = {
             enabled = true,
@@ -45,7 +45,7 @@ ScarletUI.defaults = {
                 frameAnchor = 1,
                 screenAnchor = 1,
                 x = 0,
-                y = 0,
+                y = 0
             },
             stanceBar = {
                 move = true,
@@ -53,7 +53,7 @@ ScarletUI.defaults = {
                 frameAnchor = 2,
                 screenAnchor = 1,
                 x = -250,
-                y = 140,
+                y = 140
             },
             petBar = {
                 move = true,
@@ -61,7 +61,7 @@ ScarletUI.defaults = {
                 frameAnchor = 1,
                 screenAnchor = 1,
                 x = 0,
-                y = 140,
+                y = 140
             },
             multiCastBar = {
                 move = true,
@@ -69,21 +69,21 @@ ScarletUI.defaults = {
                 frameAnchor = 2,
                 screenAnchor = 1,
                 x = -250,
-                y = 140,
+                y = 140
             },
             microBar = {
                 move = true,
                 frameAnchor = 2,
                 screenAnchor = 2,
                 x = 2,
-                y = 2,
+                y = 2
             },
             bagBar = {
                 move = true,
                 frameAnchor = 3,
                 screenAnchor = 3,
                 x = -2,
-                y = 2,
+                y = 2
             },
             multiBarLeft = {
                 move = true,
@@ -92,7 +92,7 @@ ScarletUI.defaults = {
                 frameAnchor = 6,
                 screenAnchor = 6,
                 x = -42,
-                y = 0,
+                y = 0
             },
             multiBarRight = {
                 move = true,
@@ -101,7 +101,7 @@ ScarletUI.defaults = {
                 frameAnchor = 6,
                 screenAnchor = 6,
                 x = 0,
-                y = 0,
+                y = 0
             },
         },
         chatModule = {
@@ -112,29 +112,73 @@ ScarletUI.defaults = {
             tabs = {
                 loot = true,
                 trade = true,
-                lfg = true,
+                lfg = true
             },
             chatFrame = {
                 move = true,
                 frameAnchor = 2,
                 screenAnchor = 2,
                 x = 0,
-                y = 75,
+                y = 75
             }
         },
         raidFramesModule = {
             enabled = true,
-            partyFrames = {
-                move = true,
-                x = 535,
-                y = 450,
-                height = 295
-            },
-            raidFrames = {
-                move = true,
-                x = 165,
-                y = 375,
-                height = 90
+            profiles = {
+                Party = {
+                    move = true,
+                    x = 535,
+                    y = 450,
+                    height = 295,
+                    keepGroupsTogether = false,
+                    horizontalGroups = false,
+                    displayPowerBar = true,
+                    useClassColors = true,
+                    displayPets = true,
+                    displayMainTankAndAssist = false,
+                    displayBorder = false,
+                    displayNonBossDebuffs = true,
+                    displayOnlyDispellableDebuffs = true,
+                    healthText = 'perc',
+                    frameHeight = 46,
+                    frameWidth = 90,
+                    autoActivatePvE = true,
+                    autoActivatePvP = true,
+                    autoActivate2Players = true,
+                    autoActivate3Players = true,
+                    autoActivate5Players = true,
+                    autoActivate10Players = false,
+                    autoActivate15Players = false,
+                    autoActivate20Players = false,
+                    autoActivate40Players = false
+                },
+                Raid = {
+                    move = true,
+                    x = 165,
+                    y = 375,
+                    height = 90,
+                    keepGroupsTogether = true,
+                    horizontalGroups = true,
+                    displayPowerBar = true,
+                    useClassColors = true,
+                    displayPets = false,
+                    displayMainTankAndAssist = false,
+                    displayBorder = false,
+                    displayNonBossDebuffs = true,
+                    displayOnlyDispellableDebuffs = true,
+                    healthText = 'perc',
+                    frameHeight = 46,
+                    frameWidth = 90,
+                    autoActivatePvE = true,
+                    autoActivatePvP = true,
+                    autoActivate2Players = false,
+                    autoActivate3Players = false,
+                    autoActivate5Players = false,
+                    autoActivate10Players = true,
+                    autoActivate15Players = true,
+                    autoActivate20Players = true,
+                    autoActivate40Players = true
+                }
             }
         },
         nameplatesModule = {
@@ -144,15 +188,15 @@ ScarletUI.defaults = {
                 show = true,
                 indicatorSize = 30,
                 indicatorDistance = -5,
-                indicatorHeight = 0,
+                indicatorHeight = 0
             },
             healthBarText = {
                 show = true,
-                fontSize = 10,
+                fontSize = 10
             },
             castBarText = {
                 show = true,
-                fontSize = 10,
+                fontSize = 10
             },
             nonTankThreatColors = {
                 noThreat = { 0.0824, 1, 0, 1 },
@@ -212,9 +256,9 @@ ScarletUI.defaults = {
 
                 -- Misc CVars
                 countdownForCooldowns = '1',
-                Sound_EnableErrorSpeech = '0',
+                Sound_EnableErrorSpeech = '0'
             }
-        },
+        }
     }
 }
 
