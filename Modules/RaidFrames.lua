@@ -34,6 +34,21 @@ function ScarletUI:SetupRaidProfiles()
             end
         end)
 
+        hooksecurefunc("CompactUnitFrameProfiles_ApplyCurrentSettings", function()
+            local profile = GetActiveRaidProfile()
+            if raidFramesModule.profiles[profile] then
+                for k, v in pairs(raidFramesModule.profiles[profile]) do
+                    if not (k == "move" or k == "x" or k == "y" or k == "height") then
+                        local currentValue = tostring(v)
+                        local targetValue = tostring(GetRaidProfileOption(profile, k))
+                        if currentValue ~= targetValue then
+                            raidFramesModule.profiles[profile][k] = GetRaidProfileOption(profile, k)
+                        end
+                    end
+                end
+            end
+        end)
+
         return
     end
 
