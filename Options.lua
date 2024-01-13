@@ -486,13 +486,26 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                             end
                         end,
                     },
+                    showPagingNumbers = {
+                        name = "Show Paging Numbers",
+                        desc = "Show the actionbar paging numbers and buttons.",
+                        type = "toggle",
+                        disabled = function() return not module.stackActionbars end;
+                        width = 1,
+                        order = 1,
+                        get = function(_) return module.showPagingNumbers end,
+                        set = function(_, val)
+                            module.showPagingNumbers = val
+                            self:SetupActionbars()
+                        end,
+                    },
                     showGryphons = {
                         name = "Show Gryphons",
                         desc = "Show the gryphon graphics on the sides of your main bar.",
                         type = "toggle",
                         disabled = function() return not module.stackActionbars end;
                         width = 1,
-                        order = 1,
+                        order = 2,
                         get = function(_) return module.showGryphons end,
                         set = function(_, val)
                             module.showGryphons = val
@@ -505,7 +518,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                         type = "toggle",
                         disabled = function() return not module.stackActionbars end;
                         width = 1,
-                        order = 2,
+                        order = 3,
                         get = function(_) return module.microBag end,
                         set = function(_, val)
                             module.microBag = val

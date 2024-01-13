@@ -38,6 +38,7 @@ ScarletUI.defaults = {
         actionbarsModule = {
             enabled = true,
             stackActionbars = true,
+            showPagingNumbers = true,
             showGryphons = false,
             microBag = false,
             mainBar = {

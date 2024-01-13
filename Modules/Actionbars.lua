@@ -16,9 +16,14 @@ local function mainMenuBar(module)
     MainMenuBar:SetWidth(512)
     ActionButton1:SetPoint("BOTTOMLEFT", MainMenuBarArtFrame, "BOTTOMLEFT", 8, 4)
 
-    MainMenuBarPageNumber:Hide()
-    ActionBarUpButton:Hide()
-    ActionBarDownButton:Hide()
+    if module.showPagingNumbers then
+        MainMenuBarPageNumber:ClearAllPoints()
+        MainMenuBarPageNumber:SetPoint("LEFT", MainMenuBarArtFrame, "RIGHT", 22, -3)
+    else
+        MainMenuBarPageNumber:Hide()
+        ActionBarUpButton:Hide()
+        ActionBarDownButton:Hide()
+    end
 
     for i = 1, 12 do
         local button = _G["ActionButton"..i]
