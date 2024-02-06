@@ -17,12 +17,15 @@ local function mainMenuBar(module)
     ActionButton1:SetPoint("BOTTOMLEFT", MainMenuBarArtFrame, "BOTTOMLEFT", 8, 4)
 
     if module.showPagingNumbers then
+        ActionBarUpButton:Show()
+        ActionBarDownButton:Show()
+        MainMenuBarPageNumber:Show()
         MainMenuBarPageNumber:ClearAllPoints()
         MainMenuBarPageNumber:SetPoint("LEFT", MainMenuBarArtFrame, "RIGHT", 22, -3)
     else
-        MainMenuBarPageNumber:Hide()
         ActionBarUpButton:Hide()
         ActionBarDownButton:Hide()
+        MainMenuBarPageNumber:Hide()
     end
 
     for i = 1, 12 do
