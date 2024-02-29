@@ -78,7 +78,14 @@ local function ThreatFunc(unit)
 end
 
 local function IsTank(playerName)
-    -- In WotLK Classic, check if the player has the tank role
+    local mainTank = GetPartyAssignment("MAINTANK", playerName)
+    local mainAssist = GetPartyAssignment("MAINASSIST", playerName)
+
+    -- Check if the player has the tank role
+    if mainTank or mainAssist then
+        return true
+    end
+
     if UnitGroupRolesAssigned then
         local role = UnitGroupRolesAssigned(playerName)
         if role == "TANK" then

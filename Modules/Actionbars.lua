@@ -429,7 +429,8 @@ function ScarletUI:SetupActionbars()
 end
 
 function ScarletUI:UpdateMainBar()
-    if not self.inCombat then
+    local module = self.db.global.actionbarsModule
+    if not self.inCombat and module.stackActionbars then
         local point, relativeTo, relativePoint, offsetX, _ = MultiBarBottomLeft:GetPoint()
         if MainMenuExpBar:IsShown() and ReputationWatchBar:IsShown() then
             MultiBarBottomLeft:SetPoint(point, relativeTo, relativePoint, offsetX, 12)

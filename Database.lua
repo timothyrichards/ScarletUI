@@ -229,6 +229,7 @@ ScarletUI.defaults = {
                 doNotFlashLowHealthWarning = '0',
                 showTargetCastbar = '1',
                 showDynamicBuffSize = '1',
+                mapFade = '0',
 
                 -- Chat CVars
                 chatStyle = 'classic',
