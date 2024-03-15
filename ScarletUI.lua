@@ -130,6 +130,6 @@ ScarletUI.frame:SetScript("OnEvent", function (_, event, isLogin, ...)
     end
 end)
 
---hooksecurefunc("SetCVar", function(k, v)
---    print("CVar", k, "changed to", v)
---end)
+hooksecurefunc("SetCVar", function(k, v)
+    print("CVar", k, "changed to", v)
+end)

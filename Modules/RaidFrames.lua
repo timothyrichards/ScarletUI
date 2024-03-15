@@ -48,8 +48,6 @@ function ScarletUI:SetupRaidProfiles()
                 end
             end
         end)
-
-        return
     end
 
     for profile, options in pairs(raidFramesModule.profiles) do
@@ -73,7 +71,10 @@ function ScarletUI:SetupRaidProfiles()
             end
 
             -- Update position
-            SetRaidProfileSavedPosition(profile, false, 'TOP', options.y, 'BOTTOM', options.height, 'LEFT', options.x)
+            local _, _, top, _, bottom, _, left = GetRaidProfileSavedPosition(profile)
+            if top ~= options.y or bottom ~= options.height or left ~= options.x then
+                ScarletUI:UpdateProfilePositions()
+            end
         end
     end
 end
