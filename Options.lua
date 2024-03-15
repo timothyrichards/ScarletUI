@@ -47,7 +47,7 @@ function ScarletUI:Options()
             },
             moduleSettings = self:GetModuleSettingsPage(database, 3),
             chatModuleSettings = self:GetChatModuleSettingsPage(database.chatModule, defaults.chatModule, 4),
-            actionbarsModuleSettings = self:GetActionbarsModuleSettingsPage(database.actionbarsModule, defaults.actionbarsModule, 5),
+            actionbarsModuleSettings = self:GetActionbarsModuleSettingsPage(database, defaults.actionbarsModule, 5),
             unitFramesModuleSettings = self:GetUnitFramesModuleSettingsPage(database.unitFramesModule, defaults.unitFramesModule, 6),
             raidFramesModuleSettings = self:GetRaidFramesModuleSettingsPage(database.raidFramesModule, defaults.raidFramesModule, 7),
             nameplatesModuleSettings = self:GetNameplatesModuleSettingsPage(database.nameplatesModule, defaults.nameplatesModule, 8),
@@ -63,28 +63,6 @@ function ScarletUI:GetModuleSettingsPage(database, order)
         type = "group",
         order = order,
         args = {
-            settings = {
-                name = "Settings",
-                type = "group",
-                disabled = function() return self.inCombat end,
-                inline = true,
-                order = 0,
-                args = {
-                    tidyIcons = {
-                        name = "Bigger Icons",
-                        desc = "Make icons bigger to fill their actionbar slots.",
-                        type = "toggle",
-                        disabled = function() return self.lightWeightMode end,
-                        width = 1,
-                        order = 0,
-                        get = function(_) return database.tidyIconsEnabled end,
-                        set = function(_, val)
-                            database.tidyIconsEnabled = val
-                            self:TidyIcons_Update()
-                        end,
-                    },
-                },
-            },
             itemLevel = {
                 name = "Item Level",
                 type = "group",
@@ -457,7 +435,8 @@ function ScarletUI:GetChatModuleSettingsPage(module, defaults, order)
     }
 end
 
-function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
+function ScarletUI:GetActionbarsModuleSettingsPage(database, defaults, order)
+    local module = database.actionbarsModule;
     return {
         name = "Actionbars",
         desc = "Actionbars Module settings.",
@@ -503,13 +482,26 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                             self:SetupActionbars()
                         end,
                     },
+                    tidyIcons = {
+                        name = "Bigger Icons",
+                        desc = "Make icons bigger to fill their actionbar slots.",
+                        type = "toggle",
+                        disabled = function() return self.lightWeightMode end,
+                        width = 1,
+                        order = 2,
+                        get = function(_) return database.tidyIconsEnabled end,
+                        set = function(_, val)
+                            database.tidyIconsEnabled = val
+                            self:TidyIcons_Update()
+                        end,
+                    },
                     showGryphons = {
                         name = "Show Gryphons",
                         desc = "Show the gryphon graphics on the sides of your main bar.",
                         type = "toggle",
                         disabled = function() return not module.stackActionbars end;
                         width = 1,
-                        order = 2,
+                        order = 3,
                         get = function(_) return module.showGryphons end,
                         set = function(_, val)
                             module.showGryphons = val
@@ -522,7 +514,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(module, defaults, order)
                         type = "toggle",
                         disabled = function() return not module.stackActionbars end;
                         width = 1,
-                        order = 3,
+                        order = 4,
                         get = function(_) return module.microBag end,
                         set = function(_, val)
                             module.microBag = val
