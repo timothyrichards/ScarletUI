@@ -19,10 +19,9 @@ function ScarletUI:SetupRaidProfiles()
         end)
 
         hooksecurefunc("SetRaidProfileSavedPosition", function()
-            local profile = GetActiveRaidProfile()
-            local _, _, top, _, bottom, _, left = GetRaidProfileSavedPosition(profile)
-
             if not ScarletUI.movingRaidFrames then
+                local profile = GetActiveRaidProfile()
+                local _, _, top, _, bottom, _, left = GetRaidProfileSavedPosition(profile)
                 local options = raidFramesModule.profiles[profile]
                 if options ~= nil and options.move then
                     options.y = top
@@ -48,6 +47,8 @@ function ScarletUI:SetupRaidProfiles()
                 end
             end
         end)
+
+        return
     end
 
     for profile, options in pairs(raidFramesModule.profiles) do
@@ -71,10 +72,7 @@ function ScarletUI:SetupRaidProfiles()
             end
 
             -- Update position
-            local _, _, top, _, bottom, _, left = GetRaidProfileSavedPosition(profile)
-            if top ~= options.y or bottom ~= options.height or left ~= options.x then
-                ScarletUI:UpdateProfilePositions()
-            end
+            ScarletUI:UpdateProfilePositions()
         end
     end
 end
@@ -87,19 +85,10 @@ function ScarletUI:UpdateProfilePositions()
     self.movingRaidFrames = true
     local raidFramesModule = self.db.global.raidFramesModule
     for profile, options in pairs(raidFramesModule.profiles) do
-        CompactRaidFrameManagerContainerResizeFrame:ClearAllPoints()
-        local activeRaidProfile = GetActiveRaidProfile()
-        if activeRaidProfile == profile then
-            self:SetPoint(CompactRaidFrameManagerContainerResizeFrame, "TOP", UIParent, "TOP", 0, options.y * -1)
-            self:SetPoint(CompactRaidFrameManagerContainerResizeFrame, "BOTTOM", UIParent, "BOTTOM", 0, options.height)
-            self:SetPoint(CompactRaidFrameManagerContainerResizeFrame, "LEFT", UIParent, "LEFT", options.x, 0)
+        local _, _, top, _, bottom, _, left = GetRaidProfileSavedPosition(profile)
+        if top ~= options.y or bottom ~= options.height or left ~= options.x then
+            SetRaidProfileSavedPosition(profile, false, 'TOP', options.y, 'BOTTOM', options.height, 'LEFT', options.x)
         end
-
-        -- Update positions
-        SetRaidProfileSavedPosition(profile, false, 'TOP', options.y, 'BOTTOM', options.height, 'LEFT', options.x)
     end
-
-    -- Prompt a reload
-    StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
     self.movingRaidFrames = false
 end
