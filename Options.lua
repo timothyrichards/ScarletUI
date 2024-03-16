@@ -1432,6 +1432,19 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
         disabled = function() return not module.enabled or self.lightWeightMode end,
         hidden = function() return self.retail end,
         args = {
+            information = {
+                name = "Info",
+                type = "group",
+                inline = true,
+                order = 0,
+                args = {
+                    description = {
+                        name = "Please note that any changes made on this page will require a /reload to be reflected visually.",
+                        type = "description",
+                        width = "full",
+                    },
+                }
+            },
             partyFrames = {
                 name = "Party Frames",
                 type = "group",
