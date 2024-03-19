@@ -381,12 +381,12 @@ function ScarletUI:CheckUnitDebuffs(settings)
 
         -- Reposition icons
         local shownCount = 0
-        local totalWidth = #sortedDebuffs * (settings.iconSize + settings.offset)
+        local totalWidth = #sortedDebuffs * (settings.iconSize + settings.spacing)
         for _, debuffData in ipairs(sortedDebuffs) do
             debuffData.icon:Hide()
 
-            local xOffset = (shownCount * (settings.iconSize + settings.offset)) - totalWidth / 2
-            debuffData.icon:SetPoint('BOTTOMLEFT', plate, 'CENTER' , xOffset, 20)
+            local xOffset = (shownCount * (settings.iconSize + settings.spacing)) - totalWidth / 2
+            debuffData.icon:SetPoint('BOTTOMLEFT', plate, 'CENTER' , xOffset, settings.verticalOffset)
             debuffData.icon:Show()
             shownCount = shownCount + 1
         end

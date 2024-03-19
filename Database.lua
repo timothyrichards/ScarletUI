@@ -188,7 +188,8 @@ ScarletUI.defaults = {
             debuffTracker = {
                 track = true,
                 iconSize = 30,
-                offset = 2
+                spacing = 2,
+                verticalOffset = 20
             },
             targetIndicator = {
                 show = true,
