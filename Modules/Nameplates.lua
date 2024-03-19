@@ -220,6 +220,11 @@ function ScarletUI:SetupSpecialUnits(module)
 end
 
 function ScarletUI:SetupDropdownButton(module)
+    if self.dropdownEventRegistered then
+        return
+    end
+
+    self.dropdownEventRegistered = true
     hooksecurefunc("UnitPopup_ShowMenu", function(_, which, unit, ...)
         if not module.dropdownMenuButton then
             return
