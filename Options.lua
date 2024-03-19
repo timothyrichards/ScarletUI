@@ -1603,9 +1603,16 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                         width = 1.25,
                         order = 0,
                         get = function(_) return module.classColored end,
-                        set = function(_, val)
-                            module.classColored = val
-                        end,
+                        set = function(_, val) module.classColored = val end,
+                    },
+                    dropdownMenuButton = {
+                        name = "Dropdown Menu Button",
+                        desc = "Adds a button to the right click dropdown to add or remove tanks from the tank names list.",
+                        type = "toggle",
+                        width = 1.25,
+                        order = 0,
+                        get = function(_) return module.dropdownMenuButton end,
+                        set = function(_, val) module.dropdownMenuButton = val end,
                     },
                 }
             },
@@ -1623,9 +1630,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                         width = "full",
                         order = 0,
                         get = function(_) return module.debuffTracker.track end,
-                        set = function(_, val)
-                            module.debuffTracker.track = val
-                        end,
+                        set = function(_, val) module.debuffTracker.track = val end,
                     },
                     iconSize = {
                         name = "Icon Size",
@@ -1643,7 +1648,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                         name = "Icon Spacing",
                         desc = "Must be a number, this is the space between the debuff icons.\n(Default " .. defaults.debuffTracker.spacing .. ")",
                         type = "range",
-                        min = 1,
+                        min = 0,
                         max = 100,
                         step = 1,
                         width = 1,
@@ -1655,7 +1660,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                         name = "Vertical Offset",
                         desc = "Must be a number, this is the vertical offset of the debuff row from the nameplate.\n(Default " .. defaults.debuffTracker.verticalOffset .. ")",
                         type = "range",
-                        min = 1,
+                        min = -100,
                         max = 100,
                         step = 1,
                         width = 1,

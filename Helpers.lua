@@ -34,7 +34,7 @@ end
 function ScarletUI:OppositeFrameAnchor(index)
     local anchor = self.frameAnchors[index]
     if anchor == "BOTTOM" then
-        return "TOP"
+        return "BOTTOM"
     elseif anchor == "BOTTOMLEFT" then
         return "BOTTOMRIGHT"
     elseif anchor == "BOTTOMRIGHT" then
@@ -46,7 +46,7 @@ function ScarletUI:OppositeFrameAnchor(index)
     elseif anchor == "RIGHT" then
         return "LEFT"
     elseif anchor == "TOP" then
-        return "BOTTOM"
+        return "TOP"
     elseif anchor == "TOPLEFT" then
         return "TOPRIGHT"
     elseif anchor == "TOPRIGHT" then
@@ -66,7 +66,7 @@ function ScarletUI:FixChatBug()
     for i = 1, NUM_CHAT_WINDOWS do
         local cf = _G['ChatFrame'..i]
         cf.oldAlpha = cf.oldAlpha or 0 -- Fix 'max-bug' in FCF.lua
-        local cfname, _, _, _, _, _, shown, _, _, _ = GetChatWindowInfo(i)
+        local cfname, _, _, _, _, _, _, _, _, _ = GetChatWindowInfo(i)
         if(cfname == iname) then
             ifound = true
             break

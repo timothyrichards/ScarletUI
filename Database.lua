@@ -185,6 +185,7 @@ ScarletUI.defaults = {
         nameplatesModule = {
             enabled = true,
             classColored = true,
+            dropdownMenuButton = false,
             debuffTracker = {
                 track = true,
                 iconSize = 30,

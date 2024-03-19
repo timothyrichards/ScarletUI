@@ -1,5 +1,5 @@
+local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 local allStates = {}
-local tanks = {}
 local specialUnits = {}
 local lastNameplate
 
@@ -94,7 +94,7 @@ local function IsTank(playerName)
     end
 
     -- If not in WotLK Classic or no roles assigned, check if the player's name is in the otherTanks list
-    return tanks[playerName]
+    return ScarletUI.tanks[playerName]
 end
 
 local function HideTargetArrows()
@@ -211,14 +211,84 @@ function ScarletUI:UpdateTargetArrows()
     end
 end
 
-function ScarletUI:SetupTanks()
-    local nameplatesModule = self.db.global.nameplatesModule
-    tanks = split(nameplatesModule.tankNames)
+function ScarletUI:SetupTanks(module)
+    self.tanks = split(module.tankNames)
 end
 
-function ScarletUI:SetupSpecialUnits()
-    local nameplatesModule = self.db.global.nameplatesModule
-    specialUnits = split(nameplatesModule.specialUnitNames)
+function ScarletUI:SetupSpecialUnits(module)
+    specialUnits = split(module.specialUnitNames)
+end
+
+function ScarletUI:SetupDropdownButton(module)
+    hooksecurefunc("UnitPopup_ShowMenu", function(_, which, unit, ...)
+        if not module.dropdownMenuButton then
+            return
+        end
+
+        -- if the menu is already open or the unit can't cooperate with the player then return
+        if UIDROPDOWNMENU_MENU_LEVEL > 1 or not UnitCanCooperate("player", unit) then
+            return
+        end
+
+        -- add separator to dropdown
+        UIDropDownMenu_AddSeparator()
+
+        -- add ScarletUI title to dropdown
+        local title = UIDropDownMenu_CreateInfo();
+        title.text = "ScarletUI"
+        title.notCheckable = true
+        title.isTitle = true
+        UIDropDownMenu_AddButton(title)
+
+        local tankNames = {}
+        local function updateTankNames()
+            local count = 0;
+            for key, value in pairs(ScarletUI.tanks) do
+                if value then
+                    table.insert(tankNames, key)
+                    nameplatesModule.tankNames = table.concat(tankNames, ",");
+                end
+
+                count = count + 1
+            end
+
+            if count == 0 then
+                nameplatesModule.tankNames = ""
+            end
+
+            AceConfigRegistry:NotifyChange("ScarletUI")
+        end
+
+        local text = "Add Tank"
+        local value = "Add_Tank"
+        local func = function()
+            local name, _ = UnitName(unit)
+            ScarletUI.tanks[name] = true
+            updateTankNames()
+        end;
+
+        for tank, _ in pairs(ScarletUI.tanks) do
+            local name, _ = UnitName(unit)
+            if name == tank then
+                text = "Remove Tank"
+                value = "Remove_Tank"
+                func = function()
+                    ScarletUI.tanks[tank] = nil
+                    updateTankNames()
+                end;
+            end
+        end
+
+        -- add the "Add/Remove Tank" button to the context menu
+        local button = UIDropDownMenu_CreateInfo();
+        button.notCheckable = true
+        button.text = text
+        button.value = value
+        button.owner = which
+        button.func = func
+        button.colorCode = "|cff00b3ff"
+        UIDropDownMenu_AddButton(button)
+    end)
 end
 
 function ScarletUI:SetupNameplates()
@@ -227,8 +297,9 @@ function ScarletUI:SetupNameplates()
         return
     end
 
-    self:SetupTanks()
-    self:SetupSpecialUnits()
+    self:SetupTanks(nameplatesModule)
+    self:SetupSpecialUnits(nameplatesModule)
+    self:SetupDropdownButton(nameplatesModule)
     self.frame:RegisterEvent("PLAYER_TARGET_CHANGED")
     self.frame:RegisterEvent("UNIT_AURA")
     self.frame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
@@ -312,7 +383,7 @@ function ScarletUI:SetupNameplates()
                     displayValue = threatValue - secondThreat
                 else
                     displayValue = threatValue - firstThreat
-                    if firstUnit and not UnitIsUnit(firstUnit, "Player") and tanks[UnitName(firstUnit)] then
+                    if firstUnit and not UnitIsUnit(firstUnit, "Player") and ScarletUI.tanks[UnitName(firstUnit)] then
                         threatStatus = 4
                     end
                 end
