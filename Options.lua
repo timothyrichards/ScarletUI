@@ -1609,12 +1609,56 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                     },
                 }
             },
+            debuffTracker = {
+                name = "Debuff Tracker",
+                type = "group",
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
+                inline = true,
+                order = 1,
+                args = {
+                    track = {
+                        name = "Track Debuffs",
+                        desc = "Show debuffs and their durations on the nameplates.",
+                        type = "toggle",
+                        width = "full",
+                        order = 0,
+                        get = function(_) return module.debuffTracker.track end,
+                        set = function(_, val)
+                            module.debuffTracker.track = val
+                        end,
+                    },
+                    iconSize = {
+                        name = "Icon Size",
+                        desc = "Must be a number, this is the size of the debuff icons.\n(Default " .. defaults.debuffTracker.iconSize .. ")",
+                        type = "range",
+                        min = 1,
+                        max = 100,
+                        step = 1,
+                        width = 1,
+                        order = 2,
+                        get = function(_) return module.debuffTracker.iconSize end,
+                        set = function(_, val) module.debuffTracker.iconSize = val end,
+                    },
+                    offset = {
+                        name = "Offset",
+                        desc = "Must be a number, this is the space between the debuff icons.\n(Default " .. defaults.debuffTracker.offset .. ")",
+                        type = "range",
+                        min = 1,
+                        max = 100,
+                        step = 1,
+                        width = 1,
+                        order = 3,
+                        get = function(_) return module.debuffTracker.offset end,
+                        set = function(_, val) module.debuffTracker.offset = val end,
+                    },
+                }
+            },
             targetIndicator = {
                 name = "Target Indicator",
                 type = "group",
                 disabled = function() return self.inCombat end,
                 inline = true,
-                order = 1,
+                order = 2,
                 args = {
                     show = {
                         name = "Show",
@@ -1680,7 +1724,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                 type = "group",
                 disabled = function() return self.inCombat end,
                 inline = true,
-                order = 2,
+                order = 3,
                 args = {
                     show = {
                         name = "Show",
@@ -1716,7 +1760,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                 type = "group",
                 disabled = function() return self.inCombat end,
                 inline = true,
-                order = 3,
+                order = 4,
                 args = {
                     show = {
                         name = "Show",
@@ -1752,7 +1796,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                 type = "group",
                 disabled = function() return self.inCombat end,
                 inline = true,
-                order = 4,
+                order = 5,
                 args = {
                     noThreat = {
                         name = "No Threat",
@@ -1823,7 +1867,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                 type = "group",
                 disabled = function() return self.inCombat end,
                 inline = true,
-                order = 5,
+                order = 6,
                 args = {
                     noThreat = {
                         name = "No Threat",
@@ -1896,7 +1940,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                 multiline = 5,
                 width = "full",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
-                order = 6,
+                order = 7,
                 get = function(_) return module.tankNames end,
                 set = function(_, value)
                     module.tankNames = value
@@ -1908,7 +1952,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                 type = "group",
                 disabled = function() return self.inCombat end,
                 inline = true,
-                order = 7,
+                order = 8,
                 args = {
                     specialUnitColor = {
                         name = "Special Unit Color",
@@ -1934,7 +1978,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                 multiline = 5,
                 width = "full",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
-                order = 8,
+                order = 9,
                 get = function(_) return module.specialUnitNames end,
                 set = function(_, value)
                     module.specialUnitNames = value
@@ -1981,7 +2025,7 @@ function ScarletUI:GetCVarModuleSettingsPage(module, order)
     }
 
     local orderCounter = 0
-    for k, v in pairs(CVars) do
+    for k, _ in pairs(CVars) do
         orderCounter = orderCounter + 1
         local labelName = "label" .. orderCounter
         local spacerName = "spacer" .. orderCounter

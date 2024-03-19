@@ -185,6 +185,11 @@ ScarletUI.defaults = {
         nameplatesModule = {
             enabled = true,
             classColored = true,
+            debuffTracker = {
+                track = true,
+                iconSize = 30,
+                offset = 2
+            },
             targetIndicator = {
                 show = true,
                 indicatorSize = 30,

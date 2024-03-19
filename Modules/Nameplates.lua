@@ -1,4 +1,4 @@
-local allstates = {}
+local allStates = {}
 local tanks = {}
 local specialUnits = {}
 local lastNameplate
@@ -229,14 +229,17 @@ function ScarletUI:SetupNameplates()
 
     self:SetupTanks()
     self:SetupSpecialUnits()
+    self.frame:RegisterEvent("PLAYER_TARGET_CHANGED")
+    self.frame:RegisterEvent("UNIT_AURA")
     self.frame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
     self.frame:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
     self.frame:RegisterEvent("UNIT_THREAT_LIST_UPDATE")
     self.frame:RegisterEvent("UNIT_THREAT_SITUATION_UPDATE")
-    self.frame:RegisterEvent("PLAYER_TARGET_CHANGED")
     self.frame:HookScript("OnEvent", function(_, event, unitId)
         if event == "PLAYER_TARGET_CHANGED" then
             ScarletUI:UpdateTargetArrows()
+        elseif event == "UNIT_AURA" then
+            ScarletUI:CheckUnitDebuffs(nameplatesModule.debuffTracker)
         else
             if not unitId or not UnitExists(unitId) then
                 return
@@ -257,7 +260,7 @@ function ScarletUI:SetupNameplates()
             end
 
             if event == "NAME_PLATE_UNIT_REMOVED" then
-                local state = allstates[unitId]
+                local state = allStates[unitId]
                 if state then
                     state.show = false
                     state.changed = true
@@ -265,7 +268,7 @@ function ScarletUI:SetupNameplates()
                 end
             else
                 local isTanking, threatStatus, _, _, threatValue = UnitDetailedThreatSituation("player", unitId)
-                local firstUnit, firstThreat, secondUnit, secondThreat = ThreatFunc(unitId)
+                local firstUnit, firstThreat, _, secondThreat = ThreatFunc(unitId)
 
                 local displayValue
 
@@ -314,8 +317,8 @@ function ScarletUI:SetupNameplates()
                     end
                 end
 
-                allstates[unitId] = allstates[unitId] or {unit = unitId}
-                local state = allstates[unitId]
+                allStates[unitId] = allStates[unitId] or { unit = unitId}
+                local state = allStates[unitId]
                 state.changed = true
                 if string.find(unitId, "nameplate") then
                     state.show = true
@@ -329,4 +332,104 @@ function ScarletUI:SetupNameplates()
             end
         end
     end)
+end
+
+-- List all nameplates and check if the specified debuff is present on the unit the nameplate belongs to
+function ScarletUI:CheckUnitDebuffs(settings)
+    if not settings.track then
+        return
+    end
+
+    local nameplates = C_NamePlate.GetNamePlates()
+    for _, plate in ipairs(nameplates) do
+        plate.myDebuffIcons = plate.myDebuffIcons or {}
+        plate.myDebuffNames = plate.myDebuffNames or {}
+
+        local unit = plate.namePlateUnitToken
+        local i = 1
+        local debuffName, icon, _, _, _, _, source = UnitDebuff(unit, i) -- including icon in the unpacking
+
+        -- store and display debuffs for each unit
+        local plateDebuffs = {}
+        while debuffName do
+            if source == "player" then
+                plateDebuffs[debuffName] = true
+                ScarletUI:DisplayDebuffIcon(settings, plate, debuffName, icon, i) -- passing icon along
+            end
+            i = i + 1
+            debuffName, icon, _, _, _, _, source = UnitDebuff(unit, i) -- including icon in the unpacking
+        end
+
+        -- Remove icons for debuffs no longer on the unit
+        for name, _icon in pairs(plate.myDebuffIcons) do
+            if not plateDebuffs[name] then
+                _icon.icon:Hide()
+                plate.myDebuffIcons[name] = nil
+            end
+        end
+
+        -- Sort and reposition the icons based on remaining duration
+        local sortedDebuffs = {}
+        for _, debuffData in pairs(plate.myDebuffIcons) do
+            if debuffData.icon:IsShown() then
+                table.insert(sortedDebuffs, debuffData)
+            end
+        end
+
+        -- Sorting the table in ascending order of expireTime.
+        table.sort(sortedDebuffs, function(a, b) return a.expireTime < b.expireTime end)
+
+        -- Reposition icons
+        local shownCount = 0
+        local totalWidth = #sortedDebuffs * (settings.iconSize + settings.offset)
+        for _, debuffData in ipairs(sortedDebuffs) do
+            debuffData.icon:Hide()
+
+            local xOffset = (shownCount * (settings.iconSize + settings.offset)) - totalWidth / 2
+            debuffData.icon:SetPoint('BOTTOMLEFT', plate, 'CENTER' , xOffset, 20)
+            debuffData.icon:Show()
+            shownCount = shownCount + 1
+        end
+    end
+end
+
+-- Display debuff icon on the provided nameplate.
+function ScarletUI:DisplayDebuffIcon(settings, plate, debuffName, icon, debuffIndex)
+    if not plate.myDebuffIcons then
+        plate.myDebuffIcons = {}
+    end
+
+    local debuffIcon
+    local _, _, count, _, duration, expireTime = UnitDebuff(plate.namePlateUnitToken, debuffIndex)
+
+    if not plate.myDebuffIcons[debuffName] then
+        debuffIcon = CreateFrame("Frame", "_SUI_C_"..debuffName, plate)
+        debuffIcon:SetSize(settings.iconSize, settings.iconSize)
+
+        debuffIcon.icon = debuffIcon:CreateTexture("_SUI_I_"..debuffName)
+        debuffIcon.icon:SetAllPoints()
+        debuffIcon.icon:SetTexture(icon)
+
+        debuffIcon.cooldown = CreateFrame("Cooldown", "_SUI_C_"..debuffName, debuffIcon, "CooldownFrameTemplate")
+        debuffIcon.cooldown:SetAllPoints()
+        debuffIcon.cooldown:SetReverse(true)
+
+        debuffIcon.stack = debuffIcon:CreateFontString("_SUI_S_"..debuffName, "OVERLAY", "NumberFontNormal")
+        debuffIcon.stack:SetPoint("BOTTOMRIGHT", -2, 2)
+
+        local fontName, _, fontFlags = debuffIcon.stack:GetFont()
+        debuffIcon.stack:SetFont(fontName, 11, fontFlags)
+        plate.myDebuffIcons[debuffName] = { icon = debuffIcon, expireTime = expireTime }
+    else
+        debuffIcon = plate.myDebuffIcons[debuffName].icon
+        plate.myDebuffIcons[debuffName].expireTime = expireTime
+    end
+
+    if count and tonumber(count) >= 1 then
+        debuffIcon.stack:SetText(count)
+    end
+
+    local startTime = expireTime - duration
+    debuffIcon.cooldown:SetCooldown(startTime, duration)
+    debuffIcon:Show()
 end
