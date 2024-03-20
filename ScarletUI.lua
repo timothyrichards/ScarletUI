@@ -45,7 +45,7 @@ function ScarletUI:Setup(isLogin)
 
     -- Check if lightWeightMode should be enabled
     local _, _, _, interfaceVersion = GetBuildInfo()
-    if tonumber(interfaceVersion) >= 100100 then
+    if tonumber(interfaceVersion) >= 100205 then
         self.retail = true;
     elseif IsAddOnLoaded("ElvUI") then
         self.lightWeightMode = true;

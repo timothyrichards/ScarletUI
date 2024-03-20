@@ -109,6 +109,7 @@ function ScarletUI:UpdateCastText(castBar)
         local abilityName = castBar.Text and castBar.Text:GetText()
         if castBar.castBarText then
             castBar.castBarText:SetText(abilityName)
+            castBar.castBarText:Show()
         end
     end
 end
@@ -119,55 +120,57 @@ function ScarletUI:UpdateHealthText(healthBar)
         local healthPercent = (UnitHealth(unitID) / UnitHealthMax(unitID)) * 100;
         if healthBar.healthBarText then
             healthBar.healthBarText:SetText(string.format("%.0f%%", healthPercent))
+            healthBar.healthBarText:Show()
         end
     end
 end
 
 local function SetupNameplate(nameplate)
     local module = ScarletUI.db.global.nameplatesModule
-    if not module.castBarText.show then
-        return
-    end
 
     local castBar = nameplate.UnitFrame and nameplate.UnitFrame.CastBar
-    if castBar then
-        -- Create a font string if it doesn't exist
-        if not castBar.castBarText then
-            castBar.castBarText = castBar:CreateFontString(nil, "OVERLAY", "GameFontWhite")
-            castBar.castBarText:SetPoint("CENTER")
-            castBar.castBarText:SetFont("Fonts\\FRIZQT__.TTF", module.castBarText.fontSize, "OUTLINE")
-        end
-        ScarletUI:UpdateCastText(castBar)
+    if module.castBarText.show then
+        if castBar then
+            -- Create a font string if it doesn't exist
+            if not castBar.castBarText then
+                castBar.castBarText = castBar:CreateFontString(nil, "OVERLAY", "GameFontWhite")
+                castBar.castBarText:SetPoint("CENTER")
+                castBar.castBarText:SetFont("Fonts\\FRIZQT__.TTF", module.castBarText.fontSize, "OUTLINE")
+            end
+            ScarletUI:UpdateCastText(castBar)
 
-        -- Hook into the OnValueChanged script to update the text during casting
-        if not castBar.castBarTextHooked then
-            castBar:HookScript("OnValueChanged", function(self)
-                ScarletUI:UpdateCastText(self)
-            end)
-            castBar.castBarTextHooked = true
+            -- Hook into the OnValueChanged script to update the text during casting
+            if not castBar.castBarTextHooked then
+                castBar:HookScript("OnValueChanged", function(self)
+                    ScarletUI:UpdateCastText(self)
+                end)
+                castBar.castBarTextHooked = true
+            end
         end
-    end
-
-    if not module.healthBarText.show then
-        return
+    elseif castBar.castBarText then
+        castBar.castBarText:Hide()
     end
 
     local healthBar = nameplate.UnitFrame and nameplate.UnitFrame.healthBar
-    if healthBar then
-        if not healthBar.healthBarText then
-            healthBar.healthBarText = healthBar:CreateFontString(nil, "OVERLAY", "GameFontWhite")
-            healthBar.healthBarText:SetPoint("CENTER")
-            healthBar.healthBarText:SetFont("Fonts\\FRIZQT__.TTF", module.healthBarText.fontSize, "OUTLINE")
-        end
-    end
-    ScarletUI:UpdateHealthText(healthBar)
+    if module.healthBarText.show then
+        if healthBar then
+            if not healthBar.healthBarText then
+                healthBar.healthBarText = healthBar:CreateFontString(nil, "OVERLAY", "GameFontWhite")
+                healthBar.healthBarText:SetPoint("CENTER")
+                healthBar.healthBarText:SetFont("Fonts\\FRIZQT__.TTF", module.healthBarText.fontSize, "OUTLINE")
+            end
+            ScarletUI:UpdateHealthText(healthBar)
 
-    -- Hook into the OnValueChanged script to update the text during casting
-    if not healthBar.healthBarTextHooked then
-        healthBar:HookScript("OnValueChanged", function(self)
-            ScarletUI:UpdateHealthText(self)
-        end)
-        healthBar.healthBarTextHooked = true
+            -- Hook into the OnValueChanged script to update the text during casting
+            if not healthBar.healthBarTextHooked then
+                healthBar:HookScript("OnValueChanged", function(self)
+                    ScarletUI:UpdateHealthText(self)
+                end)
+                healthBar.healthBarTextHooked = true
+            end
+        end
+    elseif healthBar.healthBarText then
+        healthBar.healthBarText:Hide()
     end
 end
 
@@ -231,7 +234,7 @@ function ScarletUI:SetupDropdownButton(module)
         end
 
         -- if the menu is already open or the unit can't cooperate with the player then return
-        if UIDROPDOWNMENU_MENU_LEVEL > 1 or not UnitCanCooperate("player", unit) then
+        if UIDROPDOWNMENU_MENU_LEVEL > 1 or not UnitIsPlayer(unit) or (not UnitCanCooperate("player", unit) and not UnitIsPlayer(unit)) then
             return
         end
 
@@ -330,8 +333,12 @@ function ScarletUI:SetupNameplates()
                 end
             end
 
-            if specialUnits[unitName] and nameplate.UnitFrame then
+            if nameplatesModule.specialUnitsColored and specialUnits[unitName] and nameplate.UnitFrame then
                 nameplate.UnitFrame.healthBar:SetStatusBarColor(unpack(nameplatesModule.specialUnitColor))
+                return
+            end
+
+            if not nameplatesModule.threatColored then
                 return
             end
 

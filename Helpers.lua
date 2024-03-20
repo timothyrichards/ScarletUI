@@ -54,8 +54,8 @@ function ScarletUI:OppositeFrameAnchor(index)
     end
 end
 
-function ScarletUI:SettingDisabled(moduleEnabled)
-    if ScarletUI.inCombat then
+function ScarletUI:SettingDisabled(moduleEnabled, checkCombat)
+    if ScarletUI.inCombat and checkCombat then
         return true
     else
         return not moduleEnabled
