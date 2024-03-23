@@ -434,17 +434,17 @@ function ScarletUI:CheckUnitDebuffs(unitId, settings)
     nameplate.myDebuffNames = nameplate.myDebuffNames or {}
 
     local i = 1
-    local debuffName, icon, _, _, _, _, source = UnitDebuff(unitId, i)
+    local debuffName, icon, count, _, duration, expireTime, source = UnitDebuff(unitId, i)
 
     -- store and display debuffs for each unit
     local plateDebuffs = {}
     while debuffName do
         if source == "player" then
             plateDebuffs[debuffName] = true
-            ScarletUI:DisplayDebuffIcon(settings, nameplate, unitId, debuffName, icon, i)
+            ScarletUI:DisplayDebuffIcon(settings, nameplate, debuffName, icon, count, duration, expireTime)
         end
         i = i + 1
-        debuffName, icon, _, _, _, _, source = UnitDebuff(unitId, i)
+        debuffName, icon, count, _, duration, expireTime, source = UnitDebuff(unitId, i)
     end
 
     -- Remove icons for debuffs no longer on the unit
@@ -480,14 +480,12 @@ function ScarletUI:CheckUnitDebuffs(unitId, settings)
 end
 
 -- Display debuff icon on the provided nameplate.
-function ScarletUI:DisplayDebuffIcon(settings, plate, unitId, debuffName, icon, debuffIndex)
+function ScarletUI:DisplayDebuffIcon(settings, plate, debuffName, icon, count, duration, expireTime)
     if not plate.myDebuffIcons then
         plate.myDebuffIcons = {}
     end
 
     local debuffIcon
-    local _, _, count, _, duration, expireTime = UnitDebuff(unitId, debuffIndex)
-
     if not plate.myDebuffIcons[debuffName] then
         debuffIcon = CreateFrame("Frame", "_SUI_C_"..debuffName, plate)
         debuffIcon:SetSize(settings.iconSize, settings.iconSize)
