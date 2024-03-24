@@ -276,6 +276,35 @@ local function multiCastBar(module)
     end
 end
 
+-- TODO: improve this functionality, maybe add to options
+local function possessBarFrame()
+    if not PossessBarFrame then
+        return
+    end
+
+    PossessBarFrame:ClearAllPoints()
+    ScarletUI:SetPoint(
+            PossessBarFrame,
+            "BOTTOMRIGHT",
+            MultiBarBottomRight,
+            "TOPRIGHT",
+            -100,
+            0
+    )
+
+    PossessBarFrame:HookScript("OnShow", function()
+        PossessBarFrame:ClearAllPoints()
+        ScarletUI:SetPoint(
+                PossessBarFrame,
+                "BOTTOMRIGHT",
+                MultiBarBottomRight,
+                "TOPRIGHT",
+                -100,
+                0
+        )
+    end)
+end
+
 local function experienceBar()
     if not ScarletUI.experienceBarEventRegistered then
         ScarletUI.experienceBarEventRegistered = true
@@ -387,6 +416,7 @@ function ScarletUI:SetupActionbars()
         stanceBar(actionbarsModule)
         petActionBar(actionbarsModule)
         multiCastBar(actionbarsModule)
+        possessBarFrame()
         experienceBar()
         reputationBar()
         ScarletUI:UpdateMainBar()
