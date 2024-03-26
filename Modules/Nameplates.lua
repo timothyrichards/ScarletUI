@@ -223,6 +223,7 @@ function ScarletUI:SetupSpecialUnits(module)
 end
 
 function ScarletUI:SetupDropdownButton(module)
+    local nameplatesModule = self.db.global.nameplatesModule
     if self.dropdownEventRegistered then
         return
     end
@@ -430,6 +431,20 @@ function ScarletUI:CheckUnitDebuffs(unitId, settings)
         return
     end
 
+    if nameplate.UnitFrame then
+        if nameplate.UnitFrame.BuffFrame then
+            if not nameplate.UnitFrame.BuffFrame.hookSet then
+                nameplate.UnitFrame.BuffFrame.Show = function() end
+                nameplate.UnitFrame.BuffFrame:Hide()
+                nameplate.UnitFrame.BuffFrame:HookScript("OnShow", function(self)
+                    self:Hide()
+                end)
+
+                nameplate.UnitFrame.BuffFrame.hookSet = true
+            end
+        end
+    end
+
     nameplate.myDebuffIcons = nameplate.myDebuffIcons or {}
     nameplate.myDebuffNames = nameplate.myDebuffNames or {}
 
@@ -481,38 +496,56 @@ end
 
 -- Display debuff icon on the provided nameplate.
 function ScarletUI:DisplayDebuffIcon(settings, plate, debuffName, icon, count, duration, expireTime)
+    -- Initialize the debuff frame pool for the nameplate
+    plate.debuffFramePool = plate.debuffFramePool or {}
+
     if not plate.myDebuffIcons then
         plate.myDebuffIcons = {}
     end
 
     local debuffIcon
     if not plate.myDebuffIcons[debuffName] then
-        debuffIcon = CreateFrame("Frame", "_SUI_C_"..debuffName, plate)
-        debuffIcon:SetSize(settings.iconSize, settings.iconSize)
+        -- Check if there's an unused frame in the pool
+        for _, frame in ipairs(plate.debuffFramePool) do
+            if not frame:IsShown() then
+                debuffIcon = frame
+                break
+            end
+        end
 
-        debuffIcon.icon = debuffIcon:CreateTexture("_SUI_I_"..debuffName)
-        debuffIcon.icon:SetAllPoints()
-        debuffIcon.icon:SetTexture(icon)
+        -- If there's no unused frame, create a new one
+        if not debuffIcon then
+            debuffIcon = CreateFrame("Frame", nil, plate)
+            debuffIcon:SetSize(settings.iconSize, settings.iconSize)
 
-        debuffIcon.cooldown = CreateFrame("Cooldown", "_SUI_C_"..debuffName, debuffIcon, "CooldownFrameTemplate")
-        debuffIcon.cooldown:SetAllPoints()
-        debuffIcon.cooldown:SetReverse(true)
+            debuffIcon.icon = debuffIcon:CreateTexture(nil)
+            debuffIcon.icon:SetAllPoints()
 
-        debuffIcon.stack = debuffIcon:CreateFontString("_SUI_S_"..debuffName, "OVERLAY", "NumberFontNormal")
-        debuffIcon.stack:SetPoint("BOTTOMRIGHT", -2, 2)
+            debuffIcon.cooldown = CreateFrame("Cooldown", nil, debuffIcon, "CooldownFrameTemplate")
+            debuffIcon.cooldown:SetAllPoints()
+            debuffIcon.cooldown:SetReverse(true)
 
-        local fontName, _, fontFlags = debuffIcon.stack:GetFont()
-        debuffIcon.stack:SetFont(fontName, 11, fontFlags)
+            debuffIcon.stack = debuffIcon:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
+            debuffIcon.stack:SetPoint("BOTTOMRIGHT", -2, 2)
+
+            local fontName, _, fontFlags = debuffIcon.stack:GetFont()
+            debuffIcon.stack:SetFont(fontName, 11, fontFlags)
+
+            -- Add the new frame to the pool
+            table.insert(plate.debuffFramePool, debuffIcon)
+        end
+
         plate.myDebuffIcons[debuffName] = { icon = debuffIcon, expireTime = expireTime }
     else
         debuffIcon = plate.myDebuffIcons[debuffName].icon
         plate.myDebuffIcons[debuffName].expireTime = expireTime
     end
 
+    -- Update the debuff icon information
+    debuffIcon.icon:SetTexture(icon)
     if count and tonumber(count) >= 1 then
         debuffIcon.stack:SetText(count)
     end
-
     local startTime = expireTime - duration
     debuffIcon.cooldown:SetCooldown(startTime, duration)
     debuffIcon:Show()
