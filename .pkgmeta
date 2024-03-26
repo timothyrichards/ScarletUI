@@ -17,3 +17,4 @@ externals:
     Libs/CallbackHandler-1.0:    https://repos.curseforge.com/wow/ace3/trunk/CallbackHandler-1.0
     Libs/LibSerialize:           https://github.com/rossnichols/LibSerialize
     Libs/LibStub:                https://repos.curseforge.com/wow/libstub/trunk
+    Libs/LibHealComm-4.0:        https://github.com/Ivaria/LibHealComm-4.0
