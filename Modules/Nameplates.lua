@@ -218,7 +218,6 @@ function ScarletUI:UpdateNameplate(unitId)
         threatStatus = 4
     end
 
-    print(threatStatus)
     if nameplate.UnitFrame then
         if UnitIsPlayer(unitId) and nameplatesModule.classColored then
             local _, class = UnitClass(unitId)
