@@ -128,6 +128,14 @@ end
 local function SetupNameplate(nameplate)
     local module = ScarletUI.db.global.nameplatesModule
 
+    --if not nameplate.testing then
+    --    hooksecurefunc(nameplate.UnitFrame.healthBar, "SetStatusBarColor", function()
+    --
+    --        print("SetStatusBarColor")
+    --    end)
+    --    nameplate.testing = true
+    --end
+
     local castBar = nameplate.UnitFrame and nameplate.UnitFrame.CastBar
     if module.castBarText.show then
         if castBar then
@@ -172,6 +180,91 @@ local function SetupNameplate(nameplate)
     elseif healthBar.healthBarText then
         healthBar.healthBarText:Hide()
     end
+end
+
+function ScarletUI:UpdateNameplate(unitId)
+    local nameplatesModule = self.db.global.nameplatesModule
+    if not unitId or not UnitExists(unitId) then
+        return
+    end
+
+    local nameplate = C_NamePlate.GetNamePlateForUnit(unitId)
+    local unitName, _ = UnitName(unitId)
+
+    if nameplatesModule.specialUnitsColored and specialUnits[unitName] and nameplate.UnitFrame then
+        nameplate.UnitFrame.healthBar:SetStatusBarColor(unpack(nameplatesModule.specialUnitColor))
+        return
+    end
+
+    if not nameplatesModule.threatColored then
+        return
+    end
+
+    local isTanking, threatStatus, _, _, threatValue = UnitDetailedThreatSituation("player", unitId)
+    local firstUnit, firstThreat, _, secondThreat = ThreatFunc(unitId)
+
+    local displayValue
+
+    if not nameplate then
+        return
+    end
+
+    local threatColorGroup = nameplatesModule.nonTankThreatColors
+    if IsTank(UnitName("Player")) then
+        threatColorGroup = nameplatesModule.tankThreatColors
+    end
+
+    if firstUnit and IsTank(UnitName(firstUnit)) and not UnitIsUnit(firstUnit, "Player") then
+        threatStatus = 4
+    end
+
+    print(threatStatus)
+    if nameplate.UnitFrame then
+        if UnitIsPlayer(unitId) and nameplatesModule.classColored then
+            local _, class = UnitClass(unitId)
+            local color = RAID_CLASS_COLORS[class]
+            nameplate.UnitFrame.healthBar:SetStatusBarColor(color.r, color.g, color.b)
+        elseif UnitIsTapDenied(unitId) then
+            nameplate.UnitFrame.healthBar:SetStatusBarColor(0.5, 0.5, 0.5, 1)
+        elseif threatStatus == nil then
+            local red, green, blue, alpha = UnitSelectionColor(unitId, true)
+            nameplate.UnitFrame.healthBar:SetStatusBarColor(red, green, blue, alpha)
+        elseif threatStatus == 0 or threatStatus == 1 then
+            nameplate.UnitFrame.healthBar:SetStatusBarColor(unpack(threatColorGroup.noThreat))
+        elseif threatStatus == 2 then
+            nameplate.UnitFrame.healthBar:SetStatusBarColor(unpack(threatColorGroup.lowThreat))
+        elseif threatStatus == 3 then
+            nameplate.UnitFrame.healthBar:SetStatusBarColor(unpack(threatColorGroup.threat))
+        elseif threatStatus == 4 then
+            nameplate.UnitFrame.healthBar:SetStatusBarColor(unpack(threatColorGroup.tank))
+        end
+    end
+
+    if not threatValue then
+        return
+    end
+
+    if isTanking then
+        displayValue = threatValue - secondThreat
+    else
+        displayValue = threatValue - firstThreat
+        if firstUnit and not UnitIsUnit(firstUnit, "Player") and ScarletUI.tanks[UnitName(firstUnit)] then
+            threatStatus = 4
+        end
+    end
+
+    allStates[unitId] = allStates[unitId] or { unit = unitId }
+    local state = allStates[unitId]
+    state.changed = true
+    if string.find(unitId, "nameplate") then
+        state.show = true
+    else
+        state.show = false
+    end
+    state.status = threatStatus < 1 and 1 or threatStatus
+    state.value = Round(math.abs(displayValue) / 100)
+
+    return true
 end
 
 function ScarletUI:UpdateTargetArrows()
@@ -302,7 +395,7 @@ end
 
 function ScarletUI:SetupNameplates()
     local nameplatesModule = self.db.global.nameplatesModule
-    if not nameplatesModule.enabled or self.inCombat then
+    if not nameplatesModule.enabled or self.lightWeightMode or self.retail or self.inCombat then
         return
     end
 
@@ -314,37 +407,25 @@ function ScarletUI:SetupNameplates()
     self.frame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
     self.frame:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
     self.frame:RegisterEvent("UNIT_THREAT_LIST_UPDATE")
-    self.frame:RegisterEvent("UNIT_THREAT_SITUATION_UPDATE")
     self.frame:HookScript("OnEvent", function(_, event, unitId)
+        if event == "PLAYER_TARGET_CHANGED" then
+            ScarletUI:UpdateTargetArrows()
+        end
+
         if event == "UNIT_AURA" or event == "NAME_PLATE_UNIT_ADDED" or event == "NAME_PLATE_UNIT_REMOVED" then
             ScarletUI:CheckUnitDebuffs(unitId, nameplatesModule.debuffTracker)
         end
 
-        if event == "PLAYER_TARGET_CHANGED" then
+        if event == "NAME_PLATE_UNIT_ADDED" then
             ScarletUI:UpdateTargetArrows()
-        else
-            if not unitId or not UnitExists(unitId) then
-                return
-            end
 
             local nameplate = C_NamePlate.GetNamePlateForUnit(unitId)
-            local unitName, _ = UnitName(unitId)
-            if event == "NAME_PLATE_UNIT_ADDED" then
-                ScarletUI:UpdateTargetArrows()
-                if nameplate then
-                    SetupNameplate(nameplate)
-                end
+            if nameplate then
+                SetupNameplate(nameplate)
             end
+        end
 
-            if nameplatesModule.specialUnitsColored and specialUnits[unitName] and nameplate.UnitFrame then
-                nameplate.UnitFrame.healthBar:SetStatusBarColor(unpack(nameplatesModule.specialUnitColor))
-                return
-            end
-
-            if not nameplatesModule.threatColored then
-                return
-            end
-
+        if event == "NAME_PLATE_UNIT_ADDED" or event == "NAME_PLATE_UNIT_REMOVED" or event == "UNIT_THREAT_LIST_UPDATE" then
             if event == "NAME_PLATE_UNIT_REMOVED" then
                 local state = allStates[unitId]
                 if state then
@@ -352,70 +433,9 @@ function ScarletUI:SetupNameplates()
                     state.changed = true
                     return true
                 end
-            else
-                local isTanking, threatStatus, _, _, threatValue = UnitDetailedThreatSituation("player", unitId)
-                local firstUnit, firstThreat, _, secondThreat = ThreatFunc(unitId)
-
-                local displayValue
-
-                if not nameplate then
-                    return
-                end
-
-                local threatColorGroup = nameplatesModule.nonTankThreatColors
-                if IsTank(UnitName("Player")) then
-                    threatColorGroup = nameplatesModule.tankThreatColors
-                end
-
-                if firstUnit and IsTank(UnitName(firstUnit)) and not UnitIsUnit(firstUnit, "Player") then
-                    threatStatus = 4
-                end
-
-                if UnitIsPlayer(unitId) and nameplatesModule.classColored then
-                    local _, class = UnitClass(unitId)
-                    local color = RAID_CLASS_COLORS[class]
-                    nameplate.UnitFrame.healthBar:SetStatusBarColor(color.r, color.g, color.b)
-                elseif UnitIsTapDenied(unitId) then
-                    nameplate.UnitFrame.healthBar:SetStatusBarColor(0.5, 0.5, 0.5, 1)
-                elseif threatStatus == nil then
-                    local red, green, blue, alpha = UnitSelectionColor(unitId, true)
-                    nameplate.UnitFrame.healthBar:SetStatusBarColor(red, green, blue, alpha)
-                elseif threatStatus == 0 or threatStatus == 1 then
-                    nameplate.UnitFrame.healthBar:SetStatusBarColor(unpack(threatColorGroup.noThreat))
-                elseif threatStatus == 2 then
-                    nameplate.UnitFrame.healthBar:SetStatusBarColor(unpack(threatColorGroup.lowThreat))
-                elseif threatStatus == 3 then
-                    nameplate.UnitFrame.healthBar:SetStatusBarColor(unpack(threatColorGroup.threat))
-                elseif threatStatus == 4 then
-                    nameplate.UnitFrame.healthBar:SetStatusBarColor(unpack(threatColorGroup.tank))
-                end
-
-                if not threatValue then
-                    return
-                end
-
-                if isTanking then
-                    displayValue = threatValue - secondThreat
-                else
-                    displayValue = threatValue - firstThreat
-                    if firstUnit and not UnitIsUnit(firstUnit, "Player") and ScarletUI.tanks[UnitName(firstUnit)] then
-                        threatStatus = 4
-                    end
-                end
-
-                allStates[unitId] = allStates[unitId] or { unit = unitId}
-                local state = allStates[unitId]
-                state.changed = true
-                if string.find(unitId, "nameplate") then
-                    state.show = true
-                else
-                    state.show = false
-                end
-                state.status = threatStatus < 1 and 1 or threatStatus
-                state.value = Round(math.abs(displayValue) / 100)
-
-                return true
             end
+
+            ScarletUI:UpdateNameplate(unitId)
         end
     end)
 end

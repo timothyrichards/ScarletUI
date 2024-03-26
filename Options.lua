@@ -199,6 +199,7 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                         name = "Nameplates",
                         desc = "Manage your Nameplates and threat colors.",
                         type = "toggle",
+                        hidden = function() return self.retail end,
                         width = 1,
                         order = 4,
                         get = function(_) return database.nameplatesModule.enabled end,
@@ -1177,7 +1178,8 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
         desc = "Nameplates Module settings.",
         type = "group",
         order = order,
-        disabled = function() return not module.enabled end,
+        disabled = function() return not module.enabled or self.lightWeightMode end,
+        hidden = function() return self.retail end,
         args = {
             generalSettings = {
                 name = "General Settings",
@@ -1625,7 +1627,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                         get = function(_) return module.specialUnitNames end,
                         set = function(_, value)
                             module.specialUnitNames = value
-                            self:SetupSpecialUnits()
+                            self:SetupSpecialUnits(module)
                         end,
                     }
                 }
