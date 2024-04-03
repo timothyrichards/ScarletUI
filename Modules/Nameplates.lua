@@ -128,14 +128,6 @@ end
 local function SetupNameplate(nameplate)
     local module = ScarletUI.db.global.nameplatesModule
 
-    --if not nameplate.testing then
-    --    hooksecurefunc(nameplate.UnitFrame.healthBar, "SetStatusBarColor", function()
-    --
-    --        print("SetStatusBarColor")
-    --    end)
-    --    nameplate.testing = true
-    --end
-
     local castBar = nameplate.UnitFrame and nameplate.UnitFrame.CastBar
     if module.castBarText.show then
         if castBar then
@@ -247,7 +239,7 @@ function ScarletUI:UpdateNameplate(unitId)
         displayValue = threatValue - secondThreat
     else
         displayValue = threatValue - firstThreat
-        if firstUnit and not UnitIsUnit(firstUnit, "Player") and ScarletUI.tanks[UnitName(firstUnit)] then
+        if firstUnit and not UnitIsUnit(firstUnit, "Player") and self.tanks[UnitName(firstUnit)] then
             threatStatus = 4
         end
     end
@@ -267,7 +259,7 @@ function ScarletUI:UpdateNameplate(unitId)
 end
 
 function ScarletUI:UpdateTargetArrows()
-    local module = ScarletUI.db.global.nameplatesModule
+    local module = self.db.global.nameplatesModule
     if not module.targetIndicator.show then
         HideTargetArrows()
         return
@@ -344,7 +336,7 @@ function ScarletUI:SetupDropdownButton(module)
         local tankNames = {}
         local function updateTankNames()
             local count = 0;
-            for key, value in pairs(ScarletUI.tanks) do
+            for key, value in pairs(self.tanks) do
                 if value then
                     table.insert(tankNames, key)
                     nameplatesModule.tankNames = table.concat(tankNames, ",");
@@ -364,17 +356,17 @@ function ScarletUI:SetupDropdownButton(module)
         local value = "Add_Tank"
         local func = function()
             local name, _ = UnitName(unit)
-            ScarletUI.tanks[name] = true
+            self.tanks[name] = true
             updateTankNames()
         end;
 
-        for tank, _ in pairs(ScarletUI.tanks) do
+        for tank, _ in pairs(self.tanks) do
             local name, _ = UnitName(unit)
             if name == tank then
                 text = "Remove Tank"
                 value = "Remove_Tank"
                 func = function()
-                    ScarletUI.tanks[tank] = nil
+                    self.tanks[tank] = nil
                     updateTankNames()
                 end;
             end
@@ -406,13 +398,13 @@ function ScarletUI:SetupNameplates()
     self.frame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
     self.frame:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
     self.frame:RegisterEvent("UNIT_THREAT_LIST_UPDATE")
-    self.frame:HookScript("OnEvent", function(_, event, unitId)
+    self.frame:HookScript("OnEvent", function(_, event, unitId, updateInfo, ...)
         if event == "PLAYER_TARGET_CHANGED" then
             ScarletUI:UpdateTargetArrows()
         end
 
-        if event == "UNIT_AURA" or event == "NAME_PLATE_UNIT_ADDED" or event == "NAME_PLATE_UNIT_REMOVED" then
-            ScarletUI:CheckUnitDebuffs(unitId, nameplatesModule.debuffTracker)
+        if event == "UNIT_AURA" then
+            ScarletUI:CheckUnitDebuffs(unitId, updateInfo)
         end
 
         if event == "NAME_PLATE_UNIT_ADDED" then
@@ -440,7 +432,8 @@ function ScarletUI:SetupNameplates()
 end
 
 -- List all nameplates and check if the specified debuff is present on the unit the nameplate belongs to
-function ScarletUI:CheckUnitDebuffs(unitId, settings)
+function ScarletUI:CheckUnitDebuffs(unitId, updateInfo)
+    local settings = self.db.global.nameplatesModule.debuffTracker
     if not settings.track or not unitId then
         return
     end

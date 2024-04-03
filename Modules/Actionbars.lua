@@ -392,9 +392,9 @@ function ScarletUI:SetupActionbars()
     if mainBarSettings.move then
         MainMenuBar:ClearAllPoints()
         MainMenuBar:SetPoint(
-                ScarletUI.frameAnchors[mainBarSettings.frameAnchor],
+                self.frameAnchors[mainBarSettings.frameAnchor],
                 UIParent,
-                ScarletUI.frameAnchors[mainBarSettings.screenAnchor],
+                self.frameAnchors[mainBarSettings.screenAnchor],
                 mainBarSettings.x,
                 mainBarSettings.y
         )
@@ -419,7 +419,7 @@ function ScarletUI:SetupActionbars()
         possessBarFrame()
         experienceBar()
         reputationBar()
-        ScarletUI:UpdateMainBar()
+        self:UpdateMainBar()
     end
 
     if not self.actionbarEventRegistered then

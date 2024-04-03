@@ -17,23 +17,6 @@ function ScarletUI:SetupChat()
 
     self:FixChatBug()
 
-    --if not self.raidProfileEventRegistered then
-    --    self.raidProfileEventRegistered = true;
-    --    local frame = CreateFrame("Frame", "SUI_ChatFrame", SUI_Frame)
-    --    frame:RegisterEvent("UPDATE_CHAT_WINDOWS")
-    --    frame:SetScript("OnEvent", function (_, event, ...)
-    --        if event == "UPDATE_CHAT_WINDOWS" then
-    --            print('UPDATE_CHAT_WINDOWS')
-    --            ScarletUI:SetupChat()
-    --        end
-    --    end)
-    --
-    --    return
-    --end
-
-    -- Reset chat to Blizzard defaults
-    --FCF_ResetChatWindows()
-
     -- Open new tabs if they dont exist
     if tabs.loot and not chatTabExists(_G.CHAT_FRAMES, "Loot") then
         FCF_OpenNewWindow("Loot")

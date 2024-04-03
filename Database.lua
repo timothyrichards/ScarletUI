@@ -192,7 +192,8 @@ ScarletUI.defaults = {
                 track = true,
                 iconSize = 30,
                 spacing = 2,
-                verticalOffset = 20
+                verticalOffset = 20,
+                prioritySpells = {}
             },
             targetIndicator = {
                 show = true,

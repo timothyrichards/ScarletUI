@@ -80,7 +80,7 @@ function ScarletUI:UpdateProfileOptions()
             end
 
             -- Update position
-            ScarletUI:UpdateProfilePositions()
+            self:UpdateProfilePositions()
         end
         self.updatingSettings = false
     end
