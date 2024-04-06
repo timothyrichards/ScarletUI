@@ -172,6 +172,17 @@ local function SetupNameplate(nameplate)
     elseif healthBar.healthBarText then
         healthBar.healthBarText:Hide()
     end
+
+    -- Clear expired debuff icons
+    if nameplate.myDebuffIcons then
+        local currentTime = GetTime()
+        for debuffName, debuffData in pairs(nameplate.myDebuffIcons) do
+            if debuffData.expireTime < currentTime then
+                debuffData.icon:Hide()
+                nameplate.myDebuffIcons[debuffName] = nil
+            end
+        end
+    end
 end
 
 function ScarletUI:UpdateNameplate(unitId)
@@ -398,16 +409,17 @@ function ScarletUI:SetupNameplates()
     self.frame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
     self.frame:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
     self.frame:RegisterEvent("UNIT_THREAT_LIST_UPDATE")
-    self.frame:HookScript("OnEvent", function(_, event, unitId, updateInfo, ...)
+    self.frame:HookScript("OnEvent", function(_, event, unitId, ...)
         if event == "PLAYER_TARGET_CHANGED" then
             ScarletUI:UpdateTargetArrows()
         end
 
         if event == "UNIT_AURA" then
-            ScarletUI:CheckUnitDebuffs(unitId, updateInfo)
+            ScarletUI:CheckUnitDebuffs(unitId)
         end
 
         if event == "NAME_PLATE_UNIT_ADDED" then
+            ScarletUI:UpdateNameplate(unitId)
             ScarletUI:UpdateTargetArrows()
 
             local nameplate = C_NamePlate.GetNamePlateForUnit(unitId)
@@ -416,23 +428,24 @@ function ScarletUI:SetupNameplates()
             end
         end
 
-        if event == "NAME_PLATE_UNIT_ADDED" or event == "NAME_PLATE_UNIT_REMOVED" or event == "UNIT_THREAT_LIST_UPDATE" then
-            if event == "NAME_PLATE_UNIT_REMOVED" then
-                local state = allStates[unitId]
-                if state then
-                    state.show = false
-                    state.changed = true
-                    return true
-                end
+        if event == "NAME_PLATE_UNIT_REMOVED" then
+            ScarletUI:UpdateNameplate(unitId)
+            local state = allStates[unitId]
+            if state then
+                state.show = false
+                state.changed = true
+                return true
             end
+        end
 
+        if event == "UNIT_THREAT_LIST_UPDATE" then
             ScarletUI:UpdateNameplate(unitId)
         end
     end)
 end
 
 -- List all nameplates and check if the specified debuff is present on the unit the nameplate belongs to
-function ScarletUI:CheckUnitDebuffs(unitId, updateInfo)
+function ScarletUI:CheckUnitDebuffs(unitId)
     local settings = self.db.global.nameplatesModule.debuffTracker
     if not settings.track or not unitId then
         return
@@ -441,20 +454,6 @@ function ScarletUI:CheckUnitDebuffs(unitId, updateInfo)
     local nameplate = C_NamePlate.GetNamePlateForUnit(unitId)
     if not nameplate then
         return
-    end
-
-    if nameplate.UnitFrame then
-        if nameplate.UnitFrame.BuffFrame then
-            if not nameplate.UnitFrame.BuffFrame.hookSet then
-                nameplate.UnitFrame.BuffFrame.Show = function() end
-                nameplate.UnitFrame.BuffFrame:Hide()
-                nameplate.UnitFrame.BuffFrame:HookScript("OnShow", function(self)
-                    self:Hide()
-                end)
-
-                nameplate.UnitFrame.BuffFrame.hookSet = true
-            end
-        end
     end
 
     nameplate.myDebuffIcons = nameplate.myDebuffIcons or {}
