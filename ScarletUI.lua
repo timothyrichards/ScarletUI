@@ -70,6 +70,10 @@ function ScarletUI:Setup(isLogin)
         self.loaded = true;
     end
 
+    if self.db.global.blueShamans then
+        self:BlueShamans()
+    end
+
     self:SetupChat()
     self:SetupCVars()
     self:SetupItemLevels()
@@ -82,6 +86,11 @@ function ScarletUI:Setup(isLogin)
     if isLogin then
         self.settings:Print("Scarlet UI setup successful, use the command /sui to open the options panel.")
     end
+end
+
+function ScarletUI:BlueShamans()
+    RAID_CLASS_COLORS["SHAMAN"] = CreateColor(0.0, 0.44, 0.87);
+    RAID_CLASS_COLORS["SHAMAN"].colorStr = RAID_CLASS_COLORS["SHAMAN"]:GenerateHexColor();
 end
 
 function ScarletUI:SetupFrame()
