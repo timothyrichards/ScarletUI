@@ -62,7 +62,7 @@ ScarletUI.defaults = {
                 hide = false,
                 frameAnchor = 1,
                 screenAnchor = 1,
-                x = 0,
+                x = -25,
                 y = 140
             },
             multiCastBar = {

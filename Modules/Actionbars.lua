@@ -228,24 +228,44 @@ end
 local function petActionBar(module)
     local petBarSettings = module.petBar;
 
+    -- Create or retrieve the PetBar frame
+    local PetBar = _G["PetBar"] or CreateFrame("Frame", "PetBar", UIParent)
+
+    -- Set dimensions and position of MicroBar
+    PetBar:ClearAllPoints()
+    PetBar:SetSize(509, 43)
+
     if petBarSettings.hide then
-        ScarletUI.petBar = _G["PetBar"] or CreateFrame("FRAME", "PetBar", UIParent)
-        ScarletUI.petBar:Hide()
+        PetBar:Hide()
         PetActionBarFrame:UnregisterAllEvents()
-        PetActionBarFrame:SetParent(ScarletUI.petBar)
+        PetActionBarFrame:SetParent(PetBar)
     else
-        ScarletUI:CreateMover(PetActionBarFrame, petBarSettings)
-        PetActionBarFrame:ClearAllPoints()
-        PetActionBarFrame:SetMovable(true)
-        PetActionBarFrame:SetUserPlaced(true)
-        ScarletUI:SetPoint(
-                PetActionBarFrame,
+        ScarletUI:CreateMover(PetBar, petBarSettings)
+        PetBar:SetPoint(
                 ScarletUI.frameAnchors[petBarSettings.frameAnchor],
                 UIParent,
                 ScarletUI.frameAnchors[petBarSettings.screenAnchor],
                 petBarSettings.x,
                 petBarSettings.y
         )
+
+        local previousButton
+        for i = 1, NUM_PET_ACTION_SLOTS do
+            local button = _G["PetActionButton"..i]
+
+            if button then
+                button:ClearAllPoints()
+                button:SetMovable(true)
+                button:SetUserPlaced(true)
+                if i == 1 then
+                    ScarletUI:SetPoint(button, "LEFT", PetBar, "LEFT", 6, 0)
+                else
+                    ScarletUI:SetPoint(button, "LEFT", previousButton, "RIGHT", 8, 0)
+                end
+
+                previousButton = button
+            end
+        end
     end
 end
 

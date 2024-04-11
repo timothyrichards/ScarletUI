@@ -100,7 +100,7 @@ function ScarletUI:SetupFrame()
     self.frame:CreateFontString("SUI_FrameTitle", "OVERLAY", "GameFontWhite")
     SUI_FrameTitle:SetPoint("BOTTOM", self.frame, "TOP")
     SUI_FrameTitle:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
-    SUI_FrameTitle:SetText("ScarletUI Frame")
+    SUI_FrameTitle:SetText("ScarletUI Debug Frame")
 
     self.frame:CreateFontString("SUI_RetailPropertyText", "OVERLAY", "GameFontWhite")
     SUI_RetailPropertyText:SetPoint("TOPLEFT", self.frame, "TOPLEFT")

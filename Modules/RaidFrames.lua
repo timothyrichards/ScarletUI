@@ -2,7 +2,7 @@ local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 
 function ScarletUI:SetupRaidProfiles()
     local raidFramesModule = self.db.global.raidFramesModule
-    if not raidFramesModule.enabled or self.lightWeightMode or self.retail or self.inCombat then
+    if not raidFramesModule.enabled or self.lightWeightMode or self.retail then
         return
     end
 
@@ -48,7 +48,7 @@ function ScarletUI:SetupRaidProfiles()
                 end)
 
                 functionExecuted = true
-                frame:SetScript("OnUpdate", function() end)
+                frame:SetScript("OnUpdate", nil)
             end
         end)
 
@@ -75,6 +75,7 @@ function ScarletUI:UpdateProfileOptions()
                     local targetValue = tostring(v)
                     if currentValue ~= targetValue then
                         SetRaidProfileOption(profile, k, v)
+                        StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
                     end
                 end
             end

@@ -183,5 +183,5 @@ function ScarletUI:SetPoint(frame, frameAnchor, frameParent, parentAnchor, x, y)
     end
 
     frame:SetPoint(frameAnchor, frameParent, parentAnchor, x, y)
-    frame.SetPoint = function() end
+    frame.SetPoint = nil
 end
