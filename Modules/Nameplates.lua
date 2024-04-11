@@ -397,7 +397,7 @@ end
 
 function ScarletUI:SetupNameplates()
     local nameplatesModule = self.db.global.nameplatesModule
-    if not nameplatesModule.enabled or self.lightWeightMode or self.retail or self.inCombat then
+    if not nameplatesModule.enabled or self.lightWeightMode or self.retail then
         return
     end
 
@@ -419,6 +419,7 @@ function ScarletUI:SetupNameplates()
         end
 
         if event == "NAME_PLATE_UNIT_ADDED" then
+            ScarletUI:CheckUnitDebuffs(unitId)
             ScarletUI:UpdateNameplate(unitId)
             ScarletUI:UpdateTargetArrows()
 
@@ -429,6 +430,7 @@ function ScarletUI:SetupNameplates()
         end
 
         if event == "NAME_PLATE_UNIT_REMOVED" then
+            ScarletUI:CheckUnitDebuffs(unitId)
             ScarletUI:UpdateNameplate(unitId)
             local state = allStates[unitId]
             if state then
