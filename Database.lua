@@ -55,7 +55,7 @@ ScarletUI.defaults = {
                 frameAnchor = 2,
                 screenAnchor = 1,
                 x = -250,
-                y = 140
+                y = 145
             },
             petBar = {
                 move = true,
@@ -63,7 +63,7 @@ ScarletUI.defaults = {
                 frameAnchor = 1,
                 screenAnchor = 1,
                 x = -25,
-                y = 140
+                y = 145
             },
             multiCastBar = {
                 move = true,
@@ -71,7 +71,7 @@ ScarletUI.defaults = {
                 frameAnchor = 2,
                 screenAnchor = 1,
                 x = -250,
-                y = 140
+                y = 145
             },
             microBar = {
                 move = true,

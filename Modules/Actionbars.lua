@@ -444,15 +444,18 @@ function ScarletUI:SetupActionbars()
 
     if not self.actionbarEventRegistered then
         self.actionbarEventRegistered = true;
-        local frame = CreateFrame("Frame", "SUI_ActionbarFrame", SUI_Frame)
+        local frame = CreateFrame("Frame", "SUI_ActionbarFrame", UIParent)
+        frame:SetAllPoints(UIParent)
         frame:RegisterEvent("UPDATE_FACTION")
+        frame:RegisterEvent("PLAYER_LEVEL_UP")
         frame:RegisterEvent("UNIT_EXITED_VEHICLE")
         frame:RegisterEvent("CINEMATIC_STOP")
         frame:RegisterEvent("PLAYER_REGEN_DISABLED")
-        frame:SetScript("OnEvent", function(_, event, ...)
-            if event == "UPDATE_FACTION" then
-                ScarletUI:UpdateMainBar()
-            end
+        frame:SetScript("OnEvent", function(...)
+            ScarletUI:UpdateMainBar()
+        end)
+        frame:SetScript("OnShow", function(...)
+            microBar(actionbarsModule)
         end)
     end
 end

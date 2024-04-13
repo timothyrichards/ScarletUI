@@ -558,6 +558,8 @@ function ScarletUI:DisplayDebuffIcon(settings, plate, debuffName, icon, count, d
     debuffIcon.icon:SetTexture(icon)
     if count and tonumber(count) >= 1 then
         debuffIcon.stack:SetText(count)
+    else
+        debuffIcon.stack:SetText("")
     end
     local startTime = expireTime - duration
     debuffIcon.cooldown:SetCooldown(startTime, duration)
