@@ -1,21 +1,5 @@
-local function toggleTrim(icon)
-    if ScarletUI.db.global.tidyIconsEnabled then
-        icon:SetTexCoord(.08, .92, .08, .92)
-    else
-        icon:SetTexCoord(0, 0, 0, 1, 1, 0, 1, 1)
-    end
-end
-
 function ScarletUI:SetupTidyIcons()
     if self.lightWeightMode or self.retail then
-        return
-    end
-
-    self:TidyIcons_Update()
-end
-
-function ScarletUI:TidyIcons_Update()
-    if self.lightWeightMode then
         return
     end
 
@@ -32,7 +16,11 @@ function ScarletUI:TidyIcons_Update()
             local name = button:GetName()
             local icon = _G[name .. "Icon"]
 
-            toggleTrim(icon)
+            if self.db.global.tidyIconsEnabled then
+                icon:SetTexCoord(.08, .92, .08, .92)
+            else
+                icon:SetTexCoord(0, 0, 0, 1, 1, 0, 1, 1)
+            end
         end
     end
 end

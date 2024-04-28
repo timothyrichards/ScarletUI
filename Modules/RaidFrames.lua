@@ -88,7 +88,7 @@ function ScarletUI:UpdateProfileOptions()
 end
 
 function ScarletUI:UpdateProfilePositions()
-    if self.inCombat then
+    if self:InCombat() then
         return
     end
 

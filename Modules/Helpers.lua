@@ -1,3 +1,7 @@
+function ScarletUI:InCombat()
+    return InCombatLockdown() or self.inCombat
+end
+
 function ScarletUI:SwapActionbar(sourceBar, destinationBar)
     for i = 1, 12 do
         local sourceButton = _G[sourceBar.."Button"..i].action
@@ -55,7 +59,7 @@ function ScarletUI:OppositeFrameAnchor(index)
 end
 
 function ScarletUI:SettingDisabled(moduleEnabled, checkCombat)
-    if ScarletUI.inCombat and checkCombat then
+    if ScarletUI:InCombat() and checkCombat then
         return true
     else
         return not moduleEnabled

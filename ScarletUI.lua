@@ -130,7 +130,7 @@ ScarletUI.frame:SetScript("OnEvent", function (_, event, isLogin, ...)
     elseif event == "PLAYER_REGEN_DISABLED" or event == "PLAYER_REGEN_ENABLED" then
         ScarletUI.inCombat = event == "PLAYER_REGEN_DISABLED";
 
-        if ScarletUI.inCombat and ScarletUI.moversEnabled then
+        if ScarletUI:InCombat() and ScarletUI.moversEnabled then
             ScarletUI:ToggleMovers()
         end
 

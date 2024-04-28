@@ -172,7 +172,7 @@ function ScarletUI:ResetPositions()
 end
 
 function ScarletUI:SetPoint(frame, frameAnchor, frameParent, parentAnchor, x, y)
-    if self.inCombat then
+    if self:InCombat() then
         return
     end
 
@@ -183,5 +183,5 @@ function ScarletUI:SetPoint(frame, frameAnchor, frameParent, parentAnchor, x, y)
     end
 
     frame:SetPoint(frameAnchor, frameParent, parentAnchor, x, y)
-    frame.SetPoint = nil
+    frame.SetPoint = function() end
 end

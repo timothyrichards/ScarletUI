@@ -66,8 +66,7 @@ local function microBar(actionbarsModule)
     -- Set dimensions and position of MicroBar
     MicroBar:ClearAllPoints()
     MicroBar:SetSize(totalWidth, buttonHeight)
-    ScarletUI:SetPoint(
-            MicroBar,
+    MicroBar:SetPoint(
             ScarletUI.frameAnchors[microBarSettings.frameAnchor],
             UIParent,
             ScarletUI.frameAnchors[microBarSettings.screenAnchor],
@@ -98,7 +97,7 @@ local function microBar(actionbarsModule)
             button:SetMovable(true)
             button:SetUserPlaced(true)
             if buttonName == "CharacterMicroButton" then
-                ScarletUI:SetPoint(CharacterMicroButton, "LEFT", MicroBar, "LEFT", 0, 0)
+                ScarletUI:SetPoint(button, "LEFT", MicroBar, "LEFT", 0, 0)
             else
                 ScarletUI:SetPoint(button, "LEFT", previousButton, "RIGHT", -3, 0)
             end
@@ -444,17 +443,16 @@ function ScarletUI:SetupActionbars()
 
     if not self.actionbarEventRegistered then
         self.actionbarEventRegistered = true;
-        local frame = CreateFrame("Frame", "SUI_ActionbarFrame", UIParent)
-        frame:SetAllPoints(UIParent)
-        frame:RegisterEvent("UPDATE_FACTION")
-        frame:RegisterEvent("PLAYER_LEVEL_UP")
-        frame:RegisterEvent("UNIT_EXITED_VEHICLE")
-        frame:RegisterEvent("CINEMATIC_STOP")
-        frame:RegisterEvent("PLAYER_REGEN_DISABLED")
-        frame:SetScript("OnEvent", function(...)
+        self.frame:SetAllPoints(UIParent)
+        self.frame:RegisterEvent("UPDATE_FACTION")
+        self.frame:RegisterEvent("PLAYER_LEVEL_UP")
+        self.frame:RegisterEvent("UNIT_EXITED_VEHICLE")
+        self.frame:RegisterEvent("CINEMATIC_STOP")
+        self.frame:RegisterEvent("PLAYER_REGEN_DISABLED")
+        self.frame:SetScript("OnEvent", function(...)
             ScarletUI:UpdateMainBar()
         end)
-        frame:SetScript("OnShow", function(...)
+        self.frame:SetScript("OnShow", function(...)
             microBar(actionbarsModule)
         end)
     end
@@ -462,14 +460,16 @@ end
 
 function ScarletUI:UpdateMainBar()
     local module = self.db.global.actionbarsModule
-    if not self.inCombat and module.stackActionbars then
-        local point, relativeTo, relativePoint, offsetX, _ = MultiBarBottomLeft:GetPoint()
-        if MainMenuExpBar:IsShown() and ReputationWatchBar:IsShown() then
-            MultiBarBottomLeft:SetPoint(point, relativeTo, relativePoint, offsetX, 12)
-        elseif MainMenuExpBar:IsShown() or ReputationWatchBar:IsShown() then
-            MultiBarBottomLeft:SetPoint(point, relativeTo, relativePoint, offsetX, 4)
-        else
-            MultiBarBottomLeft:SetPoint(point, relativeTo, relativePoint, offsetX, -6)
-        end
+    if not module.stackActionbars or self:InCombat() then
+        return
+    end
+
+    local point, relativeTo, relativePoint, offsetX, _ = MultiBarBottomLeft:GetPoint()
+    if MainMenuExpBar:IsShown() and ReputationWatchBar:IsShown() then
+        MultiBarBottomLeft:SetPoint(point, relativeTo, relativePoint, offsetX, 12)
+    elseif MainMenuExpBar:IsShown() or ReputationWatchBar:IsShown() then
+        MultiBarBottomLeft:SetPoint(point, relativeTo, relativePoint, offsetX, 4)
+    else
+        MultiBarBottomLeft:SetPoint(point, relativeTo, relativePoint, offsetX, -6)
     end
 end

@@ -16,7 +16,7 @@ function ScarletUI:Options()
                 name = "Toggle Movers",
                 desc = "Enables mover frames so you can drag various UI elements to a new position.",
                 type = "execute",
-                disabled = function() return self.inCombat end,
+                disabled = function() return self:InCombat() end,
                 order = 0,
                 width = 1,
                 func = function()
@@ -27,7 +27,7 @@ function ScarletUI:Options()
                 name = "Restore Positions",
                 desc = "Restores frame positions back to default positions.",
                 type = "execute",
-                disabled = function() return self.inCombat end,
+                disabled = function() return self:InCombat() end,
                 order = 1,
                 width = 1,
                 func = function()
@@ -38,7 +38,7 @@ function ScarletUI:Options()
                 name = "Restore Defaults",
                 desc = "Restores all settings back to default settings.",
                 type = "execute",
-                disabled = function() return self.inCombat end,
+                disabled = function() return self:InCombat() end,
                 order = 2,
                 width = 1,
                 func = function()
@@ -66,7 +66,7 @@ function ScarletUI:GetModuleSettingsPage(database, order)
             general = {
                 name = "General",
                 type = "group",
-                disabled = function() return self.inCombat end,
+                disabled = function() return self:InCombat() end,
                 inline = true,
                 order = 0,
                 args = {
@@ -91,7 +91,7 @@ function ScarletUI:GetModuleSettingsPage(database, order)
             itemLevel = {
                 name = "Item Level",
                 type = "group",
-                disabled = function() return self.inCombat end,
+                disabled = function() return self:InCombat() end,
                 inline = true,
                 order = 1,
                 args = {
@@ -148,7 +148,7 @@ function ScarletUI:GetModuleSettingsPage(database, order)
             modules = {
                 name = "Enabled Modules",
                 type = "group",
-                disabled = function() return self.inCombat end,
+                disabled = function() return self:InCombat() end,
                 inline = true,
                 order = 2,
                 args = {
@@ -189,7 +189,7 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                         name = "Unit Frames",
                         desc = "Manage the position of your unit frames.",
                         type = "toggle",
-                        disabled = function() return self.inCombat end,
+                        disabled = function() return self:InCombat() end,
                         hidden = function() return self.retail end,
                         width = 1,
                         order = 2,
@@ -536,7 +536,7 @@ function ScarletUI:GetActionbarsModuleSettingsPage(database, defaults, order)
                         get = function(_) return database.tidyIconsEnabled end,
                         set = function(_, val)
                             database.tidyIconsEnabled = val
-                            self:TidyIcons_Update()
+                            self:SetupTidyIcons()
                         end,
                     },
                     showGryphons = {
@@ -1248,15 +1248,6 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                         get = function(_) return module.specialUnitsColored end,
                         set = function(_, val) module.specialUnitsColored = val end,
                     },
-                    dropdownMenuButton = {
-                        name = "Dropdown Menu Button",
-                        desc = "Adds a button to the right click dropdown to add or remove tanks from the tank names list.",
-                        type = "toggle",
-                        width = 1.25,
-                        order = 3,
-                        get = function(_) return module.dropdownMenuButton end,
-                        set = function(_, val) module.dropdownMenuButton = val end,
-                    },
                 }
             },
             debuffTracker = {
@@ -1329,10 +1320,10 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                                 order = 1,
                                 width = 1.5,
                                 get = function(_)
-                                    print(_)
+                                    return module.debuffTracker.prioritySpells
                                 end,
                                 set = function(_, val)
-                                    print(_, val)
+                                    print(val)
                                 end,
                             },
                             addButton = {
@@ -1371,7 +1362,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
             targetIndicator = {
                 name = "Target Indicator",
                 type = "group",
-                disabled = function() return self.inCombat end,
+                disabled = function() return self:InCombat() end,
                 inline = true,
                 order = 2,
                 args = {
@@ -1440,7 +1431,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
             healthBarText = {
                 name = "Health Bar Text",
                 type = "group",
-                disabled = function() return self.inCombat end,
+                disabled = function() return self:InCombat() end,
                 inline = true,
                 order = 3,
                 args = {
@@ -1475,7 +1466,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
             castBarText = {
                 name = "Cast Bar Text",
                 type = "group",
-                disabled = function() return self.inCombat end,
+                disabled = function() return self:InCombat() end,
                 inline = true,
                 order = 4,
                 args = {
@@ -1510,7 +1501,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
             threatColors = {
                 name = "Threat Colors",
                 type = "group",
-                disabled = function() return self.inCombat end,
+                disabled = function() return self:InCombat() end,
                 inline = true,
                 order = 5,
                 args = {
@@ -1681,7 +1672,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
             specialUnits = {
                 name = "Special Units",
                 type = "group",
-                disabled = function() return self.inCombat end,
+                disabled = function() return self:InCombat() end,
                 inline = true,
                 order = 8,
                 args = {

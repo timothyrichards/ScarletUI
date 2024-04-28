@@ -9,7 +9,7 @@ ScarletUI.reloadCVars = {
 
 function ScarletUI:SetupCVars()
     local CVarModule = self.db.global.CVarModule
-    if not CVarModule.enabled or self.inCombat then
+    if not CVarModule.enabled or self:InCombat() then
         return
     end
 
