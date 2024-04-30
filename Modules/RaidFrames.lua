@@ -10,8 +10,7 @@ function ScarletUI:SetupRaidProfiles()
     self.updatingSettings = false
     if not self.raidProfileEventRegistered then
         local functionExecuted = false
-        local frame = CreateFrame("Frame")
-        frame:SetScript("OnUpdate", function (_, ...)
+        self.frame:SetScript("OnUpdate", function (_, ...)
             if HasLoadedCUFProfiles() and not functionExecuted then
                 ScarletUI:UpdateProfileOptions()
 
@@ -48,7 +47,7 @@ function ScarletUI:SetupRaidProfiles()
                 end)
 
                 functionExecuted = true
-                frame:SetScript("OnUpdate", nil)
+                self.frame:SetScript("OnUpdate", nil)
             end
         end)
 

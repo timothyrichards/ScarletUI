@@ -73,7 +73,7 @@ function ScarletUI:SetupChat()
         self.chatEventRegistered = true
         self.frame:RegisterEvent("UPDATE_FLOATING_CHAT_WINDOWS")
         self.frame:RegisterEvent("UPDATE_CHAT_COLOR_NAME_BY_CLASS")
-        self.frame:SetScript("OnEvent", function(_, event, type, set, ...)
+        self.frame:HookScript("OnEvent", function(_, event, type, set, ...)
             if event == "UPDATE_FLOATING_CHAT_WINDOWS" then
                 ScarletUI:SetupChat()
             elseif event == "UPDATE_CHAT_COLOR_NAME_BY_CLASS" then

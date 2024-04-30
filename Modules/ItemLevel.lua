@@ -124,7 +124,7 @@ function ScarletUI:SetupItemLevels()
         self.frame:RegisterEvent("UNIT_INVENTORY_CHANGED")
         self.frame:RegisterEvent("INSPECT_READY")
         self.frame:RegisterEvent("BAG_UPDATE")
-        self.frame:SetScript("OnEvent", function(_, event, ...)
+        self.frame:HookScript("OnEvent", function(_, event, ...)
             if event == "PLAYER_EQUIPMENT_CHANGED" or event == "UNIT_INVENTORY_CHANGED" then
                 ScarletUI:CharacterFrameItemLevel()
             elseif event == "INSPECT_READY" then
