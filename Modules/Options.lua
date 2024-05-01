@@ -1197,13 +1197,13 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
 end
 
 -- TODO: add priority debuff settings (specific spell names, or types like stun, slow, etc)
-local function GetSpellDropdown()
-    local spells = {}
-    for k, v in pairs(ScarletUI.db.global.nameplatesModule.debuffTracker.prioritySpells) do
-        spells[k] = "\124T" .. icon .. ":16\124t " .. v
-    end
-    return spells
-end
+--local function GetSpellDropdown()
+--    local spells = {}
+--    for k, v in pairs(ScarletUI.db.global.nameplatesModule.debuffTracker.prioritySpells) do
+--        spells[k] = "\124T" .. icon .. ":16\124t " .. v
+--    end
+--    return spells
+--end
 
 function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
     return {
@@ -1305,58 +1305,56 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                         get = function(_) return module.debuffTracker.verticalOffset end,
                         set = function(_, val) module.debuffTracker.verticalOffset = val end,
                     },
-                    prioritySpells = {
-                        type = "group",
-                        name = "Priority Spells",
-                        hidden = true,
-                        guiInline = true,
-                        order = 5,
-                        args = {
-                            spellDropdown = {
-                                name = "Select Spell",
-                                desc = "Select a spell from the list",
-                                type = "select",
-                                values = GetSpellDropdown,
-                                order = 1,
-                                width = 1.5,
-                                get = function(_)
-                                    return module.debuffTracker.prioritySpells
-                                end,
-                                set = function(_, val)
-                                    print(val)
-                                end,
-                            },
-                            addButton = {
-                                type = "execute",
-                                name = "+",
-                                desc = "Add a new spell entry",
-                                width = 0.5,
-                                order = 2,
-                                func = function()
-
-                                    AceConfigRegistry:NotifyChange("ScarletUI")
-                                end,
-                            },
-                            removeButton = {
-                                type = "execute",
-                                name = "-",
-                                desc = "Remove the selected spell entry",
-                                width = 0.5,
-                                order = 3,
-                                func = function()
-
-                                    AceConfigRegistry:NotifyChange("ScarletUI")
-                                end,
-                            },
-                            spellEntry = {
-                                type = "input",
-                                name = "Spell Name",
-                                desc = "Enter the name of the spell",
-                                order = 4,
-                                width = "full",
-                            },
-                        },
-                    },
+                    --prioritySpells = {
+                    --    type = "group",
+                    --    name = "Priority Spells",
+                    --    hidden = true,
+                    --    guiInline = true,
+                    --    order = 5,
+                    --    args = {
+                    --        spellDropdown = {
+                    --            name = "Select Spell",
+                    --            desc = "Select a spell from the list",
+                    --            type = "select",
+                    --            values = GetSpellDropdown,
+                    --            order = 1,
+                    --            width = 1.5,
+                    --            get = function(_)
+                    --                return module.debuffTracker.prioritySpells
+                    --            end,
+                    --            set = function(_, val)
+                    --                print(val) -- finish implementation
+                    --            end,
+                    --        },
+                    --        addButton = {
+                    --            type = "execute",
+                    --            name = "+",
+                    --            desc = "Add a new spell entry",
+                    --            width = 0.5,
+                    --            order = 2,
+                    --            func = function()
+                    --                AceConfigRegistry:NotifyChange("ScarletUI")
+                    --            end,
+                    --        },
+                    --        removeButton = {
+                    --            type = "execute",
+                    --            name = "-",
+                    --            desc = "Remove the selected spell entry",
+                    --            width = 0.5,
+                    --            order = 3,
+                    --            func = function()
+                    --                AceConfigRegistry:NotifyChange("ScarletUI")
+                    --            end,
+                    --        },
+                    --        spellEntry = {
+                    --            type = "input",
+                    --            name = "Spell Name",
+                    --            desc = "Enter the name of the spell",
+                    --            order = 4,
+                    --            width = "full",
+                    --        },
+                    --    },
+                    --},
                 }
             },
             targetIndicator = {
