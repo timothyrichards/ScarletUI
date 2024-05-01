@@ -52,6 +52,7 @@ local function mainMenuBar(module)
 end
 
 local function microBar(actionbarsModule)
+    print("microBar")
     local microBarSettings = actionbarsModule.microBar;
     if not microBarSettings.move then
         return
@@ -448,11 +449,20 @@ function ScarletUI:SetupActionbars()
         self.frame:RegisterEvent("UPDATE_FACTION")
         self.frame:RegisterEvent("PLAYER_LEVEL_UP")
         self.frame:RegisterEvent("UNIT_EXITED_VEHICLE")
+        self.frame:RegisterEvent("UPDATE_POSSESS_BAR")
         self.frame:RegisterEvent("CINEMATIC_STOP")
-        self.frame:RegisterEvent("PLAYER_REGEN_DISABLED")
         self.frame:HookScript("OnEvent", function(_, event, ...)
-            if event == "UNIT_EXITED_VEHICLE" or event == "PLAYER_REGEN_DISABLED" then
+            if event == "PLAYER_REGEN_ENABLED" then
                 microBar(actionbarsModule)
+                possessBarFrame()
+            end
+
+            if event == "UNIT_EXITED_VEHICLE" then
+                microBar(actionbarsModule)
+            end
+
+            if event == "UPDATE_POSSESS_BAR" then
+                possessBarFrame()
             end
 
             ScarletUI:UpdateMainBar()
