@@ -52,11 +52,12 @@ local function mainMenuBar(module)
 end
 
 local function microBar(actionbarsModule)
-    print("microBar")
     local microBarSettings = actionbarsModule.microBar;
-    if not microBarSettings.move then
+    if not microBarSettings.move or ScarletUI:InCombat() then
         return
     end
+
+    ScarletUI.movingMicroButtons = true;
 
     -- Create or retrieve the MicroBar frame
     local MicroBar = _G["MicroBar"] or CreateFrame("Frame", "MicroBar", UIParent)
@@ -104,11 +105,23 @@ local function microBar(actionbarsModule)
                 ScarletUI:SetPoint(button, "LEFT", previousButton, "RIGHT", -3, 0)
             end
 
+            if not button.setPointEventRegistered then
+                hooksecurefunc(button, "SetPoint", function()
+                    if ScarletUI.movingMicroButtons then
+                        return
+                    end
+
+                    microBar(actionbarsModule)
+                end)
+                button.setPointEventRegistered = true
+            end
+
             previousButton = button;
         end
     end
 
     ScarletUI:CreateMover(MicroBar, microBarSettings)
+    ScarletUI.movingMicroButtons = false;
 end
 
 local function bagBar(actionbarsModule)
