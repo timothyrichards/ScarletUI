@@ -176,12 +176,9 @@ function ScarletUI:SetPoint(frame, frameAnchor, frameParent, parentAnchor, x, y)
         return
     end
 
-    if not frame.SetPointBackup then
-        frame.SetPointBackup = frame.SetPoint
-    else
-        frame.SetPoint = frame.SetPointBackup
-    end
-
+    frame:SetMovable(true)
+    frame:ClearAllPoints()
     frame:SetPoint(frameAnchor, frameParent, parentAnchor, x, y)
-    frame.SetPoint = function() end
+    frame:SetUserPlaced(true)
+    frame:SetMovable(false)
 end

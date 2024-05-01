@@ -84,6 +84,7 @@ local function microBar(actionbarsModule)
         "CollectionsMicroButton",
         "PVPMicroButton",
         "LFGMicroButton",
+        "EJMicroButton",
         "MainMenuMicroButton",
         "HelpMicroButton",
     }
@@ -449,7 +450,11 @@ function ScarletUI:SetupActionbars()
         self.frame:RegisterEvent("UNIT_EXITED_VEHICLE")
         self.frame:RegisterEvent("CINEMATIC_STOP")
         self.frame:RegisterEvent("PLAYER_REGEN_DISABLED")
-        self.frame:HookScript("OnEvent", function(...)
+        self.frame:HookScript("OnEvent", function(_, event, ...)
+            if event == "UNIT_EXITED_VEHICLE" or event == "PLAYER_REGEN_DISABLED" then
+                microBar(actionbarsModule)
+            end
+
             ScarletUI:UpdateMainBar()
         end)
         self.frame:SetScript("OnShow", function(...)
