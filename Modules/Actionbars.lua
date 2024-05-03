@@ -268,9 +268,6 @@ local function petActionBar(module)
             local button = _G["PetActionButton"..i]
 
             if button then
-                button:ClearAllPoints()
-                button:SetMovable(true)
-                button:SetUserPlaced(true)
                 if i == 1 then
                     ScarletUI:SetPoint(button, "LEFT", PetBar, "LEFT", 6, 0)
                 else
@@ -289,24 +286,54 @@ local function multiCastBar(module)
         return
     end
 
+    -- Create or retrieve the PetBar frame
+    local TotemBar = _G["TotemBar"] or CreateFrame("Frame", "TotemBar", UIParent)
+
+    -- Set dimensions and position of MicroBar
+    TotemBar:ClearAllPoints()
+    TotemBar:SetSize(509, 43)
+
     if multiCastBarSettings.hide then
-        ScarletUI.multiCastBar = _G["MultiCastBar"] or CreateFrame("FRAME", "MultiCastBar", UIParent)
-        ScarletUI.multiCastBar:Hide()
+        TotemBar:Hide()
         MultiCastActionBarFrame:UnregisterAllEvents()
-        MultiCastActionBarFrame:SetParent(ScarletUI.multiCastBar)
+        MultiCastActionBarFrame:SetParent(TotemBar)
     else
-        ScarletUI:CreateMover(MultiCastActionBarFrame, multiCastBarSettings)
-        MultiCastActionBarFrame:ClearAllPoints()
-        MultiCastActionBarFrame:SetMovable(true)
-        MultiCastActionBarFrame:SetUserPlaced(true)
-        ScarletUI:SetPoint(
-                MultiCastActionBarFrame,
+        ScarletUI:CreateMover(TotemBar, multiCastBarSettings)
+        TotemBar:SetPoint(
                 ScarletUI.frameAnchors[multiCastBarSettings.frameAnchor],
                 UIParent,
                 ScarletUI.frameAnchors[multiCastBarSettings.screenAnchor],
                 multiCastBarSettings.x,
                 multiCastBarSettings.y
         )
+
+        local totemBarButtons = {
+            "MultiCastSlotButton",
+            "MultiCastActionButton",
+        }
+
+        ScarletUI:SetPoint(MultiCastSummonSpellButton, "LEFT", TotemBar, "LEFT", 6, 0)
+
+        local previousButton = MultiCastSummonSpellButton
+        for i = 1, 4 do
+            for _, buttonName in ipairs(totemBarButtons) do
+                local button = _G[buttonName..i]
+
+                if button then
+                    if buttonName == "MultiCastSlotButton" then
+                        ScarletUI:SetPoint(button, "LEFT", previousButton, "RIGHT", 8, 0)
+                        previousButton = button
+                    else
+                        button:ClearAllPoints()
+                        button:SetMovable(true)
+                        button:SetUserPlaced(true)
+                        button:SetAllPoints(previousButton)
+                    end
+                end
+            end
+        end
+
+        ScarletUI:SetPoint(MultiCastRecallSpellButton, "LEFT", previousButton, "RIGHT", 8, 0)
     end
 end
 
