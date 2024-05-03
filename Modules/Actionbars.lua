@@ -83,6 +83,7 @@ local function microBar(actionbarsModule)
         "AchievementMicroButton",
         "QuestLogMicroButton",
         "SocialsMicroButton",
+        "GuildMicroButton",
         "CollectionsMicroButton",
         "PVPMicroButton",
         "LFGMicroButton",
