@@ -63,31 +63,6 @@ function ScarletUI:GetModuleSettingsPage(database, order)
         type = "group",
         order = order,
         args = {
-            general = {
-                name = "General",
-                type = "group",
-                disabled = function() return self:InCombat() end,
-                inline = true,
-                order = 0,
-                args = {
-                    blueShamans = {
-                        name = "Blue Shamans",
-                        desc = "Changes Shaman class color to blue.",
-                        type = "toggle",
-                        width = 1,
-                        order = 0,
-                        get = function(_) return database.blueShamans end,
-                        set = function(_, val)
-                            database.blueShamans = val
-                            if val then
-                                self:BlueShamans()
-                            else
-                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
-                            end
-                        end,
-                    }
-                }
-            },
             itemLevel = {
                 name = "Item Level",
                 type = "group",

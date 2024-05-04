@@ -2,7 +2,6 @@ local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 
 ScarletUI.defaults = {
     global = {
-        blueShamans = true,
         tidyIconsEnabled = true,
         itemLevelCharacter = true,
         itemLevelInspect = true,
