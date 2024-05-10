@@ -6,6 +6,7 @@ ScarletUI.defaults = {
         itemLevelCharacter = true,
         itemLevelInspect = true,
         itemLevelBag = true,
+        expandCharacterInfo = true,
         unitFramesModule = {
             enabled = true,
             playerFrame = {
@@ -223,6 +224,12 @@ ScarletUI.defaults = {
             tankNames = "",
             specialUnitColor = { 1, 0, 1, 1 },
             specialUnitNames = ""
+        },
+        bagModule = {
+            enabled = true,
+            slotsPerRow = 10,
+            slotSize = 37,
+            slotSpacing = 4,
         },
         CVarModule = {
             enabled = false,

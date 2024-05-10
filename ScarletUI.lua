@@ -44,8 +44,7 @@ function ScarletUI:Setup(isLogin)
     self.inCombat = false;
 
     -- Check if lightWeightMode should be enabled
-    local _, _, _, interfaceVersion = GetBuildInfo()
-    if tonumber(interfaceVersion) >= 100205 then
+    if self:GetWoWVersion() == "RETAIL" then
         self.retail = true;
     elseif IsAddOnLoaded("ElvUI") then
         self.lightWeightMode = true;
@@ -78,6 +77,8 @@ function ScarletUI:Setup(isLogin)
     self:SetupRaidProfiles()
     self:SetupTidyIcons()
     self:SetupNameplates()
+    self:SetupExpandCharacterInfo()
+    --self:SetupBags()
 
     if isLogin then
         self.settings:Print("Scarlet UI setup successful, use the command /sui to open the options panel.")

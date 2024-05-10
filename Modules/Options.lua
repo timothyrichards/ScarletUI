@@ -51,7 +51,8 @@ function ScarletUI:Options()
             unitFramesModuleSettings = self:GetUnitFramesModuleSettingsPage(database.unitFramesModule, defaults.unitFramesModule, 6),
             raidFramesModuleSettings = self:GetRaidFramesModuleSettingsPage(database.raidFramesModule, defaults.raidFramesModule, 7),
             nameplatesModuleSettings = self:GetNameplatesModuleSettingsPage(database.nameplatesModule, defaults.nameplatesModule, 8),
-            CVarModuleSettings = self:GetCVarModuleSettingsPage(database.CVarModule, 9),
+            --bagModuleSettings = self:GetBagModuleSettingsPage(database.bagModule, defaults.bagModule, 9),
+            CVarModuleSettings = self:GetCVarModuleSettingsPage(database.CVarModule, 10),
         },
     }
 end
@@ -63,6 +64,33 @@ function ScarletUI:GetModuleSettingsPage(database, order)
         type = "group",
         order = order,
         args = {
+            general = {
+                name = "General",
+                type = "group",
+                disabled = function() return self:InCombat() end,
+                hidden = function() return self:GetWoWVersion() ~= "CATA" end,
+                inline = true,
+                order = 0,
+                args = {
+                    expandCharacterInfo = {
+                        name = "Auto Expand Character Info",
+                        desc = "Automatically opens the side panel in the character window showing your stats, titles, and equipment manager.",
+                        type = "toggle",
+                        hidden = function() return self:GetWoWVersion() ~= "CATA" end,
+                        width = 1,
+                        order = 0,
+                        get = function(_) return database.expandCharacterInfo end,
+                        set = function(_, val)
+                            database.expandCharacterInfo = val
+                            if val then
+                                self:SetupExpandCharacterInfo()
+                            else
+                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                            end
+                        end,
+                    },
+                }
+            },
             itemLevel = {
                 name = "Item Level",
                 type = "group",
@@ -212,6 +240,22 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                             end
                         end,
                     },
+                    --bagModuleEnabled = {
+                    --    name = "Bags",
+                    --    desc = "Manage the settings and position of your bags.",
+                    --    type = "toggle",
+                    --    width = 1,
+                    --    order = 5,
+                    --    get = function(_) return database.bagModule.enabled end,
+                    --    set = function(_, val)
+                    --        database.bagModule.enabled = val
+                    --        if not val then
+                    --            StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                    --        else
+                    --            ScarletUI:SetupBags()
+                    --        end
+                    --    end,
+                    --},
                     cVarModuleEnabled = {
                         name = "CVars",
                         desc = "Manage your cVars. (WORK IN PROGRESS)",
@@ -331,7 +375,7 @@ function ScarletUI:GetChatModuleSettingsPage(module, defaults, order)
                         name = "LFG Tab",
                         desc = "Create tab for lfg.",
                         type = "toggle",
-                        disabled = function() return self.retail end,
+                        hidden = function() return self.retail end,
                         width = 1,
                         order = 1,
                         get = function(_) return module.tabs.lfg end,
@@ -1679,6 +1723,73 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                             self:SetupSpecialUnits(module)
                         end,
                     }
+                }
+            }
+        }
+    }
+end
+
+function ScarletUI:GetBagModuleSettingsPage(module, defaults, order)
+    return {
+        name = "Bag",
+        desc = "Bag Module settings.",
+        type = "group",
+        order = order,
+        disabled = function() return not module.enabled or self.lightWeightMode end,
+        hidden = function() return self.retail end,
+        args = {
+            generalSettings = {
+                name = "General Settings",
+                type = "group",
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled, false) end,
+                inline = true,
+                order = 0,
+                args = {
+                    slotsPerRow = {
+                        name = "Bag Slots Per Row",
+                        desc = "Must be a number, this is the number of bag slots per row.\n(Default " .. defaults.slotsPerRow .. ")",
+                        type = "range",
+                        min = 1,
+                        max = 20,
+                        step = 1,
+                        width = 1,
+                        order = 0,
+                        get = function(_) return module.slotsPerRow end,
+                        set = function(_, val)
+                            module.slotsPerRow = val
+                            self:SetupBags()
+                        end,
+                    },
+                    slotSize = {
+                        name = "Bag Slot Size",
+                        desc = "Must be a number, this is the size of the bag slots.\n(Default " .. defaults.slotSize .. ")",
+                        type = "range",
+                        min = 16,
+                        max = 64,
+                        step = 1,
+                        width = 1,
+                        order = 1,
+                        get = function(_) return module.slotSize end,
+                        set = function(_, val)
+                            module.slotSize = val
+                            self:SetupBags()
+                        end,
+                    },
+                    slotSpacing = {
+                        name = "Bag Slot Spacing",
+                        desc = "Must be a number, this is the space between the bag slots.\n(Default " .. defaults.slotSpacing .. ")",
+                        type = "range",
+                        min = 0,
+                        max = 20,
+                        step = 1,
+                        width = 1,
+                        order = 2,
+                        get = function(_) return module.slotSpacing end,
+                        set = function(_, val)
+                            module.slotSpacing = val
+                            self:SetupBags()
+                        end,
+                    },
                 }
             }
         }

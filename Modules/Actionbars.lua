@@ -59,23 +59,6 @@ local function microBar(actionbarsModule)
 
     ScarletUI.movingMicroButtons = true;
 
-    -- Create or retrieve the MicroBar frame
-    local MicroBar = _G["MicroBar"] or CreateFrame("Frame", "MicroBar", UIParent)
-    local buttonSpacing = 1
-    local buttonWidth, buttonHeight = CharacterMicroButton:GetWidth(), CharacterMicroButton:GetHeight()
-    local totalWidth = buttonWidth * (11 - buttonSpacing)
-
-    -- Set dimensions and position of MicroBar
-    MicroBar:ClearAllPoints()
-    MicroBar:SetSize(totalWidth, buttonHeight)
-    MicroBar:SetPoint(
-            ScarletUI.frameAnchors[microBarSettings.frameAnchor],
-            UIParent,
-            ScarletUI.frameAnchors[microBarSettings.screenAnchor],
-            microBarSettings.x,
-            microBarSettings.y
-    )
-
     local microButtons = {
         "CharacterMicroButton",
         "SpellbookMicroButton",
@@ -91,6 +74,29 @@ local function microBar(actionbarsModule)
         "MainMenuMicroButton",
         "HelpMicroButton",
     }
+    local buttonCount = 0
+    for _, buttonName in ipairs(microButtons) do
+        if _G[buttonName] then
+            buttonCount = buttonCount + 1
+        end
+    end
+
+    -- Create or retrieve the MicroBar frame
+    local MicroBar = _G["MicroBar"] or CreateFrame("Frame", "MicroBar", UIParent)
+    local buttonSpacing = 1
+    local buttonWidth, buttonHeight = CharacterMicroButton:GetWidth(), 42
+    local totalWidth = buttonWidth * (buttonCount - buttonSpacing)
+
+    -- Set dimensions and position of MicroBar
+    MicroBar:ClearAllPoints()
+    MicroBar:SetSize(totalWidth, buttonHeight)
+    MicroBar:SetPoint(
+            ScarletUI.frameAnchors[microBarSettings.frameAnchor],
+            UIParent,
+            ScarletUI.frameAnchors[microBarSettings.screenAnchor],
+            microBarSettings.x,
+            microBarSettings.y
+    )
 
     local previousButton
     for _, buttonName in ipairs(microButtons) do
@@ -101,7 +107,7 @@ local function microBar(actionbarsModule)
             button:SetMovable(true)
             button:SetUserPlaced(true)
             if buttonName == "CharacterMicroButton" then
-                ScarletUI:SetPoint(button, "LEFT", MicroBar, "LEFT", 0, 0)
+                ScarletUI:SetPoint(button, "BOTTOMLEFT", MicroBar, "BOTTOMLEFT", 0, 0)
             else
                 ScarletUI:SetPoint(button, "LEFT", previousButton, "RIGHT", -3, 0)
             end

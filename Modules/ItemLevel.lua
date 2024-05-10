@@ -1,3 +1,6 @@
+local GetContainerNumSlots = C_Container.GetContainerNumSlots or GetContainerNumSlots
+local GetContainerItemLink = C_Container.GetContainerItemLink or GetContainerItemLink
+
 local slots = {
     "Head",
     "Neck",
@@ -98,15 +101,17 @@ function ScarletUI:BagItemLevel()
         return
     end
 
-    for bag = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
-        if C_Container.GetContainerNumSlots then
-            for slot = 1, C_Container.GetContainerNumSlots(bag) do
-                local itemLink = C_Container.GetContainerItemLink(bag, slot)
-                local adjustedSlot = C_Container.GetContainerNumSlots(bag) - slot + 1
-                local itemButton = _G["ContainerFrame" .. (bag + 1) .. "Item" .. adjustedSlot]
+    if ScarletUI_BagFrame then
+        for bag = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
+            for slot = 1, GetContainerNumSlots(bag) do
+                local index = bag * GetContainerNumSlots(bag) + slot
+                local itemLink = GetContainerItemLink(bag, slot)
+                local itemButton = self.bagSlots[index]
                 ItemLevelText(itemLink, itemButton)
             end
-        elseif GetContainerNumSlots then
+        end
+    else
+        for bag = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
             for slot = 1, GetContainerNumSlots(bag) do
                 local itemLink = GetContainerItemLink(bag, slot)
                 local adjustedSlot = GetContainerNumSlots(bag) - slot + 1

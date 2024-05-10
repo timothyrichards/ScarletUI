@@ -104,11 +104,67 @@ function ScarletUI:CreateMover(targetFrame, module)
     return mover
 end
 
+function ScarletUI:CreateGrid()
+    if self.grid then
+        return
+    end
+
+    local gridSize = 32
+    local screenWidth, screenHeight = GetScreenWidth(), GetScreenHeight()
+    local gridWidth = ceil(screenWidth / gridSize)
+    local gridHeight = ceil(screenHeight / gridSize)
+
+    -- Calculate the offset needed to center the grid
+    local offsetX = (screenWidth - gridSize * gridWidth) / 2
+    local offsetY = (screenHeight - gridSize * gridHeight) / 2 - 0.5
+
+    self.grid = self.grid or CreateFrame("Frame", "SUI_Grid", UIParent)
+    self.grid:SetAllPoints(UIParent)
+    self.grid:SetFrameStrata("BACKGROUND")
+
+    local texturePath = "Interface\\BUTTONS\\WHITE8X8"
+
+    for i = 0, gridHeight do
+        local texture = self.grid:CreateTexture(nil, "BACKGROUND")
+        texture:SetTexture(texturePath)
+        texture:SetSize(screenWidth, 1)
+        texture:SetColorTexture(1, 1, 1, 0.5)
+        texture:SetPoint("TOPLEFT", self.grid, "TOPLEFT", offsetX, -gridSize * i - offsetY)
+    end
+
+    for i = 0, gridWidth do
+        local texture = self.grid:CreateTexture(nil, "BACKGROUND")
+        texture:SetTexture(texturePath)
+        texture:SetSize(1, screenHeight)
+        texture:SetColorTexture(1, 1, 1, 0.5)
+        texture:SetPoint("TOPLEFT", self.grid, "TOPLEFT", gridSize * i + offsetX, -offsetY)
+    end
+
+    -- Create a center vertical line
+    local verticalLine = self.grid:CreateTexture(nil, "BACKGROUND")
+    verticalLine:SetTexture(texturePath)
+    verticalLine:SetSize(1, screenHeight)
+    verticalLine:SetColorTexture(1, 0, 0, 1)
+    verticalLine:SetPoint("CENTER", self.grid)
+
+    -- Create a center horizontal line
+    local horizontalLine = self.grid:CreateTexture(nil, "BACKGROUND")
+    horizontalLine:SetTexture(texturePath)
+    horizontalLine:SetSize(screenWidth, 1)
+    horizontalLine:SetColorTexture(1, 0, 0, 1)
+    horizontalLine:SetPoint("CENTER", self.grid)
+
+    self.grid:Hide()
+end
+
 function ScarletUI:ToggleMovers()
+    self:CreateGrid()
     if self.moversEnabled then
         self.moversEnabled = false
+        self.grid:Hide()
     elseif not self.moversEnabled then
         self.moversEnabled = true
+        self.grid:Show()
     end
 
     for _, v in pairs(self.movers) do

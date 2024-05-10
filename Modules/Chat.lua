@@ -59,6 +59,7 @@ function ScarletUI:SetupChat()
         elseif frame.name == 'Trade' then
             ChatFrame_RemoveAllMessageGroups(frame)
             ChatFrame_AddChannel(frame, 'Trade')
+            ChatFrame_AddChannel(frame, 'Services')
         elseif frame.name == 'LFG' then
             ChatFrame_RemoveAllMessageGroups(frame)
             JoinChannelByName('LookingForGroup', nil, id, 0)

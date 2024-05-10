@@ -23,3 +23,4 @@ Modules\Nameplates.lua
 Modules\RaidFrames.lua
 Modules\TidyIcons.lua
 Modules\UnitFrames.lua
+Modules\Bag.lua

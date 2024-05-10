@@ -2,6 +2,50 @@ function ScarletUI:InCombat()
     return InCombatLockdown() or self.inCombat
 end
 
+function ScarletUI:GetWoWVersion()
+    local _, _, _, interfaceVersion = GetBuildInfo()
+    interfaceVersion = tonumber(interfaceVersion)
+
+    if interfaceVersion >= 100000 then
+        return "RETAIL"
+    elseif interfaceVersion >= 90000 then
+        return "SL"
+    elseif interfaceVersion >= 80000 then
+        return "BFA"
+    elseif interfaceVersion >= 70000 then
+        return "LEGION"
+    elseif interfaceVersion >= 60000 then
+        return "WOD"
+    elseif interfaceVersion >= 50000 then
+        return "MOP"
+    elseif interfaceVersion >= 40000 then
+        return "CATA"
+    elseif interfaceVersion >= 30000 then
+        return "WOTLK"
+    elseif interfaceVersion >= 20000 then
+        return "TBC"
+    elseif interfaceVersion >= 10000 then
+        return "VANILLA"
+    else
+        print("ScarletUI was unable to determine what version of WoW this is: " .. interfaceVersion)
+        return "UNKNOWN"
+    end
+end
+
+function ScarletUI:SetupExpandCharacterInfo()
+    if not self.db.global.expandCharacterInfo or self:GetWoWVersion() ~= "CATA" then
+        return
+    end
+
+    hooksecurefunc(CharacterFrame, "Show", function()
+        if CharacterFrame.Expanded then
+            return
+        end
+
+        CharacterFrameExpandButton:Click()
+    end)
+end
+
 function ScarletUI:SwapActionbar(sourceBar, destinationBar)
     for i = 1, 12 do
         local sourceButton = _G[sourceBar.."Button"..i].action
