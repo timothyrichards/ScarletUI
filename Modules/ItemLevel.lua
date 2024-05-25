@@ -60,6 +60,59 @@ local function ItemLevelText(itemLink, itemButton)
     end
 end
 
+local function calculateUnitItemLevel(unit)
+    local totalItemLevel = 0
+    local itemCount = 0
+    local isHunter = (select(2, UnitClass(unit)) == "HUNTER")
+    local mainHandItemLink = GetInventoryItemLink(unit, GetInventorySlotInfo("MainHandSlot"))
+    local secondaryHandItemLink = GetInventoryItemLink(unit, GetInventorySlotInfo("SecondaryHandSlot"))
+    local mainHandItemLevel = mainHandItemLink and select(4, GetItemInfo(mainHandItemLink)) or 0
+    local secondaryHandItemLevel = secondaryHandItemLink and select(4, GetItemInfo(secondaryHandItemLink)) or 0
+    local dualWieldItemLevel = math.max(mainHandItemLevel, secondaryHandItemLevel)
+
+    for _, slotName in ipairs(slots) do
+        local skipSlot = false
+
+        -- Skip MainHand and SecondaryHand slots if the player is a hunter and has a ranged weapon equipped
+        local rangedItemLink = GetInventoryItemLink(unit, GetInventorySlotInfo("RangedSlot"))
+        if isHunter and rangedItemLink then
+            if rangedItemLink and (slotName == "MainHand" or slotName == "SecondaryHand") then
+                skipSlot = true
+            end
+        else
+            if slotName == "Ranged" then
+                skipSlot = true
+            end
+
+            if slotName == "SecondaryHand" then
+                if mainHandItemLink then
+                    local _, _, _, _, _, _, _, _, itemEquipLoc = GetItemInfo(mainHandItemLink)
+                    if itemEquipLoc == "INVTYPE_2HWEAPON" then
+                        skipSlot = true
+                    end
+                end
+            end
+        end
+
+        if not skipSlot then
+            local slotID = GetInventorySlotInfo(slotName .. "Slot")
+            local itemLink = GetInventoryItemLink(unit, slotID)
+            if itemLink then
+                local _, _, _, itemLevel = GetItemInfo(itemLink)
+                if slotName == "MainHand" or slotName == "SecondaryHand" then
+                    -- Player is dual wielding, use the higher item level item for the calculation
+                    totalItemLevel = totalItemLevel + dualWieldItemLevel
+                else
+                    totalItemLevel = totalItemLevel + itemLevel
+                end
+            end
+            itemCount = itemCount + 1
+        end
+    end
+
+    return totalItemLevel / itemCount
+end
+
 function ScarletUI:CharacterFrameItemLevel()
     if not self.db.global.itemLevelCharacter then
         return
@@ -84,12 +137,26 @@ function ScarletUI:InspectFrameItemLevel()
         return
     end
 
+    local unit = InspectFrame.unit
+    if not unit then
+        return
+    end
+
+    local averageItemLevel = calculateUnitItemLevel(unit)
+
+    if not self.inspectFrameItemLevelText then
+        self.inspectFrameItemLevelText = InspectFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        self.inspectFrameItemLevelText:SetPoint("TOP", InspectFrame, "TOP", 0, -60)
+    end
+
+    self.inspectFrameItemLevelText:SetText("Item Level: " .. math.floor(averageItemLevel))
+
     for _, slotName in ipairs(slots) do
         if self.retail and slotName == "Ranged" then
             -- nothing
         else
             local slotID = GetInventorySlotInfo(slotName .. "Slot")
-            local itemLink = GetInventoryItemLink("target", slotID)
+            local itemLink = GetInventoryItemLink(unit, slotID)
             local itemButton = _G["Inspect" .. slotName .. "Slot"]
             ItemLevelText(itemLink, itemButton)
         end
@@ -134,7 +201,7 @@ function ScarletUI:SetupItemLevels()
                 ScarletUI:CharacterFrameItemLevel()
             elseif event == "INSPECT_READY" then
                 if not ScarletUI.inspectOpened then
-                    ScarletUI:InspectFrameItemLevel()
+                    C_Timer.After(0.1, function() ScarletUI:InspectFrameItemLevel() end)
                 else
                     ScarletUI.inspectOpened = false
                 end
