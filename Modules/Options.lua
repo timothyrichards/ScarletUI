@@ -509,6 +509,11 @@ function ScarletUI:GetActionbarsModuleSettingsPage(database, defaults, order)
                 end,
             }
         end
+
+        if barName == "multiCastBar" then
+            local version = self:GetWoWVersion();
+            options.args[barName].hidden = function() return version ~= "WRATH" and version ~= "CATA" end
+        end
     end
 
     return options
