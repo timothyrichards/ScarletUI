@@ -133,7 +133,7 @@ function ScarletUI:CharacterFrameItemLevel()
 end
 
 function ScarletUI:InspectFrameItemLevel()
-    if not self.db.global.itemLevelInspect then
+    if not self.db.global.itemLevelInspect or not InspectFrame then
         return
     end
 

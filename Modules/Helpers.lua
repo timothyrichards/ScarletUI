@@ -37,7 +37,7 @@ function ScarletUI:SetupExpandCharacterInfo()
         return
     end
 
-    hooksecurefunc(CharacterFrame, "Show", function()
+    hooksecurefunc(CharacterFrameExpandButton, "Show", function()
         if CharacterFrame.Expanded then
             return
         end

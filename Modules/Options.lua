@@ -283,6 +283,7 @@ function ScarletUI:GetChatModuleSettingsPage(module, defaults, order)
         name = "Chat",
         desc = "Chat Module settings.",
         type = "group",
+        childGroups = "tab",
         order = order,
         disabled = function() return not module.enabled end,
         args = {
@@ -377,7 +378,7 @@ function ScarletUI:GetChatModuleSettingsPage(module, defaults, order)
                         type = "toggle",
                         hidden = function() return self.retail end,
                         width = 1,
-                        order = 1,
+                        order = 3,
                         get = function(_) return module.tabs.lfg end,
                         set = function(_, val)
                             module.tabs.lfg = val
@@ -391,7 +392,6 @@ function ScarletUI:GetChatModuleSettingsPage(module, defaults, order)
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) or self.lightWeightMode end,
                 hidden = function(_) return self.retail end,
-                inline = true,
                 order = 2,
                 args = {
                     moveFrame = {
@@ -487,24 +487,11 @@ end
 function ScarletUI:GetActionbarsModuleSettingsPage(database, defaults, order)
     local module = database.actionbarsModule;
 
-    local barConfigs = {
-        "mainBar",
-        "stanceBar",
-        "petBar",
-        "multiCastBar",
-        "microBar",
-        "bagBar",
-    }
-
-    function toDisplayText(str)
-        return (str:gsub("(%a)(%u)", "%1 %2"):gsub("^%l", string.upper))
-    end
-
     local options = {
         name = "Actionbars",
         desc = "Actionbars Module settings.",
         type = "group",
-        childGroups = "tree",
+        childGroups = "tab",
         order = order,
         disabled = function() return not module.enabled or self.lightWeightMode end,
         hidden = function() return self.retail end,
@@ -571,27 +558,14 @@ function ScarletUI:GetActionbarsModuleSettingsPage(database, defaults, order)
                             self:SetupActionbars()
                         end,
                     },
-                    microBag = {
-                        name = "Micro Bag",
-                        desc = "Hide all non backpack bag icons.",
-                        type = "toggle",
-                        disabled = function() return not module.stackActionbars end;
-                        width = 1,
-                        order = 4,
-                        get = function(_) return module.microBag end,
-                        set = function(_, val)
-                            module.microBag = val
-                            if val then
-                                self:SetupActionbars()
-                            else
-                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
-                            end
-                        end,
-                    },
                 }
             },
         }
     }
+
+    local function toDisplayText(str)
+        return (str:gsub("(%a)(%u)", "%1 %2"):gsub("^%l", string.upper))
+    end
 
     -- Function to generate a group of settings.
     local function generateBarConfig(name, includeHideOption, _order)
@@ -599,7 +573,6 @@ function ScarletUI:GetActionbarsModuleSettingsPage(database, defaults, order)
             name = toDisplayText(name),
             type = "group",
             disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
-            inline = true,
             order = _order,
             args = {
                 moveFrame = {
@@ -707,11 +680,40 @@ function ScarletUI:GetActionbarsModuleSettingsPage(database, defaults, order)
         }
     end
 
+    local barConfigs = {
+        "mainBar",
+        "stanceBar",
+        "petBar",
+        "multiCastBar",
+        "microBar",
+        "bagBar",
+    }
+
     for i, barName in ipairs(barConfigs) do
         if barName == "stanceBar" or barName == "petBar" or barName == "multiCastBar" then
             options.args[barName] = generateBarConfig(barName, true, i + 1)
         else
             options.args[barName] = generateBarConfig(barName, false, i + 1)
+        end
+
+        if barName == "bagBar" then
+            options.args[barName].args.microBag = {
+                name = "Micro Bag",
+                desc = "Hide all non backpack bag icons.",
+                type = "toggle",
+                disabled = function() return not module.stackActionbars end;
+                width = 1,
+                order = 0.5,
+                get = function(_) return module.microBag end,
+                set = function(_, val)
+                    module.microBag = val
+                    if val then
+                        self:SetupActionbars()
+                    else
+                        StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                    end
+                end,
+            }
         end
     end
 
@@ -723,6 +725,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(module, defaults, order)
         name = "Unit Frames",
         desc = "Unit Frames Module settings.",
         type = "group",
+        childGroups = "tab",
         order = order,
         disabled = function() return not module.enabled or self.lightWeightMode end,
         hidden = function() return self.retail end,
@@ -731,7 +734,6 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(module, defaults, order)
                 name = "Player Frame",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
-                inline = true,
                 order = 1,
                 args = {
                     moveFrame = {
@@ -824,7 +826,6 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(module, defaults, order)
                 name = "Target Frame",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
-                inline = true,
                 order = 2,
                 args = {
                     mirrorPlayerFrame = {
@@ -957,7 +958,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(module, defaults, order)
                 type = "group",
                 hidden = function() return not FocusFrame end,
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
-                inline = true,
+                inline = false,
                 order = 3,
                 args = {
                     moveFrame = {
@@ -1055,6 +1056,7 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
         name = "Raid Frames",
         desc = "Raid Frames Module settings.",
         type = "group",
+        childGroups = "tab",
         order = order,
         disabled = function() return not module.enabled or self.lightWeightMode end,
         hidden = function() return self.retail end,
@@ -1077,7 +1079,6 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
                 name = "Party Frames",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
-                inline = true,
                 order = 1,
                 args = {
                     moveFrame = {
@@ -1146,7 +1147,6 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
                 name = "Raid Frames",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
-                inline = true,
                 order = 1,
                 args = {
                     moveFrame = {
@@ -1229,6 +1229,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
         name = "Nameplates",
         desc = "Nameplates Module settings.",
         type = "group",
+        childGroups = "tab",
         order = order,
         disabled = function() return not module.enabled or self.lightWeightMode end,
         hidden = function() return self.retail end,
@@ -1273,7 +1274,6 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                 name = "Debuff Tracker",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
-                inline = true,
                 order = 1,
                 args = {
                     track = {
@@ -1380,7 +1380,6 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                 name = "Target Indicator",
                 type = "group",
                 disabled = function() return self:InCombat() end,
-                inline = true,
                 order = 2,
                 args = {
                     show = {
@@ -1449,7 +1448,6 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                 name = "Health Bar Text",
                 type = "group",
                 disabled = function() return self:InCombat() end,
-                inline = true,
                 order = 3,
                 args = {
                     show = {
@@ -1484,7 +1482,6 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                 name = "Cast Bar Text",
                 type = "group",
                 disabled = function() return self:InCombat() end,
-                inline = true,
                 order = 4,
                 args = {
                     show = {
@@ -1519,7 +1516,6 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                 name = "Threat Colors",
                 type = "group",
                 disabled = function() return self:InCombat() end,
-                inline = true,
                 order = 5,
                 args = {
                     description1 = {
@@ -1690,7 +1686,6 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                 name = "Special Units",
                 type = "group",
                 disabled = function() return self:InCombat() end,
-                inline = true,
                 order = 8,
                 args = {
                     specialUnitColor = {
@@ -1800,6 +1795,58 @@ local searchQuery = ""
 function ScarletUI:GetCVarModuleSettingsPage(module, order)
     local CVars = module.CVars
 
+    local options = {
+        name = "CVars",
+        desc = "CVars Module for advanced users to change console variables and have them automatically synchronize between characters.",
+        type = "group",
+        order = order,
+        disabled = function() return not module.enabled end,
+        args = {
+            information = {
+                name = "Info",
+                type = "group",
+                inline = true,
+                order = 0,
+                args = {
+                    description = {
+                        name = "You can copy the Wowpedia link below for a reference to all console variables and what they do.\n\nIf you have any requests for new CVars to be added, please leave a comment on CurseForge page for ScarletUI.",
+                        type = "description",
+                        width = "full",
+                        fontSize = "medium",
+                        order = 0,
+                    },
+                    link = {
+                        name = "",
+                        type = "input",
+                        order = 1,
+                        width = 2,
+                        get = function() return "https://wowpedia.fandom.com/wiki/Console_variables" end,
+                    }
+                }
+            },
+            search = {
+                name = "Search",
+                type = "group",
+                inline = true,
+                order = 1,
+                args = {
+                    searchField = {
+                        order = 1,
+                        name = "",
+                        desc = "Filter CVars",
+                        type = "input",
+                        get = function() return searchQuery end,
+                        set = function(_, val)
+                            searchQuery = val
+                            AceConfigRegistry:NotifyChange("ScarletUI")
+                        end,
+                        width = "full",
+                    },
+                }
+            }
+        }
+    }
+
     local function ShouldOptionBeHidden(optionKey)
         -- If searchQuery is empty, show all options
         if searchQuery == "" then
@@ -1809,35 +1856,24 @@ function ScarletUI:GetCVarModuleSettingsPage(module, order)
         return not string.find(string.lower(optionKey), string.lower(searchQuery), 1, true)
     end
 
-    local options = {
-        name = "CVars",
-        desc = "(WORK IN PROGRESS) CVars Module for advanced users to change console variables (hidden settings).",
-        type = "group",
-        order = order,
-        disabled = function() return not module.enabled end,
-        args = {
-            search = {
-                order = 0,
-                name = "Search",
-                desc = "Filter CVars",
-                type = "input",
-                get = function() return searchQuery end,
-                set = function(_, val)
-                    searchQuery = val
-                    AceConfigRegistry:NotifyChange("ScarletUI")
-                end,
-                width = "full",
-            },
-        }
-    }
+    -- Create a table of keys
+    local keys = {}
+    for k in pairs(CVars) do
+        table.insert(keys, k)
+    end
+
+    -- Sort the keys in a case-insensitive manner
+    table.sort(keys, function(a, b)
+        return string.lower(a) < string.lower(b)
+    end)
 
     local orderCounter = 0
-    for k, _ in pairs(CVars) do
+    for _, k in pairs(keys) do
         orderCounter = orderCounter + 1
         local labelName = "label" .. orderCounter
         local spacerName = "spacer" .. orderCounter
 
-        options.args[labelName] = {
+        options.args.search.args[labelName] = {
             name = k,
             type = "description",
             width = 1.25,
@@ -1845,7 +1881,7 @@ function ScarletUI:GetCVarModuleSettingsPage(module, order)
             hidden = function() return ShouldOptionBeHidden(k) end,
         }
 
-        options.args[k] = {
+        options.args.search.args[k] = {
             name = "",
             desc = "",
             type = "input",
@@ -1859,7 +1895,7 @@ function ScarletUI:GetCVarModuleSettingsPage(module, order)
             hidden = function() return ShouldOptionBeHidden(k) end,
         }
 
-        options.args[spacerName] = {
+        options.args.search.args[spacerName] = {
             name = "",
             type = "description",
             width = "full",

@@ -234,48 +234,38 @@ ScarletUI.defaults = {
         CVarModule = {
             enabled = false,
             CVars = {
-                -- UI CVars
-                useUiScale =  '1',
-                UIScale =  '0.75',
-                XpBarText = '1',
-                lootUnderMouse = '1',
+                advancedCombatLogging = '1',
                 autoLootDefault = '1',
-                floatingCombatTextCombatHealing = '1',
-                showTargetOfTarget = '1',
-                doNotFlashLowHealthWarning = '0',
-                showTargetCastbar = '1',
-                showDynamicBuffSize = '1',
-                mapFade = '0',
-
-                -- Chat CVars
-                chatStyle = 'classic',
-                whisperMode = 'inline',
-                colorChatNamesByClass = '1',
                 chatClassColorOverride = '0',
+                chatMouseScroll = '1',
+                chatStyle = 'classic',
+                colorChatNamesByClass = '1',
+                countdownForCooldowns = '1',
+                doNotFlashLowHealthWarning = '0',
+                enableFloatingCombatText = '0',
+                floatingCombatTextCombatHealing = '1',
+                floatingCombatTextCombatState = '1',
+                floatingCombatTextDodgeParryMiss = '1',
+                floatingCombatTextEnergyGains = '1',
+                floatingCombatTextFriendlyHealers = '1',
+                floatingCombatTextLowManaHealth = '1',
+                lootUnderMouse = '1',
+                mapFade = '0',
+                nameplateMotion = '1',
+                nameplateNotSelectedAlpha = '1',
+                nameplateShowEnemies = '1',
+                showDynamicBuffSize = '1',
+                showTargetCastbar = '1',
+                showTargetOfTarget = '1',
+                Sound_EnableErrorSpeech = '0',
                 speechToText = '0',
                 textToSpeech = '0',
-                chatMouseScroll = '1',
-
-                -- Floating Combat Text
-                enableFloatingCombatText = '0',
-                floatingCombatTextLowManaHealth = '1',
-                floatingCombatTextDodgeParryMiss = '1',
-                floatingCombatTextCombatState = '1',
-                floatingCombatTextFriendlyHealers = '1',
-                floatingCombatTextEnergyGains = '1',
-
-                -- Raid Frame CVars
-                useCompactPartyFrames = '1',
-
-                -- Nameplate CVars
                 UnitNameOwn = '1',
-                nameplateMotion = '1',
-                nameplateShowEnemies = '1',
-                nameplateNotSelectedAlpha = '1',
-
-                -- Misc CVars
-                countdownForCooldowns = '1',
-                Sound_EnableErrorSpeech = '0'
+                UIScale =  '0.75',
+                useCompactPartyFrames = '1',
+                useUiScale =  '1',
+                whisperMode = 'inline',
+                XpBarText = '1',
             }
         }
     }

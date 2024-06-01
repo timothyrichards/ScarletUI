@@ -62,7 +62,7 @@ function ScarletUI:Setup(isLogin)
         self.settings:RegisterChatCommand("sui", function() AceConfigDialog:Open("ScarletUI") end)
 
         -- Register the options table
-        AceConfig:RegisterOptionsTable("ScarletUI", function() return ScarletUI:Options() end)
+        AceConfig:RegisterOptionsTable("ScarletUI", function() return self:Options() end)
         AceConfigDialog:AddToBlizOptions("ScarletUI")
 
         -- Declare the addon loaded
