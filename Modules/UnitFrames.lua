@@ -40,10 +40,10 @@ function ScarletUI:SetupTargetFrame(unitFramesModule)
     end
 
     self:CreateMover(TargetFrame, targetFrame)
+    TargetFrame.buffsOnTop = targetFrame.buffsOnTop;
     TargetFrame:ClearAllPoints()
     TargetFrame:SetMovable(true)
     TargetFrame:SetUserPlaced(true)
-    TargetFrame.buffsOnTop = targetFrame.buffsOnTop;
 
     if not targetFrame.mirrorPlayerFrame then
         TargetFrame:SetPoint(
@@ -71,6 +71,8 @@ function ScarletUI:SetupFocusFrame(unitFramesModule)
     end
 
     if FocusFrame then
+        self:CreateMover(FocusFrame, focusFrame)
+        FocusFrame.buffsOnTop = focusFrame.buffsOnTop;
         FocusFrame:ClearAllPoints()
         FocusFrame:SetMovable(true)
         FocusFrame:SetUserPlaced(true)
@@ -81,6 +83,5 @@ function ScarletUI:SetupFocusFrame(unitFramesModule)
                 focusFrame.x,
                 focusFrame.y
         )
-        self:CreateMover(FocusFrame, focusFrame)
     end
 end

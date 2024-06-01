@@ -14,7 +14,7 @@ function ScarletUI:SetupCVars()
     end
 
     -- Check and apply CVars
-    local CVarsChanged = false
+    local requireReload = false
     for k, v in pairs(CVarModule.CVars) do
         local currentValue = tostring(GetCVar(k))
         local targetValue = tostring(v)
@@ -26,13 +26,33 @@ function ScarletUI:SetupCVars()
             end
 
             if self:ArrayHasValue(self.reloadCVars, k) then
-                CVarsChanged = true;
+                requireReload = true;
             end
         end
     end
 
-    -- Show popup to reload if any CVars are updated
-    if (CVarsChanged) then
+    if (requireReload) then
+        StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+    end
+end
+
+function ScarletUI:RestoreCVarsDefaults()
+    local CVarModule = self.db.global.CVarModule
+    if CVarModule.enabled or self:InCombat() then
+        return
+    end
+
+    local requireReload = false
+    for k, _ in pairs(CVarModule.CVars) do
+        local defaultValue = GetCVarDefault(k)
+        SetCVar(k, defaultValue)
+
+        if self:ArrayHasValue(self.reloadCVars, k) then
+            requireReload = true;
+        end
+    end
+
+    if (requireReload) then
         StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
     end
 end

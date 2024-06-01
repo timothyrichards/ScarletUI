@@ -26,6 +26,7 @@ ScarletUI.defaults = {
                 y = -190
             },
             focusFrame = {
+                buffsOnTop = true,
                 move = true,
                 frameAnchor = 9,
                 screenAnchor = 4,
