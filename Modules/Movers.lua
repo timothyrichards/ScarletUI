@@ -1,4 +1,5 @@
 local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
+local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 
 ScarletUI.movers = {}
 
@@ -13,6 +14,63 @@ ScarletUI.frameAnchors = {
     'TOPLEFT',
     'TOPRIGHT',
 }
+
+function ScarletUI:MoversOptions()
+    local global = self.db.global
+    if self.selectedMover == nil then
+        self.selectedMover = PlayerFrameMover
+    end
+
+    local frameOptions = {}
+    if self.selectedMover == PlayerFrameMover then
+        frameOptions = self:GetUnitFramesModuleSettingsPage(global.unitFramesModule, global.unitFramesModule, 0).args.playerFrame
+    elseif self.selectedMover == TargetFrameMover then
+        frameOptions = self:GetUnitFramesModuleSettingsPage(global.unitFramesModule, global.unitFramesModule, 0).args.targetFrame
+    elseif self.selectedMover == FocusFrameMover then
+        frameOptions = self:GetUnitFramesModuleSettingsPage(global.unitFramesModule, global.unitFramesModule, 0).args.focusFrame
+    elseif self.selectedMover == ChatFrame1Mover then
+        frameOptions = self:GetChatModuleSettingsPage(global.chatModule, global.chatModule, 0).args.chatFrame
+    elseif self.selectedMover == MainMenuBarMover then
+        frameOptions = self:GetActionbarsModuleSettingsPage(global, global.actionbarsModule, 0).args.mainBar
+    elseif self.selectedMover == StanceBarMover then
+        frameOptions = self:GetActionbarsModuleSettingsPage(global, global.actionbarsModule, 0).args.stanceBar
+    elseif self.selectedMover == PetBarMover then
+        frameOptions = self:GetActionbarsModuleSettingsPage(global, global.actionbarsModule, 0).args.petBar
+    elseif self.selectedMover == MultiCastBarMover then
+        frameOptions = self:GetActionbarsModuleSettingsPage(global, global.actionbarsModule, 0).args.multiCastBar
+    elseif self.selectedMover == MicroBarMover then
+        frameOptions = self:GetActionbarsModuleSettingsPage(global, global.actionbarsModule, 0).args.microBar
+    elseif self.selectedMover == BagBarMover then
+        frameOptions = self:GetActionbarsModuleSettingsPage(global, global.actionbarsModule, 0).args.bagBar
+    end
+
+    frameOptions.inline = true
+    frameOptions.order = 3
+
+    return {
+        type = "group",
+        name = "Movers",
+        childGroups = "tab",
+        order = 1,
+        args = {
+            toggleMovers = {
+                type = "execute",
+                name = "Toggle Movers",
+                desc = "Toggle the visibility of all movers",
+                func = function() self:ToggleMovers() end,
+                order = 1,
+            },
+            resetPositions = {
+                type = "execute",
+                name = "Reset Positions",
+                desc = "Reset all frame positions to their default settings",
+                func = function() self:ResetPositions() end,
+                order = 2,
+            },
+            frame = frameOptions
+        },
+    }
+end
 
 function ScarletUI:CreateMover(targetFrame, module)
     if targetFrame.mover then
@@ -72,6 +130,8 @@ function ScarletUI:CreateMover(targetFrame, module)
     mover:SetScript("OnMouseDown", function(_, button)
         if button == "LeftButton" and targetFrame:IsMovable() then
             targetFrame:StartMoving()
+            self.selectedMover = mover
+            AceConfigRegistry:NotifyChange("ScarletUI_Movers")
         end
     end)
 
@@ -162,9 +222,13 @@ function ScarletUI:ToggleMovers()
     if self.moversEnabled then
         self.moversEnabled = false
         self.grid:Hide()
+        AceConfigDialog:Open("ScarletUI")
+        AceConfigDialog:Close("ScarletUI_Movers")
     elseif not self.moversEnabled then
         self.moversEnabled = true
         self.grid:Show()
+        AceConfigDialog:Close("ScarletUI")
+        AceConfigDialog:Open("ScarletUI_Movers")
     end
 
     for _, v in pairs(self.movers) do
@@ -185,6 +249,7 @@ function ScarletUI:UpdateFramePositionSettings(frame, module)
     module.x = xOffset
     module.y = yOffset
     AceConfigRegistry:NotifyChange("ScarletUI")
+    AceConfigRegistry:NotifyChange("ScarletUI_Movers")
 end
 
 function ScarletUI:ResetPositions()
@@ -224,7 +289,7 @@ function ScarletUI:ResetPositions()
 
     self:Setup(false)
     AceConfigRegistry:NotifyChange("ScarletUI")
-    StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+    AceConfigRegistry:NotifyChange("ScarletUI_Movers")
 end
 
 function ScarletUI:SetPoint(frame, frameAnchor, frameParent, parentAnchor, x, y)

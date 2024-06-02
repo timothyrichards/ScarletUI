@@ -293,20 +293,20 @@ local function multiCastBar(module)
         return
     end
 
-    -- Create or retrieve the PetBar frame
-    local TotemBar = _G["TotemBar"] or CreateFrame("Frame", "TotemBar", UIParent)
+    -- Create or retrieve the MultiCastActionBarFrameMover frame
+    local MultiCastBar = _G["MultiCastBar"] or CreateFrame("Frame", "MultiCastBar", UIParent)
 
     -- Set dimensions and position of MicroBar
-    TotemBar:ClearAllPoints()
-    TotemBar:SetSize(509, 43)
+    MultiCastBar:ClearAllPoints()
+    MultiCastBar:SetSize(509, 43)
 
     if multiCastBarSettings.hide then
-        TotemBar:Hide()
+        MultiCastBar:Hide()
         MultiCastActionBarFrame:UnregisterAllEvents()
-        MultiCastActionBarFrame:SetParent(TotemBar)
+        MultiCastActionBarFrame:SetParent(MultiCastBar)
     else
-        ScarletUI:CreateMover(TotemBar, multiCastBarSettings)
-        TotemBar:SetPoint(
+        ScarletUI:CreateMover(MultiCastBar, multiCastBarSettings)
+        MultiCastBar:SetPoint(
                 ScarletUI.frameAnchors[multiCastBarSettings.frameAnchor],
                 UIParent,
                 ScarletUI.frameAnchors[multiCastBarSettings.screenAnchor],
@@ -319,7 +319,7 @@ local function multiCastBar(module)
             "MultiCastActionButton",
         }
 
-        ScarletUI:SetPoint(MultiCastSummonSpellButton, "LEFT", TotemBar, "LEFT", 6, 0)
+        ScarletUI:SetPoint(MultiCastSummonSpellButton, "LEFT", MultiCastBar, "LEFT", 6, 0)
 
         local previousButton = MultiCastSummonSpellButton
         for i = 1, 4 do
@@ -492,7 +492,6 @@ function ScarletUI:SetupActionbars()
 
     if not self.actionbarEventRegistered then
         self.actionbarEventRegistered = true;
-        self.frame:SetAllPoints(UIParent)
         self.frame:RegisterEvent("UPDATE_FACTION")
         self.frame:RegisterEvent("PLAYER_LEVEL_UP")
         self.frame:RegisterEvent("UNIT_EXITED_VEHICLE")
@@ -518,6 +517,20 @@ function ScarletUI:SetupActionbars()
             microBar(actionbarsModule)
         end)
     end
+end
+
+function ScarletUI:UPDATE_FACTION()
+    ScarletUI:UpdateMainBar()
+end
+
+function ScarletUI:PLAYER_LEVEL_UP()
+    ScarletUI:UpdateMainBar()
+end
+
+function ScarletUI:UNIT_EXITED_VEHICLE()
+    microBar(self.db.global.actionbarsModule)
+
+    ScarletUI:UpdateMainBar()
 end
 
 function ScarletUI:UpdateMainBar()

@@ -1,4 +1,4 @@
-ScarletUI = LibStub("AceAddon-3.0"):NewAddon("ScarletUI")
+ScarletUI = LibStub("AceAddon-3.0"):NewAddon("ScarletUI", "AceConsole-3.0")
 local AceDB = LibStub("AceDB-3.0")
 local AceConfig = LibStub("AceConfig-3.0")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
@@ -33,15 +33,11 @@ StaticPopupDialogs['SCARLET_RESTORE_DEFAULTS_DIALOG'] = {
 }
 
 function ScarletUI:Setup(isLogin)
-    -- Add the ace modules to the addon object
-    if not self.settings then
-        self.settings = self:NewModule("Settings", "AceConsole-3.0")
-    end
-
     -- Initialize state properties
     self.lightWeightMode = false;
     self.retail = false;
     self.inCombat = false;
+    self.selectedMover = nil;
 
     -- Check if lightWeightMode should be enabled
     if self:GetWoWVersion() == "RETAIL" then
@@ -58,11 +54,13 @@ function ScarletUI:Setup(isLogin)
         self:SetupFrame()
 
         -- Register the chat commands
-        AceConfigDialog:SetDefaultSize("ScarletUI", 780, 550)
-        self.settings:RegisterChatCommand("sui", function() AceConfigDialog:Open("ScarletUI") end)
+        self:RegisterChatCommand("sui", "SlashCommand")
 
         -- Register the options table
+        AceConfigDialog:SetDefaultSize("ScarletUI", 780, 500)
         AceConfig:RegisterOptionsTable("ScarletUI", function() return self:Options() end)
+        AceConfigDialog:SetDefaultSize("ScarletUI_Movers", 450, 325)
+        AceConfig:RegisterOptionsTable("ScarletUI_Movers", function() return self:MoversOptions() end)
         AceConfigDialog:AddToBlizOptions("ScarletUI")
 
         -- Declare the addon loaded
@@ -81,36 +79,59 @@ function ScarletUI:Setup(isLogin)
     --self:SetupBags()
 
     if isLogin then
-        self.settings:Print("Scarlet UI setup successful, use the command /sui to open the options panel.")
+        self:Print("Scarlet UI setup successful, use the command /sui to open the options panel.")
     end
 end
 
 function ScarletUI:SetupFrame()
-    local container = CreateFrame("Frame", "SUI_Container", self.frame)
-    container:SetSize(200, 100)
-    container:SetPoint("TOP", self.frame, "TOP", 0, -250)
+    self.debugContainer = CreateFrame("Frame", "SUI_DebugContainer", self.frame)
+    self.debugContainer:SetSize(200, 100)
+    self.debugContainer:SetPoint("TOP", self.frame, "TOP", 0, -250)
 
-    local title = SUI_Container:CreateFontString("SUI_FrameTitle", "OVERLAY", "GameFontWhite")
-    title:SetPoint("BOTTOM", container, "TOP")
+    local title = self.debugContainer:CreateFontString("SUI_FrameTitle", "OVERLAY", "GameFontWhite")
+    title:SetPoint("BOTTOM", self.debugContainer, "TOP")
     title:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
     title:SetText("ScarletUI Debug Frame")
 
-    local retailText = container:CreateFontString("SUI_RetailPropertyText", "OVERLAY", "GameFontWhite")
-    retailText:SetPoint("TOPLEFT", container, "TOPLEFT")
+    local retailText = self.debugContainer:CreateFontString("SUI_RetailPropertyText", "OVERLAY", "GameFontWhite")
+    retailText:SetPoint("TOPLEFT", self.debugContainer, "TOPLEFT")
     retailText:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
     retailText:SetText("- retail: " .. tostring(self.retail))
 
-    local lightWeightText = container:CreateFontString("SUI_LightWeightPropertyText", "OVERLAY", "GameFontWhite")
+    local lightWeightText = self.debugContainer:CreateFontString("SUI_LightWeightPropertyText", "OVERLAY", "GameFontWhite")
     lightWeightText:SetPoint("TOPLEFT", retailText, "BOTTOMLEFT")
     lightWeightText:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
     lightWeightText:SetText("- lightWeightMode: " .. tostring(self.lightWeightMode))
 
-    local combatText = container:CreateFontString("SUI_CombatPropertyText", "OVERLAY", "GameFontWhite")
+    local combatText = self.debugContainer:CreateFontString("SUI_CombatPropertyText", "OVERLAY", "GameFontWhite")
     combatText:SetPoint("TOPLEFT", lightWeightText, "BOTTOMLEFT")
     combatText:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
     combatText:SetText("- inCombat: false")
 
-    container:Hide()
+    local moverText = self.debugContainer:CreateFontString("SUI_MoverPropertyText", "OVERLAY", "GameFontWhite")
+    moverText:SetPoint("TOPLEFT", combatText, "BOTTOMLEFT")
+    moverText:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
+    moverText:SetText("- moversEnabled: " .. tostring(self.moversEnabled))
+
+    self.debugContainer:Hide()
+end
+
+function ScarletUI:SlashCommand(msg)
+    if msg == "" then
+        AceConfigDialog:Open("ScarletUI")
+    elseif msg == "move" then
+        self:ToggleMovers()
+    elseif msg == "debug" then
+        self.debugContainer:SetShown(not self.debugContainer:IsShown())
+    elseif msg == "help" then
+        self:Print("Available commands:")
+        self:Print("- /sui: Open the options panel.")
+        self:Print("- /sui move: Toggle the movers.")
+        self:Print("- /sui debug: Toggle the debug frame.")
+        self:Print("- /sui help: Display this message.")
+    else
+        self:Print("Invalid chat command. Use /sui help for a list of commands.")
+    end
 end
 
 ScarletUI.frame = CreateFrame("Frame", "SUI_Frame", UIParent)

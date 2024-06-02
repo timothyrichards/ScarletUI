@@ -11,16 +11,16 @@ embeds.xml
 
 # Load the addon
 ScarletUI.lua
-Modules\Database.lua
-Modules\Options.lua
-Modules\Helpers.lua
-Modules\Movers.lua
 Modules\Actionbars.lua
+Modules\Bag.lua
 Modules\Chat.lua
 Modules\CVars.lua
+Modules\Database.lua
+Modules\Helpers.lua
 Modules\ItemLevel.lua
+Modules\Movers.lua
 Modules\Nameplates.lua
+Modules\Options.lua
 Modules\RaidFrames.lua
 Modules\TidyIcons.lua
 Modules\UnitFrames.lua
-Modules\Bag.lua
