@@ -39,7 +39,9 @@ function ScarletUI:SetupTargetFrame(unitFramesModule)
         return
     end
 
-    self:CreateMover(TargetFrame, targetFrame)
+    self:CreateMover(TargetFrame, targetFrame, function()
+        return not targetFrame.mirrorPlayerFrame
+    end)
     TargetFrame.buffsOnTop = targetFrame.buffsOnTop;
     TargetFrame:ClearAllPoints()
     TargetFrame:SetMovable(true)

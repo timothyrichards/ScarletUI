@@ -23,13 +23,13 @@ function ScarletUI:MoversOptions()
 
     local frameOptions = {}
     if self.selectedMover == PlayerFrameMover then
-        frameOptions = self:GetUnitFramesModuleSettingsPage(global.unitFramesModule, global.unitFramesModule, 0).args.playerFrame
+        frameOptions = self:GetUnitFramesModuleSettingsPage(global, global.unitFramesModule, 0).args.playerFrame
     elseif self.selectedMover == TargetFrameMover then
-        frameOptions = self:GetUnitFramesModuleSettingsPage(global.unitFramesModule, global.unitFramesModule, 0).args.targetFrame
+        frameOptions = self:GetUnitFramesModuleSettingsPage(global, global.unitFramesModule, 0).args.targetFrame
     elseif self.selectedMover == FocusFrameMover then
-        frameOptions = self:GetUnitFramesModuleSettingsPage(global.unitFramesModule, global.unitFramesModule, 0).args.focusFrame
+        frameOptions = self:GetUnitFramesModuleSettingsPage(global, global.unitFramesModule, 0).args.focusFrame
     elseif self.selectedMover == ChatFrame1Mover then
-        frameOptions = self:GetChatModuleSettingsPage(global.chatModule, global.chatModule, 0).args.chatFrame
+        frameOptions = self:GetChatModuleSettingsPage(global, global.chatModule, 0).args.chatFrame
     elseif self.selectedMover == MainMenuBarMover then
         frameOptions = self:GetActionbarsModuleSettingsPage(global, global.actionbarsModule, 0).args.mainBar
     elseif self.selectedMover == StanceBarMover then
@@ -72,7 +72,9 @@ function ScarletUI:MoversOptions()
     }
 end
 
-function ScarletUI:CreateMover(targetFrame, module)
+function ScarletUI:CreateMover(targetFrame, module, conditionalFunction)
+    conditionalFunction = conditionalFunction or function() return true end
+
     if targetFrame.mover then
         return targetFrame.mover
     end
@@ -128,15 +130,22 @@ function ScarletUI:CreateMover(targetFrame, module)
     text:SetPoint("CENTER", mover, "CENTER")
 
     mover:SetScript("OnMouseDown", function(_, button)
+        self.selectedMover = mover
+        AceConfigRegistry:NotifyChange("ScarletUI_Movers")
+        AceConfigDialog:Open("ScarletUI_Movers")
+
+        if not conditionalFunction() then
+            return
+        end
+
         if button == "LeftButton" and targetFrame:IsMovable() then
             targetFrame:StartMoving()
-            self.selectedMover = mover
-            AceConfigRegistry:NotifyChange("ScarletUI_Movers")
         end
     end)
 
     mover:SetScript("OnMouseUp", function(_, _)
         targetFrame:StopMovingOrSizing()
+
         if module ~= nil then
             self:UpdateFramePositionSettings(targetFrame, module)
         end

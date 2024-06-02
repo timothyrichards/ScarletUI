@@ -47,12 +47,12 @@ function ScarletUI:Options()
             },
             moduleSettings = self:GetModuleSettingsPage(database, 3),
             actionbarsModuleSettings = self:GetActionbarsModuleSettingsPage(database, defaults.actionbarsModule, 4),
-            --bagModuleSettings = self:GetBagModuleSettingsPage(database.bagModule, defaults.bagModule, 5),
-            chatModuleSettings = self:GetChatModuleSettingsPage(database.chatModule, defaults.chatModule, 6),
-            CVarModuleSettings = self:GetCVarModuleSettingsPage(database.CVarModule, 7),
-            nameplatesModuleSettings = self:GetNameplatesModuleSettingsPage(database.nameplatesModule, defaults.nameplatesModule, 8),
-            raidFramesModuleSettings = self:GetRaidFramesModuleSettingsPage(database.raidFramesModule, defaults.raidFramesModule, 9),
-            unitFramesModuleSettings = self:GetUnitFramesModuleSettingsPage(database.unitFramesModule, defaults.unitFramesModule, 10),
+            --bagModuleSettings = self:GetBagModuleSettingsPage(database, defaults.bagModule, 5),
+            chatModuleSettings = self:GetChatModuleSettingsPage(database, defaults.chatModule, 6),
+            CVarModuleSettings = self:GetCVarModuleSettingsPage(database, 7),
+            nameplatesModuleSettings = self:GetNameplatesModuleSettingsPage(database, defaults.nameplatesModule, 8),
+            raidFramesModuleSettings = self:GetRaidFramesModuleSettingsPage(database, defaults.raidFramesModule, 9),
+            unitFramesModuleSettings = self:GetUnitFramesModuleSettingsPage(database, defaults.unitFramesModule, 10),
         },
     }
 end
@@ -519,7 +519,9 @@ function ScarletUI:GetActionbarsModuleSettingsPage(database, defaults, order)
     return options
 end
 
-function ScarletUI:GetBagModuleSettingsPage(module, defaults, order)
+function ScarletUI:GetBagModuleSettingsPage(database, defaults, order)
+    local module = database.bagModule;
+
     return {
         name = "Bag",
         desc = "Bag Module settings.",
@@ -586,7 +588,9 @@ function ScarletUI:GetBagModuleSettingsPage(module, defaults, order)
     }
 end
 
-function ScarletUI:GetChatModuleSettingsPage(module, defaults, order)
+function ScarletUI:GetChatModuleSettingsPage(database, defaults, order)
+    local module = database.chatModule;
+
     return {
         name = "Chat",
         desc = "Chat Module settings.",
@@ -793,7 +797,8 @@ function ScarletUI:GetChatModuleSettingsPage(module, defaults, order)
 end
 
 local searchQuery = ""
-function ScarletUI:GetCVarModuleSettingsPage(module, order)
+function ScarletUI:GetCVarModuleSettingsPage(database, order)
+    local module = database.CVarModule
     local CVars = module.CVars
 
     local options = {
@@ -917,7 +922,9 @@ end
 --    return spells
 --end
 
-function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
+function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
+    local module = database.nameplatesModule;
+
     return {
         name = "Nameplates",
         desc = "Nameplates Module settings.",
@@ -1017,56 +1024,20 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
                         get = function(_) return module.debuffTracker.verticalOffset end,
                         set = function(_, val) module.debuffTracker.verticalOffset = val end,
                     },
-                    --prioritySpells = {
-                    --    type = "group",
-                    --    name = "Priority Spells",
-                    --    hidden = true,
-                    --    guiInline = true,
-                    --    order = 5,
-                    --    args = {
-                    --        spellDropdown = {
-                    --            name = "Select Spell",
-                    --            desc = "Select a spell from the list",
-                    --            type = "select",
-                    --            values = GetSpellDropdown,
-                    --            order = 1,
-                    --            width = 1.5,
-                    --            get = function(_)
-                    --                return module.debuffTracker.prioritySpells
-                    --            end,
-                    --            set = function(_, val)
-                    --                print(val) -- finish implementation
-                    --            end,
-                    --        },
-                    --        addButton = {
-                    --            type = "execute",
-                    --            name = "+",
-                    --            desc = "Add a new spell entry",
-                    --            width = 0.5,
-                    --            order = 2,
-                    --            func = function()
-                    --                AceConfigRegistry:NotifyChange("ScarletUI")
-                    --            end,
-                    --        },
-                    --        removeButton = {
-                    --            type = "execute",
-                    --            name = "-",
-                    --            desc = "Remove the selected spell entry",
-                    --            width = 0.5,
-                    --            order = 3,
-                    --            func = function()
-                    --                AceConfigRegistry:NotifyChange("ScarletUI")
-                    --            end,
-                    --        },
-                    --        spellEntry = {
-                    --            type = "input",
-                    --            name = "Spell Name",
-                    --            desc = "Enter the name of the spell",
-                    --            order = 4,
-                    --            width = "full",
-                    --        },
-                    --    },
-                    --},
+                    priorityDebuffs = {
+                        name = "Priority Debuffs",
+                        type = "input",
+                        disabled = function() return ScarletUI:SettingDisabled(module.debuffTracker.track, true) end,
+                        desc = "Add a comma seperated list of debuff spell names you wish to always track even if they're applied by another player, for example: Sunder Armor,Expose Armor,Hammer of Justice",
+                        multiline = 5,
+                        width = "full",
+                        order = 5,
+                        get = function(_) return module.debuffTracker.priorityDebuffs end,
+                        set = function(_, value)
+                            module.debuffTracker.priorityDebuffs = value
+                            self:SetupPriorityDebuffs(module)
+                        end,
+                    },
                 }
             },
             targetIndicator = {
@@ -1417,7 +1388,9 @@ function ScarletUI:GetNameplatesModuleSettingsPage(module, defaults, order)
     }
 end
 
-function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
+function ScarletUI:GetRaidFramesModuleSettingsPage(database, defaults, order)
+    local module = database.raidFramesModule;
+
     return {
         name = "Raid Frames",
         desc = "Raid Frames Module settings.",
@@ -1581,7 +1554,9 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(module, defaults, order)
     }
 end
 
-function ScarletUI:GetUnitFramesModuleSettingsPage(module, defaults, order)
+function ScarletUI:GetUnitFramesModuleSettingsPage(database, defaults, order)
+    local module = database.unitFramesModule;
+
     return {
         name = "Unit Frames",
         desc = "Unit Frames Module settings.",

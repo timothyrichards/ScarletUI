@@ -1,5 +1,4 @@
 local allStates = {}
-local specialUnits = {}
 local lastNameplate
 
 local function trim(s)
@@ -193,7 +192,7 @@ function ScarletUI:UpdateNameplate(unitId)
     local nameplate = C_NamePlate.GetNamePlateForUnit(unitId)
     local unitName, _ = UnitName(unitId)
 
-    if nameplatesModule.specialUnitsColored and specialUnits[unitName] and nameplate.UnitFrame then
+    if nameplatesModule.specialUnitsColored and self.specialUnits[unitName] and nameplate.UnitFrame then
         nameplate.UnitFrame.healthBar:SetStatusBarColor(unpack(nameplatesModule.specialUnitColor))
         return
     end
@@ -313,7 +312,11 @@ function ScarletUI:SetupTanks(module)
 end
 
 function ScarletUI:SetupSpecialUnits(module)
-    specialUnits = split(module.specialUnitNames)
+    self.specialUnits = split(module.specialUnitNames)
+end
+
+function ScarletUI:SetupPriorityDebuffs(module)
+    self.priorityDebuffs = split(module.debuffTracker.priorityDebuffs)
 end
 
 function ScarletUI:SetupNameplates()
@@ -324,6 +327,7 @@ function ScarletUI:SetupNameplates()
 
     self:SetupTanks(nameplatesModule)
     self:SetupSpecialUnits(nameplatesModule)
+    self:SetupPriorityDebuffs(nameplatesModule)
     self.frame:RegisterEvent("PLAYER_TARGET_CHANGED")
     self.frame:RegisterEvent("UNIT_AURA")
     self.frame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
@@ -387,7 +391,7 @@ function ScarletUI:CheckUnitDebuffs(unitId)
     -- store and display debuffs for each unit
     local plateDebuffs = {}
     while debuffName do
-        if source == "player" then
+        if source == "player" or self.priorityDebuffs[debuffName] then
             plateDebuffs[debuffName] = true
             ScarletUI:DisplayDebuffIcon(settings, nameplate, debuffName, icon, count, duration, expireTime)
         end

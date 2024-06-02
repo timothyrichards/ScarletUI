@@ -194,7 +194,7 @@ ScarletUI.defaults = {
                 iconSize = 30,
                 spacing = 2,
                 verticalOffset = 20,
-                prioritySpells = {}
+                priorityDebuffs = "",
             },
             targetIndicator = {
                 show = true,
