@@ -924,6 +924,7 @@ end
 
 function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
     local module = database.nameplatesModule;
+    local characterDatabase = self.db.char;
 
     return {
         name = "Nameplates",
@@ -1028,14 +1029,14 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                         name = "Priority Debuffs",
                         type = "input",
                         disabled = function() return ScarletUI:SettingDisabled(module.debuffTracker.track, true) end,
-                        desc = "Add a comma seperated list of debuff spell names you wish to always track even if they're applied by another player, for example: Sunder Armor,Expose Armor,Hammer of Justice",
+                        desc = "Add a comma seperated list of debuff spell names you wish to always track even if they're applied by another player, for example: Sunder Armor,Expose Armor,Hammer of Justice\n(This setting is saved per character)",
                         multiline = 5,
                         width = "full",
                         order = 5,
-                        get = function(_) return module.debuffTracker.priorityDebuffs end,
+                        get = function(_) return characterDatabase.priorityDebuffs end,
                         set = function(_, value)
-                            module.debuffTracker.priorityDebuffs = value
-                            self:SetupPriorityDebuffs(module)
+                            characterDatabase.priorityDebuffs = value
+                            self:SetupPriorityDebuffs()
                         end,
                     },
                 }

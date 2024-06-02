@@ -315,8 +315,9 @@ function ScarletUI:SetupSpecialUnits(module)
     self.specialUnits = split(module.specialUnitNames)
 end
 
-function ScarletUI:SetupPriorityDebuffs(module)
-    self.priorityDebuffs = split(module.debuffTracker.priorityDebuffs)
+function ScarletUI:SetupPriorityDebuffs()
+    local database = self.db.char
+    self.priorityDebuffs = split(database.priorityDebuffs)
 end
 
 function ScarletUI:SetupNameplates()
@@ -327,7 +328,7 @@ function ScarletUI:SetupNameplates()
 
     self:SetupTanks(nameplatesModule)
     self:SetupSpecialUnits(nameplatesModule)
-    self:SetupPriorityDebuffs(nameplatesModule)
+    self:SetupPriorityDebuffs()
     self.frame:RegisterEvent("PLAYER_TARGET_CHANGED")
     self.frame:RegisterEvent("UNIT_AURA")
     self.frame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
