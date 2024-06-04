@@ -1,5 +1,15 @@
+local AceConfigDialog = LibStub("AceConfigDialog-3.0")
+
 function ScarletUI:InCombat()
     return InCombatLockdown() or self.inCombat
+end
+
+function ScarletUI:ShowReloadPopup()
+    --if not self.db.global.installationComplete then
+    --    return
+    --end
+
+    StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
 end
 
 function ScarletUI:GetWoWVersion()
@@ -27,7 +37,7 @@ function ScarletUI:GetWoWVersion()
     elseif interfaceVersion >= 10000 then
         return "VANILLA"
     else
-        print("ScarletUI was unable to determine what version of WoW this is: " .. interfaceVersion)
+        self:Print("Unable to determine what version of WoW this is: " .. interfaceVersion)
         return "UNKNOWN"
     end
 end
@@ -102,8 +112,12 @@ function ScarletUI:OppositeFrameAnchor(index)
     end
 end
 
+function ScarletUI:IsAceDialogOpen(dialog)
+    return AceConfigDialog.OpenFrames[dialog] ~= nil
+end
+
 function ScarletUI:SettingDisabled(moduleEnabled, checkCombat)
-    if ScarletUI:InCombat() and checkCombat then
+    if self:InCombat() and checkCombat then
         return true
     else
         return not moduleEnabled
@@ -120,6 +134,20 @@ function ScarletUI:FixChatBug()
             break
         end
     end
+end
+
+function ScarletUI:GetValueFromPath(table, path)
+    if path == nil or type(path) ~= "string" then
+        print("Invalid path: " .. path .. "\nExpected a string, got: " .. type(path))
+        return nil
+    end
+
+    local value = table
+    for key in string.gmatch(path, "([^.]+)") do
+        value = value[key]
+    end
+
+    return value
 end
 
 function ScarletUI:DumpTable(table, indent)
@@ -145,8 +173,8 @@ function ScarletUI:ArrayHasValue(array, value)
     return false
 end
 
-function ScarletUI:GetArrayIndex(value)
-    for index, v in ipairs(ScarletUI.frameAnchors) do
+function ScarletUI:GetArrayIndex(array, value)
+    for index, v in ipairs(array) do
         if v == value then
             return index
         end
@@ -154,3 +182,20 @@ function ScarletUI:GetArrayIndex(value)
 
     return nil
 end
+
+function ScarletUI:ConvertToCamelCase(string)
+    return string:gsub("(%w)(%w*)", function(first, rest)
+        return first:lower()..rest
+    end)
+end
+
+function ScarletUI:ConvertToPascalCase(string)
+    if string == nil then
+        return ""
+    end
+
+    return string:gsub("(%w)(%w*)", function(first, rest)
+        return first:upper()..rest
+    end)
+end
+

@@ -33,20 +33,75 @@ ScarletUI.defaults = {
                 x = -220,
                 y = -255
             },
+            focusFrame = {
+                buffsOnTop = true,
+                move = true,
+                frameAnchor = 9,
+                screenAnchor = 4,
+                x = -220,
+                y = -255
+            },
+            castBar = {
+                move = true,
+                frameAnchor = 1,
+                screenAnchor = 1,
+                x = 0,
+                y = 192
+            },
         },
         moversModule = {
             enabled = true
         },
         actionbarsModule = {
             enabled = true,
-            stackActionbars = true,
             showPagingNumbers = true,
-            showGryphons = false,
+            showGryphons = true,
             microBag = false,
-            mainBar = {
+            mainMenuBar = {
                 move = true,
+                hide = false,
                 frameAnchor = 1,
                 screenAnchor = 1,
+                x = 0,
+                y = 0
+            },
+            vehicleLeaveButton = {
+                move = true,
+                hide = false,
+                frameAnchor = 1,
+                screenAnchor = 1,
+                x = 234,
+                y = 140
+            },
+            multiBarBottomLeft = {
+                move = true,
+                hide = false,
+                frameAnchor = 1, -- BOTTOM
+                screenAnchor = 1, -- BOTTOM
+                x = 0,
+                y = 58
+            },
+            multiBarBottomRight = {
+                move = true,
+                hide = false,
+                frameAnchor = 1, -- BOTTOM
+                screenAnchor = 1, -- BOTTOM
+                x = 0,
+                y = 100
+            },
+            multiBarLeft = {
+                move = true,
+                hide = false,
+                frameAnchor = 6,
+                screenAnchor = 6,
+                x = -42,
+                y = 0
+            },
+            multiBarRight = {
+                move = true,
+                hide = false,
+                frameAnchor = 6,
+                screenAnchor = 6,
                 x = 0,
                 y = 0
             },
@@ -56,7 +111,7 @@ ScarletUI.defaults = {
                 frameAnchor = 2,
                 screenAnchor = 1,
                 x = -250,
-                y = 145
+                y = 140
             },
             petBar = {
                 move = true,
@@ -64,7 +119,7 @@ ScarletUI.defaults = {
                 frameAnchor = 2,
                 screenAnchor = 1,
                 x = -250,
-                y = 145
+                y = 140
             },
             multiCastBar = {
                 move = true,
@@ -72,10 +127,11 @@ ScarletUI.defaults = {
                 frameAnchor = 2,
                 screenAnchor = 1,
                 x = -250,
-                y = 145
+                y = 140
             },
             microBar = {
                 move = true,
+                hide = false,
                 frameAnchor = 2,
                 screenAnchor = 2,
                 x = 2,
@@ -83,28 +139,11 @@ ScarletUI.defaults = {
             },
             bagBar = {
                 move = true,
+                hide = false,
                 frameAnchor = 3,
                 screenAnchor = 3,
                 x = -2,
                 y = 2
-            },
-            multiBarLeft = {
-                move = true,
-                buttonsPerColumn = 1,
-                spacing = 6,
-                frameAnchor = 6,
-                screenAnchor = 6,
-                x = -42,
-                y = 0
-            },
-            multiBarRight = {
-                move = true,
-                buttonsPerColumn = 4,
-                spacing = 6,
-                frameAnchor = 6,
-                screenAnchor = 6,
-                x = 0,
-                y = 0
             },
         },
         chatModule = {

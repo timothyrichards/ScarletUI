@@ -32,7 +32,7 @@ function ScarletUI:SetupCVars()
     end
 
     if (requireReload) then
-        StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+        self:ShowReloadPopup()
     end
 end
 
@@ -53,6 +53,6 @@ function ScarletUI:RestoreCVarsDefaults()
     end
 
     if (requireReload) then
-        StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+        self:ShowReloadPopup()
     end
 end

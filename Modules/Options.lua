@@ -3,8 +3,8 @@ local screenWidth = GetScreenWidth()
 local screenHeight = GetScreenHeight()
 
 function ScarletUI:Options()
-    local database = ScarletUI.db.global;
-    local defaults = ScarletUI.defaults.global;
+    local database = self.db.global;
+    local defaults = self.defaults.global;
 
     return {
         name = "Scarlet UI",
@@ -85,7 +85,7 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                             if val then
                                 self:SetupExpandCharacterInfo()
                             else
-                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                                self:ShowReloadPopup()
                             end
                         end,
                     },
@@ -110,7 +110,7 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                             if val then
                                 self:SetupItemLevels()
                             else
-                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                                self:ShowReloadPopup()
                             end
                         end,
                     },
@@ -126,7 +126,7 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                             if val then
                                 self:SetupItemLevels()
                             else
-                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                                self:ShowReloadPopup()
                             end
                         end,
                     },
@@ -142,7 +142,7 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                             if val then
                                 self:SetupItemLevels()
                             else
-                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                                self:ShowReloadPopup()
                             end
                         end,
                     },
@@ -166,9 +166,9 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                         set = function(_, val)
                             database.actionbarsModule.enabled = val
                             if not val then
-                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                                self:ShowReloadPopup()
                             else
-                                self:SetupActionbars()
+                                self:SetupActionBars()
                             end
                         end,
                     },
@@ -182,7 +182,7 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                     --    set = function(_, val)
                     --        database.bagModule.enabled = val
                     --        if not val then
-                    --            StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                    --            self:ShowReloadPopup()
                     --        else
                     --            ScarletUI:SetupBags()
                     --        end
@@ -198,7 +198,7 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                         set = function(_, val)
                             database.chatModule.enabled = val
                             if not val then
-                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                                self:ShowReloadPopup()
                             else
                                 self:SetupChat()
                             end
@@ -231,7 +231,7 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                         set = function(_, val)
                             database.nameplatesModule.enabled = val
                             if not val then
-                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                                self:ShowReloadPopup()
                             else
                                 ScarletUI:SetupNameplates()
                             end
@@ -248,7 +248,7 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                         set = function(_, val)
                             database.raidFramesModule.enabled = val
                             if not val then
-                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                                self:ShowReloadPopup()
                             else
                                 self:SetupRaidProfiles()
                             end
@@ -266,7 +266,7 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                         set = function(_, val)
                             database.unitFramesModule.enabled = val
                             if not val then
-                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
+                                self:ShowReloadPopup()
                             else
                                 self:SetupUnitFrames()
                             end
@@ -276,6 +276,168 @@ function ScarletUI:GetModuleSettingsPage(database, order)
             },
         }
     }
+end
+
+function ScarletUI:GenerateBarConfig(name, _order)
+    local module = self.db.global.actionbarsModule;
+    local defaults = self.defaults.global.actionbarsModule;
+
+    return {
+        name = (name:gsub("(%a)(%u)", "%1 %2"):gsub("^%l", string.upper)),
+        type = "group",
+        disabled = function() return self:SettingDisabled(module.enabled) end,
+        order = _order,
+        args = {
+            moveFrame = {
+                name = "Move Frame",
+                desc = "Allows you to choose the X and Y position of the frame.",
+                type = "toggle",
+                width = 1,
+                order = 0,
+                get = function(_) return module[name].move end,
+                set = function(_, val)
+                    module[name].move = val
+                    self:SetupActionBars()
+                end,
+            },
+            hide = {
+                name = "Hide Frame",
+                desc = "Allows you to hide the frame.",
+                type = "toggle",
+                width = 1,
+                order = 1,
+                get = function(_) return module[name].hide end,
+                set = function(_, val)
+                    module[name].hide = val
+                    self:SetupActionBars()
+
+                    if not val then
+                        self:ShowReloadPopup()
+                    end
+                end,
+            },
+            spacer1 = {
+                name = "",
+                type = "description",
+                width = "full",
+                order = 2,
+            },
+            frameAnchor = {
+                name = "Frame Anchor",
+                desc = "Anchor point of the frame.\n(Default " .. self.frameAnchors[defaults[name].frameAnchor] .. ")",
+                type = "select",
+                disabled = function() return self:SettingDisabled(module[name].move) end,
+                width = 1,
+                order = 3,
+                values = function() return self.frameAnchors end,
+                get = function(_) return module[name].frameAnchor end,
+                set = function(_, val)
+                    module[name].frameAnchor = val
+                    self:SetupActionBars()
+                end,
+            },
+            screenAnchor = {
+                name = "Screen Anchor",
+                desc = "Anchor point of the frame relative to the screen.\n(Default " .. self.frameAnchors[defaults[name].screenAnchor] .. ")",
+                type = "select",
+                disabled = function() return self:SettingDisabled(module[name].move) end,
+                width = 1,
+                order = 4,
+                values = function() return self.frameAnchors end,
+                get = function(_) return module[name].screenAnchor end,
+                set = function(_, val)
+                    module[name].screenAnchor = val
+                    self:SetupActionBars()
+                end,
+            },
+            spacer2 = {
+                name = "",
+                type = "description",
+                width = "full",
+                order = 5,
+            },
+            x = {
+                name = "Frame X",
+                desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults[name].x .. ")",
+                type = "range",
+                disabled = function() return self:SettingDisabled(module[name].move) end,
+                min = math.floor(screenWidth) * -1,
+                max = math.floor(screenWidth),
+                step = 1,
+                width = 1,
+                order = 6,
+                get = function(_) return module[name].x end,
+                set = function(_, val)
+                    module[name].x = val
+                    self:SetupActionBars()
+                end,
+            },
+            y = {
+                name = "Frame Y",
+                desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults[name].y .. ")",
+                type = "range",
+                disabled = function() return self:SettingDisabled(module[name].move) end,
+                min = math.floor(screenHeight) * -1,
+                max = math.floor(screenHeight),
+                step = 1,
+                width = 1,
+                order = 7,
+                get = function(_) return module[name].y end,
+                set = function(_, val)
+                    module[name].y = val
+                    self:SetupActionBars()
+                end,
+            }
+        }
+    }
+end
+
+function ScarletUI:GetActionBarConfigs()
+    local module = ScarletUI.db.global.actionbarsModule;
+    local bars = {
+        "mainMenuBar",
+        "vehicleLeaveButton",
+        "multiBarBottomLeft",
+        "multiBarBottomRight",
+        "multiBarLeft",
+        "multiBarRight",
+        "stanceBar",
+        "petBar",
+        "multiCastBar",
+        "microBar",
+        "bagBar",
+    }
+    local configs = {}
+
+    for i, barName in ipairs(bars) do
+        configs[barName] = self:GenerateBarConfig(barName, i + 1)
+
+        if barName == "bagBar" then
+            configs[barName].args.microBag = {
+                name = "Micro Bag",
+                desc = "Hide all non backpack bag icons.",
+                type = "toggle",
+                width = 1,
+                order = 1.5,
+                get = function(_) return module.microBag end,
+                set = function(_, val)
+                    module.microBag = val
+                    if val then
+                        self:SetupActionBars()
+                    else
+                        self:ShowReloadPopup()
+                    end
+                end,
+            }
+        end
+
+        if barName == "multiCastBar" then
+            local version = self:GetWoWVersion();
+            configs[barName].hidden = function() return version ~= "WRATH" and version ~= "CATA" end
+        end
+    end
+
+    return configs
 end
 
 function ScarletUI:GetActionbarsModuleSettingsPage(database, defaults, order)
@@ -297,46 +459,28 @@ function ScarletUI:GetActionbarsModuleSettingsPage(database, defaults, order)
                 inline = true,
                 order = 1,
                 args = {
-                    stackActionbars = {
-                        name = "Stack Actionbars",
-                        desc = "Stack your main, bottom left, and bottom right actionbars.",
-                        type = "toggle",
-                        width = 1,
-                        order = 0,
-                        get = function(_) return module.stackActionbars end,
-                        set = function(_, val)
-                            module.stackActionbars = val
-                            if not val then
-                                StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
-                            else
-                                self:SetupActionbars()
-                            end
-                        end,
-                    },
                     showPagingNumbers = {
                         name = "Show Paging Numbers",
                         desc = "Show the actionbar paging numbers and buttons.",
                         type = "toggle",
-                        disabled = function() return not module.stackActionbars end;
                         width = 1,
                         order = 1,
                         get = function(_) return module.showPagingNumbers end,
                         set = function(_, val)
                             module.showPagingNumbers = val
-                            self:SetupActionbars()
+                            self:SetupActionBars()
                         end,
                     },
                     showGryphons = {
                         name = "Show Gryphons",
                         desc = "Show the gryphon graphics on the sides of your main bar.",
                         type = "toggle",
-                        disabled = function() return not module.stackActionbars end;
                         width = 1,
                         order = 2,
                         get = function(_) return module.showGryphons end,
                         set = function(_, val)
                             module.showGryphons = val
-                            self:SetupActionbars()
+                            self:SetupActionBars()
                         end,
                     },
                     tidyIcons = {
@@ -357,163 +501,8 @@ function ScarletUI:GetActionbarsModuleSettingsPage(database, defaults, order)
         }
     }
 
-    local function toDisplayText(str)
-        return (str:gsub("(%a)(%u)", "%1 %2"):gsub("^%l", string.upper))
-    end
-
-    -- Function to generate a group of settings.
-    local function generateBarConfig(name, includeHideOption, _order)
-        return {
-            name = toDisplayText(name),
-            type = "group",
-            disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
-            order = _order,
-            args = {
-                moveFrame = {
-                    name = "Move Frame",
-                    desc = "Allows you to choose the X and Y position of the frame.",
-                    type = "toggle",
-                    width = 1,
-                    order = 0,
-                    get = function(_) return module[name].move end,
-                    set = function(_, val)
-                        module[name].move = val
-                        self:SetupActionbars()
-                    end,
-                },
-                hide = {
-                    name = "Hide Frame",
-                    desc = "Allows you to hide the frame.",
-                    type = "toggle",
-                    hidden = not includeHideOption,
-                    width = 1,
-                    order = 1,
-                    get = function(_) return module[name].hide end,
-                    set = function(_, val)
-                        module[name].hide = val
-                        if val then
-                            self:SetupActionbars()
-                        else
-                            StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
-                        end
-                    end,
-                },
-                spacer1 = {
-                    name = "",
-                    type = "description",
-                    width = "full",
-                    order = 2,
-                },
-                frameAnchor = {
-                    name = "Frame Anchor",
-                    desc = "Anchor point of the frame.\n(Default " .. self.frameAnchors[defaults[name].frameAnchor] .. ")",
-                    type = "select",
-                    disabled = function() return self:SettingDisabled(module[name].move) end,
-                    width = 1,
-                    order = 3,
-                    values = function() return self.frameAnchors end,
-                    get = function(_) return module[name].frameAnchor end,
-                    set = function(_, val)
-                        module[name].frameAnchor = val
-                        self:SetupActionbars()
-                    end,
-                },
-                screenAnchor = {
-                    name = "Screen Anchor",
-                    desc = "Anchor point of the frame relative to the screen.\n(Default " .. self.frameAnchors[defaults[name].screenAnchor] .. ")",
-                    type = "select",
-                    disabled = function() return self:SettingDisabled(module[name].move) end,
-                    width = 1,
-                    order = 4,
-                    values = function() return self.frameAnchors end,
-                    get = function(_) return module[name].screenAnchor end,
-                    set = function(_, val)
-                        module[name].screenAnchor = val
-                        self:SetupActionbars()
-                    end,
-                },
-                spacer2 = {
-                    name = "",
-                    type = "description",
-                    width = "full",
-                    order = 5,
-                },
-                x = {
-                    name = "Frame X",
-                    desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults[name].x .. ")",
-                    type = "range",
-                    disabled = function() return self:SettingDisabled(module[name].move) end,
-                    min = math.floor(screenWidth) * -1,
-                    max = math.floor(screenWidth),
-                    step = 1,
-                    width = 1,
-                    order = 6,
-                    get = function(_) return module[name].x end,
-                    set = function(_, val)
-                        module[name].x = val
-                        self:SetupActionbars()
-                    end,
-                },
-                y = {
-                    name = "Frame Y",
-                    desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults[name].y .. ")",
-                    type = "range",
-                    disabled = function() return self:SettingDisabled(module[name].move) end,
-                    min = math.floor(screenHeight) * -1,
-                    max = math.floor(screenHeight),
-                    step = 1,
-                    width = 1,
-                    order = 7,
-                    get = function(_) return module[name].y end,
-                    set = function(_, val)
-                        module[name].y = val
-                        self:SetupActionbars()
-                    end,
-                }
-            }
-        }
-    end
-
-    local barConfigs = {
-        "mainBar",
-        "stanceBar",
-        "petBar",
-        "multiCastBar",
-        "microBar",
-        "bagBar",
-    }
-
-    for i, barName in ipairs(barConfigs) do
-        if barName == "stanceBar" or barName == "petBar" or barName == "multiCastBar" then
-            options.args[barName] = generateBarConfig(barName, true, i + 1)
-        else
-            options.args[barName] = generateBarConfig(barName, false, i + 1)
-        end
-
-        if barName == "bagBar" then
-            options.args[barName].args.microBag = {
-                name = "Micro Bag",
-                desc = "Hide all non backpack bag icons.",
-                type = "toggle",
-                disabled = function() return not module.stackActionbars end;
-                width = 1,
-                order = 0.5,
-                get = function(_) return module.microBag end,
-                set = function(_, val)
-                    module.microBag = val
-                    if val then
-                        self:SetupActionbars()
-                    else
-                        StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
-                    end
-                end,
-            }
-        end
-
-        if barName == "multiCastBar" then
-            local version = self:GetWoWVersion();
-            options.args[barName].hidden = function() return version ~= "WRATH" and version ~= "CATA" end
-        end
+    for k, v in pairs(self:GetActionBarConfigs()) do
+        options.args[k] = v
     end
 
     return options
@@ -837,7 +826,7 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
                 order = 1,
                 args = {
                     searchField = {
-                        order = 1,
+                        order = 0,
                         name = "",
                         desc = "Filter CVars",
                         type = "input",
@@ -878,6 +867,19 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
         orderCounter = orderCounter + 1
         local labelName = "label" .. orderCounter
         local spacerName = "spacer" .. orderCounter
+        local checkboxName = "checkbox" .. orderCounter
+
+        options.args.search.args[checkboxName] = {
+            name = "",
+            desc = "",
+            type = "toggle",
+            width = 0.25,
+            order = orderCounter * 3 - 3,
+            get = function(_) return CVars[k .. "_enabled"] end,
+            set = function(_, val)
+                CVars[k .. "_enabled"] = val
+            end,
+        }
 
         options.args.search.args[labelName] = {
             name = k,
@@ -1896,6 +1898,99 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(database, defaults, order)
                     },
                 }
             },
+            castBar = {
+                name = "Cast Bar",
+                type = "group",
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
+                inline = false,
+                order = 4,
+                args = {
+                    moveFrame = {
+                        name = "Move Frame",
+                        desc = "Allows you to choose the X and Y position of the frame.",
+                        type = "toggle",
+                        width = "full",
+                        order = 0,
+                        get = function(_) return module.castBar.move end,
+                        set = function(_, val)
+                            module.castBar.move = val
+                            self:SetupUnitFrames()
+                        end,
+                    },
+                    spacer1 = {
+                        name = "",
+                        type = "description",
+                        width = "full",
+                        order = 1,
+                    },
+                    frameAnchor = {
+                        name = "Frame Anchor",
+                        desc = "Anchor point of the frame.\n(Default " .. self.frameAnchors[defaults.castBar.frameAnchor] .. ")",
+                        type = "select",
+                        disabled = function() return ScarletUI:SettingDisabled(module.castBar.move, true) end,
+                        width = 1,
+                        order = 2,
+                        values = function() return self.frameAnchors end,
+                        get = function(_) return module.castBar.frameAnchor end,
+                        set = function(_, val)
+                            module.castBar.frameAnchor = val
+                            self:SetupUnitFrames()
+                        end,
+                    },
+                    screenAnchor = {
+                        name = "Screen Anchor",
+                        desc = "Anchor point of the frame relative to the screen.\n(Default " .. self.frameAnchors[defaults.castBar.frameAnchor] .. ")",
+                        type = "select",
+                        disabled = function() return ScarletUI:SettingDisabled(module.castBar.move, true) end,
+                        width = 1,
+                        order = 3,
+                        values = function() return self.frameAnchors end,
+                        get = function(_) return module.castBar.screenAnchor end,
+                        set = function(_, val)
+                            module.castBar.screenAnchor = val
+                            self:SetupUnitFrames()
+                        end,
+                    },
+                    spacer2 = {
+                        name = "",
+                        type = "description",
+                        width = "full",
+                        order = 4,
+                    },
+                    x = {
+                        name = "Frame X",
+                        desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.castBar.x .. ")",
+                        type = "range",
+                        disabled = function() return ScarletUI:SettingDisabled(module.castBar.move, true) end,
+                        min = math.floor(screenWidth) * -1,
+                        max = math.floor(screenWidth),
+                        step = 1,
+                        width = 1,
+                        order = 5,
+                        get = function(_) return module.castBar.x end,
+                        set = function(_, val)
+                            module.castBar.x = val
+                            self:SetupUnitFrames()
+                        end,
+                    },
+                    y = {
+                        name = "Frame Y",
+                        desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.castBar.y .. ")",
+                        type = "range",
+                        disabled = function() return ScarletUI:SettingDisabled(module.castBar.move, true) end,
+                        min = math.floor(screenHeight) * -1,
+                        max = math.floor(screenHeight),
+                        step = 1,
+                        width = 1,
+                        order = 6,
+                        get = function(_) return module.castBar.y end,
+                        set = function(_, val)
+                            module.castBar.y = val
+                            self:SetupUnitFrames()
+                        end,
+                    },
+                }
+            }
         }
     }
 end

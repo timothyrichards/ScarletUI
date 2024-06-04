@@ -7,18 +7,14 @@ function ScarletUI:SetupUnitFrames()
     self:SetupPlayerFrame(unitFramesModule)
     self:SetupTargetFrame(unitFramesModule)
     self:SetupFocusFrame(unitFramesModule)
+    self:SetupCastBar(unitFramesModule)
 end
 
 function ScarletUI:SetupPlayerFrame(unitFramesModule)
     local playerFrame = unitFramesModule.playerFrame
-    if not playerFrame.move then
-        return
-    end
-
     local mover = self:CreateMover(PlayerFrame, playerFrame)
+
     PlayerFrame:ClearAllPoints()
-    PlayerFrame:SetMovable(true)
-    PlayerFrame:SetUserPlaced(true)
     PlayerFrame:SetPoint(
             self.frameAnchors[playerFrame.frameAnchor],
             UIParent,
@@ -35,17 +31,12 @@ end
 function ScarletUI:SetupTargetFrame(unitFramesModule)
     local playerFrame = unitFramesModule.playerFrame
     local targetFrame = unitFramesModule.targetFrame
-    if not targetFrame.move then
-        return
-    end
 
     self:CreateMover(TargetFrame, targetFrame, function()
         return not targetFrame.mirrorPlayerFrame
     end)
     TargetFrame.buffsOnTop = targetFrame.buffsOnTop;
     TargetFrame:ClearAllPoints()
-    TargetFrame:SetMovable(true)
-    TargetFrame:SetUserPlaced(true)
 
     if not targetFrame.mirrorPlayerFrame then
         TargetFrame:SetPoint(
@@ -68,22 +59,36 @@ end
 
 function ScarletUI:SetupFocusFrame(unitFramesModule)
     local focusFrame = unitFramesModule.focusFrame
-    if not focusFrame.move then
-        return
-    end
 
     if FocusFrame then
         self:CreateMover(FocusFrame, focusFrame)
         FocusFrame.buffsOnTop = focusFrame.buffsOnTop;
         FocusFrame:ClearAllPoints()
-        FocusFrame:SetMovable(true)
-        FocusFrame:SetUserPlaced(true)
         FocusFrame:SetPoint(
                 self.frameAnchors[focusFrame.frameAnchor],
                 UIParent,
                 self.frameAnchors[focusFrame.screenAnchor],
                 focusFrame.x,
                 focusFrame.y
+        )
+    end
+end
+
+function ScarletUI:SetupCastBar(unitFramesModule)
+    local castBar = unitFramesModule.castBar
+
+    if CastingBarFrame then
+        CastingBarFrame.settingsKey = "castBar"
+        self:CreateMover(CastingBarFrame, castBar)
+        CastingBarFrame:SetMovable(true)
+        CastingBarFrame:SetUserPlaced(true)
+        CastingBarFrame:ClearAllPoints()
+        CastingBarFrame:SetPoint(
+                self.frameAnchors[castBar.frameAnchor],
+                UIParent,
+                self.frameAnchors[castBar.screenAnchor],
+                castBar.x,
+                castBar.y
         )
     end
 end

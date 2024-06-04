@@ -33,20 +33,14 @@ StaticPopupDialogs['SCARLET_RESTORE_DEFAULTS_DIALOG'] = {
 }
 
 function ScarletUI:Setup(isLogin)
-    -- Initialize state properties
-    self.lightWeightMode = false;
-    self.retail = false;
-    self.inCombat = false;
-    self.selectedMover = nil;
-
-    -- Check if lightWeightMode should be enabled
-    if self:GetWoWVersion() == "RETAIL" then
-        self.retail = true;
-    elseif IsAddOnLoaded("ElvUI") then
-        self.lightWeightMode = true;
-    end
-
     if not self.loaded then
+        -- Initialize state properties
+        self.lightWeightMode = false;
+        self.retail = false;
+        self.inCombat = false;
+        self.moversEnabled = false;
+        self.selectedMover = nil;
+
         -- Set up the database
         self.db = self.db or AceDB:New("ScarletUIDB", self.defaults, true)
 
@@ -59,7 +53,7 @@ function ScarletUI:Setup(isLogin)
         -- Register the options table
         AceConfigDialog:SetDefaultSize("ScarletUI", 780, 500)
         AceConfig:RegisterOptionsTable("ScarletUI", function() return self:Options() end)
-        AceConfigDialog:SetDefaultSize("ScarletUI_Movers", 450, 325)
+        AceConfigDialog:SetDefaultSize("ScarletUI_Movers", 400, 325)
         AceConfig:RegisterOptionsTable("ScarletUI_Movers", function() return self:MoversOptions() end)
         AceConfigDialog:AddToBlizOptions("ScarletUI")
 
@@ -67,10 +61,20 @@ function ScarletUI:Setup(isLogin)
         self.loaded = true;
     end
 
+    -- Check if lightWeightMode should be enabled
+    if self:GetWoWVersion() == "RETAIL" then
+        self.retail = true;
+    elseif IsAddOnLoaded("ElvUI") then
+        self.lightWeightMode = true;
+    end
+
+    self.hideFrameContainer = _G["HideFrameContainer"] or CreateFrame("FRAME", "HideFrameContainer", UIParent)
+    self.hideFrameContainer:Hide()
+
     self:SetupChat()
     self:SetupCVars()
     self:SetupItemLevels()
-    self:SetupActionbars()
+    self:SetupActionBars()
     self:SetupUnitFrames()
     self:SetupRaidProfiles()
     self:SetupTidyIcons()
@@ -86,7 +90,7 @@ end
 function ScarletUI:SetupFrame()
     self.debugContainer = CreateFrame("Frame", "SUI_DebugContainer", self.frame)
     self.debugContainer:SetSize(200, 100)
-    self.debugContainer:SetPoint("TOP", self.frame, "TOP", 0, -250)
+    self.debugContainer:SetPoint("TOP", UIParent, "TOP", 0, -250)
 
     local title = self.debugContainer:CreateFontString("SUI_FrameTitle", "OVERLAY", "GameFontWhite")
     title:SetPoint("BOTTOM", self.debugContainer, "TOP")
@@ -119,6 +123,10 @@ end
 function ScarletUI:SlashCommand(msg)
     if msg == "" then
         AceConfigDialog:Open("ScarletUI")
+
+        if self.moversEnabled then
+            self:ToggleMovers()
+        end
     elseif msg == "move" then
         self:ToggleMovers()
     elseif msg == "debug" then

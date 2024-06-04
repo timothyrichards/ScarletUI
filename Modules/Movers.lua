@@ -15,37 +15,115 @@ ScarletUI.frameAnchors = {
     'TOPRIGHT',
 }
 
+ScarletUI.frameData = {
+    playerFrame = {
+        frame = PlayerFrame,
+        databasePath = "unitFramesModule.playerFrame",
+        settingsPath = "unitFramesModuleSettings.args.playerFrame",
+    },
+    targetFrame = {
+        frame = TargetFrame,
+        databasePath = "unitFramesModule.targetFrame",
+        settingsPath = "unitFramesModuleSettings.args.targetFrame",
+    },
+    focusFrame = {
+        frame = FocusFrame,
+        databasePath = "unitFramesModule.focusFrame",
+        settingsPath = "unitFramesModuleSettings.args.focusFrame",
+    },
+    castBar = {
+        frame = CastingBarFrame,
+        databasePath = "unitFramesModule.castBar",
+        settingsPath = "unitFramesModuleSettings.args.castBar",
+    },
+    chatFrame = {
+        frame = ChatFrame1,
+        databasePath = "chatModule.chatFrame",
+        settingsPath = "chatModuleSettings.args.chatFrame",
+    },
+    mainMenuBar = {
+        frame = MainMenuBar,
+        databasePath = "actionbarsModule.mainMenuBar",
+        settingsPath = "actionbarsModuleSettings.args.mainMenuBar",
+    },
+    vehicleLeaveButton = {
+        frame = MainMenuBarVehicleLeaveButton,
+        databasePath = "actionbarsModule.vehicleLeaveButton",
+        settingsPath = "actionbarsModuleSettings.args.vehicleLeaveButton",
+    },
+    multiBarBottomLeft = {
+        frame = MultiBarBottomLeft,
+        databasePath = "actionbarsModule.multiBarBottomLeft",
+        settingsPath = "actionbarsModuleSettings.args.multiBarBottomLeft",
+    },
+    multiBarBottomRight = {
+        frame = MultiBarBottomRight,
+        databasePath = "actionbarsModule.multiBarBottomRight",
+        settingsPath = "actionbarsModuleSettings.args.multiBarBottomRight",
+    },
+    multiBarLeft = {
+        frame = MultiBarLeft,
+        databasePath = "actionbarsModule.multiBarLeft",
+        settingsPath = "actionbarsModuleSettings.args.multiBarLeft",
+    },
+    multiBarRight = {
+        frame = MultiBarRight,
+        databasePath = "actionbarsModule.multiBarRight",
+        settingsPath = "actionbarsModuleSettings.args.multiBarRight",
+    },
+    stanceBar = {
+        frame = StanceBarFrame,
+        databasePath = "actionbarsModule.stanceBar",
+        settingsPath = "actionbarsModuleSettings.args.stanceBar",
+    },
+    petBar = {
+        frame = PetActionBarFrame,
+        databasePath = "actionbarsModule.petBar",
+        settingsPath = "actionbarsModuleSettings.args.petBar",
+    },
+    multiCastBar = {
+        frame = MultiCastActionBarFrame,
+        databasePath = "actionbarsModule.multiCastBar",
+        settingsPath = "actionbarsModuleSettings.args.multiCastBar",
+    },
+    microBar = {
+        frame = MicroButtonAndBagsBar,
+        databasePath = "actionbarsModule.microBar",
+        settingsPath = "actionbarsModuleSettings.args.microBar",
+    },
+    bagBar = {
+        frame = BagBar,
+        databasePath = "actionbarsModule.bagBar",
+        settingsPath = "actionbarsModuleSettings.args.bagBar",
+    },
+}
+
 function ScarletUI:MoversOptions()
-    local global = self.db.global
     if self.selectedMover == nil then
-        self.selectedMover = PlayerFrameMover
+        -- Grab the first available mover in alphabetical order
+        local keys = {}
+        for k in pairs(self.movers) do
+            table.insert(keys, k)
+        end
+
+        table.sort(keys)
+        self:SelectMover(self.movers[keys[1]])
     end
 
-    local frameOptions = {}
-    if self.selectedMover == PlayerFrameMover then
-        frameOptions = self:GetUnitFramesModuleSettingsPage(global, global.unitFramesModule, 0).args.playerFrame
-    elseif self.selectedMover == TargetFrameMover then
-        frameOptions = self:GetUnitFramesModuleSettingsPage(global, global.unitFramesModule, 0).args.targetFrame
-    elseif self.selectedMover == FocusFrameMover then
-        frameOptions = self:GetUnitFramesModuleSettingsPage(global, global.unitFramesModule, 0).args.focusFrame
-    elseif self.selectedMover == ChatFrame1Mover then
-        frameOptions = self:GetChatModuleSettingsPage(global, global.chatModule, 0).args.chatFrame
-    elseif self.selectedMover == MainMenuBarMover then
-        frameOptions = self:GetActionbarsModuleSettingsPage(global, global.actionbarsModule, 0).args.mainBar
-    elseif self.selectedMover == StanceBarMover then
-        frameOptions = self:GetActionbarsModuleSettingsPage(global, global.actionbarsModule, 0).args.stanceBar
-    elseif self.selectedMover == PetBarMover then
-        frameOptions = self:GetActionbarsModuleSettingsPage(global, global.actionbarsModule, 0).args.petBar
-    elseif self.selectedMover == MultiCastBarMover then
-        frameOptions = self:GetActionbarsModuleSettingsPage(global, global.actionbarsModule, 0).args.multiCastBar
-    elseif self.selectedMover == MicroBarMover then
-        frameOptions = self:GetActionbarsModuleSettingsPage(global, global.actionbarsModule, 0).args.microBar
-    elseif self.selectedMover == BagBarMover then
-        frameOptions = self:GetActionbarsModuleSettingsPage(global, global.actionbarsModule, 0).args.bagBar
-    end
+    local options = self:Options().args
+    local frameData = self.frameData[self.selectedMover.settingsKey]
+    local frameOptions = self:GetValueFromPath(options, frameData.settingsPath)
 
+    frameOptions.name = ""
     frameOptions.inline = true
-    frameOptions.order = 3
+    frameOptions.order = 4
+
+    local frameSettingsOptions = {}
+    for k, _ in pairs(self.frameData) do
+        if self.movers[k] then
+            frameSettingsOptions[k] = self:ConvertToPascalCase(k)
+        end
+    end
 
     return {
         type = "group",
@@ -56,98 +134,132 @@ function ScarletUI:MoversOptions()
             toggleMovers = {
                 type = "execute",
                 name = "Toggle Movers",
-                desc = "Toggle the visibility of all movers",
+                desc = "Toggle the visibility of all movers.",
                 func = function() self:ToggleMovers() end,
                 order = 1,
             },
             resetPositions = {
                 type = "execute",
                 name = "Reset Positions",
-                desc = "Reset all frame positions to their default settings",
+                desc = "Reset all frame positions to their default settings.",
                 func = function() self:ResetPositions() end,
                 order = 2,
+            },
+            frameSelection = {
+                type = "select",
+                name = "Select Frame",
+                desc = "Select a frame to modify.",
+                order = 3,
+                width = 1,
+                values = frameSettingsOptions,
+                get = function() return self.selectedMover.settingsKey end,
+                set = function(_, value)
+                    self:SelectMover(self.movers[value])
+                    self:RefreshMoverOptions()
+                end,
+                order = 3,
             },
             frame = frameOptions
         },
     }
 end
 
-function ScarletUI:CreateMover(targetFrame, module, conditionalFunction)
-    conditionalFunction = conditionalFunction or function() return true end
+function ScarletUI:RefreshMoverOptions()
+    AceConfigRegistry:NotifyChange("ScarletUI_Movers")
+    ScarletUI:UpdateMovers()
+end
+
+function ScarletUI:CreateMover(targetFrame, settings, canMoveFrame)
+    canMoveFrame = canMoveFrame or function() return true end
 
     if targetFrame.mover then
         return targetFrame.mover
     end
 
-    local targetFrameName = targetFrame:GetName()
+    local targetFrameName = targetFrame.originalFrameName or targetFrame:GetName()
+    if targetFrame.settingsKey then
+        targetFrameName = self:ConvertToPascalCase(targetFrame.settingsKey)
+    end
 
     targetFrame:SetMovable(true)
+    targetFrame:SetUserPlaced(true)
     targetFrame:SetClampedToScreen(true)
 
     local mover = CreateFrame("Frame", targetFrameName .. "Mover", UIParent)
     mover.targetFrame = targetFrame
+    mover.settingsKey = targetFrame.settingsKey or self:ConvertToCamelCase(targetFrameName)
     mover:SetSize(targetFrame:GetWidth(), targetFrame:GetHeight())
     mover:SetPoint("BOTTOM", targetFrame, "BOTTOM", 0, 0)
     mover:SetFrameStrata("FULLSCREEN_DIALOG")
 
     -- Background
-    local bg = mover:CreateTexture("Background", "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(0.4, 0.6, 1, 0.5) -- light blue background
+    mover.background = mover:CreateTexture("Background", "BACKGROUND")
+    mover.background:SetAllPoints()
+    mover.background:SetColorTexture(0.4, 0.6, 1, 0.5) -- light blue background
 
     -- Border
     local borderSize = 4
-    local borders = {
+    mover.borders = {
         mover:CreateTexture("TopBorder", "BORDER"),
         mover:CreateTexture("BottomBorder", "BORDER"),
         mover:CreateTexture("LeftBorder", "BORDER"),
         mover:CreateTexture("RightBorder", "BORDER"),
     }
 
-    for _, border in ipairs(borders) do
+    for _, border in ipairs(mover.borders) do
         border:SetColorTexture(0.2, 0.4, 0.8, 1)
     end
 
-    borders[1]:SetPoint("TOPLEFT", mover, "TOPLEFT")
-    borders[1]:SetPoint("TOPRIGHT", mover, "TOPRIGHT")
-    borders[1]:SetHeight(borderSize)
+    mover.borders[1]:SetPoint("TOPLEFT", mover, "TOPLEFT")
+    mover.borders[1]:SetPoint("TOPRIGHT", mover, "TOPRIGHT")
+    mover.borders[1]:SetHeight(borderSize)
 
-    borders[2]:SetPoint("BOTTOMLEFT", mover, "BOTTOMLEFT")
-    borders[2]:SetPoint("BOTTOMRIGHT", mover, "BOTTOMRIGHT")
-    borders[2]:SetHeight(borderSize)
+    mover.borders[2]:SetPoint("BOTTOMLEFT", mover, "BOTTOMLEFT")
+    mover.borders[2]:SetPoint("BOTTOMRIGHT", mover, "BOTTOMRIGHT")
+    mover.borders[2]:SetHeight(borderSize)
 
-    borders[3]:SetPoint("TOPLEFT", mover, "TOPLEFT")
-    borders[3]:SetPoint("BOTTOMLEFT", mover, "BOTTOMLEFT")
-    borders[3]:SetWidth(borderSize)
+    mover.borders[3]:SetPoint("TOPLEFT", mover, "TOPLEFT")
+    mover.borders[3]:SetPoint("BOTTOMLEFT", mover, "BOTTOMLEFT")
+    mover.borders[3]:SetWidth(borderSize)
 
-    borders[4]:SetPoint("TOPRIGHT", mover, "TOPRIGHT")
-    borders[4]:SetPoint("BOTTOMRIGHT", mover, "BOTTOMRIGHT")
-    borders[4]:SetWidth(borderSize)
+    mover.borders[4]:SetPoint("TOPRIGHT", mover, "TOPRIGHT")
+    mover.borders[4]:SetPoint("BOTTOMRIGHT", mover, "BOTTOMRIGHT")
+    mover.borders[4]:SetWidth(borderSize)
 
     -- Display the frame's name in the center of the mover
     local text = mover:CreateFontString("FrameName", "OVERLAY", "GameFontNormal")
     text:SetText(targetFrameName)
     text:SetPoint("CENTER", mover, "CENTER")
 
+    -- Calculate the width of the FrameName
+    local frameNameWidth = text:GetStringWidth()
+
+    -- Rotate the text if the FrameName is longer than the mover's width
+    if frameNameWidth > mover:GetWidth() and frameNameWidth < mover:GetHeight() then
+        text:SetRotation(math.pi / 2)
+    end
+
     mover:SetScript("OnMouseDown", function(_, button)
-        self.selectedMover = mover
-        AceConfigRegistry:NotifyChange("ScarletUI_Movers")
-        AceConfigDialog:Open("ScarletUI_Movers")
+        if button == "LeftButton" then
+            self:SelectMover(mover)
 
-        if not conditionalFunction() then
-            return
-        end
-
-        if button == "LeftButton" and targetFrame:IsMovable() then
-            targetFrame:StartMoving()
+            if targetFrame:IsMovable() and canMoveFrame() then
+                mover.timer = C_Timer.NewTimer(0.025, function()
+                    targetFrame:StartMoving()
+                end)
+            end
         end
     end)
 
     mover:SetScript("OnMouseUp", function(_, _)
+        if mover.timer then
+            mover.timer:Cancel()
+        end
+
         targetFrame:StopMovingOrSizing()
 
-        if module ~= nil then
-            self:UpdateFramePositionSettings(targetFrame, module)
+        if settings ~= nil then
+            self:UpdateFramePositionSettings(targetFrame, settings)
         end
     end)
 
@@ -169,7 +281,7 @@ function ScarletUI:CreateMover(targetFrame, module, conditionalFunction)
     end)
 
     targetFrame.mover = mover
-    self.movers[targetFrameName] = mover
+    self.movers[mover.settingsKey] = mover
     return mover
 end
 
@@ -227,55 +339,82 @@ function ScarletUI:CreateGrid()
 end
 
 function ScarletUI:ToggleMovers()
-    self:CreateGrid()
     if self.moversEnabled then
-        self.moversEnabled = false
-        self.grid:Hide()
-        AceConfigDialog:Open("ScarletUI")
+        if self.optionsWasOpen and not self:InCombat() then
+            AceConfigDialog:Open("ScarletUI")
+        end
+
+        self.optionsWasOpen = false
         AceConfigDialog:Close("ScarletUI_Movers")
     elseif not self.moversEnabled then
-        self.moversEnabled = true
-        self.grid:Show()
+        if self:IsAceDialogOpen("ScarletUI") then
+            self.optionsWasOpen = true
+        end
+
         AceConfigDialog:Close("ScarletUI")
-        AceConfigDialog:Open("ScarletUI_Movers")
+
+        if not self:IsAceDialogOpen("ScarletUI_Movers") then
+            AceConfigDialog:Open("ScarletUI_Movers")
+        end
     end
 
+    self:CreateGrid()
+    self.grid:SetShown(not self.moversEnabled)
+    self.moversEnabled = not self.moversEnabled
+    SUI_MoverPropertyText:SetText("- moversEnabled: " .. tostring(self.moversEnabled))
+    self:UpdateMovers()
+end
+
+function ScarletUI:UpdateMovers()
     for _, v in pairs(self.movers) do
-        if self.moversEnabled then
-            v:SetMovable(true)
-            v:Show()
-        else
-            v:SetMovable(false)
-            v:Hide()
+        local data = self.frameData[v.settingsKey]
+        local frameSettings = self:GetValueFromPath(self.db.global, data.databasePath)
+        local show = self.moversEnabled and frameSettings.move and not frameSettings.hide
+
+        v:SetMovable(show)
+        v:SetShown(show)
+    end
+end
+
+function ScarletUI:SelectMover(mover)
+    if self.selectedMover then
+        self.selectedMover.background:SetColorTexture(0.4, 0.6, 1, 0.5)
+
+        for _, border in ipairs(self.selectedMover.borders) do
+            border:SetColorTexture(0.2, 0.4, 0.8, 1)
         end
+    end
+
+    self.selectedMover = mover
+
+    if self.selectedMover then
+        self.selectedMover.background:SetColorTexture(0.4, 1, 0.6, 0.5)
+
+        for _, border in ipairs(self.selectedMover.borders) do
+            border:SetColorTexture(0.2, 1, 0.4, 1)
+        end
+    end
+
+    if self.moversEnabled then
+        self:RefreshMoverOptions()
+        AceConfigDialog:Open("ScarletUI_Movers")
     end
 end
 
 function ScarletUI:UpdateFramePositionSettings(frame, module)
     local point, _, relativePoint, xOffset, yOffset = frame:GetPoint()
-    module.frameAnchor = self:GetArrayIndex(point)
-    module.screenAnchor = self:GetArrayIndex(relativePoint)
+    module.frameAnchor = self:GetArrayIndex(self.frameAnchors, point)
+    module.screenAnchor = self:GetArrayIndex(self.frameAnchors, relativePoint)
     module.x = xOffset
     module.y = yOffset
+
     AceConfigRegistry:NotifyChange("ScarletUI")
-    AceConfigRegistry:NotifyChange("ScarletUI_Movers")
+    self:RefreshMoverOptions()
 end
 
 function ScarletUI:ResetPositions()
     local db = self.db.global
     local defaults = self.defaults.global
-    local frames = {
-        "unitFramesModule.playerFrame",
-        "unitFramesModule.targetFrame",
-        "unitFramesModule.focusFrame",
-        "actionbarsModule.mainBar",
-        "actionbarsModule.stanceBar",
-        "actionbarsModule.petBar",
-        "actionbarsModule.multiCastBar",
-        "actionbarsModule.microBar",
-        "actionbarsModule.bagBar",
-        "chatModule.chatFrame",
-    }
     local settings = {
         "frameAnchor",
         "screenAnchor",
@@ -283,9 +422,9 @@ function ScarletUI:ResetPositions()
         "y",
     }
 
-    for _, framePath in ipairs(frames) do
+    for _, data in pairs(self.frameData) do
         local frameParts = {}
-        for part in string.gmatch(framePath, "[^.]+") do
+        for part in string.gmatch(data.databasePath, "[^.]+") do
             table.insert(frameParts, part)
         end
         local frameCategory, frameName = frameParts[1], frameParts[2]
@@ -298,7 +437,7 @@ function ScarletUI:ResetPositions()
 
     self:Setup(false)
     AceConfigRegistry:NotifyChange("ScarletUI")
-    AceConfigRegistry:NotifyChange("ScarletUI_Movers")
+    self:SelectMover(nil)
 end
 
 function ScarletUI:SetPoint(frame, frameAnchor, frameParent, parentAnchor, x, y)
