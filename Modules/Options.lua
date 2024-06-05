@@ -867,19 +867,6 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
         orderCounter = orderCounter + 1
         local labelName = "label" .. orderCounter
         local spacerName = "spacer" .. orderCounter
-        local checkboxName = "checkbox" .. orderCounter
-
-        options.args.search.args[checkboxName] = {
-            name = "",
-            desc = "",
-            type = "toggle",
-            width = 0.25,
-            order = orderCounter * 3 - 3,
-            get = function(_) return CVars[k .. "_enabled"] end,
-            set = function(_, val)
-                CVars[k .. "_enabled"] = val
-            end,
-        }
 
         options.args.search.args[labelName] = {
             name = k,
