@@ -1,13 +1,3 @@
-local function chatTabExists(table, value)
-    for k, _ in ipairs(table) do
-        local name, _ = GetChatWindowInfo(k);
-        if name == value then
-            return true
-        end
-    end
-    return false
-end
-
 function ScarletUI:SetupChat()
     local chatModule = self.db.global.chatModule;
     local tabs = chatModule.tabs
@@ -18,14 +8,14 @@ function ScarletUI:SetupChat()
     self:FixChatBug()
 
     -- Open new tabs if they dont exist
-    if tabs.loot and not chatTabExists(_G.CHAT_FRAMES, "Loot") then
+    if tabs.loot and not self:ChatTabExists(_G.CHAT_FRAMES, "Loot") then
         FCF_OpenNewWindow("Loot")
     end
-    if tabs.trade and not chatTabExists(_G.CHAT_FRAMES, "Trade") then
+    if tabs.trade and not self:ChatTabExists(_G.CHAT_FRAMES, "Trade") then
         FCF_OpenNewWindow("Trade")
     end
     if tabs.lfg and not self.retail then
-        if not chatTabExists(_G.CHAT_FRAMES, "LFG") then
+        if not self:ChatTabExists(_G.CHAT_FRAMES, "LFG") then
             FCF_OpenNewWindow("LFG")
         end
     end
@@ -101,4 +91,15 @@ function ScarletUI:SetupChat()
     )
 
     self:CreateMover(ChatFrame1, chatFrame)
+end
+
+function ScarletUI:ChatTabExists(table, value)
+    for k, _ in ipairs(table) do
+        local name, _ = GetChatWindowInfo(k);
+        if name == value then
+            return true
+        end
+    end
+
+    return false
 end

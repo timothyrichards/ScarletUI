@@ -4,7 +4,7 @@ local screenHeight = GetScreenHeight()
 
 function ScarletUI:Options()
     local database = self.db.global;
-    local defaults = self.defaults.global;
+    local defaults = self.db.defaults.global;
 
     return {
         name = "Scarlet UI",
@@ -17,6 +17,7 @@ function ScarletUI:Options()
                 desc = "Enables mover frames so you can drag various UI elements to a new position.",
                 type = "execute",
                 disabled = function() return self:InCombat() end,
+                hidden = function() return self.retail end,
                 order = 0,
                 width = 1,
                 func = function()
@@ -28,10 +29,11 @@ function ScarletUI:Options()
                 desc = "Restores frame positions back to default positions.",
                 type = "execute",
                 disabled = function() return self:InCombat() end,
+                hidden = function() return self.retail end,
                 order = 1,
                 width = 1,
                 func = function()
-                    self:ResetPositions()
+                    StaticPopup_Show('SCARLET_RESTORE_POSITIONS_DIALOG')
                 end,
             },
             defaultSettings = {
@@ -85,7 +87,7 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                             if val then
                                 self:SetupExpandCharacterInfo()
                             else
-                                self:ShowReloadPopup()
+                                self:ShowReloadDialog()
                             end
                         end,
                     },
@@ -110,7 +112,7 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                             if val then
                                 self:SetupItemLevels()
                             else
-                                self:ShowReloadPopup()
+                                self:ShowReloadDialog()
                             end
                         end,
                     },
@@ -126,7 +128,7 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                             if val then
                                 self:SetupItemLevels()
                             else
-                                self:ShowReloadPopup()
+                                self:ShowReloadDialog()
                             end
                         end,
                     },
@@ -142,7 +144,7 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                             if val then
                                 self:SetupItemLevels()
                             else
-                                self:ShowReloadPopup()
+                                self:ShowReloadDialog()
                             end
                         end,
                     },
@@ -166,7 +168,7 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                         set = function(_, val)
                             database.actionbarsModule.enabled = val
                             if not val then
-                                self:ShowReloadPopup()
+                                self:ShowReloadDialog()
                             else
                                 self:SetupActionBars()
                             end
@@ -198,7 +200,7 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                         set = function(_, val)
                             database.chatModule.enabled = val
                             if not val then
-                                self:ShowReloadPopup()
+                                self:ShowReloadDialog()
                             else
                                 self:SetupChat()
                             end
@@ -231,7 +233,7 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                         set = function(_, val)
                             database.nameplatesModule.enabled = val
                             if not val then
-                                self:ShowReloadPopup()
+                                self:ShowReloadDialog()
                             else
                                 ScarletUI:SetupNameplates()
                             end
@@ -248,7 +250,7 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                         set = function(_, val)
                             database.raidFramesModule.enabled = val
                             if not val then
-                                self:ShowReloadPopup()
+                                self:ShowReloadDialog()
                             else
                                 self:SetupRaidProfiles()
                             end
@@ -266,7 +268,7 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                         set = function(_, val)
                             database.unitFramesModule.enabled = val
                             if not val then
-                                self:ShowReloadPopup()
+                                self:ShowReloadDialog()
                             else
                                 self:SetupUnitFrames()
                             end
@@ -280,7 +282,7 @@ end
 
 function ScarletUI:GenerateBarConfig(name, _order)
     local module = self.db.global.actionbarsModule;
-    local defaults = self.defaults.global.actionbarsModule;
+    local defaults = self.db.defaults.global.actionbarsModule;
 
     return {
         name = (name:gsub("(%a)(%u)", "%1 %2"):gsub("^%l", string.upper)),
@@ -312,7 +314,7 @@ function ScarletUI:GenerateBarConfig(name, _order)
                     self:SetupActionBars()
 
                     if not val then
-                        self:ShowReloadPopup()
+                        self:ShowReloadDialog()
                     end
                 end,
             },
@@ -425,7 +427,7 @@ function ScarletUI:GetActionBarConfigs()
                     if val then
                         self:SetupActionBars()
                     else
-                        self:ShowReloadPopup()
+                        self:ShowReloadDialog()
                     end
                 end,
             }
@@ -522,7 +524,7 @@ function ScarletUI:GetBagModuleSettingsPage(database, defaults, order)
             generalSettings = {
                 name = "General Settings",
                 type = "group",
-                disabled = function() return ScarletUI:SettingDisabled(module.enabled, false) end,
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
                 inline = true,
                 order = 0,
                 args = {
@@ -591,7 +593,7 @@ function ScarletUI:GetChatModuleSettingsPage(database, defaults, order)
             generalSettings = {
                 name = "General Settings",
                 type = "group",
-                disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
                 inline = true,
                 order = 0,
                 args = {
@@ -645,7 +647,7 @@ function ScarletUI:GetChatModuleSettingsPage(database, defaults, order)
             tabs = {
                 name = "Tabs",
                 type = "group",
-                disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
                 inline = true,
                 order = 1,
                 args = {
@@ -691,7 +693,7 @@ function ScarletUI:GetChatModuleSettingsPage(database, defaults, order)
             chatFrame = {
                 name = "Chat Frame",
                 type = "group",
-                disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) or self.lightWeightMode end,
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled) or self.lightWeightMode end,
                 hidden = function(_) return self.retail end,
                 order = 2,
                 args = {
@@ -927,7 +929,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
             generalSettings = {
                 name = "General Settings",
                 type = "group",
-                disabled = function() return ScarletUI:SettingDisabled(module.enabled, false) end,
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
                 inline = true,
                 order = 0,
                 args = {
@@ -963,7 +965,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
             debuffTracker = {
                 name = "Debuff Tracker",
                 type = "group",
-                disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
                 order = 1,
                 args = {
                     track = {
@@ -1017,7 +1019,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                     priorityDebuffs = {
                         name = "Priority Debuffs",
                         type = "input",
-                        disabled = function() return ScarletUI:SettingDisabled(module.debuffTracker.track, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.debuffTracker.track) end,
                         desc = "Add a comma seperated list of debuff spell names you wish to always track even if they're applied by another player, for example: Sunder Armor,Expose Armor,Hammer of Justice\n(This setting is saved per character)",
                         multiline = 5,
                         width = "full",
@@ -1182,7 +1184,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                     otherNoThreat = {
                         name = "No Threat",
                         type = "color",
-                        disabled = function() return ScarletUI:SettingDisabled(module.threatColored, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.threatColored) end,
                         desc = "Choose a color",
                         width = 0.75,
                         hasAlpha = true,
@@ -1198,7 +1200,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                     otherLowThreat = {
                         name = "Low Threat",
                         type = "color",
-                        disabled = function() return ScarletUI:SettingDisabled(module.threatColored, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.threatColored) end,
                         desc = "Choose a color",
                         width = 0.75,
                         hasAlpha = true,
@@ -1214,7 +1216,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                     otherThreat = {
                         name = "Have Threat",
                         type = "color",
-                        disabled = function() return ScarletUI:SettingDisabled(module.threatColored, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.threatColored) end,
                         desc = "Choose a color",
                         width = 0.75,
                         hasAlpha = true,
@@ -1230,7 +1232,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                     otherTankThreat = {
                         name = "Tank Threat",
                         type = "color",
-                        disabled = function() return ScarletUI:SettingDisabled(module.threatColored, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.threatColored) end,
                         desc = "Choose a color",
                         width = 0.75,
                         hasAlpha = true,
@@ -1259,7 +1261,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                     noThreat = {
                         name = "No Threat",
                         type = "color",
-                        disabled = function() return ScarletUI:SettingDisabled(module.threatColored, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.threatColored) end,
                         desc = "Choose a color",
                         width = 0.75,
                         hasAlpha = true,
@@ -1275,7 +1277,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                     lowThreat = {
                         name = "Low Threat",
                         type = "color",
-                        disabled = function() return ScarletUI:SettingDisabled(module.threatColored, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.threatColored) end,
                         desc = "Choose a color",
                         width = 0.75,
                         hasAlpha = true,
@@ -1291,7 +1293,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                     threat = {
                         name = "Have Threat",
                         type = "color",
-                        disabled = function() return ScarletUI:SettingDisabled(module.threatColored, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.threatColored) end,
                         desc = "Choose a color",
                         width = 0.75,
                         hasAlpha = true,
@@ -1307,7 +1309,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                     tankThreat = {
                         name = "Tank Threat",
                         type = "color",
-                        disabled = function() return ScarletUI:SettingDisabled(module.threatColored, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.threatColored) end,
                         desc = "Choose a color",
                         width = 0.75,
                         hasAlpha = true,
@@ -1323,7 +1325,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                     tankNames = {
                         name = "Tank Names",
                         type = "input",
-                        disabled = function() return ScarletUI:SettingDisabled(module.threatColored, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.threatColored) end,
                         desc = "Add a comma seperated list of player names you wish to manually designate as tanks, for example: Tank1,Tank2,Tank3\n\nPlayers with the role of tank (in versions of WoW that have roles) and players marked Main Tank or Main Assist in raids, will automatically be designated as tanks by the nameplate colors.",
                         multiline = 5,
                         width = "full",
@@ -1345,7 +1347,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                     specialUnitColor = {
                         name = "Special Unit Color",
                         type = "color",
-                        disabled = function() return ScarletUI:SettingDisabled(module.specialUnitsColored, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.specialUnitsColored) end,
                         desc = "Choose a color",
                         width = 1,
                         hasAlpha = true,
@@ -1361,7 +1363,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                     specialUnitNames = {
                         name = "Special Unit Names",
                         type = "input",
-                        disabled = function() return ScarletUI:SettingDisabled(module.specialUnitsColored, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.specialUnitsColored) end,
                         desc = "Add a comma seperated list of enemy unit names you wish to manually designate as special units, for example: Unit1,Unit2,Unit3",
                         multiline = 5,
                         width = "full",
@@ -1407,7 +1409,7 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(database, defaults, order)
             partyFrames = {
                 name = "Party Frames",
                 type = "group",
-                disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
                 order = 1,
                 args = {
                     moveFrame = {
@@ -1426,7 +1428,7 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(database, defaults, order)
                         name = "Frame Left",
                         desc = "Must be a number, this is the distance of the raid frame container from the left side of the screen.\n(Default " .. defaults.profiles.Party.x .. ")",
                         type = "range",
-                        disabled = function() return ScarletUI:SettingDisabled(module.profiles.Party.move, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.profiles.Party.move) end,
                         min = math.floor(screenWidth) * -1,
                         max = math.floor(screenWidth),
                         step = 1,
@@ -1442,7 +1444,7 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(database, defaults, order)
                         name = "Frame Top",
                         desc = "Must be a number, this is the distance of the raid frame container from the top of the screen.\n(Default " .. defaults.profiles.Party.y .. ")",
                         type = "range",
-                        disabled = function() return ScarletUI:SettingDisabled(module.profiles.Party.move, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.profiles.Party.move) end,
                         min = math.floor(screenHeight) * -1,
                         max = math.floor(screenHeight),
                         step = 1,
@@ -1458,7 +1460,7 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(database, defaults, order)
                         name = "Frame Bottom",
                         desc = "Must be a number, this is the distance of the raid frame container from the bottom of the screen.\n(Default " .. defaults.profiles.Party.height .. ")",
                         type = "range",
-                        disabled = function() return ScarletUI:SettingDisabled(module.profiles.Party.move, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.profiles.Party.move) end,
                         min = math.floor(screenHeight) * -1,
                         max = math.floor(screenHeight),
                         step = 1,
@@ -1475,7 +1477,7 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(database, defaults, order)
             raidFrames = {
                 name = "Raid Frames",
                 type = "group",
-                disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
                 order = 1,
                 args = {
                     moveFrame = {
@@ -1494,7 +1496,7 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(database, defaults, order)
                         name = "Frame Left",
                         desc = "Must be a number, this is the distance of the raid frame container from the left side of the screen.\n(Default " .. defaults.profiles.Raid.x .. ")",
                         type = "range",
-                        disabled = function() return ScarletUI:SettingDisabled(module.profiles.Raid.move, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.profiles.Raid.move) end,
                         min = math.floor(screenWidth) * -1,
                         max = math.floor(screenWidth),
                         step = 1,
@@ -1510,7 +1512,7 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(database, defaults, order)
                         name = "Frame Top",
                         desc = "Must be a number, this is the distance of the raid frame container from the top of the screen.\n(Default " .. defaults.profiles.Raid.y .. ")",
                         type = "range",
-                        disabled = function() return ScarletUI:SettingDisabled(module.profiles.Raid.move, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.profiles.Raid.move) end,
                         min = math.floor(screenHeight) * -1,
                         max = math.floor(screenHeight),
                         step = 1,
@@ -1526,7 +1528,7 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(database, defaults, order)
                         name = "Frame Bottom",
                         desc = "Must be a number, this is the distance of the raid frame container from the bottom of the screen.\n(Default " .. defaults.profiles.Raid.height .. ")",
                         type = "range",
-                        disabled = function() return ScarletUI:SettingDisabled(module.profiles.Raid.move, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.profiles.Raid.move) end,
                         min = math.floor(screenHeight) * -1,
                         max = math.floor(screenHeight),
                         step = 1,
@@ -1559,7 +1561,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(database, defaults, order)
             playerFrame = {
                 name = "Player Frame",
                 type = "group",
-                disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
                 order = 1,
                 args = {
                     moveFrame = {
@@ -1584,7 +1586,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(database, defaults, order)
                         name = "Frame Anchor",
                         desc = "Anchor point of the frame.\n(Default " .. self.frameAnchors[defaults.playerFrame.frameAnchor] .. ")",
                         type = "select",
-                        disabled = function() return ScarletUI:SettingDisabled(module.playerFrame.move, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.playerFrame.move) end,
                         width = 1,
                         order = 2,
                         values = function() return self.frameAnchors end,
@@ -1598,7 +1600,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(database, defaults, order)
                         name = "Screen Anchor",
                         desc = "Anchor point of the frame relative to the screen.\n(Default " .. self.frameAnchors[defaults.playerFrame.screenAnchor] .. ")",
                         type = "select",
-                        disabled = function() return ScarletUI:SettingDisabled(module.playerFrame.move, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.playerFrame.move) end,
                         width = 1,
                         order = 3,
                         values = function() return self.frameAnchors end,
@@ -1618,7 +1620,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(database, defaults, order)
                         name = "Frame X",
                         desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.playerFrame.x .. ")",
                         type = "range",
-                        disabled = function() return ScarletUI:SettingDisabled(module.playerFrame.move, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.playerFrame.move) end,
                         min = math.floor(screenWidth) * -1,
                         max = math.floor(screenWidth),
                         step = 1,
@@ -1634,7 +1636,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(database, defaults, order)
                         name = "Frame Y",
                         desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.playerFrame.y .. ")",
                         type = "range",
-                        disabled = function() return ScarletUI:SettingDisabled(module.playerFrame.move, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.playerFrame.move) end,
                         min = math.floor(screenHeight) * -1,
                         max = math.floor(screenHeight),
                         step = 1,
@@ -1651,7 +1653,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(database, defaults, order)
             targetFrame = {
                 name = "Target Frame",
                 type = "group",
-                disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
                 order = 2,
                 args = {
                     mirrorPlayerFrame = {
@@ -1683,7 +1685,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(database, defaults, order)
                         desc = "Allows you to choose the X and Y position of the frame.",
                         type = "toggle",
                         disabled = function()
-                            return ScarletUI:SettingDisabled(not module.targetFrame.mirrorPlayerFrame, true)
+                            return ScarletUI:SettingDisabled(not module.targetFrame.mirrorPlayerFrame)
                         end,
                         width = "full",
                         order = 2,
@@ -1704,8 +1706,8 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(database, defaults, order)
                         desc = "Anchor point of the frame.\n(Default " .. self.frameAnchors[defaults.targetFrame.frameAnchor] .. ")",
                         type = "select",
                         disabled = function()
-                            return ScarletUI:SettingDisabled(not module.targetFrame.mirrorPlayerFrame, true) or
-                                    ScarletUI:SettingDisabled(module.targetFrame.move, true)
+                            return ScarletUI:SettingDisabled(not module.targetFrame.mirrorPlayerFrame) or
+                                    ScarletUI:SettingDisabled(module.targetFrame.move)
                         end,
                         width = 1,
                         order = 4,
@@ -1721,8 +1723,8 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(database, defaults, order)
                         desc = "Anchor point of the frame relative to the screen.\n(Default " .. self.frameAnchors[defaults.targetFrame.screenAnchor] .. ")",
                         type = "select",
                         disabled = function()
-                            return ScarletUI:SettingDisabled(not module.targetFrame.mirrorPlayerFrame, true) or
-                                ScarletUI:SettingDisabled(module.targetFrame.move, true)
+                            return ScarletUI:SettingDisabled(not module.targetFrame.mirrorPlayerFrame) or
+                                ScarletUI:SettingDisabled(module.targetFrame.move)
                         end,
                         width = 1,
                         order = 5,
@@ -1744,8 +1746,8 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(database, defaults, order)
                         desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.targetFrame.x .. ")",
                         type = "range",
                         disabled = function()
-                            return ScarletUI:SettingDisabled(not module.targetFrame.mirrorPlayerFrame, true) or
-                                    ScarletUI:SettingDisabled(module.targetFrame.move, true)
+                            return ScarletUI:SettingDisabled(not module.targetFrame.mirrorPlayerFrame) or
+                                    ScarletUI:SettingDisabled(module.targetFrame.move)
                         end,
                         min = math.floor(screenWidth) * -1,
                         max = math.floor(screenWidth),
@@ -1763,8 +1765,8 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(database, defaults, order)
                         desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.targetFrame.y .. ")",
                         type = "range",
                         disabled = function()
-                            return ScarletUI:SettingDisabled(not module.targetFrame.mirrorPlayerFrame, true) or
-                                    ScarletUI:SettingDisabled(module.targetFrame.move, true)
+                            return ScarletUI:SettingDisabled(not module.targetFrame.mirrorPlayerFrame) or
+                                    ScarletUI:SettingDisabled(module.targetFrame.move)
                         end,
                         min = math.floor(screenHeight) * -1,
                         max = math.floor(screenHeight),
@@ -1783,7 +1785,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(database, defaults, order)
                 name = "Focus Frame",
                 type = "group",
                 hidden = function() return not FocusFrame end,
-                disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
                 inline = false,
                 order = 3,
                 args = {
@@ -1821,7 +1823,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(database, defaults, order)
                         name = "Frame Anchor",
                         desc = "Anchor point of the frame.\n(Default " .. self.frameAnchors[defaults.focusFrame.frameAnchor] .. ")",
                         type = "select",
-                        disabled = function() return ScarletUI:SettingDisabled(module.focusFrame.move, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.focusFrame.move) end,
                         width = 1,
                         order = 3,
                         values = function() return self.frameAnchors end,
@@ -1835,7 +1837,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(database, defaults, order)
                         name = "Screen Anchor",
                         desc = "Anchor point of the frame relative to the screen.\n(Default " .. self.frameAnchors[defaults.focusFrame.frameAnchor] .. ")",
                         type = "select",
-                        disabled = function() return ScarletUI:SettingDisabled(module.focusFrame.move, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.focusFrame.move) end,
                         width = 1,
                         order = 4,
                         values = function() return self.frameAnchors end,
@@ -1855,7 +1857,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(database, defaults, order)
                         name = "Frame X",
                         desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.focusFrame.x .. ")",
                         type = "range",
-                        disabled = function() return ScarletUI:SettingDisabled(module.focusFrame.move, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.focusFrame.move) end,
                         min = math.floor(screenWidth) * -1,
                         max = math.floor(screenWidth),
                         step = 1,
@@ -1871,7 +1873,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(database, defaults, order)
                         name = "Frame Y",
                         desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.focusFrame.y .. ")",
                         type = "range",
-                        disabled = function() return ScarletUI:SettingDisabled(module.focusFrame.move, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.focusFrame.move) end,
                         min = math.floor(screenHeight) * -1,
                         max = math.floor(screenHeight),
                         step = 1,
@@ -1888,7 +1890,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(database, defaults, order)
             castBar = {
                 name = "Cast Bar",
                 type = "group",
-                disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
                 inline = false,
                 order = 4,
                 args = {
@@ -1914,7 +1916,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(database, defaults, order)
                         name = "Frame Anchor",
                         desc = "Anchor point of the frame.\n(Default " .. self.frameAnchors[defaults.castBar.frameAnchor] .. ")",
                         type = "select",
-                        disabled = function() return ScarletUI:SettingDisabled(module.castBar.move, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.castBar.move) end,
                         width = 1,
                         order = 2,
                         values = function() return self.frameAnchors end,
@@ -1928,7 +1930,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(database, defaults, order)
                         name = "Screen Anchor",
                         desc = "Anchor point of the frame relative to the screen.\n(Default " .. self.frameAnchors[defaults.castBar.frameAnchor] .. ")",
                         type = "select",
-                        disabled = function() return ScarletUI:SettingDisabled(module.castBar.move, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.castBar.move) end,
                         width = 1,
                         order = 3,
                         values = function() return self.frameAnchors end,
@@ -1948,7 +1950,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(database, defaults, order)
                         name = "Frame X",
                         desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.castBar.x .. ")",
                         type = "range",
-                        disabled = function() return ScarletUI:SettingDisabled(module.castBar.move, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.castBar.move) end,
                         min = math.floor(screenWidth) * -1,
                         max = math.floor(screenWidth),
                         step = 1,
@@ -1964,7 +1966,7 @@ function ScarletUI:GetUnitFramesModuleSettingsPage(database, defaults, order)
                         name = "Frame Y",
                         desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults.castBar.y .. ")",
                         type = "range",
-                        disabled = function() return ScarletUI:SettingDisabled(module.castBar.move, true) end,
+                        disabled = function() return ScarletUI:SettingDisabled(module.castBar.move) end,
                         min = math.floor(screenHeight) * -1,
                         max = math.floor(screenHeight),
                         step = 1,

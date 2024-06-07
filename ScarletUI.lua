@@ -3,6 +3,7 @@ local AceDB = LibStub("AceDB-3.0")
 local AceConfig = LibStub("AceConfig-3.0")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
+local IsAddOnLoaded = C_AddOns.IsAddOnLoaded or IsAddOnLoaded
 
 -- Dialog to reload after addon settings are changed
 StaticPopupDialogs['SCARLET_UI_RELOAD_DIALOG'] = {
@@ -11,6 +12,20 @@ StaticPopupDialogs['SCARLET_UI_RELOAD_DIALOG'] = {
     button2 = 'Close',
     OnAccept = function()
         ReloadUI()
+    end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = false,
+    preferredIndex = 3,
+}
+
+-- Dialog to confirm restoration position of frames to default settings
+StaticPopupDialogs['SCARLET_RESTORE_POSITIONS_DIALOG'] = {
+    text = '<Scarlet UI>\n\nAre you sure you want to restore all frame positions to their default positions?',
+    button1 = 'Confirm',
+    button2 = 'Cancel',
+    OnAccept = function()
+        ScarletUI:ResetPositions()
     end,
     timeout = 0,
     whileDead = true,
@@ -32,34 +47,38 @@ StaticPopupDialogs['SCARLET_RESTORE_DEFAULTS_DIALOG'] = {
     preferredIndex = 3,
 }
 
-function ScarletUI:Setup(isLogin)
-    if not self.loaded then
-        -- Initialize state properties
-        self.lightWeightMode = false;
-        self.retail = false;
-        self.inCombat = false;
-        self.moversEnabled = false;
-        self.selectedMover = nil;
+function ScarletUI:OnInitialize()
+    -- Set up the database
+    self.db = self.db or AceDB:New("ScarletUIDB", self.defaults, true)
+    self.db:SetProfile("Default")
 
-        -- Set up the database
-        self.db = self.db or AceDB:New("ScarletUIDB", self.defaults, true)
+    -- Register the chat commands
+    self:RegisterChatCommand("sui", "SlashCommand")
 
-        -- Set up frame
-        self:SetupFrame()
+    -- Register the options table
+    AceConfigDialog:SetDefaultSize("ScarletUI", 780, 500)
+    AceConfig:RegisterOptionsTable("ScarletUI", function() return self:Options() end)
+    AceConfigDialog:SetDefaultSize("ScarletUI_Movers", 400, 325)
+    AceConfig:RegisterOptionsTable("ScarletUI_Movers", function() return self:MoversOptions() end)
+    AceConfigDialog:AddToBlizOptions("ScarletUI")
 
-        -- Register the chat commands
-        self:RegisterChatCommand("sui", "SlashCommand")
+    -- Initialize state properties
+    self.lightWeightMode = false;
+    self.retail = false;
+    self.inCombat = false;
+    self.moversEnabled = false;
+    self.selectedMover = nil;
+end
 
-        -- Register the options table
-        AceConfigDialog:SetDefaultSize("ScarletUI", 780, 500)
-        AceConfig:RegisterOptionsTable("ScarletUI", function() return self:Options() end)
-        AceConfigDialog:SetDefaultSize("ScarletUI_Movers", 400, 325)
-        AceConfig:RegisterOptionsTable("ScarletUI_Movers", function() return self:MoversOptions() end)
-        AceConfigDialog:AddToBlizOptions("ScarletUI")
+function ScarletUI:OnEnable()
+    self:Setup()
 
-        -- Declare the addon loaded
-        self.loaded = true;
-    end
+    self:Print("Scarlet UI setup successful, use the command /sui to open the options panel.")
+end
+
+function ScarletUI:Setup()
+    -- Set up frame
+    self:SetupFrame()
 
     -- Check if lightWeightMode should be enabled
     if self:GetWoWVersion() == "RETAIL" then
@@ -81,13 +100,13 @@ function ScarletUI:Setup(isLogin)
     self:SetupNameplates()
     self:SetupExpandCharacterInfo()
     --self:SetupBags()
-
-    if isLogin then
-        self:Print("Scarlet UI setup successful, use the command /sui to open the options panel.")
-    end
 end
 
 function ScarletUI:SetupFrame()
+    if SUI_DebugContainer then
+        return
+    end
+
     self.debugContainer = CreateFrame("Frame", "SUI_DebugContainer", self.frame)
     self.debugContainer:SetSize(200, 100)
     self.debugContainer:SetPoint("TOP", UIParent, "TOP", 0, -250)
@@ -128,6 +147,16 @@ function ScarletUI:SlashCommand(msg)
             self:ToggleMovers()
         end
     elseif msg == "move" then
+        if self:InCombat() then
+            self:Print("Cannot move frames while in combat.")
+            return
+        end
+
+        if self.retail then
+            self:Print("Movers are not available in retail, please use the WoW UI edit mode.")
+            return
+        end
+
         self:ToggleMovers()
     elseif msg == "debug" then
         self.debugContainer:SetShown(not self.debugContainer:IsShown())
@@ -138,18 +167,15 @@ function ScarletUI:SlashCommand(msg)
         self:Print("- /sui debug: Toggle the debug frame.")
         self:Print("- /sui help: Display this message.")
     else
-        self:Print("Invalid chat command. Use /sui help for a list of commands.")
+        self:Print("Invalid chat command, use /sui help for a list of commands.")
     end
 end
 
 ScarletUI.frame = CreateFrame("Frame", "SUI_Frame", UIParent)
-ScarletUI.frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 ScarletUI.frame:RegisterEvent("PLAYER_REGEN_DISABLED")
 ScarletUI.frame:RegisterEvent("PLAYER_REGEN_ENABLED")
-ScarletUI.frame:SetScript("OnEvent", function (_, event, isLogin, ...)
-    if event == "PLAYER_ENTERING_WORLD" then
-        ScarletUI:Setup(isLogin)
-    elseif event == "PLAYER_REGEN_DISABLED" or event == "PLAYER_REGEN_ENABLED" then
+ScarletUI.frame:SetScript("OnEvent", function (_, event, ...)
+    if event == "PLAYER_REGEN_DISABLED" or event == "PLAYER_REGEN_ENABLED" then
         ScarletUI.inCombat = event == "PLAYER_REGEN_DISABLED";
 
         if ScarletUI:InCombat() and ScarletUI.moversEnabled then

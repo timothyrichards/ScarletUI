@@ -61,7 +61,7 @@ function ScarletUI:UpdateProfileOptions()
         -- Create a new raid profile if it doesn't exist
         if not RaidProfileExists(profile) then
             CreateNewRaidProfile(profile)
-            self:ShowReloadPopup()
+            self:ShowReloadDialog()
         end
 
         -- Update settings if the profile does exist
@@ -74,7 +74,7 @@ function ScarletUI:UpdateProfileOptions()
                     local targetValue = tostring(v)
                     if currentValue ~= targetValue then
                         SetRaidProfileOption(profile, k, v)
-                        self:ShowReloadPopup()
+                        self:ShowReloadDialog()
                     end
                 end
             end
@@ -97,7 +97,7 @@ function ScarletUI:UpdateProfilePositions()
         local _, _, top, _, bottom, _, left = GetRaidProfileSavedPosition(profile)
         if top ~= options.y or bottom ~= options.height or left ~= options.x then
             SetRaidProfileSavedPosition(profile, false, 'TOP', options.y, 'BOTTOM', options.height, 'LEFT', options.x)
-            self:ShowReloadPopup()
+            self:ShowReloadDialog()
         end
     end
     self.movingRaidFrames = false

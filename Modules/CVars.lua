@@ -1,3 +1,5 @@
+local IsAddOnLoaded = C_AddOns.IsAddOnLoaded or IsAddOnLoaded
+
 ScarletUI.booleanOptions = {
     "true",
     "false"
@@ -32,7 +34,7 @@ function ScarletUI:SetupCVars()
     end
 
     if (requireReload) then
-        self:ShowReloadPopup()
+        self:ShowReloadDialog()
     end
 end
 
@@ -53,6 +55,6 @@ function ScarletUI:RestoreCVarsDefaults()
     end
 
     if (requireReload) then
-        self:ShowReloadPopup()
+        self:ShowReloadDialog()
     end
 end

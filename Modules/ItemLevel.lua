@@ -1,5 +1,6 @@
 local GetContainerNumSlots = C_Container.GetContainerNumSlots or GetContainerNumSlots
 local GetContainerItemLink = C_Container.GetContainerItemLink or GetContainerItemLink
+local GetItemInfo = C_Item.GetItemInfo or GetItemInfo
 
 local slots = {
     "Head",

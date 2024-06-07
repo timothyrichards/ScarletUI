@@ -142,7 +142,7 @@ function ScarletUI:MoversOptions()
                 type = "execute",
                 name = "Reset Positions",
                 desc = "Reset all frame positions to their default settings.",
-                func = function() self:ResetPositions() end,
+                func = function() StaticPopup_Show('SCARLET_RESTORE_POSITIONS_DIALOG') end,
                 order = 2,
             },
             frameSelection = {
@@ -373,6 +373,7 @@ function ScarletUI:UpdateMovers()
 
         v:SetMovable(show)
         v:SetShown(show)
+        v.targetFrame:StopMovingOrSizing()
     end
 end
 
@@ -414,7 +415,7 @@ end
 
 function ScarletUI:ResetPositions()
     local db = self.db.global
-    local defaults = self.defaults.global
+    local defaults = self.db.defaults.global
     local settings = {
         "frameAnchor",
         "screenAnchor",
@@ -435,7 +436,7 @@ function ScarletUI:ResetPositions()
         end
     end
 
-    self:Setup(false)
+    self:Setup()
     AceConfigRegistry:NotifyChange("ScarletUI")
     self:SelectMover(nil)
 end

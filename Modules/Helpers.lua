@@ -4,7 +4,7 @@ function ScarletUI:InCombat()
     return InCombatLockdown() or self.inCombat
 end
 
-function ScarletUI:ShowReloadPopup()
+function ScarletUI:ShowReloadDialog()
     --if not self.db.global.installationComplete then
     --    return
     --end
@@ -116,8 +116,8 @@ function ScarletUI:IsAceDialogOpen(dialog)
     return AceConfigDialog.OpenFrames[dialog] ~= nil
 end
 
-function ScarletUI:SettingDisabled(moduleEnabled, checkCombat)
-    if self:InCombat() and checkCombat then
+function ScarletUI:SettingDisabled(moduleEnabled, ignoreCombat)
+    if self:InCombat() and not ignoreCombat then
         return true
     else
         return not moduleEnabled
@@ -148,6 +148,18 @@ function ScarletUI:GetValueFromPath(table, path)
     end
 
     return value
+end
+
+function ScarletUI:MergeTables(t1, t2)
+    for k, v in pairs(t2) do
+        if type(v) == "table" and type(t1[k]) == "table" then
+            self:MergeTables(t1[k], v)
+        else
+            t1[k] = v
+        end
+    end
+
+    return t1
 end
 
 function ScarletUI:DumpTable(table, indent)
@@ -198,4 +210,3 @@ function ScarletUI:ConvertToPascalCase(string)
         return first:upper()..rest
     end)
 end
-
