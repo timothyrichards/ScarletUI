@@ -284,6 +284,11 @@ function ScarletUI:GenerateBarConfig(name, _order)
     local module = self.db.global.actionbarsModule;
     local defaults = self.db.defaults.global.actionbarsModule;
 
+    if defaults[name] == nil then
+        self:Print("Database defaults are missing for " .. name)
+        return
+    end
+
     return {
         name = (name:gsub("(%a)(%u)", "%1 %2"):gsub("^%l", string.upper)),
         type = "group",
@@ -406,6 +411,8 @@ function ScarletUI:GetActionBarConfigs()
         "stanceBar",
         "petBar",
         "multiCastBar",
+        "experienceBar",
+        "reputationBar",
         "microBar",
         "bagBar",
     }

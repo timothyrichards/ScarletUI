@@ -37,6 +37,7 @@ function ScarletUI:SetupRaidProfiles()
                                 if not (k == "move" or k == "x" or k == "y" or k == "height") then
                                     local currentValue = tostring(v)
                                     local targetValue = tostring(GetRaidProfileOption(profile, k))
+
                                     if currentValue ~= targetValue then
                                         raidFramesModule.profiles[profile][k] = GetRaidProfileOption(profile, k)
                                     end

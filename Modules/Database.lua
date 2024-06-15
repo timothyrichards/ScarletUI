@@ -122,6 +122,22 @@ ScarletUI.defaults = {
                 x = -250,
                 y = 140
             },
+            experienceBar = {
+                move = true,
+                hide = false,
+                frameAnchor = 1, -- BOTTOM
+                screenAnchor = 1, -- BOTTOM
+                x = 0,
+                y = 44
+            },
+            reputationBar = {
+                move = true,
+                hide = false,
+                frameAnchor = 1, -- BOTTOM
+                screenAnchor = 1, -- BOTTOM
+                x = 0,
+                y = 42
+            },
             microBar = {
                 move = true,
                 hide = false,

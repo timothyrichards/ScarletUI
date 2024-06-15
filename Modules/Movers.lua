@@ -86,6 +86,16 @@ ScarletUI.frameData = {
         databasePath = "actionbarsModule.multiCastBar",
         settingsPath = "actionbarsModuleSettings.args.multiCastBar",
     },
+    experienceBar = {
+        frame = MainMenuExpBar,
+        databasePath = "actionbarsModule.experienceBar",
+        settingsPath = "actionbarsModuleSettings.args.experienceBar",
+    },
+    reputationBar = {
+        frame = ReputationWatchBar,
+        databasePath = "actionbarsModule.reputationBar",
+        settingsPath = "actionbarsModuleSettings.args.reputationBar",
+    },
     microBar = {
         frame = MicroButtonAndBagsBar,
         databasePath = "actionbarsModule.microBar",
@@ -111,7 +121,12 @@ function ScarletUI:MoversOptions()
     end
 
     local options = self:Options().args
-    local frameData = self.frameData[self.selectedMover.settingsKey]
+    local frameData = self:GetFrameData(self.selectedMover.settingsKey)
+    if frameData == nil then
+        self:Print("Frame data is nil for settings key: " .. self.selectedMover.settingsKey)
+        return
+    end
+
     local frameOptions = self:GetValueFromPath(options, frameData.settingsPath)
 
     frameOptions.name = ""
@@ -169,6 +184,17 @@ function ScarletUI:RefreshMoverOptions()
     ScarletUI:UpdateMovers()
 end
 
+function ScarletUI:GetFrameData(settingsKey)
+    local frameData = self.frameData[settingsKey]
+
+    if frameData == nil then
+        self:Print("Frame data is nil for settings key: " .. settingsKey)
+        return
+    end
+
+    return frameData
+end
+
 function ScarletUI:CreateMover(targetFrame, settings, canMoveFrame)
     canMoveFrame = canMoveFrame or function() return true end
 
@@ -181,6 +207,7 @@ function ScarletUI:CreateMover(targetFrame, settings, canMoveFrame)
         targetFrameName = self:ConvertToPascalCase(targetFrame.settingsKey)
     end
 
+    targetFrame.locked = false
     targetFrame:SetMovable(true)
     targetFrame:SetUserPlaced(true)
     targetFrame:SetClampedToScreen(true)
@@ -367,13 +394,22 @@ end
 
 function ScarletUI:UpdateMovers()
     for _, v in pairs(self.movers) do
-        local data = self.frameData[v.settingsKey]
-        local frameSettings = self:GetValueFromPath(self.db.global, data.databasePath)
-        local show = self.moversEnabled and frameSettings.move and not frameSettings.hide
+        local data = self:GetFrameData(v.settingsKey)
+        if data == nil then
+            self:Print("Frame data is nil for settings key: " .. self.selectedMover.settingsKey)
+            return
+        end
 
-        v:SetMovable(show)
-        v:SetShown(show)
-        v.targetFrame:StopMovingOrSizing()
+        local frameSettings = self:GetValueFromPath(self.db.global, data.databasePath)
+        if frameSettings ~= nil then
+            local show = self.moversEnabled and frameSettings.move and not frameSettings.hide
+
+            v:SetMovable(show)
+            v:SetShown(show)
+            v.targetFrame:StopMovingOrSizing()
+        else
+            self:Print("Frame settings are nil for database path: " .. data.databasePath)
+        end
     end
 end
 

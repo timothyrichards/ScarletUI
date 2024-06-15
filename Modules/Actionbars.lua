@@ -373,7 +373,6 @@ function ScarletUI:multiCastBar(module)
     end
 
     MultiCastActionBarFrame.settingsKey = "multiCastBar"
-    MultiCastActionBarFrame.locked = false;
 
     -- stupid hack to fix the position of the MultiCastActionBarFrame
     C_Timer.NewTimer(1, function()
@@ -424,12 +423,43 @@ function ScarletUI:possessBarFrame()
     end)
 end
 
-function ScarletUI:experienceBar()
+function ScarletUI:experienceBar(module)
+    local experienceBarSettings = module.experienceBar;
+
+    self.movingExperienceBar = true
+
     MainMenuExpBar:SetSize(510, 10)
-    MainMenuBarMaxLevelBar:Hide()
-    MainMenuBarMaxLevelBar.Show = function()
-        MainMenuBarMaxLevelBar:Hide()
+    MainMenuExpBar:ClearAllPoints()
+    MainMenuExpBar:SetPoint(
+            self.frameAnchors[experienceBarSettings.frameAnchor],
+            UIParent,
+            self.frameAnchors[experienceBarSettings.screenAnchor],
+            experienceBarSettings.x,
+            experienceBarSettings.y
+    )
+
+    if not self.experienceBarEventRegistered then
+        hooksecurefunc(MainMenuExpBar, "SetPoint", function()
+            if self.movingExperienceBar then
+                return
+            end
+
+            self:experienceBar(module)
+        end)
+        self.experienceBarEventRegistered = true
     end
+
+    MainMenuExpBar.settingsKey = "experienceBar"
+    self:CreateMover(MainMenuExpBar, experienceBarSettings)
+    self.movingExperienceBar = false
+
+    if experienceBarSettings.hide then
+        MainMenuExpBar:UnregisterAllEvents()
+        MainMenuExpBar:SetParent(self.hideFrameContainer)
+    end
+
+    MainMenuBarMaxLevelBar:UnregisterAllEvents()
+    MainMenuBarMaxLevelBar:SetParent(self.hideFrameContainer)
 
     -- Get Current, Maximum, and Rested Experience
     local currXP = UnitXP("player")
@@ -456,9 +486,41 @@ function ScarletUI:experienceBar()
     MainMenuXPBarTexture3:SetPoint("LEFT", MainMenuXPBarTexture0, "RIGHT", 0, 0)
 end
 
-function ScarletUI:reputationBar()
+function ScarletUI:reputationBar(module)
+    local reputationBarSettings = module.reputationBar;
+
+    self.movingReputationBar = true
+
     ReputationWatchBar:SetWidth(510)
     ReputationWatchBar.StatusBar:SetWidth(510)
+    ReputationWatchBar:ClearAllPoints()
+    ReputationWatchBar:SetPoint(
+            self.frameAnchors[reputationBarSettings.frameAnchor],
+            UIParent,
+            self.frameAnchors[reputationBarSettings.screenAnchor],
+            reputationBarSettings.x,
+            reputationBarSettings.y
+    )
+
+    if not self.reputationBarEventRegistered then
+        hooksecurefunc(ReputationWatchBar, "SetPoint", function()
+            if self.movingReputationBar then
+                return
+            end
+
+            self:reputationBar(module)
+        end)
+        self.reputationBarEventRegistered = true
+    end
+
+    ReputationWatchBar.settingsKey = "reputationBar"
+    self:CreateMover(ReputationWatchBar, reputationBarSettings)
+    self.movingReputationBar = false
+
+    if reputationBarSettings.hide then
+        ReputationWatchBar:UnregisterAllEvents()
+        ReputationWatchBar:SetParent(self.hideFrameContainer)
+    end
 
     -- Leveling rep bar
     ReputationWatchBar.StatusBar.WatchBarTexture1.Show = function()
@@ -515,35 +577,41 @@ function ScarletUI:SetupActionBars()
     }
 
     for _, v in ipairs(bars) do
-        local frame = self.frameData[v].frame
-        local settings = self:GetValueFromPath(self.db.global, self.frameData[v].databasePath)
-        local width
-        local height
+        local data = self:GetFrameData(v)
 
-        if v == "multiBarBottomLeft" then
-            MultiBarBottomRightButton1:ClearAllPoints();
-            MultiBarBottomRightButton1:SetPoint("BOTTOMLEFT", MultiBarBottomRight, "BOTTOMLEFT", 2, 1);
+        if data ~= nil then
+            local frame = data.frame
+            local settings = self:GetValueFromPath(self.db.global, self.frameData[v].databasePath)
+            local width
+            local height
+
+            if v == "multiBarBottomLeft" then
+                MultiBarBottomRightButton1:ClearAllPoints();
+                MultiBarBottomRightButton1:SetPoint("BOTTOMLEFT", MultiBarBottomRight, "BOTTOMLEFT", 2, 1);
+            end
+
+            if v == "multiBarBottomRight" then
+                MultiBarBottomLeftButton1:ClearAllPoints();
+                MultiBarBottomLeftButton1:SetPoint("BOTTOMLEFT", MultiBarBottomLeft, "BOTTOMLEFT", 2, 1);
+            end
+
+            if v == "stanceBar" then
+                frame.settingsKey = "stanceBar"
+                width = 250
+                height = 35
+            end
+
+            self:CreateContainerAndMover(frame, settings, width, height)
+        else
+            self:Print("Frame data is nil for settings key: " .. self.selectedMover.settingsKey)
         end
-
-        if v == "multiBarBottomRight" then
-            MultiBarBottomLeftButton1:ClearAllPoints();
-            MultiBarBottomLeftButton1:SetPoint("BOTTOMLEFT", MultiBarBottomLeft, "BOTTOMLEFT", 2, 1);
-        end
-
-        if v == "stanceBar" then
-            frame.settingsKey = "stanceBar"
-            width = 250
-            height = 35
-        end
-
-        self:CreateContainerAndMover(frame, settings, width, height)
     end
 
     self:petActionBar(actionbarsModule)
     self:multiCastBar(actionbarsModule)
     self:possessBarFrame()
-    self:experienceBar()
-    self:reputationBar()
+    self:experienceBar(actionbarsModule)
+    self:reputationBar(actionbarsModule)
 
     if not self.actionbarEventRegistered then
         self.actionbarEventRegistered = true;
