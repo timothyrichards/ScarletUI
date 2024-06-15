@@ -9,7 +9,7 @@ local IsAddOnLoaded = C_AddOns.IsAddOnLoaded or IsAddOnLoaded
 StaticPopupDialogs['SCARLET_UI_RELOAD_DIALOG'] = {
     text = '<Scarlet UI>\n\nRequires a reload to properly configure.\n\nIF YOU DO NOT RELOAD YOU WILL EXPERIENCE LUA ERRORS.',
     button1 = 'Reload',
-    button2 = 'Close',
+    button2 = 'Lua Errors',
     OnAccept = function()
         ReloadUI()
     end,
@@ -92,6 +92,7 @@ function ScarletUI:Setup()
 
     self:SetupChat()
     self:SetupCVars()
+    --self:SetupBags()
     self:SetupItemLevels()
     self:SetupActionBars()
     self:SetupUnitFrames()
@@ -99,7 +100,8 @@ function ScarletUI:Setup()
     self:SetupTidyIcons()
     self:SetupNameplates()
     self:SetupExpandCharacterInfo()
-    --self:SetupBags()
+
+    self.loaded = true
 end
 
 function ScarletUI:SetupFrame()

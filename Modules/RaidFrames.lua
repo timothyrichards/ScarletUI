@@ -18,12 +18,18 @@ function ScarletUI:SetupRaidProfiles()
                 hooksecurefunc("SetRaidProfileSavedPosition", function()
                     if not ScarletUI.movingRaidFrames then
                         local profile = GetActiveRaidProfile()
-                        local _, _, top, _, bottom, _, left = GetRaidProfileSavedPosition(profile)
+                        local dynamic, topPoint, topOffset, bottomPoint, bottomOffset, leftPoint, leftOffset = GetRaidProfileSavedPosition(profile)
                         local options = raidFramesModule.profiles[profile]
                         if options ~= nil and options.move then
-                            options.y = top
-                            options.height = bottom
-                            options.x = left
+                            options.savedPosition = {
+                                dynamic = dynamic,
+                                topPoint = topPoint,
+                                topOffset = topOffset,
+                                bottomPoint = bottomPoint,
+                                bottomOffset = bottomOffset,
+                                leftPoint = leftPoint,
+                                leftOffset = leftOffset
+                            }
                         end
 
                         AceConfigRegistry:NotifyChange("ScarletUI")
@@ -35,7 +41,7 @@ function ScarletUI:SetupRaidProfiles()
                         local profile = GetActiveRaidProfile()
                         if raidFramesModule.profiles[profile] then
                             for k, v in pairs(raidFramesModule.profiles[profile]) do
-                                if not (k == "move" or k == "x" or k == "y" or k == "height") then
+                                if not k == "move" or not k == "savedPosition" then
                                     local currentValue = tostring(v)
                                     local targetValue = tostring(GetRaidProfileOption(profile, k))
 
@@ -50,11 +56,11 @@ function ScarletUI:SetupRaidProfiles()
 
                 hooksecurefunc("SetCVar", function(k, v)
                     if k == "useCompactPartyFrames" then
-                        local CVarModule = ScarletUI.db.global.CVarModule
-                        local currentValue = tostring(CVarModule.useCompactPartyFrames)
-                        local targetValue = tostring(GetCVar("useCompactPartyFrames"))
+                        local CVars = ScarletUI.db.global.CVarModule.CVars
+                        local currentValue = tostring(CVars.useCompactPartyFrames)
+                        local targetValue = tostring(v)
                         if currentValue ~= targetValue then
-                            CVarModule.useCompactPartyFrames = GetCVar("useCompactPartyFrames")
+                            CVars.useCompactPartyFrames = v
                         end
                     end
                 end)
@@ -83,7 +89,7 @@ function ScarletUI:UpdateProfileOptions()
         if RaidProfileExists(profile) then
             -- Check and apply Raid Profile settings
             for k, v in pairs(options) do
-                if not (k == "move" or k == "x" or k == "y" or k == "height") then
+                if not k == "move" or not k == "savedPosition" then
                     local currentValue = tostring(GetRaidProfileOption(profile, k))
                     local targetValue = tostring(v)
                     if currentValue ~= targetValue then
@@ -100,11 +106,11 @@ function ScarletUI:UpdateProfileOptions()
     end
 
     -- Check and apply Raid Style party frames setting
-    local CVarModule = self.db.global.CVarModule
+    local CVars = self.db.global.CVarModule.CVars
     local currentValue = tostring(GetCVar("useCompactPartyFrames"))
-    local targetValue = tostring(CVarModule.useCompactPartyFrames)
+    local targetValue = tostring(CVars.useCompactPartyFrames)
     if currentValue ~= targetValue then
-        SetCVar("useCompactPartyFrames", CVarModule.useCompactPartyFrames)
+        SetCVar("useCompactPartyFrames", CVars.useCompactPartyFrames)
     end
 end
 
@@ -115,11 +121,13 @@ function ScarletUI:UpdateProfilePositions()
 
     self.movingRaidFrames = true
     local raidFramesModule = self.db.global.raidFramesModule
-    for profile, options in pairs(raidFramesModule.profiles) do
-        if options.move then
-            local _, _, top, _, bottom, _, left = GetRaidProfileSavedPosition(profile)
-            if top ~= options.y or bottom ~= options.height or left ~= options.x then
-                SetRaidProfileSavedPosition(profile, false, 'TOP', options.y, 'BOTTOM', options.height, 'LEFT', options.x)
+    for profile, profileOptions in pairs(raidFramesModule.profiles) do
+        local options = profileOptions.savedPosition
+
+        if profileOptions.move then
+            local dynamic, topPoint, topOffset, bottomPoint, bottomOffset, leftPoint, leftOffset = GetRaidProfileSavedPosition(profile)
+            if dynamic ~= options.dynamic or topPoint ~= options.topPoint or topOffset ~= options.topOffset or bottomPoint ~= options.bottomPoint or bottomOffset ~= options.bottomOffset or leftPoint ~= options.leftPoint or leftOffset ~= options.leftOffset then
+                SetRaidProfileSavedPosition(profile, options.dynamic, options.topPoint, options.topOffset, options.bottomPoint, options.bottomOffset, options.leftPoint, options.leftOffset)
                 self:ShowReloadDialog()
             end
         end

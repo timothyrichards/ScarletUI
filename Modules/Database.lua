@@ -178,9 +178,15 @@ ScarletUI.defaults = {
             profiles = {
                 Party = {
                     move = true,
-                    x = 535,
-                    y = 450,
-                    height = 225,
+                    savedPosition = {
+                        dynamic = false,
+                        topPoint = "TOP",
+                        topOffset = 450,
+                        bottomPoint = "BOTTOM",
+                        bottomOffset = 225,
+                        leftPoint = "LEFT",
+                        leftOffset = 535
+                    },
                     keepGroupsTogether = false,
                     horizontalGroups = false,
                     displayPowerBar = true,
@@ -205,9 +211,15 @@ ScarletUI.defaults = {
                 },
                 Raid = {
                     move = true,
-                    x = 165,
-                    y = 375,
-                    height = 90,
+                    savedPosition = {
+                        dynamic = false,
+                        topPoint = "TOP",
+                        topOffset = 375,
+                        bottomPoint = "BOTTOM",
+                        bottomOffset = 90,
+                        leftPoint = "LEFT",
+                        leftOffset = 165
+                    },
                     keepGroupsTogether = true,
                     horizontalGroups = true,
                     displayPowerBar = true,
@@ -500,9 +512,15 @@ ScarletUI.originalUIDefaults = {
             profiles = {
                 Party = {
                     move = true,
-                    x = 535,
-                    y = 450,
-                    height = 225,
+                    savedPosition = {
+                        dynamic = false,
+                        topPoint = "TOP",
+                        topOffset = 450,
+                        bottomPoint = "BOTTOM",
+                        bottomOffset = 225,
+                        leftPoint = "LEFT",
+                        leftOffset = 535
+                    },
                     keepGroupsTogether = false,
                     horizontalGroups = false,
                     displayPowerBar = true,
@@ -527,9 +545,15 @@ ScarletUI.originalUIDefaults = {
                 },
                 Raid = {
                     move = true,
-                    x = 165,
-                    y = 375,
-                    height = 90,
+                    savedPosition = {
+                        dynamic = false,
+                        topPoint = "TOP",
+                        topOffset = 375,
+                        bottomPoint = "BOTTOM",
+                        bottomOffset = 90,
+                        leftPoint = "LEFT",
+                        leftOffset = 165
+                    },
                     keepGroupsTogether = true,
                     horizontalGroups = true,
                     displayPowerBar = true,
@@ -647,5 +671,7 @@ ScarletUI.originalUIDefaults = {
 function ScarletUI:ResetDefaults()
     self.db:ResetDB()
     self:Setup()
+    self:UpdateProfileOptions()
+    self:Print("Settings have been reset to default.")
     AceConfigRegistry:NotifyChange("ScarletUI")
 end
