@@ -2,6 +2,7 @@ local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 
 function ScarletUI:SetupRaidProfiles()
     local raidFramesModule = self.db.global.raidFramesModule
+
     if not raidFramesModule.enabled or self.lightWeightMode or self.retail then
         return
     end
@@ -47,6 +48,17 @@ function ScarletUI:SetupRaidProfiles()
                     end
                 end)
 
+                hooksecurefunc("SetCVar", function(k, v)
+                    if k == "useCompactPartyFrames" then
+                        local CVarModule = ScarletUI.db.global.CVarModule
+                        local currentValue = tostring(CVarModule.useCompactPartyFrames)
+                        local targetValue = tostring(GetCVar("useCompactPartyFrames"))
+                        if currentValue ~= targetValue then
+                            CVarModule.useCompactPartyFrames = GetCVar("useCompactPartyFrames")
+                        end
+                    end
+                end)
+
                 functionExecuted = true
                 self.frame:SetScript("OnUpdate", nil)
             end
@@ -58,6 +70,7 @@ end
 
 function ScarletUI:UpdateProfileOptions()
     local raidFramesModule = self.db.global.raidFramesModule
+
     for profile, options in pairs(raidFramesModule.profiles) do
         -- Create a new raid profile if it doesn't exist
         if not RaidProfileExists(profile) then
@@ -84,6 +97,14 @@ function ScarletUI:UpdateProfileOptions()
             self:UpdateProfilePositions()
         end
         self.updatingSettings = false
+    end
+
+    -- Check and apply Raid Style party frames setting
+    local CVarModule = self.db.global.CVarModule
+    local currentValue = tostring(GetCVar("useCompactPartyFrames"))
+    local targetValue = tostring(CVarModule.useCompactPartyFrames)
+    if currentValue ~= targetValue then
+        SetCVar("useCompactPartyFrames", CVarModule.useCompactPartyFrames)
     end
 end
 
