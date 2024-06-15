@@ -39,8 +39,8 @@ local function UpdateTextElement(fontString, text, color)
     fontString:SetTextColor(color.r, color.g, color.b)
 end
 
-local function ItemLevelText(itemLink, itemButton)
-    if itemLink then
+local function ItemLevelText(itemLink, itemButton, hide)
+    if not hide and itemLink then
         local _, _, itemQuality, itemLevel, _, itemType, _, _, _, _, _, _, _, _, _, _, _ = GetItemInfo(itemLink)
         if itemType == 'Armor' or itemType == 'Weapon' then
             if itemQuality and itemLevel then
@@ -115,26 +115,26 @@ local function calculateUnitItemLevel(unit)
 end
 
 function ScarletUI:CharacterFrameItemLevel()
-    if not self.db.global.itemLevelCharacter then
-        return
-    end
+    local hide = not self.db.global.itemLevelCharacter
 
     for _, slotName in ipairs(slots) do
         if self.retail and slotName == "Ranged" then
             -- nothing
         else
             local slotID = GetInventorySlotInfo(slotName .. "Slot")
+
             if (slotID ~= nil) then
                 local itemLink = GetInventoryItemLink("player", slotID)
                 local itemButton = _G["Character" .. slotName .. "Slot"]
-                ItemLevelText(itemLink, itemButton)
+                ItemLevelText(itemLink, itemButton, hide)
             end
         end
     end
 end
 
 function ScarletUI:InspectFrameItemLevel()
-    if not self.db.global.itemLevelInspect or not InspectFrame then
+    local hide = not self.db.global.itemLevelInspect
+    if not InspectFrame then
         return
     end
 
@@ -159,15 +159,13 @@ function ScarletUI:InspectFrameItemLevel()
             local slotID = GetInventorySlotInfo(slotName .. "Slot")
             local itemLink = GetInventoryItemLink(unit, slotID)
             local itemButton = _G["Inspect" .. slotName .. "Slot"]
-            ItemLevelText(itemLink, itemButton)
+            ItemLevelText(itemLink, itemButton, hide)
         end
     end
 end
 
 function ScarletUI:BagItemLevel()
-    if not self.db.global.itemLevelBag then
-        return
-    end
+    local hide = not self.db.global.itemLevelBag
 
     if ScarletUI_BagFrame then
         for bag = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
@@ -175,7 +173,7 @@ function ScarletUI:BagItemLevel()
                 local index = bag * GetContainerNumSlots(bag) + slot
                 local itemLink = GetContainerItemLink(bag, slot)
                 local itemButton = self.bagSlots[index]
-                ItemLevelText(itemLink, itemButton)
+                ItemLevelText(itemLink, itemButton, hide)
             end
         end
     else
@@ -184,7 +182,7 @@ function ScarletUI:BagItemLevel()
                 local itemLink = GetContainerItemLink(bag, slot)
                 local adjustedSlot = GetContainerNumSlots(bag) - slot + 1
                 local itemButton = _G["ContainerFrame" .. (bag + 1) .. "Item" .. adjustedSlot]
-                ItemLevelText(itemLink, itemButton)
+                ItemLevelText(itemLink, itemButton, hide)
             end
         end
     end

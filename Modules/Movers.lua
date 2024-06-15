@@ -16,97 +16,345 @@ ScarletUI.frameAnchors = {
 }
 
 ScarletUI.frameData = {
-    playerFrame = {
-        frame = PlayerFrame,
-        databasePath = "unitFramesModule.playerFrame",
-        settingsPath = "unitFramesModuleSettings.args.playerFrame",
-    },
-    targetFrame = {
-        frame = TargetFrame,
-        databasePath = "unitFramesModule.targetFrame",
-        settingsPath = "unitFramesModuleSettings.args.targetFrame",
-    },
-    focusFrame = {
-        frame = FocusFrame,
-        databasePath = "unitFramesModule.focusFrame",
-        settingsPath = "unitFramesModuleSettings.args.focusFrame",
+    bagBar = {
+        frame = BagBar,
+        module = "actionbarsModule",
+        databasePath = "actionbarsModule.bagBar",
     },
     castBar = {
         frame = CastingBarFrame,
+        module = "unitFramesModule",
         databasePath = "unitFramesModule.castBar",
-        settingsPath = "unitFramesModuleSettings.args.castBar",
     },
     chatFrame = {
         frame = ChatFrame1,
+        module = "chatModule",
         databasePath = "chatModule.chatFrame",
-        settingsPath = "chatModuleSettings.args.chatFrame",
-    },
-    mainMenuBar = {
-        frame = MainMenuBar,
-        databasePath = "actionbarsModule.mainMenuBar",
-        settingsPath = "actionbarsModuleSettings.args.mainMenuBar",
-    },
-    vehicleLeaveButton = {
-        frame = MainMenuBarVehicleLeaveButton,
-        databasePath = "actionbarsModule.vehicleLeaveButton",
-        settingsPath = "actionbarsModuleSettings.args.vehicleLeaveButton",
-    },
-    multiBarBottomLeft = {
-        frame = MultiBarBottomLeft,
-        databasePath = "actionbarsModule.multiBarBottomLeft",
-        settingsPath = "actionbarsModuleSettings.args.multiBarBottomLeft",
-    },
-    multiBarBottomRight = {
-        frame = MultiBarBottomRight,
-        databasePath = "actionbarsModule.multiBarBottomRight",
-        settingsPath = "actionbarsModuleSettings.args.multiBarBottomRight",
-    },
-    multiBarLeft = {
-        frame = MultiBarLeft,
-        databasePath = "actionbarsModule.multiBarLeft",
-        settingsPath = "actionbarsModuleSettings.args.multiBarLeft",
-    },
-    multiBarRight = {
-        frame = MultiBarRight,
-        databasePath = "actionbarsModule.multiBarRight",
-        settingsPath = "actionbarsModuleSettings.args.multiBarRight",
-    },
-    stanceBar = {
-        frame = StanceBarFrame,
-        databasePath = "actionbarsModule.stanceBar",
-        settingsPath = "actionbarsModuleSettings.args.stanceBar",
-    },
-    petBar = {
-        frame = PetActionBarFrame,
-        databasePath = "actionbarsModule.petBar",
-        settingsPath = "actionbarsModuleSettings.args.petBar",
-    },
-    multiCastBar = {
-        frame = MultiCastActionBarFrame,
-        databasePath = "actionbarsModule.multiCastBar",
-        settingsPath = "actionbarsModuleSettings.args.multiCastBar",
     },
     experienceBar = {
         frame = MainMenuExpBar,
+        module = "actionbarsModule",
         databasePath = "actionbarsModule.experienceBar",
-        settingsPath = "actionbarsModuleSettings.args.experienceBar",
     },
-    reputationBar = {
-        frame = ReputationWatchBar,
-        databasePath = "actionbarsModule.reputationBar",
-        settingsPath = "actionbarsModuleSettings.args.reputationBar",
+    focusFrame = {
+        frame = FocusFrame,
+        module = "unitFramesModule",
+        databasePath = "unitFramesModule.focusFrame",
+    },
+    mainMenuBar = {
+        frame = MainMenuBar,
+        module = "actionbarsModule",
+        databasePath = "actionbarsModule.mainMenuBar",
     },
     microBar = {
         frame = MicroButtonAndBagsBar,
+        module = "actionbarsModule",
         databasePath = "actionbarsModule.microBar",
-        settingsPath = "actionbarsModuleSettings.args.microBar",
     },
-    bagBar = {
-        frame = BagBar,
-        databasePath = "actionbarsModule.bagBar",
-        settingsPath = "actionbarsModuleSettings.args.bagBar",
+    multiBarBottomLeft = {
+        frame = MultiBarBottomLeft,
+        module = "actionbarsModule",
+        databasePath = "actionbarsModule.multiBarBottomLeft",
+    },
+    multiBarBottomRight = {
+        frame = MultiBarBottomRight,
+        module = "actionbarsModule",
+        databasePath = "actionbarsModule.multiBarBottomRight",
+    },
+    multiBarLeft = {
+        frame = MultiBarLeft,
+        module = "actionbarsModule",
+        databasePath = "actionbarsModule.multiBarLeft",
+    },
+    multiBarRight = {
+        frame = MultiBarRight,
+        module = "actionbarsModule",
+        databasePath = "actionbarsModule.multiBarRight",
+    },
+    multiCastBar = {
+        frame = MultiCastActionBarFrame,
+        module = "actionbarsModule",
+        databasePath = "actionbarsModule.multiCastBar",
+    },
+    petBar = {
+        frame = PetActionBarFrame,
+        module = "actionbarsModule",
+        databasePath = "actionbarsModule.petBar",
+    },
+    playerFrame = {
+        frame = PlayerFrame,
+        module = "unitFramesModule",
+        databasePath = "unitFramesModule.playerFrame",
+    },
+    reputationBar = {
+        frame = ReputationWatchBar,
+        module = "actionbarsModule",
+        databasePath = "actionbarsModule.reputationBar",
+    },
+    stanceBar = {
+        frame = StanceBarFrame,
+        module = "actionbarsModule",
+        databasePath = "actionbarsModule.stanceBar",
+    },
+    targetFrame = {
+        frame = TargetFrame,
+        module = "unitFramesModule",
+        databasePath = "unitFramesModule.targetFrame",
+    },
+    vehicleLeaveButton = {
+        frame = MainMenuBarVehicleLeaveButton,
+        module = "actionbarsModule",
+        databasePath = "actionbarsModule.vehicleLeaveButton",
     },
 }
+
+function ScarletUI:GenerateMoverConfig(name, _order)
+    local frameData = self:GetFrameData(name)
+    if frameData == nil then
+        self:Print("Frame data is nil for " .. name)
+        return
+    end
+
+    local module = self.db.global[frameData.module]
+    local defaults = self.db.defaults.global[frameData.module];
+
+    if defaults[name] == nil then
+        self:Print("Database defaults are missing for " .. name)
+        return
+    end
+
+    return {
+        name = (name:gsub("(%a)(%u)", "%1 %2"):gsub("^%l", string.upper)),
+        type = "group",
+        disabled = function() return self:SettingDisabled(module.enabled) end,
+        order = _order,
+        args = {
+            moveFrame = {
+                name = "Move Frame",
+                desc = "Allows you to choose the X and Y position of the frame.",
+                type = "toggle",
+                width = 1,
+                order = 1,
+                get = function(_) return module[name].move end,
+                set = function(_, val)
+                    module[name].move = val
+                    self:SetupActionBars()
+                end,
+            },
+            hide = {
+                name = "Hide Frame",
+                desc = "Allows you to hide the frame.",
+                type = "toggle",
+                width = 1,
+                order = 2,
+                get = function(_) return module[name].hide end,
+                set = function(_, val)
+                    module[name].hide = val
+                    self:SetupActionBars()
+
+                    if not val then
+                        self:ShowReloadDialog()
+                    end
+                end,
+            },
+            spacer1 = {
+                name = "",
+                type = "description",
+                width = "full",
+                order = 3,
+            },
+            frameAnchor = {
+                name = "Frame Anchor",
+                desc = "Anchor point of the frame.\n(Default " .. self.frameAnchors[defaults[name].frameAnchor] .. ")",
+                type = "select",
+                disabled = function() return self:SettingDisabled(module[name].move) end,
+                width = 1,
+                order = 4,
+                values = function() return self.frameAnchors end,
+                get = function(_) return module[name].frameAnchor end,
+                set = function(_, val)
+                    module[name].frameAnchor = val
+                    self:SetupActionBars()
+                end,
+            },
+            screenAnchor = {
+                name = "Screen Anchor",
+                desc = "Anchor point of the frame relative to the screen.\n(Default " .. self.frameAnchors[defaults[name].screenAnchor] .. ")",
+                type = "select",
+                disabled = function() return self:SettingDisabled(module[name].move) end,
+                width = 1,
+                order = 5,
+                values = function() return self.frameAnchors end,
+                get = function(_) return module[name].screenAnchor end,
+                set = function(_, val)
+                    module[name].screenAnchor = val
+                    self:SetupActionBars()
+                end,
+            },
+            spacer2 = {
+                name = "",
+                type = "description",
+                width = "full",
+                order = 6,
+            },
+            x = {
+                name = "Frame X",
+                desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults[name].x .. ")",
+                type = "range",
+                disabled = function() return self:SettingDisabled(module[name].move) end,
+                min = math.floor(GetScreenWidth()) * -1,
+                max = math.floor(GetScreenWidth()),
+                step = 1,
+                width = 1,
+                order = 7,
+                get = function(_) return module[name].x end,
+                set = function(_, val)
+                    module[name].x = val
+                    self:SetupActionBars()
+                end,
+            },
+            y = {
+                name = "Frame Y",
+                desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults[name].y .. ")",
+                type = "range",
+                disabled = function() return self:SettingDisabled(module[name].move) end,
+                min = math.floor(GetScreenHeight()) * -1,
+                max = math.floor(GetScreenHeight()),
+                step = 1,
+                width = 1,
+                order = 8,
+                get = function(_) return module[name].y end,
+                set = function(_, val)
+                    module[name].y = val
+                    self:SetupActionBars()
+                end,
+            }
+        }
+    }
+end
+
+function ScarletUI:GetMoversConfigs()
+    local bars = {
+        "bagBar",
+        "castBar",
+        "chatFrame",
+        "experienceBar",
+        "focusFrame",
+        "mainMenuBar",
+        "microBar",
+        "multiBarBottomLeft",
+        "multiBarBottomRight",
+        "multiBarLeft",
+        "multiBarRight",
+        "multiCastBar",
+        "petBar",
+        "playerFrame",
+        "reputationBar",
+        "stanceBar",
+        "targetFrame",
+        "vehicleLeaveButton",
+    }
+    local configs = {}
+
+    for i, barName in ipairs(bars) do
+        local frameData = self:GetFrameData(barName)
+        if frameData == nil then
+            self:Print("Frame data is nil for " .. barName)
+            return
+        end
+
+        local module = self.db.global[frameData.module];
+
+        configs[barName] = self:GenerateMoverConfig(barName, i + 1)
+
+        if barName == "bagBar" then
+            configs[barName].args.microBag = {
+                name = "Micro Bag",
+                desc = "Hide all non backpack bag icons.",
+                type = "toggle",
+                width = "full",
+                order = 0.9,
+                get = function(_) return module.microBag end,
+                set = function(_, val)
+                    module.microBag = val
+                    self:SetupActionBars()
+                end,
+            }
+        end
+
+        if barName == "focusFrame" or barName == "targetFrame" then
+            configs[barName].args.buffsOnTop = {
+                name = "Buffs On Top",
+                desc = "Force buffs to show on top of the frame.",
+                type = "toggle",
+                width = 1,
+                order = 0.8,
+                get = function(_) return module[barName].buffsOnTop end,
+                set = function(_, val)
+                    module[barName].buffsOnTop = val
+                    self:SetupUnitFrames()
+                end,
+            }
+        end
+
+        if barName == "targetFrame" then
+            configs[barName].args.mirrorPlayerFrame = {
+                name = "Mirror Player Frame",
+                desc = "Mirrors the X and Y position of the player frame.",
+                type = "toggle",
+                width = 1,
+                order = 0.9,
+                get = function(_) return module.targetFrame.mirrorPlayerFrame end,
+                set = function(_, val)
+                    module.targetFrame.mirrorPlayerFrame = val
+                    self:SetupUnitFrames()
+                end,
+            }
+        end
+
+        if barName == "mainMenuBar" then
+            configs[barName].args.showGryphons = {
+                name = "Show Gryphons",
+                desc = "Show the gryphon graphics on the sides of your main bar.",
+                type = "toggle",
+                width = 1,
+                order = 0.8,
+                get = function(_) return module.showGryphons end,
+                set = function(_, val)
+                    module.showGryphons = val
+                    self:SetupActionBars()
+                end,
+            }
+
+            configs[barName].args.pagingNumbers = {
+                name = "Paging Numbers",
+                desc = "Show the actionbar paging numbers and buttons.",
+                type = "toggle",
+                width = 1,
+                order = 0.9,
+                get = function(_) return module.showPagingNumbers end,
+                set = function(_, val)
+                    module.showPagingNumbers = val
+                    self:SetupActionBars()
+                end,
+            }
+        end
+
+        if barName == "multiCastBar" then
+            local version = self:GetWoWVersion();
+            configs[barName].hidden = function() return version ~= "WRATH" and version ~= "CATA" end
+        end
+
+        configs[barName].args.spacer = {
+            name = "",
+            type = "description",
+            width = "full",
+            order = 0.91,
+        }
+    end
+
+    return configs
+end
 
 function ScarletUI:MoversOptions()
     if self.selectedMover == nil then
@@ -120,14 +368,14 @@ function ScarletUI:MoversOptions()
         self:SelectMover(self.movers[keys[1]])
     end
 
-    local options = self:Options().args
+    local options = self:GetMoversConfigs()
     local frameData = self:GetFrameData(self.selectedMover.settingsKey)
     if frameData == nil then
         self:Print("Frame data is nil for settings key: " .. self.selectedMover.settingsKey)
         return
     end
 
-    local frameOptions = self:GetValueFromPath(options, frameData.settingsPath)
+    local frameOptions = self:GetValueFromPath(options, self.selectedMover.settingsKey)
 
     frameOptions.name = ""
     frameOptions.inline = true
@@ -148,8 +396,8 @@ function ScarletUI:MoversOptions()
         args = {
             toggleMovers = {
                 type = "execute",
-                name = "Toggle Movers",
-                desc = "Toggle the visibility of all movers.",
+                name = "Lock Frames",
+                desc = "Lock all mover frames.",
                 func = function() self:ToggleMovers() end,
                 order = 1,
             },
@@ -159,6 +407,12 @@ function ScarletUI:MoversOptions()
                 desc = "Reset all frame positions to their default settings.",
                 func = function() StaticPopup_Show('SCARLET_RESTORE_POSITIONS_DIALOG') end,
                 order = 2,
+            },
+            spacer = {
+                name = "",
+                type = "description",
+                width = "full",
+                order = 2.1,
             },
             frameSelection = {
                 type = "select",

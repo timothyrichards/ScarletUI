@@ -274,6 +274,11 @@ function ScarletUI:bagBar(module)
             KeyRingButton:ClearAllPoints()
             KeyRingButton:SetPoint("RIGHT", MainMenuBarBackpackButton, "LEFT", -5, 0)
         end
+    else
+        for i = 0, 3 do
+            local frame = _G["CharacterBag"..i.."Slot"]
+            frame:Show()
+        end
     end
 
     self:CreateMover(BagBar, bagBarSettings)
@@ -426,32 +431,35 @@ end
 function ScarletUI:experienceBar(module)
     local experienceBarSettings = module.experienceBar;
 
-    self.movingExperienceBar = true
-
     MainMenuExpBar:SetSize(510, 10)
-    MainMenuExpBar:ClearAllPoints()
-    MainMenuExpBar:SetPoint(
-            self.frameAnchors[experienceBarSettings.frameAnchor],
-            UIParent,
-            self.frameAnchors[experienceBarSettings.screenAnchor],
-            experienceBarSettings.x,
-            experienceBarSettings.y
-    )
-
-    if not self.experienceBarEventRegistered then
-        hooksecurefunc(MainMenuExpBar, "SetPoint", function()
-            if self.movingExperienceBar then
-                return
-            end
-
-            self:experienceBar(module)
-        end)
-        self.experienceBarEventRegistered = true
-    end
-
     MainMenuExpBar.settingsKey = "experienceBar"
     self:CreateMover(MainMenuExpBar, experienceBarSettings)
-    self.movingExperienceBar = false
+
+    if experienceBarSettings.move then
+        self.movingExperienceBar = true
+
+        MainMenuExpBar:ClearAllPoints()
+        MainMenuExpBar:SetPoint(
+                self.frameAnchors[experienceBarSettings.frameAnchor],
+                UIParent,
+                self.frameAnchors[experienceBarSettings.screenAnchor],
+                experienceBarSettings.x,
+                experienceBarSettings.y
+        )
+
+        if not self.experienceBarEventRegistered then
+            hooksecurefunc(MainMenuExpBar, "SetPoint", function()
+                if self.movingExperienceBar then
+                    return
+                end
+
+                self:experienceBar(module)
+            end)
+            self.experienceBarEventRegistered = true
+        end
+
+        self.movingExperienceBar = false
+    end
 
     if experienceBarSettings.hide then
         MainMenuExpBar:UnregisterAllEvents()
@@ -489,33 +497,36 @@ end
 function ScarletUI:reputationBar(module)
     local reputationBarSettings = module.reputationBar;
 
-    self.movingReputationBar = true
-
     ReputationWatchBar:SetWidth(510)
     ReputationWatchBar.StatusBar:SetWidth(510)
-    ReputationWatchBar:ClearAllPoints()
-    ReputationWatchBar:SetPoint(
-            self.frameAnchors[reputationBarSettings.frameAnchor],
-            UIParent,
-            self.frameAnchors[reputationBarSettings.screenAnchor],
-            reputationBarSettings.x,
-            reputationBarSettings.y
-    )
-
-    if not self.reputationBarEventRegistered then
-        hooksecurefunc(ReputationWatchBar, "SetPoint", function()
-            if self.movingReputationBar then
-                return
-            end
-
-            self:reputationBar(module)
-        end)
-        self.reputationBarEventRegistered = true
-    end
-
     ReputationWatchBar.settingsKey = "reputationBar"
     self:CreateMover(ReputationWatchBar, reputationBarSettings)
-    self.movingReputationBar = false
+
+    if reputationBarSettings.move then
+        self.movingReputationBar = true
+
+        ReputationWatchBar:ClearAllPoints()
+        ReputationWatchBar:SetPoint(
+                self.frameAnchors[reputationBarSettings.frameAnchor],
+                UIParent,
+                self.frameAnchors[reputationBarSettings.screenAnchor],
+                reputationBarSettings.x,
+                reputationBarSettings.y
+        )
+
+        if not self.reputationBarEventRegistered then
+            hooksecurefunc(ReputationWatchBar, "SetPoint", function()
+                if self.movingReputationBar then
+                    return
+                end
+
+                self:reputationBar(module)
+            end)
+            self.reputationBarEventRegistered = true
+        end
+
+        self.movingReputationBar = false
+    end
 
     if reputationBarSettings.hide then
         ReputationWatchBar:UnregisterAllEvents()
@@ -581,7 +592,7 @@ function ScarletUI:SetupActionBars()
 
         if data ~= nil then
             local frame = data.frame
-            local settings = self:GetValueFromPath(self.db.global, self.frameData[v].databasePath)
+            local settings = self:GetValueFromPath(self.db.global, data.databasePath)
             local width
             local height
 

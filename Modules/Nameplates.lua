@@ -102,27 +102,6 @@ local function HideTargetArrows()
     end
 end
 
-function ScarletUI:UpdateCastText(castBar)
-    if castBar then
-        local abilityName = castBar.Text and castBar.Text:GetText()
-        if castBar.castBarText then
-            castBar.castBarText:SetText(abilityName)
-            castBar.castBarText:Show()
-        end
-    end
-end
-
-function ScarletUI:UpdateHealthText(healthBar)
-    if healthBar then
-        local unitID = healthBar:GetParent().unit or healthBar.unit
-        local healthPercent = (UnitHealth(unitID) / UnitHealthMax(unitID)) * 100;
-        if healthBar.healthBarText then
-            healthBar.healthBarText:SetText(string.format("%.0f%%", healthPercent))
-            healthBar.healthBarText:Show()
-        end
-    end
-end
-
 local function SetupNameplate(nameplate)
     local module = ScarletUI.db.global.nameplatesModule
 
@@ -133,6 +112,8 @@ local function SetupNameplate(nameplate)
             if not castBar.castBarText then
                 castBar.castBarText = castBar:CreateFontString(nil, "OVERLAY", "GameFontWhite")
                 castBar.castBarText:SetPoint("CENTER")
+                castBar.castBarText:SetFont("Fonts\\FRIZQT__.TTF", module.castBarText.fontSize, "OUTLINE")
+            else
                 castBar.castBarText:SetFont("Fonts\\FRIZQT__.TTF", module.castBarText.fontSize, "OUTLINE")
             end
             ScarletUI:UpdateCastText(castBar)
@@ -155,6 +136,8 @@ local function SetupNameplate(nameplate)
             if not healthBar.healthBarText then
                 healthBar.healthBarText = healthBar:CreateFontString(nil, "OVERLAY", "GameFontWhite")
                 healthBar.healthBarText:SetPoint("CENTER")
+                healthBar.healthBarText:SetFont("Fonts\\FRIZQT__.TTF", module.healthBarText.fontSize, "OUTLINE")
+            else
                 healthBar.healthBarText:SetFont("Fonts\\FRIZQT__.TTF", module.healthBarText.fontSize, "OUTLINE")
             end
             ScarletUI:UpdateHealthText(healthBar)
@@ -180,6 +163,35 @@ local function SetupNameplate(nameplate)
                 nameplate.myDebuffIcons[debuffName] = nil
             end
         end
+    end
+end
+
+function ScarletUI:UpdateCastText(castBar)
+    if castBar then
+        local abilityName = castBar.Text and castBar.Text:GetText()
+        if castBar.castBarText then
+            castBar.castBarText:SetText(abilityName)
+            castBar.castBarText:Show()
+        end
+    end
+end
+
+function ScarletUI:UpdateHealthText(healthBar)
+    if healthBar then
+        local unitID = healthBar:GetParent().unit or healthBar.unit
+        local healthPercent = (UnitHealth(unitID) / UnitHealthMax(unitID)) * 100;
+        if healthBar.healthBarText then
+            healthBar.healthBarText:SetText(string.format("%.0f%%", healthPercent))
+            healthBar.healthBarText:Show()
+        end
+    end
+end
+
+function ScarletUI:ReapplyTextSettingsToNameplates()
+    local activeNameplates = C_NamePlate.GetNamePlates()
+
+    for _, nameplate in ipairs(activeNameplates) do
+        SetupNameplate(nameplate)
     end
 end
 
@@ -371,7 +383,6 @@ function ScarletUI:SetupNameplates()
     end)
 end
 
--- List all nameplates and check if the specified debuff is present on the unit the nameplate belongs to
 function ScarletUI:CheckUnitDebuffs(unitId)
     local settings = self.db.global.nameplatesModule.debuffTracker
     if not settings.track or not unitId then
@@ -419,10 +430,11 @@ function ScarletUI:CheckUnitDebuffs(unitId)
     -- Sorting the table in ascending order of expireTime.
     table.sort(sortedDebuffs, function(a, b) return a.expireTime < b.expireTime end)
 
-    -- Reposition icons
+    -- Reposition and resize icons
     local shownCount = 0
     local totalWidth = #sortedDebuffs * (settings.iconSize + settings.spacing)
     for _, debuffData in ipairs(sortedDebuffs) do
+        debuffData.icon:SetSize(settings.iconSize, settings.iconSize)
         debuffData.icon:Hide()
 
         local xOffset = (shownCount * (settings.iconSize + settings.spacing)) - totalWidth / 2
@@ -432,7 +444,14 @@ function ScarletUI:CheckUnitDebuffs(unitId)
     end
 end
 
--- Display debuff icon on the provided nameplate.
+function ScarletUI:ReapplySettingsToDebuffIcons()
+    local activeNameplates = C_NamePlate.GetNamePlates()
+
+    for _, nameplate in ipairs(activeNameplates) do
+        self:CheckUnitDebuffs(nameplate.UnitFrame.unit)
+    end
+end
+
 function ScarletUI:DisplayDebuffIcon(settings, plate, debuffName, icon, count, duration, expireTime)
     -- Initialize the debuff frame pool for the nameplate
     plate.debuffFramePool = plate.debuffFramePool or {}

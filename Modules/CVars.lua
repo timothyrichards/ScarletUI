@@ -1,10 +1,5 @@
 local IsAddOnLoaded = C_AddOns.IsAddOnLoaded or IsAddOnLoaded
 
-ScarletUI.booleanOptions = {
-    "true",
-    "false"
-}
-
 ScarletUI.reloadCVars = {
     'XpBarText',
 }

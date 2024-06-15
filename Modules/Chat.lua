@@ -1,11 +1,52 @@
 function ScarletUI:SetupChat()
     local chatModule = self.db.global.chatModule;
-    local tabs = chatModule.tabs
     if not chatModule.enabled then
         return
     end
 
     self:FixChatBug()
+    self:SetupChatTabs()
+
+    if not self.chatEventRegistered then
+        self.chatEventRegistered = true
+        self.frame:RegisterEvent("UPDATE_FLOATING_CHAT_WINDOWS")
+        self.frame:RegisterEvent("UPDATE_CHAT_COLOR_NAME_BY_CLASS")
+        self.frame:HookScript("OnEvent", function(_, event, type, set, ...)
+            if event == "UPDATE_FLOATING_CHAT_WINDOWS" then
+                ScarletUI:SetupChat()
+            elseif event == "UPDATE_CHAT_COLOR_NAME_BY_CLASS" then
+                if not set then SetChatColorNameByClass(type,true); end
+            end
+        end)
+    end
+
+    local chatFrame = chatModule.chatFrame
+
+    ChatFrame1.settingsKey = "chatFrame"
+    self:CreateMover(ChatFrame1, chatFrame)
+
+    if not chatFrame.move or self.lightWeightMode or self.retail then
+        return
+    end
+
+    ChatFrame1:ClearAllPoints()
+    ChatFrame1:SetHeight(chatModule.height)
+    ChatFrame1:SetWidth(chatModule.width)
+    ChatFrame1:SetPoint(
+            self.frameAnchors[chatFrame.frameAnchor],
+            UIParent,
+            self.frameAnchors[chatFrame.screenAnchor],
+            chatFrame.x,
+            chatFrame.y
+    )
+end
+
+function ScarletUI:SetupChatTabs()
+    local module = self.db.global.chatModule;
+    local tabs = module.tabs
+    if not module.enabled then
+        return
+    end
 
     -- Open new tabs if they dont exist
     if tabs.loot and not self:ChatTabExists(_G.CHAT_FRAMES, "Loot") then
@@ -26,7 +67,7 @@ function ScarletUI:SetupChat()
         local id = frame:GetID()
 
         -- Set chat font size
-        FCF_SetChatWindowFontSize(nil, frame, chatModule.fontSize)
+        FCF_SetChatWindowFontSize(nil, frame, module.fontSize)
 
         if frame.name == 'General' then
             if tabs.loot then
@@ -60,37 +101,10 @@ function ScarletUI:SetupChat()
     -- Jump back to main tab
     FCFDock_SelectWindow(_G.GENERAL_CHAT_DOCK, _G.ChatFrame1)
 
-    if not self.chatEventRegistered then
-        self.chatEventRegistered = true
-        self.frame:RegisterEvent("UPDATE_FLOATING_CHAT_WINDOWS")
-        self.frame:RegisterEvent("UPDATE_CHAT_COLOR_NAME_BY_CLASS")
-        self.frame:HookScript("OnEvent", function(_, event, type, set, ...)
-            if event == "UPDATE_FLOATING_CHAT_WINDOWS" then
-                ScarletUI:SetupChat()
-            elseif event == "UPDATE_CHAT_COLOR_NAME_BY_CLASS" then
-                if not set then SetChatColorNameByClass(type,true); end
-            end
-        end)
+    if module.chatFrame.hide then
+        ChatFrame1:UnregisterAllEvents()
+        ChatFrame1:SetParent(self.hideFrameContainer)
     end
-
-    local chatFrame = chatModule.chatFrame
-    if not chatFrame.move or self.lightWeightMode or self.retail then
-        return
-    end
-
-    ChatFrame1.settingsKey = "chatFrame"
-    ChatFrame1:ClearAllPoints()
-    ChatFrame1:SetHeight(chatModule.height)
-    ChatFrame1:SetWidth(chatModule.width)
-    ChatFrame1:SetPoint(
-            self.frameAnchors[chatFrame.frameAnchor],
-            UIParent,
-            self.frameAnchors[chatFrame.screenAnchor],
-            chatFrame.x,
-            chatFrame.y
-    )
-
-    self:CreateMover(ChatFrame1, chatFrame)
 end
 
 function ScarletUI:ChatTabExists(table, value)

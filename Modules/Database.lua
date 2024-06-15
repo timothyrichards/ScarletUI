@@ -180,7 +180,7 @@ ScarletUI.defaults = {
                     move = true,
                     x = 535,
                     y = 450,
-                    height = 295,
+                    height = 225,
                     keepGroupsTogether = false,
                     horizontalGroups = false,
                     displayPowerBar = true,
@@ -322,7 +322,6 @@ ScarletUI.defaults = {
     }
 }
 
--- This configuration mimics the base UI of WoW
 ScarletUI.originalUIDefaults = {
     global = {
         installationComplete = false,
@@ -445,6 +444,22 @@ ScarletUI.originalUIDefaults = {
                 x = -361,
                 y = 103
             },
+            experienceBar = {
+                move = true,
+                hide = false,
+                frameAnchor = 1, -- BOTTOM
+                screenAnchor = 1, -- BOTTOM
+                x = -250,
+                y = 44
+            },
+            reputationBar = {
+                move = true,
+                hide = false,
+                frameAnchor = 1, -- BOTTOM
+                screenAnchor = 1, -- BOTTOM
+                x = -250,
+                y = 42
+            },
             microBar = {
                 move = true,
                 hide = false,
@@ -487,7 +502,7 @@ ScarletUI.originalUIDefaults = {
                     move = true,
                     x = 535,
                     y = 450,
-                    height = 295,
+                    height = 225,
                     keepGroupsTogether = false,
                     horizontalGroups = false,
                     displayPowerBar = true,

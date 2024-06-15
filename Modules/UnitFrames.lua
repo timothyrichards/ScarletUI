@@ -26,6 +26,11 @@ function ScarletUI:SetupPlayerFrame(unitFramesModule)
     mover:HookScript("OnMouseUp", function()
         ScarletUI:SetupTargetFrame(unitFramesModule)
     end)
+
+    if playerFrame.hide then
+        PlayerFrame:UnregisterAllEvents()
+        PlayerFrame:SetParent(self.hideFrameContainer)
+    end
 end
 
 function ScarletUI:SetupTargetFrame(unitFramesModule)
@@ -55,6 +60,11 @@ function ScarletUI:SetupTargetFrame(unitFramesModule)
                 unitFramesModule.playerFrame.y
         )
     end
+
+    if targetFrame.hide then
+        TargetFrame:UnregisterAllEvents()
+        TargetFrame:SetParent(self.hideFrameContainer)
+    end
 end
 
 function ScarletUI:SetupFocusFrame(unitFramesModule)
@@ -71,6 +81,11 @@ function ScarletUI:SetupFocusFrame(unitFramesModule)
                 focusFrame.x,
                 focusFrame.y
         )
+    end
+
+    if focusFrame.hide then
+        FocusFrame:UnregisterAllEvents()
+        FocusFrame:SetParent(self.hideFrameContainer)
     end
 end
 

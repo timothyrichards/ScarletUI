@@ -116,10 +116,12 @@ function ScarletUI:UpdateProfilePositions()
     self.movingRaidFrames = true
     local raidFramesModule = self.db.global.raidFramesModule
     for profile, options in pairs(raidFramesModule.profiles) do
-        local _, _, top, _, bottom, _, left = GetRaidProfileSavedPosition(profile)
-        if top ~= options.y or bottom ~= options.height or left ~= options.x then
-            SetRaidProfileSavedPosition(profile, false, 'TOP', options.y, 'BOTTOM', options.height, 'LEFT', options.x)
-            self:ShowReloadDialog()
+        if options.move then
+            local _, _, top, _, bottom, _, left = GetRaidProfileSavedPosition(profile)
+            if top ~= options.y or bottom ~= options.height or left ~= options.x then
+                SetRaidProfileSavedPosition(profile, false, 'TOP', options.y, 'BOTTOM', options.height, 'LEFT', options.x)
+                self:ShowReloadDialog()
+            end
         end
     end
     self.movingRaidFrames = false

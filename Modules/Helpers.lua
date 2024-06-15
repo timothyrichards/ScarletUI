@@ -48,7 +48,7 @@ function ScarletUI:SetupExpandCharacterInfo()
     end
 
     hooksecurefunc(CharacterFrameExpandButton, "Show", function()
-        if CharacterFrame.Expanded then
+        if not self.db.global.expandCharacterInfo or CharacterFrame.Expanded then
             return
         end
 
