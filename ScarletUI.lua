@@ -19,6 +19,22 @@ StaticPopupDialogs['SCARLET_UI_RELOAD_DIALOG'] = {
     preferredIndex = 3,
 }
 
+-- Dialog to confirm enabling of CVar module
+StaticPopupDialogs['SCARLET_ENABLE_CVARS_DIALOG'] = {
+    text = '<Scarlet UI>\n\nEnabling this module will change several CVars, overriding the their current values\n\nDo you want to continue?',
+    button1 = 'Continue',
+    button2 = 'Cancel',
+    OnAccept = function()
+        ScarletUI.db.global.CVarModule.enabled = true
+        ScarletUI:SetupCVars()
+        AceConfigRegistry:NotifyChange("ScarletUI")
+    end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = false,
+    preferredIndex = 3,
+}
+
 -- Dialog to confirm restoration position of frames to default settings
 StaticPopupDialogs['SCARLET_RESTORE_POSITIONS_DIALOG'] = {
     text = '<Scarlet UI>\n\nAre you sure you want to restore all frame positions to their default positions?',
@@ -76,6 +92,10 @@ function ScarletUI:OnEnable()
     self:Print("Scarlet UI setup successful, use the command /sui to open the options panel.")
 end
 
+function ScarletUI:OnDisable()
+    self.frame:UnregisterAllEvents()
+end
+
 function ScarletUI:Setup()
     -- Set up frame
     self:SetupFrame()
@@ -100,8 +120,6 @@ function ScarletUI:Setup()
     self:SetupTidyIcons()
     self:SetupNameplates()
     self:SetupExpandCharacterInfo()
-
-    self.loaded = true
 end
 
 function ScarletUI:SetupFrame()
@@ -176,6 +194,7 @@ end
 ScarletUI.frame = CreateFrame("Frame", "SUI_Frame", UIParent)
 ScarletUI.frame:RegisterEvent("PLAYER_REGEN_DISABLED")
 ScarletUI.frame:RegisterEvent("PLAYER_REGEN_ENABLED")
+ScarletUI.frame:RegisterEvent("PLAYER_LEAVING_WORLD")
 ScarletUI.frame:SetScript("OnEvent", function (_, event, ...)
     if event == "PLAYER_REGEN_DISABLED" or event == "PLAYER_REGEN_ENABLED" then
         ScarletUI.inCombat = event == "PLAYER_REGEN_DISABLED";
@@ -186,6 +205,10 @@ ScarletUI.frame:SetScript("OnEvent", function (_, event, ...)
 
         SUI_CombatPropertyText:SetText("- inCombat: " .. tostring(ScarletUI.inCombat))
         AceConfigRegistry:NotifyChange("ScarletUI")
+    end
+
+    if event == "PLAYER_LEAVING_WORLD" then
+        ScarletUI.frame:UnregisterAllEvents()
     end
 end)
 

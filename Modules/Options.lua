@@ -193,11 +193,11 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                         order = 3,
                         get = function(_) return database.CVarModule.enabled end,
                         set = function(_, val)
-                            database.CVarModule.enabled = val
                             if not val then
+                                database.CVarModule.enabled = val
                                 ScarletUI:RestoreCVarsDefaults()
                             else
-                                ScarletUI:SetupCVars()
+                                StaticPopup_Show('SCARLET_ENABLE_CVARS_DIALOG')
                             end
                         end,
                     },
@@ -214,7 +214,7 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                             if not val then
                                 self:ShowReloadDialog()
                             else
-                                ScarletUI:SetupNameplates()
+                                self:SetupNameplates()
                             end
                         end,
                     },
