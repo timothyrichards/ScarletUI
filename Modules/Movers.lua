@@ -174,7 +174,7 @@ function ScarletUI:GenerateMoverConfig(name, _order)
                 get = function(_) return module[name].frameAnchor end,
                 set = function(_, val)
                     module[name].frameAnchor = val
-                    self:SetupActionBars()
+                    self:Setup()
                 end,
             },
             screenAnchor = {
@@ -188,7 +188,7 @@ function ScarletUI:GenerateMoverConfig(name, _order)
                 get = function(_) return module[name].screenAnchor end,
                 set = function(_, val)
                     module[name].screenAnchor = val
-                    self:SetupActionBars()
+                    self:Setup()
                 end,
             },
             spacer2 = {
@@ -210,7 +210,7 @@ function ScarletUI:GenerateMoverConfig(name, _order)
                 get = function(_) return module[name].x end,
                 set = function(_, val)
                     module[name].x = val
-                    self:SetupActionBars()
+                    self:Setup()
                 end,
             },
             y = {
@@ -226,7 +226,7 @@ function ScarletUI:GenerateMoverConfig(name, _order)
                 get = function(_) return module[name].y end,
                 set = function(_, val)
                     module[name].y = val
-                    self:SetupActionBars()
+                    self:Setup()
                 end,
             }
         }
