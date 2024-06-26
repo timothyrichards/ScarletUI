@@ -15,7 +15,7 @@ function ScarletUI:SetupChat()
             if event == "UPDATE_FLOATING_CHAT_WINDOWS" then
                 ScarletUI:SetupChat()
             elseif event == "UPDATE_CHAT_COLOR_NAME_BY_CLASS" then
-                if not set then SetChatColorNameByClass(type,true); end
+                if not set then SetChatColorNameByClass(type, true); end
             end
         end)
     end

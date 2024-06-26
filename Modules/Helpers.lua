@@ -164,7 +164,10 @@ end
 
 function ScarletUI:DumpTable(table, indent)
     indent = indent or ""
+    local isEmpty = true
+
     for key, value in pairs(table) do
+        isEmpty = false
         if type(value) == "table" then
             print(indent .. tostring(key) .. " = {")
             self:DumpTable(value, indent .. "    ")
@@ -172,6 +175,10 @@ function ScarletUI:DumpTable(table, indent)
         else
             print(indent .. tostring(key) .. " = " .. tostring(value))
         end
+    end
+
+    if isEmpty then
+        print(indent .. "{}")
     end
 end
 

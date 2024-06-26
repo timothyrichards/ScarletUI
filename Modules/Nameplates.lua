@@ -1,3 +1,4 @@
+local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 local allStates = {}
 local lastNameplate
 
@@ -332,6 +333,83 @@ function ScarletUI:SetupPriorityDebuffs()
     self.priorityDebuffs = split(database.priorityDebuffs)
 end
 
+function ScarletUI:SetupDropdownButton(module)
+    local nameplatesModule = self.db.global.nameplatesModule
+    if self.dropdownEventRegistered then
+        return
+    end
+
+    self.dropdownEventRegistered = true
+    hooksecurefunc("UnitPopup_ShowMenu", function(_, which, unit, ...)
+        if not module.dropdownMenuButton then
+            return
+        end
+
+        -- if the menu is already open or the unit can't cooperate with the player then return
+        if UIDROPDOWNMENU_MENU_LEVEL > 1 or not UnitIsPlayer(unit) or (not UnitCanCooperate("player", unit) and not UnitIsPlayer(unit)) then
+            return
+        end
+
+        -- add separator to dropdown
+        UIDropDownMenu_AddSeparator()
+
+        -- add ScarletUI title to dropdown
+        local title = UIDropDownMenu_CreateInfo();
+        title.text = "ScarletUI"
+        title.notCheckable = true
+        title.isTitle = true
+        UIDropDownMenu_AddButton(title)
+
+        local tankNames = {}
+        local function updateTankNames()
+            local count = 0;
+            for key, value in pairs(self.tanks) do
+                if value then
+                    table.insert(tankNames, key)
+                    nameplatesModule.tankNames = table.concat(tankNames, ",");
+                end
+
+                count = count + 1
+            end
+
+            if count == 0 then
+                nameplatesModule.tankNames = ""
+            end
+
+            AceConfigRegistry:NotifyChange("ScarletUI")
+        end
+
+        -- add the "Add/Remove Tank" button to the context menu
+        local button = UIDropDownMenu_CreateInfo();
+        button.notCheckable = true
+        button.owner = which
+        button.colorCode = "|cff00b3ff"
+        button.text = "Add Tank"
+        button.value = "Add_Tank"
+        button.func = function()
+            local name, _ = UnitName(unit)
+            self.tanks[name] = true
+            updateTankNames()
+        end;
+
+        for tank, _ in pairs(self.tanks) do
+            local name, _ = UnitName(unit)
+            if name == tank then
+                button.text = "Remove Tank"
+                button.value = "Remove_Tank"
+                button.func = function()
+                    self.tanks[tank] = nil
+                    updateTankNames()
+                end;
+
+                break
+            end
+        end
+
+        UIDropDownMenu_AddButton(button)
+    end)
+end
+
 function ScarletUI:SetupNameplates()
     local nameplatesModule = self.db.global.nameplatesModule
     if not nameplatesModule.enabled or self.lightWeightMode or self.retail then
@@ -341,46 +419,55 @@ function ScarletUI:SetupNameplates()
     self:SetupTanks(nameplatesModule)
     self:SetupSpecialUnits(nameplatesModule)
     self:SetupPriorityDebuffs()
-    self.frame:RegisterEvent("PLAYER_TARGET_CHANGED")
-    self.frame:RegisterEvent("UNIT_AURA")
-    self.frame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
-    self.frame:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
-    self.frame:RegisterEvent("UNIT_THREAT_LIST_UPDATE")
-    self.frame:HookScript("OnEvent", function(_, event, unitId, ...)
-        if event == "PLAYER_TARGET_CHANGED" then
-            ScarletUI:UpdateTargetArrows()
-        end
+    self:SetupDropdownButton(nameplatesModule)
 
-        if event == "UNIT_AURA" then
-            ScarletUI:CheckUnitDebuffs(unitId)
-        end
-
-        if event == "NAME_PLATE_UNIT_ADDED" then
-            ScarletUI:CheckUnitDebuffs(unitId)
-            ScarletUI:UpdateNameplate(unitId)
-            ScarletUI:UpdateTargetArrows()
-
-            local nameplate = C_NamePlate.GetNamePlateForUnit(unitId)
-            if nameplate then
-                SetupNameplate(nameplate)
+    if not self.nameplateEventsRegistered then
+        self.nameplateEventsRegistered = true
+        self.frame:RegisterEvent("PLAYER_TARGET_CHANGED")
+        self.frame:RegisterEvent("UNIT_AURA")
+        self.frame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
+        self.frame:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
+        self.frame:RegisterEvent("UNIT_THREAT_LIST_UPDATE")
+        self.frame:HookScript("OnEvent", function(_, event, unitId, ...)
+            if ScarletUI.pauseEvents then
+                return
             end
-        end
 
-        if event == "NAME_PLATE_UNIT_REMOVED" then
-            ScarletUI:CheckUnitDebuffs(unitId)
-            ScarletUI:UpdateNameplate(unitId)
-            local state = allStates[unitId]
-            if state then
-                state.show = false
-                state.changed = true
-                return true
+            if event == "PLAYER_TARGET_CHANGED" then
+                ScarletUI:UpdateTargetArrows()
             end
-        end
 
-        if event == "UNIT_THREAT_LIST_UPDATE" then
-            ScarletUI:UpdateNameplate(unitId)
-        end
-    end)
+            if event == "UNIT_AURA" then
+                ScarletUI:CheckUnitDebuffs(unitId)
+            end
+
+            if event == "NAME_PLATE_UNIT_ADDED" then
+                ScarletUI:CheckUnitDebuffs(unitId)
+                ScarletUI:UpdateNameplate(unitId)
+                ScarletUI:UpdateTargetArrows()
+
+                local nameplate = C_NamePlate.GetNamePlateForUnit(unitId)
+                if nameplate then
+                    SetupNameplate(nameplate)
+                end
+            end
+
+            if event == "NAME_PLATE_UNIT_REMOVED" then
+                ScarletUI:CheckUnitDebuffs(unitId)
+                ScarletUI:UpdateNameplate(unitId)
+                local state = allStates[unitId]
+                if state then
+                    state.show = false
+                    state.changed = true
+                    return true
+                end
+            end
+
+            if event == "UNIT_THREAT_LIST_UPDATE" then
+                ScarletUI:UpdateNameplate(unitId)
+            end
+        end)
+    end
 end
 
 function ScarletUI:CheckUnitDebuffs(unitId)

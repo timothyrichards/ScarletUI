@@ -682,7 +682,6 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                         name = "Priority Debuffs",
                         type = "input",
                         desc = "Add a comma seperated list of debuff spell names you wish to always track even if they're applied by another player, for example: Sunder Armor,Expose Armor,Hammer of Justice\n(This setting is saved per character)",
-                        multiline = 5,
                         width = "full",
                         order = 5,
                         get = function(_) return characterDatabase.priorityDebuffs end,
@@ -842,12 +841,27 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
                 order = 5,
                 args = {
+                    dropdownMenuButton = {
+                        name = "Dropdown Menu Button",
+                        desc = "Adds a button to the right click dropdown to add or remove tanks from the tank names list.",
+                        type = "toggle",
+                        width = "full",
+                        order = 0,
+                        get = function(_) return module.dropdownMenuButton end,
+                        set = function(_, val) module.dropdownMenuButton = val end,
+                    },
+                    spacer1 = {
+                        name = "",
+                        type = "description",
+                        width = "full",
+                        order = 0.1,
+                    },
                     description1 = {
                         name = "|cffffd100These are the colors you see as a |cffff0900DPS|r or |cff15fb00Healer|r.|r",
                         type = "description",
                         width = "full",
                         fontSize = "medium",
-                        order = 0,
+                        order = 1,
                     },
                     otherNoThreat = {
                         name = "No Threat",
@@ -855,7 +869,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                         desc = "Choose a color",
                         width = 0.75,
                         hasAlpha = true,
-                        order = 1,
+                        order = 2,
                         get = function(_)
                             local r, g, b, a = unpack(module.nonTankThreatColors.noThreat)
                             return r, g, b, a
@@ -870,7 +884,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                         desc = "Choose a color",
                         width = 0.75,
                         hasAlpha = true,
-                        order = 2,
+                        order = 3,
                         get = function(_)
                             local r, g, b, a = unpack(module.nonTankThreatColors.lowThreat)
                             return r, g, b, a
@@ -885,7 +899,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                         desc = "Choose a color",
                         width = 0.75,
                         hasAlpha = true,
-                        order = 3,
+                        order = 4,
                         get = function(_)
                             local r, g, b, a = unpack(module.nonTankThreatColors.threat)
                             return r, g, b, a
@@ -900,7 +914,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                         desc = "Choose a color",
                         width = 0.75,
                         hasAlpha = true,
-                        order = 4,
+                        order = 5,
                         get = function(_)
                             local r, g, b, a = unpack(module.nonTankThreatColors.tank)
                             return r, g, b, a
@@ -909,18 +923,18 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                             module.nonTankThreatColors.tank = {r, g, b, a}
                         end,
                     },
-                    spacer1 = {
+                    spacer2 = {
                         name = "",
                         type = "description",
                         width = "full",
-                        order = 4.1,
+                        order = 5.1,
                     },
                     description2 = {
                         name = "|cffffd100These are the colors you see as a |cff00b3ffTank|r.|r",
                         type = "description",
                         width = "full",
                         fontSize = "medium",
-                        order = 5,
+                        order = 6,
                     },
                     noThreat = {
                         name = "No Threat",
@@ -928,7 +942,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                         desc = "Choose a color",
                         width = 0.75,
                         hasAlpha = true,
-                        order = 6,
+                        order = 7,
                         get = function(_)
                             local r, g, b, a = unpack(module.tankThreatColors.noThreat)
                             return r, g, b, a
@@ -943,7 +957,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                         desc = "Choose a color",
                         width = 0.75,
                         hasAlpha = true,
-                        order = 7,
+                        order = 8,
                         get = function(_)
                             local r, g, b, a = unpack(module.tankThreatColors.lowThreat)
                             return r, g, b, a
@@ -958,7 +972,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                         desc = "Choose a color",
                         width = 0.75,
                         hasAlpha = true,
-                        order = 8,
+                        order = 9,
                         get = function(_)
                             local r, g, b, a = unpack(module.tankThreatColors.threat)
                             return r, g, b, a
@@ -973,7 +987,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                         desc = "Choose a color",
                         width = 0.75,
                         hasAlpha = true,
-                        order = 9,
+                        order = 10,
                         get = function(_)
                             local r, g, b, a = unpack(module.tankThreatColors.tank)
                             return r, g, b, a
@@ -986,9 +1000,8 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                         name = "Tank Names",
                         type = "input",
                         desc = "Add a comma seperated list of player names you wish to manually designate as tanks, for example: Tank1,Tank2,Tank3\n\nPlayers with the role of tank (in versions of WoW that have roles) and players marked Main Tank or Main Assist in raids, will automatically be designated as tanks by the nameplate colors.",
-                        multiline = 5,
                         width = "full",
-                        order = 10,
+                        order = 11,
                         get = function(_) return module.tankNames end,
                         set = function(_, value)
                             module.tankNames = value
@@ -1022,7 +1035,6 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                         name = "Special Unit Names",
                         type = "input",
                         desc = "Add a comma seperated list of enemy unit names you wish to manually designate as special units, for example: Unit1,Unit2,Unit3",
-                        multiline = 5,
                         width = "full",
                         order = 1,
                         get = function(_) return module.specialUnitNames end,

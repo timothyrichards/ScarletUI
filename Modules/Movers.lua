@@ -80,6 +80,9 @@ ScarletUI.frameData = {
         frame = PetActionBarFrame,
         module = "actionbarsModule",
         databasePath = "actionbarsModule.petBar",
+        buttonSize = 30,
+        buttonCount = 10,
+        buttonName = "PetActionButton",
     },
     playerFrame = {
         frame = PlayerFrame,
@@ -95,6 +98,9 @@ ScarletUI.frameData = {
         frame = StanceBarFrame,
         module = "actionbarsModule",
         databasePath = "actionbarsModule.stanceBar",
+        buttonSize = 30,
+        buttonCount = 10,
+        buttonName = "StanceButton",
     },
     targetFrame = {
         frame = TargetFrame,
@@ -107,6 +113,18 @@ ScarletUI.frameData = {
         databasePath = "actionbarsModule.vehicleLeaveButton",
     },
 }
+
+local function rotateMoverLabel(text, mover)
+    -- Calculate the width of the FrameName
+    local frameNameWidth = text:GetStringWidth()
+
+    -- Rotate the text if the FrameName is longer than the mover's width
+    if frameNameWidth > mover:GetWidth() and frameNameWidth < mover:GetHeight() then
+        text:SetRotation(math.pi / 2)
+    else
+        text:SetRotation(0)
+    end
+end
 
 function ScarletUI:GenerateMoverConfig(name, _order)
     local frameData = self:GetFrameData(name)
@@ -139,6 +157,7 @@ function ScarletUI:GenerateMoverConfig(name, _order)
                 set = function(_, val)
                     module[name].move = val
                     self:SetupActionBars()
+                    self:RefreshMoverOptions()
                 end,
             },
             hide = {
@@ -233,7 +252,7 @@ function ScarletUI:GenerateMoverConfig(name, _order)
     }
 end
 
-function ScarletUI:GetMoversConfigs()
+function ScarletUI:GenerateAllMoversConfigs()
     local bars = {
         "bagBar",
         "castBar",
@@ -264,8 +283,34 @@ function ScarletUI:GetMoversConfigs()
         end
 
         local module = self.db.global[frameData.module];
+        local defaults = self.db.defaults.global[frameData.module];
 
         configs[barName] = self:GenerateMoverConfig(barName, i + 1)
+
+        if module[barName].buttonsPerRow then
+            configs[barName].args.buttonsPerRow = {
+                name = "Buttons Per Row",
+                desc = "Configure the number of action buttons per row.\n(Default " .. defaults[barName].buttonsPerRow .. ")",
+                type = "range",
+                min = 1,
+                max = frameData.buttonCount or 12,
+                step = 1,
+                width = 1,
+                order = 3.1,
+                get = function(_) return module[barName].buttonsPerRow end,
+                set = function(_, val)
+                    module[barName].buttonsPerRow = val
+                    self:SetupActionBars()
+                end,
+            }
+
+            configs[barName].args.buttonsPerRowSpacer = {
+                name = "",
+                type = "description",
+                width = "full",
+                order = 3.2,
+            }
+        end
 
         if barName == "bagBar" then
             configs[barName].args.microBag = {
@@ -356,7 +401,7 @@ function ScarletUI:GetMoversConfigs()
     return configs
 end
 
-function ScarletUI:MoversOptions()
+function ScarletUI:GetMoversOptions()
     if self.selectedMover == nil then
         -- Grab the first available mover in alphabetical order
         local keys = {}
@@ -368,7 +413,7 @@ function ScarletUI:MoversOptions()
         self:SelectMover(self.movers[keys[1]])
     end
 
-    local options = self:GetMoversConfigs()
+    local options = self:GenerateAllMoversConfigs()
     local frameData = self:GetFrameData(self.selectedMover.settingsKey)
     if frameData == nil then
         self:Print("Frame data is nil for settings key: " .. self.selectedMover.settingsKey)
@@ -429,20 +474,20 @@ function ScarletUI:MoversOptions()
                 order = 3,
             },
             frame = frameOptions
-        },
+        }
     }
 end
 
 function ScarletUI:RefreshMoverOptions()
     AceConfigRegistry:NotifyChange("ScarletUI_Movers")
-    ScarletUI:UpdateMovers()
+    self:UpdateMovers()
 end
 
 function ScarletUI:GetFrameData(settingsKey)
     local frameData = self.frameData[settingsKey]
 
     if frameData == nil then
-        self:Print("Frame data is nil for settings key: " .. settingsKey)
+        self:Print("Frame data is nil for settings key: " .. (settingsKey or "nil"))
         return
     end
 
@@ -512,13 +557,8 @@ function ScarletUI:CreateMover(targetFrame, settings, canMoveFrame)
     text:SetText(targetFrameName)
     text:SetPoint("CENTER", mover, "CENTER")
 
-    -- Calculate the width of the FrameName
-    local frameNameWidth = text:GetStringWidth()
-
-    -- Rotate the text if the FrameName is longer than the mover's width
-    if frameNameWidth > mover:GetWidth() and frameNameWidth < mover:GetHeight() then
-        text:SetRotation(math.pi / 2)
-    end
+    -- Set initial label rotation
+    rotateMoverLabel(text, mover)
 
     mover:SetScript("OnMouseDown", function(_, button)
         if button == "LeftButton" then
@@ -549,6 +589,8 @@ function ScarletUI:CreateMover(targetFrame, settings, canMoveFrame)
     -- Hook into the SetSize method
     hooksecurefunc(targetFrame, "SetSize", function()
         mover:SetSize(targetFrame:GetWidth(), targetFrame:GetHeight())
+
+        rotateMoverLabel(text, mover)
     end)
 
     -- Hook into the SetWidth method (in case width is adjusted independently)
@@ -564,59 +606,6 @@ function ScarletUI:CreateMover(targetFrame, settings, canMoveFrame)
     targetFrame.mover = mover
     self.movers[mover.settingsKey] = mover
     return mover
-end
-
-function ScarletUI:CreateGrid()
-    if self.grid then
-        return
-    end
-
-    local gridSize = 32
-    local screenWidth, screenHeight = GetScreenWidth(), GetScreenHeight()
-    local gridWidth = ceil(screenWidth / gridSize)
-    local gridHeight = ceil(screenHeight / gridSize)
-
-    -- Calculate the offset needed to center the grid
-    local offsetX = (screenWidth - gridSize * gridWidth) / 2
-    local offsetY = (screenHeight - gridSize * gridHeight) / 2 - 0.5
-
-    self.grid = self.grid or CreateFrame("Frame", "SUI_Grid", UIParent)
-    self.grid:SetAllPoints(UIParent)
-    self.grid:SetFrameStrata("BACKGROUND")
-
-    local texturePath = "Interface\\BUTTONS\\WHITE8X8"
-
-    for i = 0, gridHeight do
-        local texture = self.grid:CreateTexture(nil, "BACKGROUND")
-        texture:SetTexture(texturePath)
-        texture:SetSize(screenWidth, 1)
-        texture:SetColorTexture(1, 1, 1, 0.5)
-        texture:SetPoint("TOPLEFT", self.grid, "TOPLEFT", offsetX, -gridSize * i - offsetY)
-    end
-
-    for i = 0, gridWidth do
-        local texture = self.grid:CreateTexture(nil, "BACKGROUND")
-        texture:SetTexture(texturePath)
-        texture:SetSize(1, screenHeight)
-        texture:SetColorTexture(1, 1, 1, 0.5)
-        texture:SetPoint("TOPLEFT", self.grid, "TOPLEFT", gridSize * i + offsetX, -offsetY)
-    end
-
-    -- Create a center vertical line
-    local verticalLine = self.grid:CreateTexture(nil, "BACKGROUND")
-    verticalLine:SetTexture(texturePath)
-    verticalLine:SetSize(1, screenHeight)
-    verticalLine:SetColorTexture(1, 0, 0, 1)
-    verticalLine:SetPoint("CENTER", self.grid)
-
-    -- Create a center horizontal line
-    local horizontalLine = self.grid:CreateTexture(nil, "BACKGROUND")
-    horizontalLine:SetTexture(texturePath)
-    horizontalLine:SetSize(screenWidth, 1)
-    horizontalLine:SetColorTexture(1, 0, 0, 1)
-    horizontalLine:SetPoint("CENTER", self.grid)
-
-    self.grid:Hide()
 end
 
 function ScarletUI:ToggleMovers()
@@ -639,8 +628,6 @@ function ScarletUI:ToggleMovers()
         end
     end
 
-    self:CreateGrid()
-    self.grid:SetShown(not self.moversEnabled)
     self.moversEnabled = not self.moversEnabled
     SUI_MoverPropertyText:SetText("- moversEnabled: " .. tostring(self.moversEnabled))
     self:UpdateMovers()

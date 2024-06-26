@@ -1,27 +1,23 @@
-function ScarletUI:CreateContainer(frame, settings, width, height)
-    local containerName = frame:GetName() .. "Container"
-    local container = _G[containerName] or CreateFrame("FRAME", containerName, UIParent)
-    container.originalFrameName = frame:GetName()
-    container.settingsKey = frame.settingsKey
+function ScarletUI:CreateActionBar(barName, settingsKey, settings)
+    local frameData = self:GetFrameData(settingsKey)
+    local buttonSize = frameData.buttonSize or 36
+    local buttonCount = frameData.buttonCount or 12
+    local buttonName = frameData.buttonName or barName .. "Button"
 
-    if width == nil then
-        width = frame:GetWidth()
-    end
+    -- Create or retrieve the action bar frame
+    local container = _G[barName .. "Container"] or CreateFrame("Frame", barName .. "Container", UIParent)
+    container.settingsKey = settingsKey
 
-    if height == nil then
-        height = frame:GetHeight()
-    end
+    -- Calculate the width and height based on the number of buttons per row
+    local spacing = 6
+    local buttonsPerRow = settings.buttonsPerRow
+    local width = buttonsPerRow * buttonSize + (buttonsPerRow - 1) * spacing
+    local rows = math.ceil(buttonCount / buttonsPerRow)
+    local height = rows * buttonSize + (rows - 1) * spacing
 
-    frame:ClearAllPoints()
-    frame:SetMovable(true)
-    frame:SetUserPlaced(true)
-    frame:SetParent(container)
-    frame:SetAllPoints(container)
-
-    container:SetFrameStrata(frame:GetFrameStrata())
-    container:SetFrameLevel(frame:GetFrameLevel())
+    -- Set dimensions and position of the action bar
     container:ClearAllPoints()
-    container:SetSize(width, height)
+    container:SetSize(width + 2, height + 2)
     container:SetPoint(
             self.frameAnchors[settings.frameAnchor],
             UIParent,
@@ -30,26 +26,28 @@ function ScarletUI:CreateContainer(frame, settings, width, height)
             settings.y
     )
 
-    return container
-end
+    for i = 1, buttonCount do
+        local button = _G[buttonName .. i]
 
-function ScarletUI:CreateContainerAndMover(frame, settings, width, height)
-    if not frame then
-        return
+        if button then
+            if i == 1 then
+                self:SetPoint(button, "TOPLEFT", container, "TOPLEFT", 0, 0)
+            elseif buttonsPerRow == 1 then
+                self:SetPoint(button, "TOP", _G[buttonName .. (i - 1)], "BOTTOM", 0, -spacing)
+            elseif i % buttonsPerRow == 1 then
+                self:SetPoint(button, "TOP", _G[buttonName .. (i - buttonsPerRow)], "BOTTOM", 0, -spacing)
+            else
+                self:SetPoint(button, "LEFT", _G[buttonName .. (i - 1)], "RIGHT", spacing, 0)
+            end
+        end
     end
-
-    local container = self:CreateContainer(frame, settings, width, height)
-
-    frame:ClearAllPoints()
-    frame:UnregisterAllEvents()
-    frame:SetPoint("LEFT", container, "LEFT")
 
     self:CreateMover(container, settings)
 
     if settings.hide then
         container:Hide()
-        frame:UnregisterAllEvents()
-        frame:SetParent(self.hideFrameContainer)
+        _G[barName]:UnregisterAllEvents()
+        _G[barName]:SetParent(self.hideFrameContainer)
     end
 end
 
@@ -288,89 +286,6 @@ function ScarletUI:bagBar(module)
     end
 end
 
-function ScarletUI:multiBarLeft(module)
-    local multiBarLeftSettings = module.multiBarLeft;
-
-    -- Create or retrieve the MultiBarLeft frame
-    local container = _G["MultiBarLeftContainer"] or CreateFrame("Frame", "MultiBarLeftContainer", UIParent)
-    container.settingsKey = "multiBarLeft"
-
-    -- Set dimensions and position of MultiBarLeft
-    container:ClearAllPoints()
-    container:SetSize(40, 502)
-    container:SetPoint(
-            self.frameAnchors[multiBarLeftSettings.frameAnchor],
-            UIParent,
-            self.frameAnchors[multiBarLeftSettings.screenAnchor],
-            multiBarLeftSettings.x,
-            multiBarLeftSettings.y
-    )
-
-    local previousButton
-    for i = 1, 12 do
-        local button = _G["MultiBarLeftButton"..i]
-
-        if button then
-            if i == 1 then
-                self:SetPoint(button, "TOPRIGHT", container, "TOPRIGHT", -2, -3)
-            else
-                self:SetPoint(button, "TOP", previousButton, "BOTTOM", 0, -6)
-            end
-
-            previousButton = button
-        end
-    end
-
-    self:CreateMover(container, multiBarLeftSettings)
-
-    if multiBarLeftSettings.hide then
-        container:Hide()
-        MultiBarLeft:UnregisterAllEvents()
-        MultiBarLeft:SetParent(self.hideFrameContainer)
-    end
-end
-
-function ScarletUI:petActionBar(module)
-    local petBarSettings = module.petBar;
-
-    -- Create or retrieve the PetBar frame
-    local PetBar = _G["PetBar"] or CreateFrame("Frame", "PetBar", UIParent)
-
-    -- Set dimensions and position of MicroBar
-    PetBar:ClearAllPoints()
-    PetBar:SetSize(500, 38)
-    PetBar:SetPoint(
-            self.frameAnchors[petBarSettings.frameAnchor],
-            UIParent,
-            self.frameAnchors[petBarSettings.screenAnchor],
-            petBarSettings.x,
-            petBarSettings.y
-    )
-
-    local previousButton
-    for i = 1, NUM_PET_ACTION_SLOTS do
-        local button = _G["PetActionButton"..i]
-
-        if button then
-            if i == 1 then
-                self:SetPoint(button, "LEFT", PetBar, "LEFT", 6, 0)
-            else
-                self:SetPoint(button, "LEFT", previousButton, "RIGHT", 8, 0)
-            end
-
-            previousButton = button
-        end
-    end
-
-    self:CreateMover(PetBar, petBarSettings)
-
-    if petBarSettings.hide then
-        PetBar:Hide()
-        PetActionBarFrame:UnregisterAllEvents()
-        PetActionBarFrame:SetParent(self.hideFrameContainer)
-    end
-end
-
 function ScarletUI:multiCastBar(module)
     local multiCastBarSettings = module.multiCastBar;
     if not MultiCastActionBarFrame then
@@ -578,51 +493,32 @@ function ScarletUI:SetupActionBars()
     self:vehicleLeaveButton(actionbarsModule)
     self:microBar(actionbarsModule)
     self:bagBar(actionbarsModule)
-    self:multiBarLeft(actionbarsModule)
-
-    local bars = {
-        "multiBarBottomLeft",
-        "multiBarBottomRight",
-        "multiBarRight",
-        "stanceBar",
-    }
-
-    for _, v in ipairs(bars) do
-        local data = self:GetFrameData(v)
-
-        if data ~= nil then
-            local frame = data.frame
-            local settings = self:GetValueFromPath(self.db.global, data.databasePath)
-            local width
-            local height
-
-            if v == "multiBarBottomLeft" then
-                MultiBarBottomRightButton1:ClearAllPoints();
-                MultiBarBottomRightButton1:SetPoint("BOTTOMLEFT", MultiBarBottomRight, "BOTTOMLEFT", 2, 1);
-            end
-
-            if v == "multiBarBottomRight" then
-                MultiBarBottomLeftButton1:ClearAllPoints();
-                MultiBarBottomLeftButton1:SetPoint("BOTTOMLEFT", MultiBarBottomLeft, "BOTTOMLEFT", 2, 1);
-            end
-
-            if v == "stanceBar" then
-                frame.settingsKey = "stanceBar"
-                width = 250
-                height = 35
-            end
-
-            self:CreateContainerAndMover(frame, settings, width, height)
-        else
-            self:Print("Frame data is nil for settings key: " .. self.selectedMover.settingsKey)
-        end
-    end
-
-    self:petActionBar(actionbarsModule)
     self:multiCastBar(actionbarsModule)
     self:possessBarFrame()
     self:experienceBar(actionbarsModule)
     self:reputationBar(actionbarsModule)
+
+    local bars = {
+        "multiBarBottomLeft",
+        "multiBarBottomRight",
+        "multiBarLeft",
+        "multiBarRight",
+        "stanceBar",
+        "petBar",
+    }
+
+    for _, settingsKey in ipairs(bars) do
+        local data = self:GetFrameData(settingsKey)
+
+        if data ~= nil then
+            local frameName = data.frame:GetName()
+            local settings = self:GetValueFromPath(self.db.global, data.databasePath)
+
+            self:CreateActionBar(frameName, settingsKey, settings)
+        else
+            self:Print("Frame data is nil for settings key: " .. self.selectedMover.settingsKey)
+        end
+    end
 
     if not self.actionbarEventRegistered then
         self.actionbarEventRegistered = true;

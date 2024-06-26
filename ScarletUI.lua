@@ -74,8 +74,8 @@ function ScarletUI:OnInitialize()
     -- Register the options table
     AceConfigDialog:SetDefaultSize("ScarletUI", 780, 500)
     AceConfig:RegisterOptionsTable("ScarletUI", function() return self:Options() end)
-    AceConfigDialog:SetDefaultSize("ScarletUI_Movers", 400, 325)
-    AceConfig:RegisterOptionsTable("ScarletUI_Movers", function() return self:MoversOptions() end)
+    AceConfigDialog:SetDefaultSize("ScarletUI_Movers", 400, 335)
+    AceConfig:RegisterOptionsTable("ScarletUI_Movers", function() return self:GetMoversOptions() end)
     AceConfigDialog:AddToBlizOptions("ScarletUI")
 
     -- Initialize state properties
@@ -90,10 +90,6 @@ function ScarletUI:OnEnable()
     self:Setup()
 
     self:Print("Scarlet UI setup successful, use the command /sui to open the options panel.")
-end
-
-function ScarletUI:OnDisable()
-    self.frame:UnregisterAllEvents()
 end
 
 function ScarletUI:Setup()
@@ -192,10 +188,20 @@ function ScarletUI:SlashCommand(msg)
 end
 
 ScarletUI.frame = CreateFrame("Frame", "SUI_Frame", UIParent)
+ScarletUI.frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+ScarletUI.frame:RegisterEvent("PLAYER_LEAVING_WORLD")
 ScarletUI.frame:RegisterEvent("PLAYER_REGEN_DISABLED")
 ScarletUI.frame:RegisterEvent("PLAYER_REGEN_ENABLED")
-ScarletUI.frame:RegisterEvent("PLAYER_LEAVING_WORLD")
 ScarletUI.frame:SetScript("OnEvent", function (_, event, ...)
+    if event == "PLAYER_ENTERING_WORLD" then
+        ScarletUI.pauseEvents = false
+    end
+
+    if event == "PLAYER_LEAVING_WORLD" then
+        ScarletUI.pauseEvents = true
+        -- TODO: maybe move code for saving raid/party frame positions to be ran here instead of creating a hook, might be a few other good candidates too
+    end
+
     if event == "PLAYER_REGEN_DISABLED" or event == "PLAYER_REGEN_ENABLED" then
         ScarletUI.inCombat = event == "PLAYER_REGEN_DISABLED";
 
@@ -205,10 +211,6 @@ ScarletUI.frame:SetScript("OnEvent", function (_, event, ...)
 
         SUI_CombatPropertyText:SetText("- inCombat: " .. tostring(ScarletUI.inCombat))
         AceConfigRegistry:NotifyChange("ScarletUI")
-    end
-
-    if event == "PLAYER_LEAVING_WORLD" then
-        ScarletUI.frame:UnregisterAllEvents()
     end
 end)
 
