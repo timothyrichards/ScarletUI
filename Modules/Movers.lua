@@ -327,6 +327,25 @@ function ScarletUI:GenerateAllMoversConfigs()
             }
         end
 
+        if barName == "experienceBar" or barName == "reputationBar" then
+            configs[barName].args.short = {
+                name = "Short",
+                desc = "Shorten the bar to a smaller size.",
+                type = "toggle",
+                width = 1,
+                order = 0.9,
+                get = function(_) return module[barName].short end,
+                set = function(_, val)
+                    module[barName].short = val
+                    if val then
+                        self:SetupActionBars()
+                    else
+                        self:ShowReloadDialog()
+                    end
+                end,
+            }
+        end
+
         if barName == "focusFrame" or barName == "targetFrame" then
             configs[barName].args.buffsOnTop = {
                 name = "Buffs On Top",

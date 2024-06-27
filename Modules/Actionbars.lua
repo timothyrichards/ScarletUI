@@ -31,7 +31,7 @@ function ScarletUI:CreateActionBar(barName, settingsKey, settings)
 
         if button then
             if i == 1 then
-                self:SetPoint(button, "TOPLEFT", container, "TOPLEFT", 0, 0)
+                self:SetPoint(button, "TOPLEFT", container, "TOPLEFT", 2, 0)
             elseif buttonsPerRow == 1 then
                 self:SetPoint(button, "TOP", _G[buttonName .. (i - 1)], "BOTTOM", 0, -spacing)
             elseif i % buttonsPerRow == 1 then
@@ -346,10 +346,6 @@ end
 function ScarletUI:experienceBar(module)
     local experienceBarSettings = module.experienceBar;
 
-    MainMenuExpBar:SetSize(510, 10)
-    MainMenuExpBar.settingsKey = "experienceBar"
-    self:CreateMover(MainMenuExpBar, experienceBarSettings)
-
     if experienceBarSettings.move then
         self.movingExperienceBar = true
 
@@ -384,38 +380,50 @@ function ScarletUI:experienceBar(module)
     MainMenuBarMaxLevelBar:UnregisterAllEvents()
     MainMenuBarMaxLevelBar:SetParent(self.hideFrameContainer)
 
-    -- Get Current, Maximum, and Rested Experience
-    local currXP = UnitXP("player")
-    local maxXP = UnitXPMax("player")
-    local restXP = GetXPExhaustion() or 0
-    local mainMenuBarWidth = 510
-    local exhaustionBarStart = (currXP / maxXP) * mainMenuBarWidth
-    local exhaustionBarEnd = ((currXP + restXP) / maxXP) * mainMenuBarWidth
+    if experienceBarSettings.short then
+        MainMenuExpBar:SetSize(510, 10)
 
-    -- Ensure the exhaustion bar does not exceed the main bar's width
-    exhaustionBarEnd = min(exhaustionBarEnd, mainMenuBarWidth)
-    ExhaustionLevelFillBar:ClearAllPoints()
-    ExhaustionLevelFillBar:SetPoint("TOPLEFT", MainMenuExpBar, "TOPLEFT", exhaustionBarStart, 0)
-    ExhaustionLevelFillBar:SetPoint("BOTTOMRIGHT", MainMenuExpBar, "TOPLEFT", exhaustionBarEnd, -11)
-    ExhaustionTick:SetPoint("CENTER", ExhaustionLevelFillBar, "RIGHT")
+        -- Get Current, Maximum, and Rested Experience
+        local currXP = UnitXP("player")
+        local maxXP = UnitXPMax("player")
+        local restXP = GetXPExhaustion() or 0
+        local mainMenuBarWidth = 510
+        local exhaustionBarStart = (currXP / maxXP) * mainMenuBarWidth
+        local exhaustionBarEnd = ((currXP + restXP) / maxXP) * mainMenuBarWidth
 
-    MainMenuXPBarTexture0:SetWidth("255")
-    MainMenuXPBarTexture0:ClearAllPoints()
-    MainMenuXPBarTexture0:SetPoint("LEFT", MainMenuExpBar, "LEFT", 0, 0)
-    MainMenuXPBarTexture1:Hide()
-    MainMenuXPBarTexture2:Hide()
-    MainMenuXPBarTexture3:SetWidth("255")
-    MainMenuXPBarTexture3:ClearAllPoints()
-    MainMenuXPBarTexture3:SetPoint("LEFT", MainMenuXPBarTexture0, "RIGHT", 0, 0)
+        -- Ensure the exhaustion bar does not exceed the main bar's width
+        exhaustionBarEnd = math.min(exhaustionBarEnd, mainMenuBarWidth)
+        ExhaustionLevelFillBar:ClearAllPoints()
+        ExhaustionLevelFillBar:SetPoint("TOPLEFT", MainMenuExpBar, "TOPLEFT", exhaustionBarStart, 0)
+        ExhaustionLevelFillBar:SetPoint("BOTTOMRIGHT", MainMenuExpBar, "TOPLEFT", exhaustionBarEnd, -11)
+        ExhaustionTick:SetPoint("CENTER", ExhaustionLevelFillBar, "RIGHT")
+
+        MainMenuXPBarTexture0:SetWidth("255")
+        MainMenuXPBarTexture0:ClearAllPoints()
+        MainMenuXPBarTexture0:SetPoint("LEFT", MainMenuExpBar, "LEFT", 0, 0)
+        MainMenuXPBarTexture1:Hide()
+        MainMenuXPBarTexture2:Hide()
+        MainMenuXPBarTexture3:SetWidth("255")
+        MainMenuXPBarTexture3:ClearAllPoints()
+        MainMenuXPBarTexture3:SetPoint("LEFT", MainMenuXPBarTexture0, "RIGHT", 0, 0)
+    else
+        MainMenuExpBar:SetHeight(10)
+        MainMenuXPBarTexture0:ClearAllPoints()
+        MainMenuXPBarTexture0:SetPoint("TOPLEFT", MainMenuExpBar, "TOPLEFT", 0, 0)
+        MainMenuXPBarTexture1:ClearAllPoints()
+        MainMenuXPBarTexture1:SetPoint("LEFT", MainMenuXPBarTexture0, "RIGHT", 0, 0)
+        MainMenuXPBarTexture2:ClearAllPoints()
+        MainMenuXPBarTexture2:SetPoint("LEFT", MainMenuXPBarTexture1, "RIGHT", 0, 0)
+        MainMenuXPBarTexture3:ClearAllPoints()
+        MainMenuXPBarTexture3:SetPoint("LEFT", MainMenuXPBarTexture2, "RIGHT", 0, 0)
+    end
+
+    MainMenuExpBar.settingsKey = "experienceBar"
+    self:CreateMover(MainMenuExpBar, experienceBarSettings)
 end
 
 function ScarletUI:reputationBar(module)
     local reputationBarSettings = module.reputationBar;
-
-    ReputationWatchBar:SetWidth(510)
-    ReputationWatchBar.StatusBar:SetWidth(510)
-    ReputationWatchBar.settingsKey = "reputationBar"
-    self:CreateMover(ReputationWatchBar, reputationBarSettings)
 
     if reputationBarSettings.move then
         self.movingReputationBar = true
@@ -443,32 +451,40 @@ function ScarletUI:reputationBar(module)
         self.movingReputationBar = false
     end
 
+    if reputationBarSettings.short then
+        ReputationWatchBar:SetWidth(510)
+        ReputationWatchBar.StatusBar:SetWidth(510)
+
+        -- Leveling rep bar
+        ReputationWatchBar.StatusBar.WatchBarTexture1.Show = function()
+            ReputationWatchBar.StatusBar.WatchBarTexture1:Hide()
+        end
+        ReputationWatchBar.StatusBar.WatchBarTexture2.Show = function()
+            ReputationWatchBar.StatusBar.WatchBarTexture2:Hide()
+        end
+        ReputationWatchBar.StatusBar.WatchBarTexture2:Hide()
+        ReputationWatchBar.StatusBar.WatchBarTexture3:ClearAllPoints()
+        ReputationWatchBar.StatusBar.WatchBarTexture3:SetPoint("LEFT", ReputationWatchBar.StatusBar.WatchBarTexture0, "RIGHT", 0, 0)
+
+        -- Max level rep bar
+        ReputationWatchBar.StatusBar.XPBarTexture1.Show = function()
+            ReputationWatchBar.StatusBar.XPBarTexture1:Hide()
+        end
+        ReputationWatchBar.StatusBar.XPBarTexture2.Show = function()
+            ReputationWatchBar.StatusBar.XPBarTexture2:Hide()
+        end
+        ReputationWatchBar.StatusBar.XPBarTexture2:Hide()
+        ReputationWatchBar.StatusBar.XPBarTexture3:ClearAllPoints()
+        ReputationWatchBar.StatusBar.XPBarTexture3:SetPoint("LEFT", ReputationWatchBar.StatusBar.XPBarTexture0, "RIGHT", 0, 0)
+    end
+
+    ReputationWatchBar.settingsKey = "reputationBar"
+    self:CreateMover(ReputationWatchBar, reputationBarSettings)
+
     if reputationBarSettings.hide then
         ReputationWatchBar:UnregisterAllEvents()
         ReputationWatchBar:SetParent(self.hideFrameContainer)
     end
-
-    -- Leveling rep bar
-    ReputationWatchBar.StatusBar.WatchBarTexture1.Show = function()
-        ReputationWatchBar.StatusBar.WatchBarTexture1:Hide()
-    end
-    ReputationWatchBar.StatusBar.WatchBarTexture2.Show = function()
-        ReputationWatchBar.StatusBar.WatchBarTexture2:Hide()
-    end
-    ReputationWatchBar.StatusBar.WatchBarTexture2:Hide()
-    ReputationWatchBar.StatusBar.WatchBarTexture3:ClearAllPoints()
-    ReputationWatchBar.StatusBar.WatchBarTexture3:SetPoint("LEFT", ReputationWatchBar.StatusBar.WatchBarTexture0, "RIGHT", 0, 0)
-
-    -- Max level rep bar
-    ReputationWatchBar.StatusBar.XPBarTexture1.Show = function()
-        ReputationWatchBar.StatusBar.XPBarTexture1:Hide()
-    end
-    ReputationWatchBar.StatusBar.XPBarTexture2.Show = function()
-        ReputationWatchBar.StatusBar.XPBarTexture2:Hide()
-    end
-    ReputationWatchBar.StatusBar.XPBarTexture2:Hide()
-    ReputationWatchBar.StatusBar.XPBarTexture3:ClearAllPoints()
-    ReputationWatchBar.StatusBar.XPBarTexture3:SetPoint("LEFT", ReputationWatchBar.StatusBar.XPBarTexture0, "RIGHT", 0, 0)
 end
 
 function ScarletUI:SetupActionBars()

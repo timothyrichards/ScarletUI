@@ -21,7 +21,7 @@ StaticPopupDialogs['SCARLET_UI_RELOAD_DIALOG'] = {
 
 -- Dialog to confirm enabling of CVar module
 StaticPopupDialogs['SCARLET_ENABLE_CVARS_DIALOG'] = {
-    text = '<Scarlet UI>\n\nEnabling this module will change several CVars, overriding the their current values\n\nDo you want to continue?',
+    text = '<Scarlet UI>\n\nEnabling this module will change several CVars, overriding their current values\n\nDo you want to continue?',
     button1 = 'Continue',
     button2 = 'Cancel',
     OnAccept = function()
