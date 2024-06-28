@@ -705,7 +705,7 @@ function ScarletUI:UpdateFramePositionSettings(frame, module)
     module.x = xOffset
     module.y = yOffset
 
-    AceConfigRegistry:NotifyChange("ScarletUI")
+    AceConfigRegistry:NotifyChange("ScarletUI_Movers")
     self:RefreshMoverOptions()
 end
 

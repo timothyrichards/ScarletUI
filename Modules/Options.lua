@@ -33,7 +33,7 @@ function ScarletUI:Options()
                     StaticPopup_Show('SCARLET_RESTORE_DEFAULTS_DIALOG')
                 end,
             },
-            moduleSettings = self:GetModuleSettingsPage(database, 2),
+            generalSettings = self:GetGeneralSettingsPage(database, 2),
             --bagModuleSettings = self:GetBagModuleSettingsPage(database, defaults.bagModule, 2),
             chatModuleSettings = self:GetChatModuleSettingsPage(database, defaults.chatModule, 3),
             CVarModuleSettings = self:GetCVarModuleSettingsPage(database, 4),
@@ -43,7 +43,7 @@ function ScarletUI:Options()
     }
 end
 
-function ScarletUI:GetModuleSettingsPage(database, order)
+function ScarletUI:GetGeneralSettingsPage(database, order)
     return {
         name = "General Settings",
         desc = "Miscellaneous ScarletUI settings.",
@@ -251,6 +251,33 @@ function ScarletUI:GetModuleSettingsPage(database, order)
                             else
                                 self:SetupUnitFrames()
                             end
+                        end,
+                    }
+                }
+            },
+            extras = {
+                name = "Extras",
+                type = "group",
+                inline = true,
+                order = 3,
+                args = {
+                    description = {
+                        name = "If you would like to use a profile that more similarly matches the default Blizzard UI, you can press the button below to reset your settings to a configuration that mimics the Blizzard UI settings.\n",
+                        type = "description",
+                        width = "full",
+                        fontSize = "medium",
+                        order = 0
+                    },
+                    resetToBlizzard = {
+                        name = "Reset to Blizzard UI",
+                        desc = "Reset all settings to a configuration that mimics Blizzard UI. (this will /reload your game)",
+                        type = "execute",
+                        disabled = function() return self:InCombat() end,
+                        width = 1,
+                        order = 1,
+                        func = function()
+                            self:MergeTables(self.db, self.originalUIDefaults)
+                            ReloadUI()
                         end,
                     }
                 }
