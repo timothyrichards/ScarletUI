@@ -566,7 +566,7 @@ function ScarletUI:SetupActionBars()
         self.frame:HookScript("OnEvent", function(_, event, ...)
             if event == "PLAYER_REGEN_ENABLED" then
                 self:microBar(actionbarsModule)
-                self:possessBarFrame()
+                self:possessBarFrame(actionbarsModule)
             end
 
             if event == "UNIT_EXITED_VEHICLE" then
@@ -574,7 +574,7 @@ function ScarletUI:SetupActionBars()
             end
 
             if event == "UPDATE_POSSESS_BAR" then
-                self:possessBarFrame()
+                self:possessBarFrame(actionbarsModule)
             end
         end)
         self.frame:SetScript("OnShow", function(...)
