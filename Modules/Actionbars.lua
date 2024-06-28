@@ -8,36 +8,38 @@ function ScarletUI:CreateActionBar(barName, settingsKey, settings)
     local container = _G[barName .. "Container"] or CreateFrame("Frame", barName .. "Container", UIParent)
     container.settingsKey = settingsKey
 
-    -- Calculate the width and height based on the number of buttons per row
-    local spacing = 6
-    local buttonsPerRow = settings.buttonsPerRow
-    local width = buttonsPerRow * buttonSize + (buttonsPerRow - 1) * spacing
-    local rows = math.ceil(buttonCount / buttonsPerRow)
-    local height = rows * buttonSize + (rows - 1) * spacing
+    if settings.move then
+        -- Calculate the width and height based on the number of buttons per row
+        local spacing = 6
+        local buttonsPerRow = settings.buttonsPerRow
+        local width = buttonsPerRow * buttonSize + (buttonsPerRow - 1) * spacing
+        local rows = math.ceil(buttonCount / buttonsPerRow)
+        local height = rows * buttonSize + (rows - 1) * spacing
 
-    -- Set dimensions and position of the action bar
-    container:ClearAllPoints()
-    container:SetSize(width + 2, height + 2)
-    container:SetPoint(
-            self.frameAnchors[settings.frameAnchor],
-            UIParent,
-            self.frameAnchors[settings.screenAnchor],
-            settings.x,
-            settings.y
-    )
+        -- Set dimensions and position of the action bar
+        container:ClearAllPoints()
+        container:SetSize(width + 2, height + 2)
+        container:SetPoint(
+                self.frameAnchors[settings.frameAnchor],
+                UIParent,
+                self.frameAnchors[settings.screenAnchor],
+                settings.x,
+                settings.y
+        )
 
-    for i = 1, buttonCount do
-        local button = _G[buttonName .. i]
+        for i = 1, buttonCount do
+            local button = _G[buttonName .. i]
 
-        if button then
-            if i == 1 then
-                self:SetPoint(button, "TOPLEFT", container, "TOPLEFT", 2, 0)
-            elseif buttonsPerRow == 1 then
-                self:SetPoint(button, "TOP", _G[buttonName .. (i - 1)], "BOTTOM", 0, -spacing)
-            elseif i % buttonsPerRow == 1 then
-                self:SetPoint(button, "TOP", _G[buttonName .. (i - buttonsPerRow)], "BOTTOM", 0, -spacing)
-            else
-                self:SetPoint(button, "LEFT", _G[buttonName .. (i - 1)], "RIGHT", spacing, 0)
+            if button then
+                if i == 1 then
+                    self:SetPoint(button, "TOPLEFT", container, "TOPLEFT", 2, 0)
+                elseif buttonsPerRow == 1 then
+                    self:SetPoint(button, "TOP", _G[buttonName .. (i - 1)], "BOTTOM", 0, -spacing)
+                elseif i % buttonsPerRow == 1 then
+                    self:SetPoint(button, "TOP", _G[buttonName .. (i - buttonsPerRow)], "BOTTOM", 0, -spacing)
+                else
+                    self:SetPoint(button, "LEFT", _G[buttonName .. (i - 1)], "RIGHT", spacing, 0)
+                end
             end
         end
     end
@@ -52,54 +54,57 @@ function ScarletUI:CreateActionBar(barName, settingsKey, settings)
 end
 
 function ScarletUI:mainMenuBar(module)
-    MainMenuBarPerformanceBarFrame:Hide()
-
-    MainMenuBarTexture0:ClearAllPoints()
-    MainMenuBarTexture0:SetPoint("BOTTOMLEFT", MainMenuBarArtFrame, "BOTTOMLEFT", 0, 0)
-    MainMenuBarTexture1:ClearAllPoints()
-    MainMenuBarTexture1:SetPoint("BOTTOMLEFT", MainMenuBarTexture0, "BOTTOMRIGHT", 0, 0)
-    MainMenuBarTexture2:Hide()
-    MainMenuBarTexture3:Hide()
-
-    if MainMenuBarTextureExtender then
-        MainMenuBarTextureExtender:Hide()
-    end
-
-    MainMenuBar:SetWidth(512)
-    ActionButton1:SetPoint("BOTTOMLEFT", MainMenuBarArtFrame, "BOTTOMLEFT", 8, 4)
-
-    if module.showPagingNumbers then
-        ActionBarUpButton:Show()
-        ActionBarDownButton:Show()
-        MainMenuBarPageNumber:Show()
-        MainMenuBarPageNumber:ClearAllPoints()
-        MainMenuBarPageNumber:SetPoint("LEFT", MainMenuBarArtFrame, "RIGHT", 22, -3)
-    else
-        ActionBarUpButton:Hide()
-        ActionBarDownButton:Hide()
-        MainMenuBarPageNumber:Hide()
-    end
-
-    for i = 1, 12 do
-        local button = _G["ActionButton"..i]
-        button:SetAttribute("showgrid", 1)
-        ActionButton_Update(button)
-    end
-
-    if not module.showGryphons then
-        MainMenuBarLeftEndCap:Hide()
-        MainMenuBarRightEndCap:Hide()
-    else
-        MainMenuBarLeftEndCap:Show()
-        MainMenuBarLeftEndCap:ClearAllPoints()
-        MainMenuBarLeftEndCap:SetPoint("BOTTOMRIGHT", MainMenuBarArtFrame, "BOTTOMLEFT", 30, 0)
-
-        MainMenuBarRightEndCap:Show()
-        MainMenuBarRightEndCap:ClearAllPoints()
-        MainMenuBarRightEndCap:SetPoint("BOTTOMLEFT", MainMenuBarArtFrame, "BOTTOMRIGHT", -30, 0)
-    end
-
     local mainMenuBarSettings = module.mainMenuBar;
+
+    if mainMenuBarSettings.move then
+        MainMenuBarPerformanceBarFrame:Hide()
+
+        MainMenuBarTexture0:ClearAllPoints()
+        MainMenuBarTexture0:SetPoint("BOTTOMLEFT", MainMenuBarArtFrame, "BOTTOMLEFT", 0, 0)
+        MainMenuBarTexture1:ClearAllPoints()
+        MainMenuBarTexture1:SetPoint("BOTTOMLEFT", MainMenuBarTexture0, "BOTTOMRIGHT", 0, 0)
+        MainMenuBarTexture2:Hide()
+        MainMenuBarTexture3:Hide()
+
+        if MainMenuBarTextureExtender then
+            MainMenuBarTextureExtender:Hide()
+        end
+
+        MainMenuBar:SetWidth(512)
+        ActionButton1:SetPoint("BOTTOMLEFT", MainMenuBarArtFrame, "BOTTOMLEFT", 8, 4)
+
+        for i = 1, 12 do
+            local button = _G["ActionButton"..i]
+            button:SetAttribute("showgrid", 1)
+            ActionButton_Update(button)
+        end
+
+        if module.showPagingNumbers then
+            ActionBarUpButton:Show()
+            ActionBarDownButton:Show()
+            MainMenuBarPageNumber:Show()
+            MainMenuBarPageNumber:ClearAllPoints()
+            MainMenuBarPageNumber:SetPoint("LEFT", MainMenuBarArtFrame, "RIGHT", 22, -3)
+        else
+            ActionBarUpButton:Hide()
+            ActionBarDownButton:Hide()
+            MainMenuBarPageNumber:Hide()
+        end
+
+        if module.showGryphons then
+            MainMenuBarLeftEndCap:Show()
+            MainMenuBarLeftEndCap:ClearAllPoints()
+            MainMenuBarLeftEndCap:SetPoint("BOTTOMRIGHT", MainMenuBarArtFrame, "BOTTOMLEFT", 30, 0)
+
+            MainMenuBarRightEndCap:Show()
+            MainMenuBarRightEndCap:ClearAllPoints()
+            MainMenuBarRightEndCap:SetPoint("BOTTOMLEFT", MainMenuBarArtFrame, "BOTTOMRIGHT", -30, 0)
+        else
+            MainMenuBarLeftEndCap:Hide()
+            MainMenuBarRightEndCap:Hide()
+        end
+    end
+
     self:CreateMover(MainMenuBar, mainMenuBarSettings)
 
     if mainMenuBarSettings.hide then
@@ -110,23 +115,26 @@ end
 
 function ScarletUI:vehicleLeaveButton(module)
     local vehicleLeaveButtonSettings = module.vehicleLeaveButton;
-    local setup = function()
-        MainMenuBarVehicleLeaveButton:ClearAllPoints()
-        MainMenuBarVehicleLeaveButton:SetPoint(
-                self.frameAnchors[vehicleLeaveButtonSettings.frameAnchor],
-                UIParent,
-                self.frameAnchors[vehicleLeaveButtonSettings.screenAnchor],
-                vehicleLeaveButtonSettings.x,
-                vehicleLeaveButtonSettings.y
-        )
-        MainMenuBarVehicleLeaveButton.settingsKey = "vehicleLeaveButton"
-        self:CreateMover(MainMenuBarVehicleLeaveButton, vehicleLeaveButtonSettings)
-    end
 
-    setup()
-    MainMenuBarVehicleLeaveButton:HookScript("OnShow", function()
+    if vehicleLeaveButtonSettings.move then
+        local setup = function()
+            MainMenuBarVehicleLeaveButton:ClearAllPoints()
+            MainMenuBarVehicleLeaveButton:SetPoint(
+                    self.frameAnchors[vehicleLeaveButtonSettings.frameAnchor],
+                    UIParent,
+                    self.frameAnchors[vehicleLeaveButtonSettings.screenAnchor],
+                    vehicleLeaveButtonSettings.x,
+                    vehicleLeaveButtonSettings.y
+            )
+            MainMenuBarVehicleLeaveButton.settingsKey = "vehicleLeaveButton"
+            self:CreateMover(MainMenuBarVehicleLeaveButton, vehicleLeaveButtonSettings)
+        end
+
         setup()
-    end)
+        MainMenuBarVehicleLeaveButton:HookScript("OnShow", function()
+            setup()
+        end)
+    end
 
     if vehicleLeaveButtonSettings.hide then
         MainMenuBarVehicleLeaveButton:UnregisterAllEvents()
@@ -142,72 +150,75 @@ function ScarletUI:microBar(module)
 
     self.movingMicroButtons = true;
 
-    local microButtons = {
-        "CharacterMicroButton",
-        "SpellbookMicroButton",
-        "TalentMicroButton",
-        "AchievementMicroButton",
-        "QuestLogMicroButton",
-        "SocialsMicroButton",
-        "GuildMicroButton",
-        "CollectionsMicroButton",
-        "PVPMicroButton",
-        "LFGMicroButton",
-        "EJMicroButton",
-        "MainMenuMicroButton",
-        "HelpMicroButton",
-    }
-    local buttonCount = 0
-    for _, buttonName in ipairs(microButtons) do
-        if _G[buttonName] then
-            buttonCount = buttonCount + 1
-        end
-    end
-
     -- Create or retrieve the MicroBar frame
     local MicroBar = _G["MicroBar"] or CreateFrame("Frame", "MicroBar", UIParent)
-    local buttonSpacing = 1
-    local buttonWidth, buttonHeight = CharacterMicroButton:GetWidth(), 42
-    local totalWidth = buttonWidth * (buttonCount - buttonSpacing)
 
-    -- Set dimensions and position of MicroBar
-    MicroBar:ClearAllPoints()
-    MicroBar:SetSize(totalWidth, buttonHeight)
-    MicroBar:SetPoint(
-            self.frameAnchors[microBarSettings.frameAnchor],
-            UIParent,
-            self.frameAnchors[microBarSettings.screenAnchor],
-            microBarSettings.x,
-            microBarSettings.y
-    )
-
-    local previousButton
-    for _, buttonName in ipairs(microButtons) do
-        local button = _G[buttonName]
-
-        if button then
-            button:ClearAllPoints()
-            button:SetMovable(true)
-            button:SetUserPlaced(true)
-            button:SetParent(MicroBar)
-            if buttonName == "CharacterMicroButton" then
-                self:SetPoint(button, "BOTTOMLEFT", MicroBar, "BOTTOMLEFT", 0, 0)
-            else
-                self:SetPoint(button, "LEFT", previousButton, "RIGHT", -3, 0)
+    if microBarSettings.move then
+        local microButtons = {
+            "CharacterMicroButton",
+            "SpellbookMicroButton",
+            "TalentMicroButton",
+            "AchievementMicroButton",
+            "QuestLogMicroButton",
+            "SocialsMicroButton",
+            "GuildMicroButton",
+            "CollectionsMicroButton",
+            "PVPMicroButton",
+            "LFGMicroButton",
+            "EJMicroButton",
+            "MainMenuMicroButton",
+            "HelpMicroButton",
+        }
+        local buttonCount = 0
+        for _, buttonName in ipairs(microButtons) do
+            if _G[buttonName] then
+                buttonCount = buttonCount + 1
             end
+        end
 
-            if not button.setPointEventRegistered then
-                hooksecurefunc(button, "SetPoint", function()
-                    if self.movingMicroButtons then
-                        return
-                    end
+        local buttonSpacing = 1
+        local buttonWidth, buttonHeight = CharacterMicroButton:GetWidth(), 42
+        local totalWidth = buttonWidth * (buttonCount - buttonSpacing)
 
-                    self:microBar(module)
-                end)
-                button.setPointEventRegistered = true
+        -- Set dimensions and position of MicroBar
+        MicroBar:ClearAllPoints()
+        MicroBar:SetSize(totalWidth, buttonHeight)
+        MicroBar:SetPoint(
+                self.frameAnchors[microBarSettings.frameAnchor],
+                UIParent,
+                self.frameAnchors[microBarSettings.screenAnchor],
+                microBarSettings.x,
+                microBarSettings.y
+        )
+
+        local previousButton
+        for _, buttonName in ipairs(microButtons) do
+            local button = _G[buttonName]
+
+            if button then
+                button:ClearAllPoints()
+                button:SetMovable(true)
+                button:SetUserPlaced(true)
+                button:SetParent(MicroBar)
+                if buttonName == "CharacterMicroButton" then
+                    self:SetPoint(button, "BOTTOMLEFT", MicroBar, "BOTTOMLEFT", 0, 0)
+                else
+                    self:SetPoint(button, "LEFT", previousButton, "RIGHT", -3, 0)
+                end
+
+                if not button.setPointEventRegistered then
+                    hooksecurefunc(button, "SetPoint", function()
+                        if self.movingMicroButtons then
+                            return
+                        end
+
+                        self:microBar(module)
+                    end)
+                    button.setPointEventRegistered = true
+                end
+
+                previousButton = button;
             end
-
-            previousButton = button;
         end
     end
 
@@ -224,42 +235,45 @@ function ScarletUI:bagBar(module)
 
     -- Create or retrieve the BagBar frame
     local BagBar = _G["BagBar"] or CreateFrame("Frame", "BagBar", UIParent)
-    local buttonSpacing = 5  -- Spacing between buttons, you can adjust this as needed
-    local buttonWidth, buttonHeight = MainMenuBarBackpackButton:GetWidth(), MainMenuBarBackpackButton:GetHeight()
-    local totalButtons = 5  -- Backpack + 4 Bag Slots + KeyRing
-    local totalWidth = buttonWidth * totalButtons + buttonSpacing * (totalButtons - 1)
 
-    -- Set dimensions and position of BagBar
-    BagBar:ClearAllPoints()
-    BagBar:SetSize(totalWidth, buttonHeight)
-    BagBar:SetPoint(
-            self.frameAnchors[bagBarSettings.frameAnchor],
-            UIParent,
-            self.frameAnchors[bagBarSettings.screenAnchor],
-            bagBarSettings.x,
-            bagBarSettings.y
-    )
+    if bagBarSettings.move then
+        local buttonSpacing = 5  -- Spacing between buttons, you can adjust this as needed
+        local buttonWidth, buttonHeight = MainMenuBarBackpackButton:GetWidth(), MainMenuBarBackpackButton:GetHeight()
+        local totalButtons = 5  -- Backpack + 4 Bag Slots + KeyRing
+        local totalWidth = buttonWidth * totalButtons + buttonSpacing * (totalButtons - 1)
 
-    -- Move the Backpack button to the new BagBar frame
-    MainMenuBarBackpackButton:ClearAllPoints()
-    MainMenuBarBackpackButton:SetMovable(true)
-    MainMenuBarBackpackButton:SetUserPlaced(true)
-    MainMenuBarBackpackButton:SetPoint("RIGHT", BagBar, "RIGHT", 0, 0)
-    MainMenuBarBackpackButton:SetParent(BagBar)
-    MainMenuBarBackpackButtonNormalTexture:Hide()
+        -- Set dimensions and position of BagBar
+        BagBar:ClearAllPoints()
+        BagBar:SetSize(totalWidth, buttonHeight)
+        BagBar:SetPoint(
+                self.frameAnchors[bagBarSettings.frameAnchor],
+                UIParent,
+                self.frameAnchors[bagBarSettings.screenAnchor],
+                bagBarSettings.x,
+                bagBarSettings.y
+        )
 
-    -- Position the other bag buttons relative to the Backpack button
-    CharacterBag0Slot:ClearAllPoints()
-    CharacterBag0Slot:SetMovable(true)
-    CharacterBag0Slot:SetUserPlaced(true)
-    CharacterBag0Slot:SetPoint("RIGHT", MainMenuBarBackpackButton, "LEFT", -buttonSpacing, 0)
+        -- Move the Backpack button to the new BagBar frame
+        MainMenuBarBackpackButton:ClearAllPoints()
+        MainMenuBarBackpackButton:SetMovable(true)
+        MainMenuBarBackpackButton:SetUserPlaced(true)
+        MainMenuBarBackpackButton:SetPoint("RIGHT", BagBar, "RIGHT", 0, 0)
+        MainMenuBarBackpackButton:SetParent(BagBar)
+        MainMenuBarBackpackButtonNormalTexture:Hide()
 
-    for i = 0, 3 do
-        local bag = _G["CharacterBag"..i.."Slot"]
-        bag:SetParent(BagBar)
+        -- Position the other bag buttons relative to the Backpack button
+        CharacterBag0Slot:ClearAllPoints()
+        CharacterBag0Slot:SetMovable(true)
+        CharacterBag0Slot:SetUserPlaced(true)
+        CharacterBag0Slot:SetPoint("RIGHT", MainMenuBarBackpackButton, "LEFT", -buttonSpacing, 0)
 
-        local texture = _G["CharacterBag"..i.."SlotNormalTexture"]
-        texture:Hide()
+        for i = 0, 3 do
+            local bag = _G["CharacterBag"..i.."Slot"]
+            bag:SetParent(BagBar)
+
+            local texture = _G["CharacterBag"..i.."SlotNormalTexture"]
+            texture:Hide()
+        end
     end
 
     if module.microBag then
@@ -294,17 +308,23 @@ function ScarletUI:multiCastBar(module)
 
     MultiCastActionBarFrame.settingsKey = "multiCastBar"
 
-    -- stupid hack to fix the position of the MultiCastActionBarFrame
-    C_Timer.NewTimer(1, function()
-        MultiCastActionBarFrame:ClearAllPoints()
-        MultiCastActionBarFrame:SetPoint(
-                self.frameAnchors[multiCastBarSettings.frameAnchor],
-                UIParent,
-                self.frameAnchors[multiCastBarSettings.screenAnchor],
-                multiCastBarSettings.x,
-                multiCastBarSettings.y
-        )
-    end)
+    if multiCastBarSettings.move then
+        -- stupid hack to fix the position of the MultiCastActionBarFrame
+        C_Timer.NewTimer(1, function()
+            if ScarletUI:InCombat() then
+                return
+            end
+
+            MultiCastActionBarFrame:ClearAllPoints()
+            MultiCastActionBarFrame:SetPoint(
+                    self.frameAnchors[multiCastBarSettings.frameAnchor],
+                    UIParent,
+                    self.frameAnchors[multiCastBarSettings.screenAnchor],
+                    multiCastBarSettings.x,
+                    multiCastBarSettings.y
+            )
+        end)
+    end
 
     self:CreateMover(MultiCastActionBarFrame, multiCastBarSettings)
 
@@ -315,8 +335,8 @@ function ScarletUI:multiCastBar(module)
 end
 
 -- TODO: improve this functionality, maybe add to options
-function ScarletUI:possessBarFrame()
-    if not PossessBarFrame then
+function ScarletUI:possessBarFrame(module)
+    if not PossessBarFrame or not module.multiBarRight.move then
         return
     end
 
@@ -377,9 +397,6 @@ function ScarletUI:experienceBar(module)
         MainMenuExpBar:SetParent(self.hideFrameContainer)
     end
 
-    MainMenuBarMaxLevelBar:UnregisterAllEvents()
-    MainMenuBarMaxLevelBar:SetParent(self.hideFrameContainer)
-
     if experienceBarSettings.short then
         MainMenuExpBar:SetSize(510, 10)
 
@@ -406,6 +423,9 @@ function ScarletUI:experienceBar(module)
         MainMenuXPBarTexture3:SetWidth("255")
         MainMenuXPBarTexture3:ClearAllPoints()
         MainMenuXPBarTexture3:SetPoint("LEFT", MainMenuXPBarTexture0, "RIGHT", 0, 0)
+
+        MainMenuBarMaxLevelBar:UnregisterAllEvents()
+        MainMenuBarMaxLevelBar:SetParent(self.hideFrameContainer)
     else
         MainMenuExpBar:SetHeight(10)
         MainMenuXPBarTexture0:ClearAllPoints()
@@ -510,7 +530,7 @@ function ScarletUI:SetupActionBars()
     self:microBar(actionbarsModule)
     self:bagBar(actionbarsModule)
     self:multiCastBar(actionbarsModule)
-    self:possessBarFrame()
+    self:possessBarFrame(actionbarsModule)
     self:experienceBar(actionbarsModule)
     self:reputationBar(actionbarsModule)
 

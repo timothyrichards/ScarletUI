@@ -156,8 +156,13 @@ function ScarletUI:GenerateMoverConfig(name, _order)
                 get = function(_) return module[name].move end,
                 set = function(_, val)
                     module[name].move = val
-                    self:SetupActionBars()
-                    self:RefreshMoverOptions()
+
+                    if val then
+                        self:SetupActionBars()
+                        self:RefreshMoverOptions()
+                    else
+                        self:ShowReloadDialog()
+                    end
                 end,
             },
             hide = {
@@ -292,6 +297,7 @@ function ScarletUI:GenerateAllMoversConfigs()
                 name = "Buttons Per Row",
                 desc = "Configure the number of action buttons per row.\n(Default " .. defaults[barName].buttonsPerRow .. ")",
                 type = "range",
+                disabled = function() return self:SettingDisabled(module[barName].move) end,
                 min = 1,
                 max = frameData.buttonCount or 12,
                 step = 1,
@@ -381,6 +387,7 @@ function ScarletUI:GenerateAllMoversConfigs()
                 name = "Show Gryphons",
                 desc = "Show the gryphon graphics on the sides of your main bar.",
                 type = "toggle",
+                disabled = function() return self:SettingDisabled(module[barName].move) end,
                 width = 1,
                 order = 0.8,
                 get = function(_) return module.showGryphons end,
@@ -394,6 +401,7 @@ function ScarletUI:GenerateAllMoversConfigs()
                 name = "Paging Numbers",
                 desc = "Show the actionbar paging numbers and buttons.",
                 type = "toggle",
+                disabled = function() return self:SettingDisabled(module[barName].move) end,
                 width = 1,
                 order = 0.9,
                 get = function(_) return module.showPagingNumbers end,
