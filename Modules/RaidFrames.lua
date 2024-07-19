@@ -82,22 +82,14 @@ function ScarletUI:UpdateProfileOptions()
         if not RaidProfileExists(profile) then
             CreateNewRaidProfile(profile)
             self:ShowReloadDialog()
+            self:InitializeRaidProfileSettings(profile, options)
         end
 
         -- Update settings if the profile does exist
         self.updatingSettings = true
         if RaidProfileExists(profile) then
             -- Check and apply Raid Profile settings
-            for k, v in pairs(options) do
-                if not k == "move" or not k == "savedPosition" then
-                    local currentValue = tostring(GetRaidProfileOption(profile, k))
-                    local targetValue = tostring(v)
-                    if currentValue ~= targetValue then
-                        SetRaidProfileOption(profile, k, v)
-                        self:ShowReloadDialog()
-                    end
-                end
-            end
+            self:InitializeRaidProfileSettings(profile, options)
 
             -- Update position
             self:UpdateProfilePositions()
@@ -111,6 +103,20 @@ function ScarletUI:UpdateProfileOptions()
     local targetValue = tostring(CVars.useCompactPartyFrames)
     if currentValue ~= targetValue then
         SetCVar("useCompactPartyFrames", CVars.useCompactPartyFrames)
+    end
+end
+
+function ScarletUI:InitializeRaidProfileSettings(profile, options)
+    for k, v in pairs(options) do
+        if k ~= "move" and k ~= "savedPosition" then
+            local currentValue = tostring(GetRaidProfileOption(profile, k))
+            local targetValue = tostring(v)
+
+            if currentValue ~= targetValue then
+                SetRaidProfileOption(profile, k, v)
+                self:ShowReloadDialog()
+            end
+        end
     end
 end
 

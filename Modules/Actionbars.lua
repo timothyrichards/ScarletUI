@@ -363,6 +363,23 @@ function ScarletUI:possessBarFrame(module)
     end)
 end
 
+function ScarletUI:updateRestedExperience()
+    -- Get Current, Maximum, and Rested Experience
+    local currXP = UnitXP("player")
+    local maxXP = UnitXPMax("player")
+    local restXP = GetXPExhaustion() or 0
+    local mainMenuBarWidth = 510
+    local exhaustionBarStart = (currXP / maxXP) * mainMenuBarWidth
+    local exhaustionBarEnd = ((currXP + restXP) / maxXP) * mainMenuBarWidth
+
+    -- Ensure the exhaustion bar does not exceed the main bar's width
+    exhaustionBarEnd = math.min(exhaustionBarEnd, mainMenuBarWidth)
+    ExhaustionLevelFillBar:ClearAllPoints()
+    ExhaustionLevelFillBar:SetPoint("TOPLEFT", MainMenuExpBar, "TOPLEFT", exhaustionBarStart, 0)
+    ExhaustionLevelFillBar:SetPoint("BOTTOMRIGHT", MainMenuExpBar, "TOPLEFT", exhaustionBarEnd, -11)
+    ExhaustionTick:SetPoint("CENTER", ExhaustionLevelFillBar, "RIGHT")
+end
+
 function ScarletUI:experienceBar(module)
     local experienceBarSettings = module.experienceBar;
 
@@ -400,20 +417,7 @@ function ScarletUI:experienceBar(module)
     if experienceBarSettings.short then
         MainMenuExpBar:SetSize(510, 10)
 
-        -- Get Current, Maximum, and Rested Experience
-        local currXP = UnitXP("player")
-        local maxXP = UnitXPMax("player")
-        local restXP = GetXPExhaustion() or 0
-        local mainMenuBarWidth = 510
-        local exhaustionBarStart = (currXP / maxXP) * mainMenuBarWidth
-        local exhaustionBarEnd = ((currXP + restXP) / maxXP) * mainMenuBarWidth
-
-        -- Ensure the exhaustion bar does not exceed the main bar's width
-        exhaustionBarEnd = math.min(exhaustionBarEnd, mainMenuBarWidth)
-        ExhaustionLevelFillBar:ClearAllPoints()
-        ExhaustionLevelFillBar:SetPoint("TOPLEFT", MainMenuExpBar, "TOPLEFT", exhaustionBarStart, 0)
-        ExhaustionLevelFillBar:SetPoint("BOTTOMRIGHT", MainMenuExpBar, "TOPLEFT", exhaustionBarEnd, -11)
-        ExhaustionTick:SetPoint("CENTER", ExhaustionLevelFillBar, "RIGHT")
+        self:updateRestedExperience()
 
         MainMenuXPBarTexture0:SetWidth("255")
         MainMenuXPBarTexture0:ClearAllPoints()
@@ -551,6 +555,18 @@ function ScarletUI:SetupActionBars()
             local settings = self:GetValueFromPath(self.db.global, data.databasePath)
 
             self:CreateActionBar(frameName, settingsKey, settings)
+
+            if settingsKey == "stanceBar" and settings.move then
+                StanceBarLeft:SetScript("OnShow", function()
+                    StanceBarLeft:Hide()
+                    StanceBarLeft:SetParent(self.hideFrameContainer)
+                end)
+
+                StanceBarRight:SetScript("OnShow", function()
+                    StanceBarRight:Hide()
+                    StanceBarRight:SetParent(self.hideFrameContainer)
+                end)
+            end
         else
             self:Print("Frame data is nil for settings key: " .. self.selectedMover.settingsKey)
         end
@@ -558,12 +574,14 @@ function ScarletUI:SetupActionBars()
 
     if not self.actionbarEventRegistered then
         self.actionbarEventRegistered = true;
-        self.frame:RegisterEvent("UPDATE_FACTION")
         self.frame:RegisterEvent("PLAYER_LEVEL_UP")
         self.frame:RegisterEvent("UNIT_EXITED_VEHICLE")
         self.frame:RegisterEvent("UPDATE_POSSESS_BAR")
-        self.frame:RegisterEvent("CINEMATIC_STOP")
         self.frame:HookScript("OnEvent", function(_, event, ...)
+            if event == "PLAYER_LEVEL_UP" then
+                self:updateRestedExperience()
+            end
+
             if event == "PLAYER_REGEN_ENABLED" then
                 self:microBar(actionbarsModule)
                 self:possessBarFrame(actionbarsModule)
