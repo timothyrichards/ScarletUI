@@ -39,9 +39,14 @@ local function UpdateTextElement(fontString, text, color)
     fontString:SetTextColor(color.r, color.g, color.b)
 end
 
-local function ItemLevelText(itemLink, itemButton, hide)
+local function ItemLevelText(itemLink, itemLocation, itemButton, hide)
     if not hide and itemLink then
-        local _, _, itemQuality, itemLevel, _, itemType, _, _, _, _, _, _, _, _, _, _, _ = GetItemInfo(itemLink)
+        local _, _, itemQuality, itemLevel, _, itemType = GetItemInfo(itemLink)
+
+        if itemLocation then
+            itemLevel = C_Item.GetCurrentItemLevel(itemLocation)
+        end
+
         if itemType == 'Armor' or itemType == 'Weapon' then
             if itemQuality and itemLevel then
                 if itemButton then
@@ -75,8 +80,9 @@ local function calculateUnitItemLevel(unit)
         local skipSlot = false
 
         -- Skip MainHand and SecondaryHand slots if the player is a hunter and has a ranged weapon equipped
-        local rangedItemLink = GetInventoryItemLink(unit, GetInventorySlotInfo("RangedSlot"))
-        if isHunter and rangedItemLink then
+        if isHunter and not self.retail then
+            local rangedItemLink = GetInventoryItemLink(unit, GetInventorySlotInfo("RangedSlot"))
+
             if rangedItemLink and (slotName == "MainHand" or slotName == "SecondaryHand") then
                 skipSlot = true
             end
@@ -122,11 +128,17 @@ function ScarletUI:CharacterFrameItemLevel()
             -- nothing
         else
             local slotID = GetInventorySlotInfo(slotName .. "Slot")
+            local itemLocation
 
-            if (slotID ~= nil) then
+            if slotID ~= nil then
                 local itemLink = GetInventoryItemLink("player", slotID)
                 local itemButton = _G["Character" .. slotName .. "Slot"]
-                ItemLevelText(itemLink, itemButton, hide)
+
+                if ItemLocation.CreateFromEquipmentSlot then
+                    itemLocation = ItemLocation:CreateFromEquipmentSlot(slotID)
+                end
+
+                ItemLevelText(itemLink, itemLocation, itemButton, hide)
             end
         end
     end
@@ -157,9 +169,34 @@ function ScarletUI:InspectFrameItemLevel()
             -- nothing
         else
             local slotID = GetInventorySlotInfo(slotName .. "Slot")
-            local itemLink = GetInventoryItemLink(unit, slotID)
-            local itemButton = _G["Inspect" .. slotName .. "Slot"]
-            ItemLevelText(itemLink, itemButton, hide)
+
+            if slotID ~= nil then
+                local itemLink = GetInventoryItemLink(unit, slotID)
+                local itemButton = _G["Inspect" .. slotName .. "Slot"]
+
+                ItemLevelText(itemLink, nil, itemButton, hide)
+            end
+        end
+    end
+end
+
+function ScarletUI:LoopBagButtons(containerFrame)
+    local hide = not self.db.global.itemLevelBag
+
+    if containerFrame then
+        for _, button in containerFrame:EnumerateValidItems() do
+            if button then
+                local itemLink
+                local itemLocation = ItemLocation:CreateFromBagAndSlot(button:GetBagID(), button:GetID())
+
+                if itemLocation:IsValid() then
+                    itemLink = C_Item.GetItemLink(itemLocation)
+                else
+                    itemLocation = nil
+                end
+
+                ItemLevelText(itemLink, itemLocation, button, hide)
+            end
         end
     end
 end
@@ -167,22 +204,39 @@ end
 function ScarletUI:BagItemLevel()
     local hide = not self.db.global.itemLevelBag
 
-    if ScarletUI_BagFrame then
-        for bag = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
-            for slot = 1, GetContainerNumSlots(bag) do
-                local index = bag * GetContainerNumSlots(bag) + slot
-                local itemLink = GetContainerItemLink(bag, slot)
-                local itemButton = self.bagSlots[index]
-                ItemLevelText(itemLink, itemButton, hide)
-            end
+    if self.retail then
+        for container = 0, NUM_CONTAINER_FRAMES do
+            local containerFrame = _G["ContainerFrame" .. (container + 1)]
+
+            self:LoopBagButtons(containerFrame)
         end
+
+        self:LoopBagButtons(_G["ContainerFrameCombinedBags"])
+        self:LoopBagButtons(_G["BankFrame"])
     else
-        for bag = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
-            for slot = 1, GetContainerNumSlots(bag) do
-                local itemLink = GetContainerItemLink(bag, slot)
-                local adjustedSlot = GetContainerNumSlots(bag) - slot + 1
-                local itemButton = _G["ContainerFrame" .. (bag + 1) .. "Item" .. adjustedSlot]
-                ItemLevelText(itemLink, itemButton, hide)
+        for container = -1, NUM_CONTAINER_FRAMES do
+            local numberOfSlots = GetContainerNumSlots(container)
+
+            for slot = 1, numberOfSlots do
+                local itemLink = GetContainerItemLink(container, slot)
+                local itemButton
+
+                if ScarletUI_BagFrame then
+                    local index = container * numberOfSlots + slot
+                    itemButton = self.bagSlots[index]
+                else
+                    local adjustedSlot = numberOfSlots - slot + 1
+
+                    if container == BANK_CONTAINER then
+                        itemButton = _G["BankFrameItem" .. slot]
+                    else
+                        itemButton = _G["ContainerFrame" .. (container + 1) .. "Item" .. adjustedSlot]
+                    end
+                end
+
+                if itemButton then
+                    ItemLevelText(itemLink, nil, itemButton, hide)
+                end
             end
         end
     end
@@ -192,6 +246,9 @@ function ScarletUI:SetupItemLevels()
     if not self.itemLevelEventRegistered then
         self.itemLevelEventRegistered = true;
         self.frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+        self.frame:RegisterEvent("BANKFRAME_OPENED")
+        self.frame:RegisterEvent("BANKFRAME_CLOSED")
+        self.frame:RegisterEvent("PLAYERBANKSLOTS_CHANGED")
         self.frame:RegisterEvent("UNIT_INVENTORY_CHANGED")
         self.frame:RegisterEvent("INSPECT_READY")
         self.frame:RegisterEvent("BAG_UPDATE")
@@ -204,7 +261,7 @@ function ScarletUI:SetupItemLevels()
                 else
                     ScarletUI.inspectOpened = false
                 end
-            elseif event == "BAG_UPDATE" then
+            elseif event == "BAG_UPDATE"or event == "BANKFRAME_OPENED" or event == "PLAYERBANKSLOTS_CHANGED" then
                 ScarletUI:BagItemLevel()
             end
         end)
@@ -212,6 +269,10 @@ function ScarletUI:SetupItemLevels()
         CharacterFrame:HookScript("OnShow", function()
             ScarletUI:CharacterFrameItemLevel()
         end)
+
+        EventRegistry:RegisterCallback("ContainerFrame.OpenBag", function()
+            ScarletUI:BagItemLevel()
+        end);
     end
 
     self:BagItemLevel()

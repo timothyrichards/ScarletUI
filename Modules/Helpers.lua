@@ -16,30 +16,35 @@ function ScarletUI:GetWoWVersion()
     local _, _, _, interfaceVersion = GetBuildInfo()
     interfaceVersion = tonumber(interfaceVersion)
 
-    if interfaceVersion >= 100000 then
-        return "RETAIL"
+    local versionText
+    if interfaceVersion >= 110000 then
+        versionText = "RETAIL"
+    elseif interfaceVersion >= 100000 then
+        versionText = "DF"
     elseif interfaceVersion >= 90000 then
-        return "SL"
+        versionText = "SL"
     elseif interfaceVersion >= 80000 then
-        return "BFA"
+        versionText = "BFA"
     elseif interfaceVersion >= 70000 then
-        return "LEGION"
+        versionText = "LEGION"
     elseif interfaceVersion >= 60000 then
-        return "WOD"
+        versionText = "WOD"
     elseif interfaceVersion >= 50000 then
-        return "MOP"
+        versionText = "MOP"
     elseif interfaceVersion >= 40000 then
-        return "CATA"
+        versionText = "CATA"
     elseif interfaceVersion >= 30000 then
-        return "WOTLK"
+        versionText = "WOTLK"
     elseif interfaceVersion >= 20000 then
-        return "TBC"
+        versionText = "TBC"
     elseif interfaceVersion >= 10000 then
-        return "VANILLA"
+        versionText = "VANILLA"
     else
+        versionText = "UNKNOWN"
         self:Print("Unable to determine what version of WoW this is: " .. interfaceVersion)
-        return "UNKNOWN"
     end
+
+    return versionText, interfaceVersion
 end
 
 function ScarletUI:SetupExpandCharacterInfo()

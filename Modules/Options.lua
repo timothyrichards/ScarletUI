@@ -258,6 +258,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
             extras = {
                 name = "Extras",
                 type = "group",
+                hidden = function() return select(2, self:GetWoWVersion()) > 40000 end,
                 inline = true,
                 order = 3,
                 args = {
