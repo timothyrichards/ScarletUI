@@ -45,6 +45,8 @@ local function ItemLevelText(itemLink, itemLocation, itemButton, hide)
 
         if itemLocation then
             itemLevel = C_Item.GetCurrentItemLevel(itemLocation)
+        elseif GetDetailedItemLevelInfo then
+            itemLevel = GetDetailedItemLevelInfo(itemLink)
         end
 
         if itemType == 'Armor' or itemType == 'Weapon' then
@@ -72,8 +74,8 @@ local function calculateUnitItemLevel(unit)
     local isHunter = (select(2, UnitClass(unit)) == "HUNTER")
     local mainHandItemLink = GetInventoryItemLink(unit, GetInventorySlotInfo("MainHandSlot"))
     local secondaryHandItemLink = GetInventoryItemLink(unit, GetInventorySlotInfo("SecondaryHandSlot"))
-    local mainHandItemLevel = mainHandItemLink and select(4, GetItemInfo(mainHandItemLink)) or 0
-    local secondaryHandItemLevel = secondaryHandItemLink and select(4, GetItemInfo(secondaryHandItemLink)) or 0
+    local mainHandItemLevel = mainHandItemLink and GetDetailedItemLevelInfo(mainHandItemLink) or 0
+    local secondaryHandItemLevel = secondaryHandItemLink and GetDetailedItemLevelInfo(secondaryHandItemLink) or 0
     local dualWieldItemLevel = math.max(mainHandItemLevel, secondaryHandItemLevel)
 
     for _, slotName in ipairs(slots) do
@@ -105,7 +107,7 @@ local function calculateUnitItemLevel(unit)
             local slotID = GetInventorySlotInfo(slotName .. "Slot")
             local itemLink = GetInventoryItemLink(unit, slotID)
             if itemLink then
-                local _, _, _, itemLevel = GetItemInfo(itemLink)
+                local itemLevel = GetDetailedItemLevelInfo(itemLink)
                 if slotName == "MainHand" or slotName == "SecondaryHand" then
                     -- Player is dual wielding, use the higher item level item for the calculation
                     totalItemLevel = totalItemLevel + dualWieldItemLevel
@@ -159,7 +161,12 @@ function ScarletUI:InspectFrameItemLevel()
 
     if not self.inspectFrameItemLevelText then
         self.inspectFrameItemLevelText = InspectFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        self.inspectFrameItemLevelText:SetPoint("TOP", InspectFrame, "TOP", 0, -60)
+
+        if self.retail then
+            self.inspectFrameItemLevelText:SetPoint("BOTTOMLEFT", InspectFrame, "BOTTOMLEFT", 10, 15)
+        else
+            self.inspectFrameItemLevelText:SetPoint("TOP", InspectFrame, "TOP", 0, -60)
+        end
     end
 
     self.inspectFrameItemLevelText:SetText("Item Level: " .. math.floor(averageItemLevel))
@@ -205,14 +212,19 @@ function ScarletUI:BagItemLevel()
     local hide = not self.db.global.itemLevelBag
 
     if self.retail then
-        for container = 0, NUM_CONTAINER_FRAMES do
+        for container = -1, NUM_CONTAINER_FRAMES do
             local containerFrame = _G["ContainerFrame" .. (container + 1)]
+
+            if container == BANK_CONTAINER then
+                containerFrame = _G["BankFrame"]
+            end
 
             self:LoopBagButtons(containerFrame)
         end
 
         self:LoopBagButtons(_G["ContainerFrameCombinedBags"])
-        self:LoopBagButtons(_G["BankFrame"])
+        -- TODO: Figure out how to get the AccountBankPanel to work
+        --self:LoopBagButtons(_G["AccountBankPanel"])
     else
         for container = -1, NUM_CONTAINER_FRAMES do
             local numberOfSlots = GetContainerNumSlots(container)
