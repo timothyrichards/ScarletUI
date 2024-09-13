@@ -577,6 +577,7 @@ function ScarletUI:SetupActionBars()
         self.frame:RegisterEvent("PLAYER_LEVEL_UP")
         self.frame:RegisterEvent("UNIT_EXITED_VEHICLE")
         self.frame:RegisterEvent("UPDATE_POSSESS_BAR")
+        self.frame:RegisterEvent("CINEMATIC_STOP")
         self.frame:HookScript("OnEvent", function(_, event, ...)
             if event == "PLAYER_LEVEL_UP" then
                 self:updateRestedExperience()
@@ -593,6 +594,10 @@ function ScarletUI:SetupActionBars()
 
             if event == "UPDATE_POSSESS_BAR" then
                 self:possessBarFrame(actionbarsModule)
+            end
+
+            if event == "CINEMATIC_STOP" then
+                self:multiCastBar(actionbarsModule)
             end
         end)
         self.frame:SetScript("OnShow", function(...)
