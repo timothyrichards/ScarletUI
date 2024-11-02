@@ -132,8 +132,14 @@ function ScarletUI:SetupFrame()
     title:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
     title:SetText("ScarletUI Debug Frame")
 
+    local versionText = self.debugContainer:CreateFontString("SUI_VersionPropertyText", "OVERLAY", "GameFontWhite")
+    versionText:SetPoint("TOPLEFT", self.debugContainer, "TOPLEFT")
+    versionText:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
+    local _, _, _, interfaceVersion = GetBuildInfo()
+    versionText:SetText("- version: " .. tostring(interfaceVersion))
+
     local retailText = self.debugContainer:CreateFontString("SUI_RetailPropertyText", "OVERLAY", "GameFontWhite")
-    retailText:SetPoint("TOPLEFT", self.debugContainer, "TOPLEFT")
+    retailText:SetPoint("TOPLEFT", versionText, "BOTTOMLEFT")
     retailText:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
     retailText:SetText("- retail: " .. tostring(self.retail))
 

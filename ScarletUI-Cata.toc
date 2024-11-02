@@ -1,4 +1,4 @@
-## Interface: 40400
+## Interface: 40401
 ## Title: Scarlet UI
 ## Author: ScarletPaladin
 ## Notes: Misc UI features/modifications preferred by ScarletPaladin

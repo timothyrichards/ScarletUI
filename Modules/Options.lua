@@ -873,9 +873,10 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                 args = {
                     dropdownMenuButton = {
                         name = "Dropdown Menu Button",
-                        desc = "Adds a button to the right click dropdown to add or remove tanks from the tank names list.",
+                        desc = "Adds a button to the right click dropdown to add or remove tanks from the tank names list. NOTE",
                         type = "toggle",
                         width = "full",
+                        disabled = true,
                         order = 0,
                         get = function(_) return module.dropdownMenuButton end,
                         set = function(_, val) module.dropdownMenuButton = val end,

@@ -419,7 +419,7 @@ function ScarletUI:SetupNameplates()
     self:SetupTanks(nameplatesModule)
     self:SetupSpecialUnits(nameplatesModule)
     self:SetupPriorityDebuffs()
-    self:SetupDropdownButton(nameplatesModule)
+    --self:SetupDropdownButton(nameplatesModule)
 
     if not self.nameplateEventsRegistered then
         self.nameplateEventsRegistered = true
