@@ -282,12 +282,14 @@ ScarletUI.defaults = {
                 noThreat = { 0.0824, 1, 0, 1 },
                 lowThreat = { 1, 0.9176, 0, 1 },
                 threat = { 1, 0.0353, 0, 1 },
+                pet = { 0, 0.95, 1, 1 },
                 tank = { 0, 0.7020, 1, 1 }
             },
             tankThreatColors = {
                 noThreat = { 1, 0.0353, 0, 1 },
                 lowThreat = { 1, 0.9176, 0, 1 },
                 threat = { 0.0824, 1, 0, 1 },
+                pet = { 0, 0.95, 1, 1 },
                 tank = { 0, 0.7020, 1, 1 }
             },
             tankNames = "",
@@ -628,12 +630,14 @@ ScarletUI.originalUIDefaults = {
                 noThreat = { 0.0824, 1, 0, 1 },
                 lowThreat = { 1, 0.9176, 0, 1 },
                 threat = { 1, 0.0353, 0, 1 },
+                pet = { 0, 0.95, 1, 1 },
                 tank = { 0, 0.7020, 1, 1 }
             },
             tankThreatColors = {
                 noThreat = { 1, 0.0353, 0, 1 },
                 lowThreat = { 1, 0.9176, 0, 1 },
                 threat = { 0.0824, 1, 0, 1 },
+                pet = { 0, 0.95, 1, 1 },
                 tank = { 0, 0.7020, 1, 1 }
             },
             tankNames = "",

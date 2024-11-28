@@ -39,7 +39,12 @@ function ScarletUI:SetupTargetFrame(unitFramesModule)
     local playerFrame = unitFramesModule.playerFrame
     local targetFrame = unitFramesModule.targetFrame
 
-    TargetFrame.buffsOnTop = targetFrame.buffsOnTop;
+    TARGET_FRAME_BUFFS_ON_TOP = targetFrame.buffsOnTop;
+    TargetFrame_UpdateBuffsOnTop();
+
+    hooksecurefunc("TargetFrame_UpdateBuffsOnTop", function()
+        targetFrame.buffsOnTop = TARGET_FRAME_BUFFS_ON_TOP;
+    end)
 
     if targetFrame.move then
         if not targetFrame.mirrorPlayerFrame then
@@ -77,7 +82,12 @@ function ScarletUI:SetupFocusFrame(unitFramesModule)
     local focusFrame = unitFramesModule.focusFrame
 
     if FocusFrame then
-        FocusFrame.buffsOnTop = focusFrame.buffsOnTop;
+        FOCUS_FRAME_BUFFS_ON_TOP = focusFrame.buffsOnTop;
+        FocusFrame_UpdateBuffsOnTop();
+
+        hooksecurefunc("FocusFrame_UpdateBuffsOnTop", function()
+            focusFrame.buffsOnTop = FOCUS_FRAME_BUFFS_ON_TOP;
+        end)
 
         if focusFrame.move then
             FocusFrame:ClearAllPoints()

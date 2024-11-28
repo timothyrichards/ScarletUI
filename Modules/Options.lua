@@ -939,13 +939,28 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                             module.nonTankThreatColors.threat = {r, g, b, a}
                         end,
                     },
+                    otherPetThreat = {
+                        name = "Pet Threat",
+                        type = "color",
+                        desc = "Choose a color",
+                        width = 0.75,
+                        hasAlpha = true,
+                        order = 5,
+                        get = function(_)
+                            local r, g, b, a = unpack(module.nonTankThreatColors.pet)
+                            return r, g, b, a
+                        end,
+                        set = function(_, r, g, b, a)
+                            module.nonTankThreatColors.pet = {r, g, b, a}
+                        end,
+                    },
                     otherTankThreat = {
                         name = "Tank Threat",
                         type = "color",
                         desc = "Choose a color",
                         width = 0.75,
                         hasAlpha = true,
-                        order = 5,
+                        order = 6,
                         get = function(_)
                             local r, g, b, a = unpack(module.nonTankThreatColors.tank)
                             return r, g, b, a
@@ -958,14 +973,14 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                         name = "",
                         type = "description",
                         width = "full",
-                        order = 5.1,
+                        order = 6.1,
                     },
                     description2 = {
                         name = "|cffffd100These are the colors you see as a |cff00b3ffTank|r.|r",
                         type = "description",
                         width = "full",
                         fontSize = "medium",
-                        order = 6,
+                        order = 7,
                     },
                     noThreat = {
                         name = "No Threat",
@@ -973,7 +988,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                         desc = "Choose a color",
                         width = 0.75,
                         hasAlpha = true,
-                        order = 7,
+                        order = 8,
                         get = function(_)
                             local r, g, b, a = unpack(module.tankThreatColors.noThreat)
                             return r, g, b, a
@@ -988,7 +1003,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                         desc = "Choose a color",
                         width = 0.75,
                         hasAlpha = true,
-                        order = 8,
+                        order = 9,
                         get = function(_)
                             local r, g, b, a = unpack(module.tankThreatColors.lowThreat)
                             return r, g, b, a
@@ -1003,7 +1018,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                         desc = "Choose a color",
                         width = 0.75,
                         hasAlpha = true,
-                        order = 9,
+                        order = 10,
                         get = function(_)
                             local r, g, b, a = unpack(module.tankThreatColors.threat)
                             return r, g, b, a
@@ -1012,13 +1027,28 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                             module.tankThreatColors.threat = {r, g, b, a}
                         end,
                     },
+                    petThreat = {
+                        name = "Pet Threat",
+                        type = "color",
+                        desc = "Choose a color",
+                        width = 0.75,
+                        hasAlpha = true,
+                        order = 11,
+                        get = function(_)
+                            local r, g, b, a = unpack(module.tankThreatColors.pet)
+                            return r, g, b, a
+                        end,
+                        set = function(_, r, g, b, a)
+                            module.tankThreatColors.pet = {r, g, b, a}
+                        end,
+                    },
                     tankThreat = {
                         name = "Tank Threat",
                         type = "color",
                         desc = "Choose a color",
                         width = 0.75,
                         hasAlpha = true,
-                        order = 10,
+                        order = 12,
                         get = function(_)
                             local r, g, b, a = unpack(module.tankThreatColors.tank)
                             return r, g, b, a
@@ -1032,7 +1062,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                         type = "input",
                         desc = "Add a comma seperated list of player names you wish to manually designate as tanks, for example: Tank1,Tank2,Tank3\n\nPlayers with the role of tank (in versions of WoW that have roles) and players marked Main Tank or Main Assist in raids, will automatically be designated as tanks by the nameplate colors.",
                         width = "full",
-                        order = 11,
+                        order = 13,
                         get = function(_) return module.tankNames end,
                         set = function(_, value)
                             module.tankNames = value

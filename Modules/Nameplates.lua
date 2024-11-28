@@ -76,6 +76,20 @@ local function ThreatFunc(unit)
     return firstUnit, firstThreat, secondUnit, secondThreat
 end
 
+local function IsPet(unitId)
+    if UnitIsUnit(unitId, "pet") then
+        return true
+    end
+
+    for i = 1, 4 do
+        if UnitIsUnit(unitId, "partypet" .. i) then
+            return true
+        end
+    end
+
+    return false
+end
+
 local function IsTank(playerName)
     local mainTank = GetPartyAssignment("MAINTANK", playerName)
     local mainAssist = GetPartyAssignment("MAINASSIST", playerName)
@@ -228,8 +242,12 @@ function ScarletUI:UpdateNameplate(unitId)
         threatColorGroup = nameplatesModule.tankThreatColors
     end
 
-    if firstUnit and IsTank(UnitName(firstUnit)) and not UnitIsUnit(firstUnit, "Player") then
+    if firstUnit and IsPet(firstUnit) then
         threatStatus = 4
+    end
+
+    if firstUnit and IsTank(UnitName(firstUnit)) and not UnitIsUnit(firstUnit, "Player") then
+        threatStatus = 5
     end
 
     if nameplate.UnitFrame then
@@ -249,6 +267,8 @@ function ScarletUI:UpdateNameplate(unitId)
         elseif threatStatus == 3 then
             nameplate.UnitFrame.healthBar:SetStatusBarColor(unpack(threatColorGroup.threat))
         elseif threatStatus == 4 then
+            nameplate.UnitFrame.healthBar:SetStatusBarColor(unpack(threatColorGroup.pet))
+        elseif threatStatus == 5 then
             nameplate.UnitFrame.healthBar:SetStatusBarColor(unpack(threatColorGroup.tank))
         end
     end
