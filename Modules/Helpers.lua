@@ -12,6 +12,10 @@ function ScarletUI:ShowReloadDialog()
     StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
 end
 
+function ScarletUI:ShowRaidFrameDialog()
+    StaticPopup_Show('SCARLET_UI_RAID_FRAME_DIALOG')
+end
+
 function ScarletUI:GetWoWVersion()
     local _, _, _, interfaceVersion = GetBuildInfo()
     interfaceVersion = tonumber(interfaceVersion)

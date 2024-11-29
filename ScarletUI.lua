@@ -7,9 +7,23 @@ local IsAddOnLoaded = C_AddOns.IsAddOnLoaded or IsAddOnLoaded
 
 -- Dialog to reload after addon settings are changed
 StaticPopupDialogs['SCARLET_UI_RELOAD_DIALOG'] = {
-    text = '<Scarlet UI>\n\nRequires a reload to properly configure.\n\nIF YOU DO NOT RELOAD YOU WILL EXPERIENCE LUA ERRORS.',
+    text = '<Scarlet UI>\n\nRequires a reload to properly configure.\n\n|cffffd100IF YOU DO NOT RELOAD YOU WILL EXPERIENCE LUA ERRORS.|r',
     button1 = 'Reload',
     button2 = 'Lua Errors',
+    OnAccept = function()
+        ReloadUI()
+    end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = false,
+    preferredIndex = 3,
+}
+
+-- Dialog to reload after raid frame settings are changed
+StaticPopupDialogs['SCARLET_UI_RAID_FRAME_DIALOG'] = {
+    text = '<Scarlet UI>\n\nYour raid frame settings have been updated.\n\n|cffff0900IF YOU DO NOT RELOAD YOU WILL NOT BE ABLE TO TARGET PARTY OR RAID MEMBERS.|r',
+    button1 = 'Reload',
+    button2 = 'Dead Friends',
     OnAccept = function()
         ReloadUI()
     end,
