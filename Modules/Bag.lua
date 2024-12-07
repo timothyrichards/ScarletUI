@@ -186,7 +186,7 @@ function ScarletUI:SetupBags()
             totalSlots = totalSlots + 1
 
             -- Create a new button for the slot
-            local button = CreateFrame("ItemButton", "ScarletUI_Bag" .. bag .. "Slot" .. slot, self.bagFrame, "SecureActionButtonTemplate ")
+            local button = CreateFrame("ItemButton", "ScarletUI_Bag" .. bag .. "Slot" .. slot, self.bagFrame, "SecureActionButtonTemplate")
             button:SetAttribute("type", "item")
             button:SetAttribute("item", "bag " .. bag .. " slot " .. slot)
             button:SetSize(bagModule.slotSize, bagModule.slotSize)
@@ -308,41 +308,33 @@ function ScarletUI:SetupBags()
         self.bagFrame.currencyFooter.currencies[i] = fs
     end
 
+    local cooldownFunction = function()
+        for bag = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
+            for slot = 1, GetContainerNumSlots(bag) do
+                local index = bag * GetContainerNumSlots(bag) + slot
+                local button = bagSlots[index]
+                local start, duration = GetContainerItemCooldown(bag, slot)
+                if start > 0 and duration > 0 then
+                    button.Cooldown:SetCooldown(start, duration)
+                    button.Cooldown:Show()
+                else
+                    button.Cooldown:Hide()
+                end
+            end
+        end
+    end
+
     updateCurrencyDisplay()
     hooksecurefunc("SetCurrencyBackpack", updateCurrencyDisplay)
     self.bagFrame.currencyFooter:SetScript("OnEvent", function(_, event)
         if event == "CURRENCY_DISPLAY_UPDATE" then
             updateCurrencyDisplay()
         elseif event == "BAG_UPDATE_COOLDOWN" then
-            for _bag = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
-                for slot = 1, GetContainerNumSlots(_bag) do
-                    local index = _bag * GetContainerNumSlots(_bag) + slot
-                    local button = bagSlots[index]
-                    local start, duration = GetContainerItemCooldown(_bag, slot)
-                    if start > 0 and duration > 0 then
-                        button.Cooldown:SetCooldown(start, duration)
-                        button.Cooldown:Show()
-                    else
-                        button.Cooldown:Hide()
-                    end
-                end
-            end
+            cooldownFunction()
         end
     end)
 
-    for bag = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
-        for slot = 1, GetContainerNumSlots(bag) do
-            local index = bag * GetContainerNumSlots(bag) + slot
-            local button = bagSlots[index]
-            local start, duration = GetContainerItemCooldown(bag, slot)
-            if start > 0 and duration > 0 then
-                button.Cooldown:SetCooldown(start, duration)
-                button.Cooldown:Show()
-            else
-                button.Cooldown:Hide()
-            end
-        end
-    end
+    cooldownFunction()
 
     -- Create FontStrings for the gold, silver, and bronze amounts
     self.bagFrame.currencyFooter.bronzeText = self.bagFrame.currencyFooter:CreateFontString(nil, "OVERLAY")

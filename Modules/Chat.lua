@@ -39,6 +39,8 @@ function ScarletUI:SetupChat()
             chatFrame.x,
             chatFrame.y
     )
+
+    FCF_SavePositionAndDimensions(ChatFrame1)
 end
 
 function ScarletUI:SetupChatTabs()
@@ -75,6 +77,7 @@ function ScarletUI:SetupChatTabs()
             end
             if tabs.trade then
                 ChatFrame_RemoveChannel(frame, 'Trade')
+                ChatFrame_RemoveChannel(frame, 'Services')
             end
             if tabs.lfg then
                 ChatFrame_RemoveChannel(frame, 'LookingForGroup')
@@ -86,15 +89,22 @@ function ScarletUI:SetupChatTabs()
             VoiceTranscriptionFrame_UpdateEditBox(frame)
         elseif frame.name == 'Loot' then
             ChatFrame_RemoveAllMessageGroups(frame)
-            ChatFrame_AddMessageGroup(frame, "LOOT")
+            C_Timer.NewTimer(0.1, function()
+                ChatFrame_AddMessageGroup(frame, "LOOT")
+            end)
         elseif frame.name == 'Trade' then
             ChatFrame_RemoveAllMessageGroups(frame)
-            ChatFrame_AddChannel(frame, 'Trade')
-            ChatFrame_AddChannel(frame, 'Services')
+            C_Timer.NewTimer(0.1, function()
+                ChatFrame_AddChannel(frame, 'Trade')
+                JoinChannelByName('Services', nil, id, 0)
+                ChatFrame_AddChannel(frame, 'Services')
+            end)
         elseif frame.name == 'LFG' then
             ChatFrame_RemoveAllMessageGroups(frame)
-            JoinChannelByName('LookingForGroup', nil, id, 0)
-            ChatFrame_AddChannel(frame, 'LookingForGroup')
+            C_Timer.NewTimer(0.1, function()
+                JoinChannelByName('LookingForGroup', nil, id, 0)
+                ChatFrame_AddChannel(frame, 'LookingForGroup')
+            end)
         end
     end
 

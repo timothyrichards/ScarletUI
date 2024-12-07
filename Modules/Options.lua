@@ -828,11 +828,58 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                             }
                         },
                     },
+                    threatAmountText = {
+                        name = "Threat Text",
+                        type = "group",
+                        inline = true,
+                        order = 1,
+                        args = {
+                            show = {
+                                name = "Show",
+                                desc = "Add threat text next to nameplates.",
+                                type = "toggle",
+                                width = 0.5,
+                                order = 1,
+                                get = function(_) return module.threatAmountText.show end,
+                                set = function(_, val)
+                                    module.threatAmountText.show = val
+                                    self:ReapplyTextSettingsToNameplates()
+                                end,
+                            },
+                            fontSize = {
+                                name = "Font Size",
+                                desc = "Desired font size for cast threat text.\n(Default " .. defaults.threatAmountText.fontSize .. ")",
+                                type = "range",
+                                min = 6,
+                                max = 20,
+                                step = 1,
+                                width = 1,
+                                order = 4,
+                                get = function(_) return module.threatAmountText.fontSize end,
+                                set = function(_, val)
+                                    module.threatAmountText.fontSize = val
+                                    self:ReapplyTextSettingsToNameplates()
+                                end,
+                            },
+                            --anchor = {
+                            --    name = "Text Anchor",
+                            --    desc = "Anchor point of the frame.\n(Default " .. defaults.threatAmountText.anchor .. ")",
+                            --    type = "select",
+                            --    width = 1,
+                            --    order = 4,
+                            --    values = function() return { "LEFT", "RIGHT" } end,
+                            --    get = function(_) return module.threatAmountText.anchor end,
+                            --    set = function(_, val)
+                            --        module.threatAmountText.anchor = val
+                            --    end,
+                            --},
+                        },
+                    },
                     castBarText = {
                         name = "Cast Bar Text",
                         type = "group",
                         inline = true,
-                        order = 1,
+                        order = 2,
                         args = {
                             show = {
                                 name = "Show",

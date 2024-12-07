@@ -274,6 +274,11 @@ ScarletUI.defaults = {
                 show = true,
                 fontSize = 10
             },
+            threatAmountText = {
+                show = true,
+                fontSize = 18,
+                anchor = 1, -- LEFT
+            },
             castBarText = {
                 show = true,
                 fontSize = 10

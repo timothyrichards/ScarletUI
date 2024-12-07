@@ -1,5 +1,4 @@
 local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
-local allStates = {}
 local lastNameplate
 
 local function trim(s)
@@ -120,6 +119,42 @@ end
 local function SetupNameplate(nameplate)
     local module = ScarletUI.db.global.nameplatesModule
 
+    local healthBar = nameplate.UnitFrame and nameplate.UnitFrame.healthBar
+    if module.healthBarText.show then
+        if healthBar then
+            if not healthBar.healthBarText then
+                healthBar.healthBarText = healthBar:CreateFontString(nil, "OVERLAY", "GameFontWhite")
+                healthBar.healthBarText:SetPoint("CENTER")
+                healthBar.healthBarText:SetFont("Fonts\\FRIZQT__.TTF", module.healthBarText.fontSize, "OUTLINE")
+            else
+                healthBar.healthBarText:SetFont("Fonts\\FRIZQT__.TTF", module.healthBarText.fontSize, "OUTLINE")
+            end
+            ScarletUI:UpdateHealthText(healthBar)
+
+            -- Hook into the OnValueChanged script to update the text during casting
+            if not healthBar.healthBarTextHooked then
+                healthBar:HookScript("OnValueChanged", function(self)
+                    ScarletUI:UpdateHealthText(self)
+                end)
+                healthBar.healthBarTextHooked = true
+            end
+        end
+    elseif healthBar.healthBarText then
+        healthBar.healthBarText:Hide()
+    end
+
+    if module.threatAmountText.show then
+        if not nameplate.threatAmountText then
+            nameplate.threatAmountText = nameplate:CreateFontString(nil, "OVERLAY", "GameFontWhite")
+            nameplate.threatAmountText:SetPoint("RIGHT", nameplate.UnitFrame.healthBar, "LEFT", -30, 0)
+            nameplate.threatAmountText:SetFont("Fonts\\FRIZQT__.TTF", module.threatAmountText.fontSize, "OUTLINE")
+        else
+            nameplate.threatAmountText:SetFont("Fonts\\FRIZQT__.TTF", module.threatAmountText.fontSize, "OUTLINE")
+        end
+    elseif nameplate.threatAmountText then
+        nameplate.threatAmountText:Hide()
+    end
+
     local castBar = nameplate.UnitFrame and nameplate.UnitFrame.CastBar
     if module.castBarText.show then
         if castBar then
@@ -143,30 +178,6 @@ local function SetupNameplate(nameplate)
         end
     elseif castBar.castBarText then
         castBar.castBarText:Hide()
-    end
-
-    local healthBar = nameplate.UnitFrame and nameplate.UnitFrame.healthBar
-    if module.healthBarText.show then
-        if healthBar then
-            if not healthBar.healthBarText then
-                healthBar.healthBarText = healthBar:CreateFontString(nil, "OVERLAY", "GameFontWhite")
-                healthBar.healthBarText:SetPoint("CENTER")
-                healthBar.healthBarText:SetFont("Fonts\\FRIZQT__.TTF", module.healthBarText.fontSize, "OUTLINE")
-            else
-                healthBar.healthBarText:SetFont("Fonts\\FRIZQT__.TTF", module.healthBarText.fontSize, "OUTLINE")
-            end
-            ScarletUI:UpdateHealthText(healthBar)
-
-            -- Hook into the OnValueChanged script to update the text during casting
-            if not healthBar.healthBarTextHooked then
-                healthBar:HookScript("OnValueChanged", function(self)
-                    ScarletUI:UpdateHealthText(self)
-                end)
-                healthBar.healthBarTextHooked = true
-            end
-        end
-    elseif healthBar.healthBarText then
-        healthBar.healthBarText:Hide()
     end
 
     -- Clear expired debuff icons
@@ -274,6 +285,10 @@ function ScarletUI:UpdateNameplate(unitId)
     end
 
     if not threatValue then
+        if nameplate.threatAmountText then
+            nameplate.threatAmountText:Hide()
+        end
+
         return
     end
 
@@ -281,21 +296,25 @@ function ScarletUI:UpdateNameplate(unitId)
         displayValue = threatValue - secondThreat
     else
         displayValue = threatValue - firstThreat
+
         if firstUnit and not UnitIsUnit(firstUnit, "Player") and self.tanks[UnitName(firstUnit)] then
             threatStatus = 4
         end
     end
 
-    allStates[unitId] = allStates[unitId] or { unit = unitId }
-    local state = allStates[unitId]
-    state.changed = true
-    if string.find(unitId, "nameplate") then
-        state.show = true
-    else
-        state.show = false
+    -- Update the threat amount text
+    if nameplate.UnitFrame and nameplate.threatAmountText then
+        if threatValue and threatValue > 0 then
+            local r, g, b = nameplate.UnitFrame.healthBar:GetStatusBarColor()
+            nameplate.threatAmountText:SetTextColor(r, g, b)
+
+            local text = AbbreviateNumbers(Round(math.abs(displayValue) / 100))
+            nameplate.threatAmountText:SetText(text)
+            nameplate.threatAmountText:Show()
+        else
+            nameplate.threatAmountText:Hide()
+        end
     end
-    state.status = threatStatus < 1 and 1 or threatStatus
-    state.value = Round(math.abs(displayValue) / 100)
 
     return true
 end
@@ -475,12 +494,6 @@ function ScarletUI:SetupNameplates()
             if event == "NAME_PLATE_UNIT_REMOVED" then
                 ScarletUI:CheckUnitDebuffs(unitId)
                 ScarletUI:UpdateNameplate(unitId)
-                local state = allStates[unitId]
-                if state then
-                    state.show = false
-                    state.changed = true
-                    return true
-                end
             end
 
             if event == "UNIT_THREAT_LIST_UPDATE" then
