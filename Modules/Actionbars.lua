@@ -167,6 +167,7 @@ function ScarletUI:microBar(module)
             "LFGMicroButton",
             "EJMicroButton",
             "MainMenuMicroButton",
+            "WorldMapMicroButton",
             "HelpMicroButton",
         }
         local buttonCount = 0
@@ -191,13 +192,13 @@ function ScarletUI:microBar(module)
                 microBarSettings.y
         )
 
-        local previousButton
+        local previousButton = MicroBar
         for _, buttonName in ipairs(microButtons) do
             local button = _G[buttonName]
 
-            if button then
-                button:ClearAllPoints()
+            if button and button:IsShown() then
                 button:SetMovable(true)
+                button:ClearAllPoints()
                 button:SetUserPlaced(true)
                 button:SetParent(MicroBar)
                 if buttonName == "CharacterMicroButton" then

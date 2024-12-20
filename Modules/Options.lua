@@ -22,12 +22,19 @@ function ScarletUI:Options()
                     self:ToggleMovers()
                 end,
             },
+            resetPositions = {
+                type = "execute",
+                name = "Reset Positions",
+                desc = "Reset all frame positions to their default settings.",
+                func = function() StaticPopup_Show('SCARLET_RESTORE_POSITIONS_DIALOG') end,
+                order = 1,
+            },
             defaultSettings = {
                 name = "Restore Defaults",
                 desc = "Restores all settings back to default settings.",
                 type = "execute",
                 disabled = function() return self:InCombat() end,
-                order = 1,
+                order = 2,
                 width = 1,
                 func = function()
                     StaticPopup_Show('SCARLET_RESTORE_DEFAULTS_DIALOG')

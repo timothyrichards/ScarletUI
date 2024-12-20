@@ -473,11 +473,11 @@ function ScarletUI:GetMoversOptions()
                 func = function() self:ToggleMovers() end,
                 order = 1,
             },
-            resetPositions = {
+            resetPosition = {
                 type = "execute",
-                name = "Reset Positions",
-                desc = "Reset all frame positions to their default settings.",
-                func = function() StaticPopup_Show('SCARLET_RESTORE_POSITIONS_DIALOG') end,
+                name = "Reset Position",
+                desc = "Reset this frames position to its default position.",
+                func = function() self:ResetPosition(frameData) end,
                 order = 2,
             },
             spacer = {
@@ -718,6 +718,16 @@ function ScarletUI:UpdateFramePositionSettings(frame, module)
 end
 
 function ScarletUI:ResetPositions()
+    for _, data in pairs(self.frameData) do
+        self:ResetPosition(data)
+    end
+
+    self:Setup()
+    AceConfigRegistry:NotifyChange("ScarletUI")
+    self:SelectMover(nil)
+end
+
+function ScarletUI:ResetPosition(data)
     local db = self.db.global
     local defaults = self.db.defaults.global
     local settings = {
@@ -727,21 +737,22 @@ function ScarletUI:ResetPositions()
         "y",
     }
 
-    for _, data in pairs(self.frameData) do
-        local frameParts = {}
-        for part in string.gmatch(data.databasePath, "[^.]+") do
-            table.insert(frameParts, part)
-        end
-        local frameCategory, frameName = frameParts[1], frameParts[2]
-        for _, setting in ipairs(settings) do
-            if defaults[frameCategory] and defaults[frameCategory][frameName] and defaults[frameCategory][frameName][setting] then
-                db[frameCategory][frameName][setting] = defaults[frameCategory][frameName][setting]
-            end
+    local frameParts = {}
+
+    for part in string.gmatch(data.databasePath, "[^.]+") do
+        table.insert(frameParts, part)
+    end
+
+    local frameCategory, frameName = frameParts[1], frameParts[2]
+
+    for _, setting in ipairs(settings) do
+        if defaults[frameCategory] and defaults[frameCategory][frameName] and defaults[frameCategory][frameName][setting] then
+            db[frameCategory][frameName][setting] = defaults[frameCategory][frameName][setting]
         end
     end
 
     self:Setup()
-    AceConfigRegistry:NotifyChange("ScarletUI")
+    AceConfigRegistry:NotifyChange("ScarletUI_Movers")
     self:SelectMover(nil)
 end
 
