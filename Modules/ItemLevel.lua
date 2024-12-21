@@ -82,7 +82,7 @@ local function calculateUnitItemLevel(unit)
         local skipSlot = false
 
         -- Skip MainHand and SecondaryHand slots if the player is a hunter and has a ranged weapon equipped
-        if isHunter and not self.retail then
+        if isHunter and not ScarletUI.retail then
             local rangedItemLink = GetInventoryItemLink(unit, GetInventorySlotInfo("RangedSlot"))
 
             if rangedItemLink and (slotName == "MainHand" or slotName == "SecondaryHand") then
