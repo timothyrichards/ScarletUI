@@ -115,6 +115,7 @@ function ScarletUI:InitializeRaidProfileSettings(profile, options)
             raidFramesModule.profiles[profile][k] = nil
         end
 
+        -- Don't remove k ~= "x" and k ~= "y" and k ~= "height", these are old settings that cause errors when they're still in the profile settings
         if k ~= "move" and k ~= "savedPosition" and k ~= "x" and k ~= "y" and k ~= "height" then
             local currentValue = tostring(GetRaidProfileOption(profile, k))
             local targetValue = tostring(v)
