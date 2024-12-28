@@ -107,7 +107,14 @@ function ScarletUI:UpdateProfileOptions()
 end
 
 function ScarletUI:InitializeRaidProfileSettings(profile, options)
+    local raidFramesModule = self.db.global.raidFramesModule
+
     for k, v in pairs(options) do
+        -- Remove obsolete x, y, and height values from the profile settings
+        if k == "x" and k == "y" and k == "height" then
+            raidFramesModule.profiles[profile][k] = nil
+        end
+
         if k ~= "move" and k ~= "savedPosition" then
             local currentValue = tostring(GetRaidProfileOption(profile, k))
             local targetValue = tostring(v)
