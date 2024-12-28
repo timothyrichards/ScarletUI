@@ -115,7 +115,7 @@ function ScarletUI:InitializeRaidProfileSettings(profile, options)
             raidFramesModule.profiles[profile][k] = nil
         end
 
-        if k ~= "move" and k ~= "savedPosition" then
+        if k ~= "move" and k ~= "savedPosition" and k ~= "x" and k ~= "y" and k ~= "height" then
             local currentValue = tostring(GetRaidProfileOption(profile, k))
             local targetValue = tostring(v)
 
