@@ -120,6 +120,7 @@ function ScarletUI:Setup()
     self.hideFrameContainer = _G["HideFrameContainer"] or CreateFrame("FRAME", "HideFrameContainer", UIParent)
     self.hideFrameContainer:Hide()
 
+    self:CreateGrid(25)
     self:SetupChat()
     self:SetupCVars()
     --self:SetupBags()

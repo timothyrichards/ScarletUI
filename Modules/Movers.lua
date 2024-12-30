@@ -656,6 +656,7 @@ function ScarletUI:ToggleMovers()
     end
 
     self.moversEnabled = not self.moversEnabled
+    self.grid:SetShown(self.moversEnabled)
     SUI_MoverPropertyText:SetText("- moversEnabled: " .. tostring(self.moversEnabled))
     self:UpdateMovers()
 end
@@ -754,6 +755,83 @@ function ScarletUI:ResetPosition(data)
     self:Setup()
     AceConfigRegistry:NotifyChange("ScarletUI_Movers")
     self:SelectMover(nil)
+end
+
+function ScarletUI:CreateGrid(spacing)
+    -- Create the parent frame
+    local parent = CreateFrame("Frame", "SUI_Grid", UIParent)
+    parent:SetAllPoints(UIParent)
+    parent:SetFrameStrata("BACKGROUND")
+    parent:Hide()
+
+    self.grid = parent
+
+    local screenWidth = GetScreenWidth()
+    local screenHeight = GetScreenHeight()
+    local uiScale = UIParent:GetScale()
+
+    -- Scale-adjusted dimensions
+    local scaledWidth = screenWidth * uiScale
+    local scaledHeight = screenHeight * uiScale
+
+    -- Create a line template
+    local function CreateLine(lineParent, isRed)
+        local line = lineParent:CreateTexture(nil, "BACKGROUND")
+        line:SetColorTexture(1, isRed and 0 or 1, isRed and 0 or 1, 0.5) -- Red or White with transparency
+        return line
+    end
+
+    -- Center lines
+    local verticalCenterLine = CreateLine(parent, true)
+    verticalCenterLine:SetWidth(1)
+    verticalCenterLine:SetPoint("TOP", parent, "TOP")
+    verticalCenterLine:SetPoint("BOTTOM", parent, "BOTTOM")
+    verticalCenterLine:SetPoint("CENTER", parent, "CENTER")
+
+    local horizontalCenterLine = CreateLine(parent, true)
+    horizontalCenterLine:SetHeight(1)
+    horizontalCenterLine:SetPoint("LEFT", parent, "LEFT")
+    horizontalCenterLine:SetPoint("RIGHT", parent, "RIGHT")
+    horizontalCenterLine:SetPoint("CENTER", parent, "CENTER")
+
+    -- Helper to create grid lines
+    local function CreateGridLines(isVertical)
+        for offset = spacing, scaledWidth, spacing do
+            local linePos = offset / uiScale
+
+            -- Positive offset lines
+            local posLine = CreateLine(parent, false)
+            if isVertical then
+                posLine:SetWidth(1)
+                posLine:SetPoint("TOP", parent, "TOP")
+                posLine:SetPoint("BOTTOM", parent, "BOTTOM")
+                posLine:SetPoint("LEFT", parent, "CENTER", linePos, 0)
+            else
+                posLine:SetHeight(1)
+                posLine:SetPoint("LEFT", parent, "LEFT")
+                posLine:SetPoint("RIGHT", parent, "RIGHT")
+                posLine:SetPoint("TOP", parent, "CENTER", 0, -linePos)
+            end
+
+            -- Negative offset lines
+            local negLine = CreateLine(parent, false)
+            if isVertical then
+                negLine:SetWidth(1)
+                negLine:SetPoint("TOP", parent, "TOP")
+                negLine:SetPoint("BOTTOM", parent, "BOTTOM")
+                negLine:SetPoint("RIGHT", parent, "CENTER", -linePos, 0)
+            else
+                negLine:SetHeight(1)
+                negLine:SetPoint("LEFT", parent, "LEFT")
+                negLine:SetPoint("RIGHT", parent, "RIGHT")
+                negLine:SetPoint("BOTTOM", parent, "CENTER", 0, linePos)
+            end
+        end
+    end
+
+    -- Create vertical and horizontal grid lines
+    CreateGridLines(true) -- Vertical lines
+    CreateGridLines(false) -- Horizontal lines
 end
 
 function ScarletUI:SetPoint(frame, frameAnchor, frameParent, parentAnchor, x, y)
