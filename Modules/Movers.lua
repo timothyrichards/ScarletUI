@@ -252,6 +252,21 @@ function ScarletUI:GenerateMoverConfig(name, _order)
                     module[name].y = val
                     self:Setup()
                 end,
+            },
+            scale = {
+                name = "Frame Scale",
+                desc = "Must be a number, this is the scale of the frame.\n(Default " .. defaults[name].scale .. ")",
+                type = "range",
+                min = 0.5,
+                max = 2,
+                step = 0.1,
+                width = 1,
+                order = 9,
+                get = function(_) return module[name].scale end,
+                set = function(_, val)
+                    module[name].scale = val
+                    self:Setup()
+                end,
             }
         }
     }
@@ -542,6 +557,7 @@ function ScarletUI:CreateMover(targetFrame, settings, canMoveFrame)
     mover.targetFrame = targetFrame
     mover.settingsKey = targetFrame.settingsKey or self:ConvertToCamelCase(targetFrameName)
     mover:SetSize(targetFrame:GetWidth(), targetFrame:GetHeight())
+    mover:SetScale(targetFrame:GetScale())
     mover:SetPoint("BOTTOM", targetFrame, "BOTTOM", 0, 0)
     mover:SetFrameStrata("FULLSCREEN_DIALOG")
 
@@ -620,14 +636,19 @@ function ScarletUI:CreateMover(targetFrame, settings, canMoveFrame)
         rotateMoverLabel(text, mover)
     end)
 
-    -- Hook into the SetWidth method (in case width is adjusted independently)
+    -- Hook into the SetWidth method
     hooksecurefunc(targetFrame, "SetWidth", function()
         mover:SetWidth(targetFrame:GetWidth())
     end)
 
-    -- Hook into the SetHeight method (in case height is adjusted independently)
+    -- Hook into the SetHeight method
     hooksecurefunc(targetFrame, "SetHeight", function()
         mover:SetHeight(targetFrame:GetHeight())
+    end)
+
+    -- Hook into the SetScale method
+    hooksecurefunc(targetFrame, "SetScale", function()
+        mover:SetScale(targetFrame:GetScale())
     end)
 
     targetFrame.mover = mover
@@ -714,7 +735,6 @@ function ScarletUI:UpdateFramePositionSettings(frame, module)
     module.x = xOffset
     module.y = yOffset
 
-    AceConfigRegistry:NotifyChange("ScarletUI_Movers")
     self:RefreshMoverOptions()
 end
 
@@ -754,12 +774,15 @@ function ScarletUI:ResetPosition(data)
 
     self:Setup()
     AceConfigRegistry:NotifyChange("ScarletUI_Movers")
-    self:SelectMover(nil)
 end
 
-function ScarletUI:CreateGrid(spacing)
+function ScarletUI:CreateMoverGrid(spacing)
+    if SUI_Grid then
+        return
+    end
+
     -- Create the parent frame
-    local parent = CreateFrame("Frame", "SUI_Grid", UIParent)
+    local parent = _G["SUI_Grid"] or CreateFrame("Frame", "SUI_Grid", UIParent)
     parent:SetAllPoints(UIParent)
     parent:SetFrameStrata("BACKGROUND")
     parent:Hide()

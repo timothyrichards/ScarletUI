@@ -103,13 +103,6 @@ end
 function ScarletUI:OnEnable()
     self:Setup()
 
-    self:Print("Scarlet UI setup successful, use the command /sui to open the options panel.")
-end
-
-function ScarletUI:Setup()
-    -- Set up frame
-    self:SetupFrame()
-
     -- Check if lightWeightMode should be enabled
     if self:GetWoWVersion() == "RETAIL" then
         self.retail = true;
@@ -120,7 +113,17 @@ function ScarletUI:Setup()
     self.hideFrameContainer = _G["HideFrameContainer"] or CreateFrame("FRAME", "HideFrameContainer", UIParent)
     self.hideFrameContainer:Hide()
 
-    self:CreateGrid(25)
+    self:Print("Scarlet UI setup successful, use the command /sui to open the options panel.")
+end
+
+function ScarletUI:Setup()
+    -- Set up debug frame
+    self:SetupDebugFrame()
+
+    -- Setup mover grid
+    self:CreateMoverGrid(25)
+
+    -- Setup frames
     self:SetupChat()
     self:SetupCVars()
     --self:SetupBags()
@@ -133,7 +136,7 @@ function ScarletUI:Setup()
     self:SetupExpandCharacterInfo()
 end
 
-function ScarletUI:SetupFrame()
+function ScarletUI:SetupDebugFrame()
     if SUI_DebugContainer then
         return
     end

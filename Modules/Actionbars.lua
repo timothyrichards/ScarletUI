@@ -17,6 +17,7 @@ function ScarletUI:CreateActionBar(barName, settingsKey, settings)
         local height = rows * buttonSize + (rows - 1) * spacing
 
         -- Set dimensions and position of the action bar
+        _G[barName]:SetParent(container)
         container:ClearAllPoints()
         container:SetSize(width + 2, height + 2)
         container:SetPoint(
@@ -26,6 +27,7 @@ function ScarletUI:CreateActionBar(barName, settingsKey, settings)
                 settings.x,
                 settings.y
         )
+        container:SetScale(settings.scale)
 
         for i = 1, buttonCount do
             local button = _G[buttonName .. i]
@@ -49,7 +51,6 @@ function ScarletUI:CreateActionBar(barName, settingsKey, settings)
     if settings.hide then
         container:Hide()
         _G[barName]:UnregisterAllEvents()
-        _G[barName]:SetParent(self.hideFrameContainer)
     end
 end
 
@@ -118,6 +119,7 @@ function ScarletUI:vehicleLeaveButton(module)
 
     if vehicleLeaveButtonSettings.move then
         local setup = function()
+            MainMenuBarVehicleLeaveButton:SetParent(UIParent)
             MainMenuBarVehicleLeaveButton:ClearAllPoints()
             MainMenuBarVehicleLeaveButton:SetPoint(
                     self.frameAnchors[vehicleLeaveButtonSettings.frameAnchor],
@@ -126,6 +128,7 @@ function ScarletUI:vehicleLeaveButton(module)
                     vehicleLeaveButtonSettings.x,
                     vehicleLeaveButtonSettings.y
             )
+            MainMenuBarVehicleLeaveButton:SetScale(vehicleLeaveButtonSettings.scale)
             MainMenuBarVehicleLeaveButton.settingsKey = "vehicleLeaveButton"
             self:CreateMover(MainMenuBarVehicleLeaveButton, vehicleLeaveButtonSettings)
         end
@@ -191,6 +194,7 @@ function ScarletUI:microBar(module)
                 microBarSettings.x,
                 microBarSettings.y
         )
+        MicroBar:SetScale(microBarSettings.scale)
 
         local previousButton = MicroBar
         for _, buttonName in ipairs(microButtons) do
@@ -253,6 +257,7 @@ function ScarletUI:bagBar(module)
                 bagBarSettings.x,
                 bagBarSettings.y
         )
+        BagBar:SetScale(bagBarSettings.scale)
 
         -- Move the Backpack button to the new BagBar frame
         MainMenuBarBackpackButton:ClearAllPoints()
@@ -316,6 +321,7 @@ function ScarletUI:multiCastBar(module)
                 return
             end
 
+            MultiCastActionBarFrame:SetParent(UIParent)
             MultiCastActionBarFrame:ClearAllPoints()
             MultiCastActionBarFrame:SetPoint(
                     self.frameAnchors[multiCastBarSettings.frameAnchor],
@@ -324,6 +330,7 @@ function ScarletUI:multiCastBar(module)
                     multiCastBarSettings.x,
                     multiCastBarSettings.y
             )
+            MultiCastActionBarFrame:SetScale(multiCastBarSettings.scale)
         end)
     end
 
@@ -364,29 +371,13 @@ function ScarletUI:possessBarFrame(module)
     end)
 end
 
-function ScarletUI:updateRestedExperience()
-    -- Get Current, Maximum, and Rested Experience
-    local currXP = UnitXP("player")
-    local maxXP = UnitXPMax("player")
-    local restXP = GetXPExhaustion() or 0
-    local mainMenuBarWidth = 510
-    local exhaustionBarStart = (currXP / maxXP) * mainMenuBarWidth
-    local exhaustionBarEnd = ((currXP + restXP) / maxXP) * mainMenuBarWidth
-
-    -- Ensure the exhaustion bar does not exceed the main bar's width
-    exhaustionBarEnd = math.min(exhaustionBarEnd, mainMenuBarWidth)
-    ExhaustionLevelFillBar:ClearAllPoints()
-    ExhaustionLevelFillBar:SetPoint("TOPLEFT", MainMenuExpBar, "TOPLEFT", exhaustionBarStart, 0)
-    ExhaustionLevelFillBar:SetPoint("BOTTOMRIGHT", MainMenuExpBar, "TOPLEFT", exhaustionBarEnd, -11)
-    ExhaustionTick:SetPoint("CENTER", ExhaustionLevelFillBar, "RIGHT")
-end
-
 function ScarletUI:experienceBar(module)
     local experienceBarSettings = module.experienceBar;
 
     if experienceBarSettings.move then
         self.movingExperienceBar = true
 
+        MainMenuExpBar:SetParent(UIParent)
         MainMenuExpBar:ClearAllPoints()
         MainMenuExpBar:SetPoint(
                 self.frameAnchors[experienceBarSettings.frameAnchor],
@@ -395,6 +386,7 @@ function ScarletUI:experienceBar(module)
                 experienceBarSettings.x,
                 experienceBarSettings.y
         )
+        MainMenuExpBar:SetScale(experienceBarSettings.scale)
 
         if not self.experienceBarEventRegistered then
             hooksecurefunc(MainMenuExpBar, "SetPoint", function()
@@ -417,8 +409,6 @@ function ScarletUI:experienceBar(module)
 
     if experienceBarSettings.short then
         MainMenuExpBar:SetSize(510, 10)
-
-        self:updateRestedExperience()
 
         MainMenuXPBarTexture0:SetWidth("255")
         MainMenuXPBarTexture0:ClearAllPoints()
@@ -453,6 +443,7 @@ function ScarletUI:reputationBar(module)
     if reputationBarSettings.move then
         self.movingReputationBar = true
 
+        ReputationWatchBar:SetParent(UIParent)
         ReputationWatchBar:ClearAllPoints()
         ReputationWatchBar:SetPoint(
                 self.frameAnchors[reputationBarSettings.frameAnchor],
@@ -461,6 +452,7 @@ function ScarletUI:reputationBar(module)
                 reputationBarSettings.x,
                 reputationBarSettings.y
         )
+        ReputationWatchBar:SetScale(reputationBarSettings.scale)
 
         if not self.reputationBarEventRegistered then
             hooksecurefunc(ReputationWatchBar, "SetPoint", function()
@@ -528,6 +520,7 @@ function ScarletUI:SetupActionBars()
                 mainMenuBarSettings.x,
                 mainMenuBarSettings.y
         )
+        MainMenuBar:SetScale(mainMenuBarSettings.scale)
     end
 
     self:mainMenuBar(actionbarsModule)
@@ -580,10 +573,6 @@ function ScarletUI:SetupActionBars()
         self.frame:RegisterEvent("UPDATE_POSSESS_BAR")
         self.frame:RegisterEvent("CINEMATIC_STOP")
         self.frame:HookScript("OnEvent", function(_, event, ...)
-            if event == "PLAYER_LEVEL_UP" then
-                self:updateRestedExperience()
-            end
-
             if event == "PLAYER_REGEN_ENABLED" then
                 self:microBar(actionbarsModule)
                 self:possessBarFrame(actionbarsModule)

@@ -285,7 +285,7 @@ function ScarletUI:SetupItemLevels()
         EventRegistry:RegisterCallback("ContainerFrame.OpenBag", function()
             ScarletUI:BagItemLevel()
         end);
-    end
 
-    self:BagItemLevel()
+        self:BagItemLevel()
+    end
 end

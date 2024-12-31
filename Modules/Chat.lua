@@ -39,6 +39,7 @@ function ScarletUI:SetupChat()
             chatFrame.x,
             chatFrame.y
     )
+    ChatFrame1:SetScale(chatFrame.scale)
 
     FCF_SavePositionAndDimensions(ChatFrame1)
 end

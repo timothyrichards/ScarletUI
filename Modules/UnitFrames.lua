@@ -23,10 +23,15 @@ function ScarletUI:SetupPlayerFrame(unitFramesModule)
                 playerFrame.x,
                 playerFrame.y
         )
+        PlayerFrame:SetScale(playerFrame.scale)
 
-        mover:HookScript("OnMouseUp", function()
-            ScarletUI:SetupTargetFrame(unitFramesModule)
-        end)
+        if not self.playerFrameEvenRegistered then
+            self.playerFrameEvenRegistered = true
+
+            mover:HookScript("OnMouseUp", function()
+                ScarletUI:SetupTargetFrame(unitFramesModule)
+            end)
+        end
     end
 
     if playerFrame.hide then
@@ -42,9 +47,12 @@ function ScarletUI:SetupTargetFrame(unitFramesModule)
     TARGET_FRAME_BUFFS_ON_TOP = targetFrame.buffsOnTop;
     TargetFrame_UpdateBuffsOnTop();
 
-    hooksecurefunc("TargetFrame_UpdateBuffsOnTop", function()
-        targetFrame.buffsOnTop = TARGET_FRAME_BUFFS_ON_TOP;
-    end)
+    if not self.targetFrameEventRegistered then
+        self.targetFrameEventRegistered = true
+        hooksecurefunc("TargetFrame_UpdateBuffsOnTop", function()
+            targetFrame.buffsOnTop = TARGET_FRAME_BUFFS_ON_TOP;
+        end)
+    end
 
     if targetFrame.move then
         if not targetFrame.mirrorPlayerFrame then
@@ -56,6 +64,7 @@ function ScarletUI:SetupTargetFrame(unitFramesModule)
                     targetFrame.x,
                     targetFrame.y
             )
+            TargetFrame:SetScale(targetFrame.scale)
         else
             TargetFrame:ClearAllPoints()
             TargetFrame:SetPoint(
@@ -65,6 +74,7 @@ function ScarletUI:SetupTargetFrame(unitFramesModule)
                     unitFramesModule.playerFrame.x * -1,
                     unitFramesModule.playerFrame.y
             )
+            TargetFrame:SetScale(unitFramesModule.playerFrame.scale)
         end
     end
 
@@ -85,9 +95,12 @@ function ScarletUI:SetupFocusFrame(unitFramesModule)
         FOCUS_FRAME_BUFFS_ON_TOP = focusFrame.buffsOnTop;
         FocusFrame_UpdateBuffsOnTop();
 
-        hooksecurefunc("FocusFrame_UpdateBuffsOnTop", function()
-            focusFrame.buffsOnTop = FOCUS_FRAME_BUFFS_ON_TOP;
-        end)
+        if not self.focusFrameEventRegistered then
+            self.focusFrameEventRegistered = true
+            hooksecurefunc("FocusFrame_UpdateBuffsOnTop", function()
+                focusFrame.buffsOnTop = FOCUS_FRAME_BUFFS_ON_TOP;
+            end)
+        end
 
         if focusFrame.move then
             FocusFrame:ClearAllPoints()
@@ -98,6 +111,7 @@ function ScarletUI:SetupFocusFrame(unitFramesModule)
                     focusFrame.x,
                     focusFrame.y
             )
+            FocusFrame:SetScale(focusFrame.scale)
         end
 
         self:CreateMover(FocusFrame, focusFrame)
@@ -122,6 +136,7 @@ function ScarletUI:SetupCastBar(unitFramesModule)
                     castBar.x,
                     castBar.y
             )
+            CastingBarFrame:SetScale(castBar.scale)
         end
 
         CastingBarFrame.settingsKey = "castBar"

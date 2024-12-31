@@ -56,13 +56,16 @@ function ScarletUI:SetupExpandCharacterInfo()
         return
     end
 
-    hooksecurefunc(CharacterFrameExpandButton, "Show", function()
-        if not self.db.global.expandCharacterInfo or CharacterFrame.Expanded then
-            return
-        end
+    if not self.characterFrameExpandedEventRegistered then
+        self.characterFrameExpandedEventRegistered = true
+        hooksecurefunc(CharacterFrameExpandButton, "Show", function()
+            if not self.db.global.expandCharacterInfo or CharacterFrame.Expanded then
+                return
+            end
 
-        CharacterFrameExpandButton:Click()
-    end)
+            CharacterFrameExpandButton:Click()
+        end)
+    end
 end
 
 function ScarletUI:SwapActionbar(sourceBar, destinationBar)
