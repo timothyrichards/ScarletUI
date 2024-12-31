@@ -158,8 +158,8 @@ function ScarletUI:GenerateMoverConfig(name, _order)
                     module[name].move = val
 
                     if val then
-                        self:SetupActionBars()
-                        self:RefreshMoverOptions()
+                        self:Setup()
+                        self:UpdateMovers()
                     else
                         self:ShowReloadDialog()
                     end
@@ -174,9 +174,11 @@ function ScarletUI:GenerateMoverConfig(name, _order)
                 get = function(_) return module[name].hide end,
                 set = function(_, val)
                     module[name].hide = val
-                    self:SetupActionBars()
 
-                    if not val then
+                    if val then
+                        self:Setup()
+                        self:UpdateMovers()
+                    else
                         self:ShowReloadDialog()
                     end
                 end,
@@ -385,7 +387,7 @@ function ScarletUI:GenerateAllMoversConfigs()
         if barName == "targetFrame" then
             configs[barName].args.mirrorPlayerFrame = {
                 name = "Mirror Player Frame",
-                desc = "Mirrors the X and Y position of the player frame.",
+                desc = "Mirrors the X and Y position of the player frame. (this will override where you move the target frame with the base ui)",
                 type = "toggle",
                 width = 1,
                 order = 0.9,
@@ -522,7 +524,6 @@ end
 
 function ScarletUI:RefreshMoverOptions()
     AceConfigRegistry:NotifyChange("ScarletUI_Movers")
-    self:UpdateMovers()
 end
 
 function ScarletUI:GetFrameData(settingsKey)
@@ -610,6 +611,7 @@ function ScarletUI:CreateMover(targetFrame, settings, canMoveFrame)
             if targetFrame:IsMovable() and canMoveFrame() then
                 mover.timer = C_Timer.NewTimer(0.025, function()
                     targetFrame:StartMoving()
+                    mover.isMoving = true
                 end)
             end
         end
@@ -620,10 +622,13 @@ function ScarletUI:CreateMover(targetFrame, settings, canMoveFrame)
             mover.timer:Cancel()
         end
 
-        targetFrame:StopMovingOrSizing()
-
         if settings ~= nil then
             self:UpdateFramePositionSettings(targetFrame, settings)
+        end
+
+        if mover.isMoving then
+            targetFrame:StopMovingOrSizing()
+            mover.isMoving = false
         end
     end)
 
@@ -773,7 +778,7 @@ function ScarletUI:ResetPosition(data)
     end
 
     self:Setup()
-    AceConfigRegistry:NotifyChange("ScarletUI_Movers")
+    self:RefreshMoverOptions()
 end
 
 function ScarletUI:CreateMoverGrid(spacing)

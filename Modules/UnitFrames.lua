@@ -31,6 +31,20 @@ function ScarletUI:SetupPlayerFrame(unitFramesModule)
             mover:HookScript("OnMouseUp", function()
                 ScarletUI:SetupTargetFrame(unitFramesModule)
             end)
+
+            hooksecurefunc(PlayerFrame, "StopMovingOrSizing", function(_)
+                if not PlayerFrame.mover.isMoving then
+                    local point, _, relativePoint, offsetX, offsetY = PlayerFrame:GetPoint()
+
+                    playerFrame.frameAnchor = ScarletUI:GetArrayIndex(ScarletUI.frameAnchors, point)
+                    playerFrame.screenAnchor = ScarletUI:GetArrayIndex(ScarletUI.frameAnchors, relativePoint)
+                    playerFrame.x = offsetX
+                    playerFrame.y = offsetY
+
+                    ScarletUI:RefreshMoverOptions()
+                    ScarletUI:SetupTargetFrame(unitFramesModule)
+                end
+            end)
         end
     end
 
@@ -49,6 +63,32 @@ function ScarletUI:SetupTargetFrame(unitFramesModule)
 
     if not self.targetFrameEventRegistered then
         self.targetFrameEventRegistered = true
+
+        hooksecurefunc(TargetFrame, "StopMovingOrSizing", function(_)
+            if not TargetFrame.mover.isMoving then
+                local point
+                local relativePoint
+                local offsetX
+                local offsetY
+
+                if not targetFrame.mirrorPlayerFrame then
+                    point, _, relativePoint, offsetX, offsetY = TargetFrame:GetPoint()
+                else
+                    point = self:OppositeFrameAnchor(playerFrame.frameAnchor)
+                    relativePoint = self:OppositeFrameAnchor(playerFrame.screenAnchor)
+                    offsetX = playerFrame.x * -1
+                    offsetY = playerFrame.y
+                end
+
+                targetFrame.frameAnchor = ScarletUI:GetArrayIndex(ScarletUI.frameAnchors, point)
+                targetFrame.screenAnchor = ScarletUI:GetArrayIndex(ScarletUI.frameAnchors, relativePoint)
+                targetFrame.x = offsetX
+                targetFrame.y = offsetY
+
+                ScarletUI:RefreshMoverOptions()
+            end
+        end)
+
         hooksecurefunc("TargetFrame_UpdateBuffsOnTop", function()
             targetFrame.buffsOnTop = TARGET_FRAME_BUFFS_ON_TOP;
         end)
@@ -71,10 +111,10 @@ function ScarletUI:SetupTargetFrame(unitFramesModule)
                     self:OppositeFrameAnchor(playerFrame.frameAnchor),
                     UIParent,
                     self:OppositeFrameAnchor(playerFrame.screenAnchor),
-                    unitFramesModule.playerFrame.x * -1,
-                    unitFramesModule.playerFrame.y
+                    playerFrame.x * -1,
+                    playerFrame.y
             )
-            TargetFrame:SetScale(unitFramesModule.playerFrame.scale)
+            TargetFrame:SetScale(playerFrame.scale)
         end
     end
 
@@ -97,6 +137,21 @@ function ScarletUI:SetupFocusFrame(unitFramesModule)
 
         if not self.focusFrameEventRegistered then
             self.focusFrameEventRegistered = true
+
+            hooksecurefunc(FocusFrame, "StopMovingOrSizing", function(_)
+                if not PlayerFrame.mover.isMoving then
+                    local point, _, relativePoint, offsetX, offsetY = FocusFrame:GetPoint()
+
+                    focusFrame.frameAnchor = ScarletUI:GetArrayIndex(ScarletUI.frameAnchors, point)
+                    focusFrame.screenAnchor = ScarletUI:GetArrayIndex(ScarletUI.frameAnchors, relativePoint)
+                    focusFrame.x = offsetX
+                    focusFrame.y = offsetY
+
+                    ScarletUI:RefreshMoverOptions()
+                    ScarletUI:SetupTargetFrame(unitFramesModule)
+                end
+            end)
+
             hooksecurefunc("FocusFrame_UpdateBuffsOnTop", function()
                 focusFrame.buffsOnTop = FOCUS_FRAME_BUFFS_ON_TOP;
             end)

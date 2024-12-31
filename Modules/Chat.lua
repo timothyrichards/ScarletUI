@@ -29,6 +29,20 @@ function ScarletUI:SetupChat()
         return
     end
 
+    hooksecurefunc("FCF_SavePositionAndDimensions", function()
+        if not ScarletUI.movingChatFrame then
+            local point, _, relativePoint, offsetX, offsetY = ChatFrame1:GetPoint()
+
+            chatFrame.frameAnchor = ScarletUI:GetArrayIndex(ScarletUI.frameAnchors, point)
+            chatFrame.screenAnchor = ScarletUI:GetArrayIndex(ScarletUI.frameAnchors, relativePoint)
+            chatFrame.x = offsetX
+            chatFrame.y = offsetY
+
+            ScarletUI:RefreshMoverOptions()
+        end
+    end)
+
+    self.movingChatFrame = true
     ChatFrame1:ClearAllPoints()
     ChatFrame1:SetHeight(chatModule.height)
     ChatFrame1:SetWidth(chatModule.width)
@@ -42,6 +56,7 @@ function ScarletUI:SetupChat()
     ChatFrame1:SetScale(chatFrame.scale)
 
     FCF_SavePositionAndDimensions(ChatFrame1)
+    self.movingChatFrame = false
 end
 
 function ScarletUI:SetupChatTabs()
