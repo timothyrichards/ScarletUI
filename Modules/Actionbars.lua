@@ -418,9 +418,6 @@ function ScarletUI:experienceBar(module)
         MainMenuXPBarTexture3:SetWidth("255")
         MainMenuXPBarTexture3:ClearAllPoints()
         MainMenuXPBarTexture3:SetPoint("LEFT", MainMenuXPBarTexture0, "RIGHT", 0, 0)
-
-        MainMenuBarMaxLevelBar:UnregisterAllEvents()
-        MainMenuBarMaxLevelBar:SetParent(self.hideFrameContainer)
     else
         MainMenuExpBar:SetHeight(10)
         MainMenuXPBarTexture0:ClearAllPoints()
@@ -432,6 +429,9 @@ function ScarletUI:experienceBar(module)
         MainMenuXPBarTexture3:ClearAllPoints()
         MainMenuXPBarTexture3:SetPoint("LEFT", MainMenuXPBarTexture2, "RIGHT", 0, 0)
     end
+
+    MainMenuBarMaxLevelBar:UnregisterAllEvents()
+    MainMenuBarMaxLevelBar:SetParent(self.hideFrameContainer)
 
     MainMenuExpBar.settingsKey = "experienceBar"
     self:CreateMover(MainMenuExpBar, experienceBarSettings)

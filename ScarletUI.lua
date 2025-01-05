@@ -88,7 +88,7 @@ function ScarletUI:OnInitialize()
     -- Register the options table
     AceConfigDialog:SetDefaultSize("ScarletUI", 780, 500)
     AceConfig:RegisterOptionsTable("ScarletUI", function() return self:Options() end)
-    AceConfigDialog:SetDefaultSize("ScarletUI_Movers", 400, 335)
+    AceConfigDialog:SetDefaultSize("ScarletUI_Movers", 400, 375)
     AceConfig:RegisterOptionsTable("ScarletUI_Movers", function() return self:GetMoversOptions() end)
     AceConfigDialog:AddToBlizOptions("ScarletUI")
 
