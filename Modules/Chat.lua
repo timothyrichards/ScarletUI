@@ -37,6 +37,8 @@ function ScarletUI:SetupChat()
             chatFrame.screenAnchor = ScarletUI:GetArrayIndex(ScarletUI.frameAnchors, relativePoint)
             chatFrame.x = offsetX
             chatFrame.y = offsetY
+            chatModule.height = ChatFrame1:GetHeight()
+            chatModule.width = ChatFrame1:GetWidth()
 
             ScarletUI:RefreshMoverOptions()
         end

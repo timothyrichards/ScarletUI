@@ -20,6 +20,20 @@ ScarletUI.frameData = {
         frame = BagBar,
         module = "actionbarsModule",
         databasePath = "actionbarsModule.bagBar",
+        additionalSettings = {
+            microBag = {
+                name = "Micro Bag",
+                desc = "Hide all non backpack bag icons.",
+                type = "toggle",
+                width = "full",
+                order = 0.9,
+                get = function(_) return ScarletUI.db.global.actionbarsModule.microBag end,
+                set = function(_, val)
+                    ScarletUI.db.global.actionbarsModule.microBag = val
+                    ScarletUI:SetupActionBars()
+                end,
+            }
+        }
     },
     castBar = {
         frame = CastingBarFrame,
@@ -30,6 +44,40 @@ ScarletUI.frameData = {
         frame = ChatFrame1,
         module = "chatModule",
         databasePath = "chatModule.chatFrame",
+        additionalSettings = {
+            height = {
+                name = "Chat Height",
+                desc = "Desired height for the chat window.\n(Default " .. ScarletUI.defaults.global.chatModule.height .. ")",
+                type = "range",
+                hidden = function() return ScarletUI.retail end,
+                min = 1,
+                max = math.floor(GetScreenHeight()),
+                step = 1,
+                width = 1,
+                order = 10.1,
+                get = function(_) return ScarletUI.db.global.chatModule.height end,
+                set = function(_, val)
+                    ScarletUI.db.global.chatModule.height = val
+                    ScarletUI:SetupChat()
+                end,
+            },
+            width = {
+                name = "Chat Width",
+                desc = "Desired width for the chat window.\n(Default " .. ScarletUI.defaults.global.chatModule.width .. ")",
+                type = "range",
+                hidden = function() return ScarletUI.retail end,
+                min = 1,
+                max = math.floor(GetScreenWidth()),
+                step = 1,
+                width = 1,
+                order = 10.2,
+                get = function(_) return ScarletUI.db.global.chatModule.width end,
+                set = function(_, val)
+                    ScarletUI.db.global.chatModule.width = val
+                    ScarletUI:SetupChat()
+                end,
+            },
+        }
     },
     experienceBar = {
         frame = MainMenuExpBar,
@@ -45,6 +93,47 @@ ScarletUI.frameData = {
         frame = MainMenuBar,
         module = "actionbarsModule",
         databasePath = "actionbarsModule.mainMenuBar",
+        additionalSettings = {
+            showMainBarBackground = {
+                name = "Background Texture",
+                desc = "Show background texture behind the main bar.",
+                type = "toggle",
+                disabled = function() return ScarletUI:SettingDisabled(ScarletUI.db.global.actionbarsModule.mainMenuBar.move) end,
+                width = 1,
+                order = 0.7,
+                get = function(_) return ScarletUI.db.global.actionbarsModule.showMainBarBackground end,
+                set = function(_, val)
+                    ScarletUI.db.global.actionbarsModule.showMainBarBackground = val
+                    ScarletUI:SetupActionBars()
+                end,
+            },
+            showGryphons = {
+                name = "Gryphons",
+                desc = "Show the gryphon graphics on the sides of your main bar.",
+                type = "toggle",
+                disabled = function() return ScarletUI:SettingDisabled(ScarletUI.db.global.actionbarsModule.mainMenuBar.move) end,
+                width = 1,
+                order = 0.8,
+                get = function(_) return ScarletUI.db.global.actionbarsModule.showGryphons end,
+                set = function(_, val)
+                    ScarletUI.db.global.actionbarsModule.showGryphons = val
+                    ScarletUI:SetupActionBars()
+                end,
+            },
+            pagingNumbers = {
+                name = "Paging Numbers",
+                desc = "Show the actionbar paging numbers and buttons.",
+                type = "toggle",
+                disabled = function() return ScarletUI:SettingDisabled(ScarletUI.db.global.actionbarsModule.mainMenuBar.move) end,
+                width = 1,
+                order = 0.9,
+                get = function(_) return ScarletUI.db.global.actionbarsModule.showPagingNumbers end,
+                set = function(_, val)
+                    ScarletUI.db.global.actionbarsModule.showPagingNumbers = val
+                    ScarletUI:SetupActionBars()
+                end,
+            }
+        }
     },
     microBar = {
         frame = MicroButtonAndBagsBar,
@@ -106,6 +195,20 @@ ScarletUI.frameData = {
         frame = TargetFrame,
         module = "unitFramesModule",
         databasePath = "unitFramesModule.targetFrame",
+        additionalSettings = {
+            mirrorPlayerFrame = {
+                name = "Mirror Player Frame",
+                desc = "Mirrors the X and Y position of the player frame. (this will override where you move the target frame with the base ui)",
+                type = "toggle",
+                width = 1,
+                order = 0.9,
+                get = function(_) return ScarletUI.db.global.unitFramesModule.targetFrame.mirrorPlayerFrame end,
+                set = function(_, val)
+                    ScarletUI.db.global.unitFramesModule.targetFrame.mirrorPlayerFrame = val
+                    ScarletUI:SetupUnitFrames()
+                end,
+            }
+        }
     },
     vehicleLeaveButton = {
         frame = MainMenuBarVehicleLeaveButton,
@@ -126,23 +229,23 @@ local function rotateMoverLabel(text, mover)
     end
 end
 
-function ScarletUI:GenerateMoverConfig(name, _order)
-    local frameData = self:GetFrameData(name)
+function ScarletUI:GenerateMoverConfig(frameName, _order)
+    local frameData = self:GetFrameData(frameName)
     if frameData == nil then
-        self:Print("Frame data is nil for " .. name)
+        self:Print("Frame data is nil for " .. frameName)
         return
     end
 
     local module = self.db.global[frameData.module]
     local defaults = self.db.defaults.global[frameData.module];
 
-    if defaults[name] == nil then
-        self:Print("Database defaults are missing for " .. name)
+    if defaults[frameName] == nil then
+        self:Print("Database defaults are missing for " .. frameName)
         return
     end
 
-    return {
-        name = (name:gsub("(%a)(%u)", "%1 %2"):gsub("^%l", string.upper)),
+    local configs = {
+        name = (frameName:gsub("(%a)(%u)", "%1 %2"):gsub("^%l", string.upper)),
         type = "group",
         disabled = function() return self:SettingDisabled(module.enabled) end,
         order = _order,
@@ -153,9 +256,9 @@ function ScarletUI:GenerateMoverConfig(name, _order)
                 type = "toggle",
                 width = 1,
                 order = 1,
-                get = function(_) return module[name].move end,
+                get = function(_) return module[frameName].move end,
                 set = function(_, val)
-                    module[name].move = val
+                    module[frameName].move = val
 
                     if val then
                         self:Setup()
@@ -171,9 +274,9 @@ function ScarletUI:GenerateMoverConfig(name, _order)
                 type = "toggle",
                 width = 1,
                 order = 2,
-                get = function(_) return module[name].hide end,
+                get = function(_) return module[frameName].hide end,
                 set = function(_, val)
-                    module[name].hide = val
+                    module[frameName].hide = val
 
                     if val then
                         self:Setup()
@@ -191,29 +294,29 @@ function ScarletUI:GenerateMoverConfig(name, _order)
             },
             frameAnchor = {
                 name = "Frame Anchor",
-                desc = "Anchor point of the frame.\n(Default " .. self.frameAnchors[defaults[name].frameAnchor] .. ")",
+                desc = "Anchor point of the frame.\n(Default " .. self.frameAnchors[defaults[frameName].frameAnchor] .. ")",
                 type = "select",
-                disabled = function() return self:SettingDisabled(module[name].move) end,
+                disabled = function() return self:SettingDisabled(module[frameName].move) end,
                 width = 1,
                 order = 4,
                 values = function() return self.frameAnchors end,
-                get = function(_) return module[name].frameAnchor end,
+                get = function(_) return module[frameName].frameAnchor end,
                 set = function(_, val)
-                    module[name].frameAnchor = val
+                    module[frameName].frameAnchor = val
                     self:Setup()
                 end,
             },
             screenAnchor = {
                 name = "Screen Anchor",
-                desc = "Anchor point of the frame relative to the screen.\n(Default " .. self.frameAnchors[defaults[name].screenAnchor] .. ")",
+                desc = "Anchor point of the frame relative to the screen.\n(Default " .. self.frameAnchors[defaults[frameName].screenAnchor] .. ")",
                 type = "select",
-                disabled = function() return self:SettingDisabled(module[name].move) end,
+                disabled = function() return self:SettingDisabled(module[frameName].move) end,
                 width = 1,
                 order = 5,
                 values = function() return self.frameAnchors end,
-                get = function(_) return module[name].screenAnchor end,
+                get = function(_) return module[frameName].screenAnchor end,
                 set = function(_, val)
-                    module[name].screenAnchor = val
+                    module[frameName].screenAnchor = val
                     self:Setup()
                 end,
             },
@@ -225,216 +328,143 @@ function ScarletUI:GenerateMoverConfig(name, _order)
             },
             x = {
                 name = "Frame X",
-                desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults[name].x .. ")",
+                desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults[frameName].x .. ")",
                 type = "range",
-                disabled = function() return self:SettingDisabled(module[name].move) end,
+                disabled = function() return self:SettingDisabled(module[frameName].move) end,
                 min = math.floor(GetScreenWidth()) * -1,
                 max = math.floor(GetScreenWidth()),
                 step = 1,
                 width = 1,
                 order = 7,
-                get = function(_) return module[name].x end,
+                get = function(_) return module[frameName].x end,
                 set = function(_, val)
-                    module[name].x = val
+                    module[frameName].x = val
                     self:Setup()
                 end,
             },
             y = {
                 name = "Frame Y",
-                desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults[name].y .. ")",
+                desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults[frameName].y .. ")",
                 type = "range",
-                disabled = function() return self:SettingDisabled(module[name].move) end,
+                disabled = function() return self:SettingDisabled(module[frameName].move) end,
                 min = math.floor(GetScreenHeight()) * -1,
                 max = math.floor(GetScreenHeight()),
                 step = 1,
                 width = 1,
                 order = 8,
-                get = function(_) return module[name].y end,
+                get = function(_) return module[frameName].y end,
                 set = function(_, val)
-                    module[name].y = val
+                    module[frameName].y = val
                     self:Setup()
                 end,
             },
             scale = {
                 name = "Frame Scale",
-                desc = "Must be a number, this is the scale of the frame.\n(Default " .. defaults[name].scale .. ")",
+                desc = "Must be a number, this is the scale of the frame.\n(Default " .. defaults[frameName].scale .. ")",
                 type = "range",
                 min = 0.5,
                 max = 2,
                 step = 0.1,
                 width = 1,
                 order = 9,
-                get = function(_) return module[name].scale end,
+                get = function(_) return module[frameName].scale end,
                 set = function(_, val)
-                    module[name].scale = val
+                    module[frameName].scale = val
                     self:Setup()
                 end,
-            }
-        }
-    }
-end
-
-function ScarletUI:GenerateAllMoversConfigs()
-    local bars = {
-        "bagBar",
-        "castBar",
-        "chatFrame",
-        "experienceBar",
-        "focusFrame",
-        "mainMenuBar",
-        "microBar",
-        "multiBarBottomLeft",
-        "multiBarBottomRight",
-        "multiBarLeft",
-        "multiBarRight",
-        "multiCastBar",
-        "petBar",
-        "playerFrame",
-        "reputationBar",
-        "stanceBar",
-        "targetFrame",
-        "vehicleLeaveButton",
-    }
-    local configs = {}
-
-    for i, barName in ipairs(bars) do
-        local frameData = self:GetFrameData(barName)
-        if frameData == nil then
-            self:Print("Frame data is nil for " .. barName)
-            return
-        end
-
-        local module = self.db.global[frameData.module];
-        local defaults = self.db.defaults.global[frameData.module];
-
-        configs[barName] = self:GenerateMoverConfig(barName, i + 1)
-
-        if module[barName].buttonsPerRow then
-            configs[barName].args.buttonsPerRow = {
-                name = "Buttons Per Row",
-                desc = "Configure the number of action buttons per row.\n(Default " .. defaults[barName].buttonsPerRow .. ")",
-                type = "range",
-                disabled = function() return self:SettingDisabled(module[barName].move) end,
-                min = 1,
-                max = frameData.buttonCount or 12,
-                step = 1,
-                width = 1,
-                order = 3.1,
-                get = function(_) return module[barName].buttonsPerRow end,
-                set = function(_, val)
-                    module[barName].buttonsPerRow = val
-                    self:SetupActionBars()
-                end,
-            }
-
-            configs[barName].args.buttonsPerRowSpacer = {
+            },
+            spacer3 = {
                 name = "",
                 type = "description",
                 width = "full",
-                order = 3.2,
-            }
-        end
+                order = 10,
+            },
+        }
+    }
 
-        if barName == "bagBar" then
-            configs[barName].args.microBag = {
-                name = "Micro Bag",
-                desc = "Hide all non backpack bag icons.",
-                type = "toggle",
-                width = "full",
-                order = 0.9,
-                get = function(_) return module.microBag end,
-                set = function(_, val)
-                    module.microBag = val
+    if module[frameName].buttonsPerRow ~= nil then
+        configs.args.buttonsPerRow = {
+            name = "Buttons Per Row",
+            desc = "Configure the number of action buttons per row.\n(Default " .. defaults[frameName].buttonsPerRow .. ")",
+            type = "range",
+            disabled = function() return self:SettingDisabled(module[frameName].move) end,
+            min = 1,
+            max = frameData.buttonCount or 12,
+            step = 1,
+            width = 1,
+            order = 3.1,
+            get = function(_) return module[frameName].buttonsPerRow end,
+            set = function(_, val)
+                module[frameName].buttonsPerRow = val
+                self:SetupActionBars()
+            end,
+        }
+
+        configs.args.buttonsPerRowSpacer = {
+            name = "",
+            type = "description",
+            width = "full",
+            order = 3.2,
+        }
+    end
+
+    if module[frameName].short ~= nil then
+        configs.args.short = {
+            name = "Short",
+            desc = "Shorten the bar to a smaller size.",
+            type = "toggle",
+            width = 1,
+            order = 0.1,
+            get = function(_) return module[frameName].short end,
+            set = function(_, val)
+                module[frameName].short = val
+
+                if val then
                     self:SetupActionBars()
-                end,
-            }
+                else
+                    self:ShowReloadDialog()
+                end
+            end,
+        }
+    end
+
+    if module[frameName].buffsOnTop ~= nil then
+        configs.args.buffsOnTop = {
+            name = "Buffs On Top",
+            desc = "Force buffs to show on top of the frame.",
+            type = "toggle",
+            width = 1,
+            order = 0.1,
+            get = function(_) return module[frameName].buffsOnTop end,
+            set = function(_, val)
+                module[frameName].buffsOnTop = val
+                self:SetupUnitFrames()
+            end,
+        }
+    end
+
+    return configs
+end
+
+function ScarletUI:GenerateAllMoversConfigs()
+    local configs = {}
+
+    local i = 0
+    for frameName, frameData in pairs(self.frameData) do
+        configs[frameName] = self:GenerateMoverConfig(frameName, i + 1)
+
+        if frameData.additionalSettings then
+            for k, v in pairs(frameData.additionalSettings) do
+                configs[frameName].args[k] = v
+            end
         end
 
-        if barName == "experienceBar" or barName == "reputationBar" then
-            configs[barName].args.short = {
-                name = "Short",
-                desc = "Shorten the bar to a smaller size.",
-                type = "toggle",
-                width = 1,
-                order = 0.9,
-                get = function(_) return module[barName].short end,
-                set = function(_, val)
-                    module[barName].short = val
-                    if val then
-                        self:SetupActionBars()
-                    else
-                        self:ShowReloadDialog()
-                    end
-                end,
-            }
-        end
-
-        if barName == "focusFrame" or barName == "targetFrame" then
-            configs[barName].args.buffsOnTop = {
-                name = "Buffs On Top",
-                desc = "Force buffs to show on top of the frame.",
-                type = "toggle",
-                width = 1,
-                order = 0.8,
-                get = function(_) return module[barName].buffsOnTop end,
-                set = function(_, val)
-                    module[barName].buffsOnTop = val
-                    self:SetupUnitFrames()
-                end,
-            }
-        end
-
-        if barName == "targetFrame" then
-            configs[barName].args.mirrorPlayerFrame = {
-                name = "Mirror Player Frame",
-                desc = "Mirrors the X and Y position of the player frame. (this will override where you move the target frame with the base ui)",
-                type = "toggle",
-                width = 1,
-                order = 0.9,
-                get = function(_) return module.targetFrame.mirrorPlayerFrame end,
-                set = function(_, val)
-                    module.targetFrame.mirrorPlayerFrame = val
-                    self:SetupUnitFrames()
-                end,
-            }
-        end
-
-        if barName == "mainMenuBar" then
-            configs[barName].args.showGryphons = {
-                name = "Show Gryphons",
-                desc = "Show the gryphon graphics on the sides of your main bar.",
-                type = "toggle",
-                disabled = function() return self:SettingDisabled(module[barName].move) end,
-                width = 1,
-                order = 0.8,
-                get = function(_) return module.showGryphons end,
-                set = function(_, val)
-                    module.showGryphons = val
-                    self:SetupActionBars()
-                end,
-            }
-
-            configs[barName].args.pagingNumbers = {
-                name = "Paging Numbers",
-                desc = "Show the actionbar paging numbers and buttons.",
-                type = "toggle",
-                disabled = function() return self:SettingDisabled(module[barName].move) end,
-                width = 1,
-                order = 0.9,
-                get = function(_) return module.showPagingNumbers end,
-                set = function(_, val)
-                    module.showPagingNumbers = val
-                    self:SetupActionBars()
-                end,
-            }
-        end
-
-        if barName == "multiCastBar" then
+        if frameName == "multiCastBar" then
             local version = self:GetWoWVersion();
-            configs[barName].hidden = function() return version ~= "WRATH" and version ~= "CATA" end
+            configs[frameName].hidden = function() return version ~= "WRATH" and version ~= "CATA" end
         end
 
-        configs[barName].args.spacer = {
+        configs[frameName].args.spacer = {
             name = "",
             type = "description",
             width = "full",
@@ -442,6 +472,7 @@ function ScarletUI:GenerateAllMoversConfigs()
         }
     end
 
+    i = i + 1
     return configs
 end
 

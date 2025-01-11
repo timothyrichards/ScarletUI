@@ -58,12 +58,19 @@ function ScarletUI:mainMenuBar(module)
     local mainMenuBarSettings = module.mainMenuBar;
 
     if mainMenuBarSettings.move then
-        MainMenuBarPerformanceBarFrame:Hide()
+        if module.showMainBarBackground then
+            MainMenuBarTexture0:Show()
+            MainMenuBarTexture0:ClearAllPoints()
+            MainMenuBarTexture0:SetPoint("BOTTOMLEFT", MainMenuBarArtFrame, "BOTTOMLEFT", 0, 0)
 
-        MainMenuBarTexture0:ClearAllPoints()
-        MainMenuBarTexture0:SetPoint("BOTTOMLEFT", MainMenuBarArtFrame, "BOTTOMLEFT", 0, 0)
-        MainMenuBarTexture1:ClearAllPoints()
-        MainMenuBarTexture1:SetPoint("BOTTOMLEFT", MainMenuBarTexture0, "BOTTOMRIGHT", 0, 0)
+            MainMenuBarTexture1:Show()
+            MainMenuBarTexture1:ClearAllPoints()
+            MainMenuBarTexture1:SetPoint("BOTTOMLEFT", MainMenuBarTexture0, "BOTTOMRIGHT", 0, 0)
+        else
+            MainMenuBarTexture0:Hide()
+            MainMenuBarTexture1:Hide()
+        end
+
         MainMenuBarTexture2:Hide()
         MainMenuBarTexture3:Hide()
 
@@ -172,6 +179,7 @@ function ScarletUI:microBar(module)
             "MainMenuMicroButton",
             "WorldMapMicroButton",
             "HelpMicroButton",
+            "MainMenuBarPerformanceBarFrame",
         }
         local buttonCount = 0
         for _, buttonName in ipairs(microButtons) do
@@ -201,12 +209,11 @@ function ScarletUI:microBar(module)
             local button = _G[buttonName]
 
             if button and button:IsShown() then
-                button:SetMovable(true)
-                button:ClearAllPoints()
-                button:SetUserPlaced(true)
                 button:SetParent(MicroBar)
                 if buttonName == "CharacterMicroButton" then
                     self:SetPoint(button, "BOTTOMLEFT", MicroBar, "BOTTOMLEFT", 0, 0)
+                elseif buttonName == "MainMenuBarPerformanceBarFrame" then
+                    self:SetPoint(button, "LEFT", previousButton, "RIGHT", 0, -9)
                 else
                     self:SetPoint(button, "LEFT", previousButton, "RIGHT", -3, 0)
                 end
@@ -422,8 +429,10 @@ function ScarletUI:experienceBar(module)
         MainMenuExpBar:SetHeight(10)
         MainMenuXPBarTexture0:ClearAllPoints()
         MainMenuXPBarTexture0:SetPoint("TOPLEFT", MainMenuExpBar, "TOPLEFT", 0, 0)
+        MainMenuXPBarTexture1:Show()
         MainMenuXPBarTexture1:ClearAllPoints()
         MainMenuXPBarTexture1:SetPoint("LEFT", MainMenuXPBarTexture0, "RIGHT", 0, 0)
+        MainMenuXPBarTexture2:Show()
         MainMenuXPBarTexture2:ClearAllPoints()
         MainMenuXPBarTexture2:SetPoint("LEFT", MainMenuXPBarTexture1, "RIGHT", 0, 0)
         MainMenuXPBarTexture3:ClearAllPoints()

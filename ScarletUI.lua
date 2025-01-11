@@ -77,6 +77,20 @@ StaticPopupDialogs['SCARLET_RESTORE_DEFAULTS_DIALOG'] = {
     preferredIndex = 3,
 }
 
+-- Dialog to prompt if raid frame profile should be deleted
+StaticPopupDialogs['SCARLET_DELETE_RAID_PROFILE_DIALOG'] = {
+    text = '<Scarlet UI>\n\nWould you also like to delete the "Raid" raid frames profile?',
+    button1 = 'Yes',
+    button2 = 'No',
+    OnAccept = function()
+        ScarletUI:DeleteRaidProfile(ScarletUI.raidProfileToDelete)
+    end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = false,
+    preferredIndex = 3,
+}
+
 function ScarletUI:OnInitialize()
     -- Set up the database
     self.db = self.db or AceDB:New("ScarletUIDB", self.defaults, true)
@@ -86,7 +100,7 @@ function ScarletUI:OnInitialize()
     self:RegisterChatCommand("sui", "SlashCommand")
 
     -- Register the options table
-    AceConfigDialog:SetDefaultSize("ScarletUI", 780, 500)
+    AceConfigDialog:SetDefaultSize("ScarletUI", 800, 525)
     AceConfig:RegisterOptionsTable("ScarletUI", function() return self:Options() end)
     AceConfigDialog:SetDefaultSize("ScarletUI_Movers", 400, 375)
     AceConfig:RegisterOptionsTable("ScarletUI_Movers", function() return self:GetMoversOptions() end)

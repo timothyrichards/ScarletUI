@@ -78,6 +78,8 @@ function ScarletUI:SetupTargetFrame(unitFramesModule)
                     relativePoint = self:OppositeFrameAnchor(playerFrame.screenAnchor)
                     offsetX = playerFrame.x * -1
                     offsetY = playerFrame.y
+
+                    ScarletUI:SetupTargetFrame(unitFramesModule)
                 end
 
                 targetFrame.frameAnchor = ScarletUI:GetArrayIndex(ScarletUI.frameAnchors, point)
@@ -139,7 +141,7 @@ function ScarletUI:SetupFocusFrame(unitFramesModule)
             self.focusFrameEventRegistered = true
 
             hooksecurefunc(FocusFrame, "StopMovingOrSizing", function(_)
-                if not PlayerFrame.mover.isMoving then
+                if not FocusFrame.mover.isMoving then
                     local point, _, relativePoint, offsetX, offsetY = FocusFrame:GetPoint()
 
                     focusFrame.frameAnchor = ScarletUI:GetArrayIndex(ScarletUI.frameAnchors, point)

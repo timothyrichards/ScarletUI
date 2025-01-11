@@ -45,7 +45,7 @@ function ScarletUI:Options()
             chatModuleSettings = self:GetChatModuleSettingsPage(database, defaults.chatModule, 3),
             CVarModuleSettings = self:GetCVarModuleSettingsPage(database, 4),
             nameplatesModuleSettings = self:GetNameplatesModuleSettingsPage(database, defaults.nameplatesModule, 5),
-            raidFramesModuleSettings = self:GetRaidFramesModuleSettingsPage(database, defaults.raidFramesModule, 6),
+            raidFramesModuleSettings = self:GetRaidFramesModuleSettingsPage(database, 6),
         }
     }
 end
@@ -60,7 +60,6 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
             general = {
                 name = "General",
                 type = "group",
-                hidden = function() return self:GetWoWVersion() ~= "CATA" end,
                 inline = true,
                 order = 0,
                 args = {
@@ -374,7 +373,7 @@ function ScarletUI:GetChatModuleSettingsPage(database, defaults, order)
         order = order,
         args = {
             generalSettings = {
-                name = "General Settings",
+                name = "Chat Settings",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
                 inline = true,
@@ -392,38 +391,6 @@ function ScarletUI:GetChatModuleSettingsPage(database, defaults, order)
                         get = function(_) return module.fontSize end,
                         set = function(_, val)
                             module.fontSize = val
-                            self:SetupChat()
-                        end,
-                    },
-                    height = {
-                        name = "Chat Height",
-                        desc = "Desired height for the chat window.\n(Default " .. defaults.height .. ")",
-                        type = "range",
-                        hidden = function() return self.retail end,
-                        min = 0,
-                        max = math.floor(GetScreenHeight()),
-                        step = 1,
-                        width = 1,
-                        order = 1,
-                        get = function(_) return module.height end,
-                        set = function(_, val)
-                            module.height = val
-                            self:SetupChat()
-                        end,
-                    },
-                    width = {
-                        name = "Chat Width",
-                        desc = "Desired width for the chat window.\n(Default " .. defaults.width .. ")",
-                        type = "range",
-                        hidden = function() return self.retail end,
-                        min = 0,
-                        max = math.floor(GetScreenWidth()),
-                        step = 1,
-                        width = 1,
-                        order = 2,
-                        get = function(_) return module.width end,
-                        set = function(_, val)
-                            module.width = val
                             self:SetupChat()
                         end,
                     },
@@ -617,7 +584,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
         hidden = function() return self.retail end,
         args = {
             generalSettings = {
-                name = "General Settings",
+                name = "Nameplate Settings",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
                 inline = true,
@@ -1221,7 +1188,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
     }
 end
 
-function ScarletUI:GetRaidFramesModuleSettingsPage(database, defaults, order)
+function ScarletUI:GetRaidFramesModuleSettingsPage(database, order)
     local module = database.raidFramesModule;
 
     return {
@@ -1232,20 +1199,6 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(database, defaults, order)
         disabled = function() return self.lightWeightMode end,
         hidden = function() return self.retail end,
         args = {
-            information = {
-                name = "Info",
-                type = "group",
-                inline = true,
-                order = 0,
-                args = {
-                    description = {
-                        name = "Please note that any changes made on this page will require a /reload to be reflected visually.",
-                        type = "description",
-                        width = "full",
-                        fontSize = "medium"
-                    },
-                }
-            },
             partyFrames = {
                 name = "Party Frames",
                 type = "group",
@@ -1253,63 +1206,38 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(database, defaults, order)
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
                 order = 1,
                 args = {
-                    moveFrame = {
-                        name = "Move Party Frames",
-                        desc = "Allows you to choose the position of the party frames.",
+                    createProfile = {
+                        name = "Create Party Frames Profile",
+                        desc = "Creates a raid frames profile for 5 man groups.",
                         type = "toggle",
-                        width = "full",
+                        width = 1.5,
                         order = 0,
+                        get = function(_) return module.profiles.Party.createProfile end,
+                        set = function(_, val)
+                            module.profiles.Party.createProfile = val
+
+                            if val then
+                                self:UpdateProfileOptions()
+                            else
+                                self.raidProfileToDelete = "Party"
+                                StaticPopupDialogs['SCARLET_DELETE_RAID_PROFILE_DIALOG'].text = '<Scarlet UI>\n\nWould you also like to delete the "Party" raid frames profile?'
+                                StaticPopup_Show("SCARLET_DELETE_RAID_PROFILE_DIALOG")
+                            end
+                        end,
+                    },
+                    moveFrame = {
+                        name = "Synchronize Party Frames Profile",
+                        desc = "Allows you to synchronize the position of the party frames between characters.",
+                        type = "toggle",
+                        width = 1.5,
+                        disabled = function() return not module.profiles.Party.createProfile end,
+                        order = 1,
                         get = function(_) return module.profiles.Party.move end,
                         set = function(_, val)
                             module.profiles.Party.move = val
                             self:UpdateProfilePositions()
                         end,
                     },
-                    left = {
-                        name = "Frame Left",
-                        desc = "Must be a number, this is the distance of the raid frame container from the left side of the screen.\n(Default " .. defaults.profiles.Party.savedPosition.leftOffset .. ")",
-                        type = "range",
-                        min = math.floor(GetScreenWidth()) * -1,
-                        max = math.floor(GetScreenWidth()),
-                        step = 1,
-                        width = 1,
-                        order = 1,
-                        get = function(_) return module.profiles.Party.savedPosition.leftOffset end,
-                        set = function(_, val)
-                            module.profiles.Party.savedPosition.leftOffset = val
-                            self:UpdateProfilePositions()
-                        end,
-                    },
-                    top = {
-                        name = "Frame Top",
-                        desc = "Must be a number, this is the distance of the raid frame container from the top of the screen.\n(Default " .. defaults.profiles.Party.savedPosition.topOffset .. ")",
-                        type = "range",
-                        min = math.floor(GetScreenHeight()) * -1,
-                        max = math.floor(GetScreenHeight()),
-                        step = 1,
-                        width = 1,
-                        order = 2,
-                        get = function(_) return module.profiles.Party.savedPosition.topOffset end,
-                        set = function(_, val)
-                            module.profiles.Party.savedPosition.topOffset = val
-                            self:UpdateProfilePositions()
-                        end,
-                    },
-                    bottom = {
-                        name = "Frame Bottom",
-                        desc = "Must be a number, this is the distance of the raid frame container from the bottom of the screen.\n(Default " .. defaults.profiles.Party.savedPosition.bottomOffset .. ")",
-                        type = "range",
-                        min = math.floor(GetScreenHeight()) * -1,
-                        max = math.floor(GetScreenHeight()),
-                        step = 1,
-                        width = 1,
-                        order = 3,
-                        get = function(_) return module.profiles.Party.savedPosition.bottomOffset end,
-                        set = function(_, val)
-                            module.profiles.Party.savedPosition.bottomOffset = val
-                            self:UpdateProfilePositions()
-                        end,
-                    }
                 }
             },
             raidFrames = {
@@ -1319,63 +1247,38 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(database, defaults, order)
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
                 order = 1,
                 args = {
-                    moveFrame = {
-                        name = "Move Raid Frames",
-                        desc = "Allows you to choose the position of the raid frames.",
+                    createProfile = {
+                        name = "Create Raid Frames Profile",
+                        desc = "Creates a raid frames profile for 10+ man groups.",
                         type = "toggle",
-                        width = "full",
+                        width = 1.5,
                         order = 0,
+                        get = function(_) return module.profiles.Raid.createProfile end,
+                        set = function(_, val)
+                            module.profiles.Raid.createProfile = val
+
+                            if val then
+                                self:UpdateProfileOptions()
+                            else
+                                self.raidProfileToDelete = "Raid"
+                                StaticPopupDialogs['SCARLET_DELETE_RAID_PROFILE_DIALOG'].text = '<Scarlet UI>\n\nWould you also like to delete the "Raid" raid frames profile?'
+                                StaticPopup_Show("SCARLET_DELETE_RAID_PROFILE_DIALOG")
+                            end
+                        end,
+                    },
+                    moveFrame = {
+                        name = "Synchronize Raid Frames Profile",
+                        desc = "Allows you to synchronize the position of the raid frames between characters.",
+                        type = "toggle",
+                        width = 1.5,
+                        disabled = function() return not module.profiles.Raid.createProfile end,
+                        order = 1,
                         get = function(_) return module.profiles.Raid.move end,
                         set = function(_, val)
                             module.profiles.Raid.move = val
                             self:UpdateProfilePositions()
                         end,
                     },
-                    left = {
-                        name = "Frame Left",
-                        desc = "Must be a number, this is the distance of the raid frame container from the left side of the screen.\n(Default " .. defaults.profiles.Raid.savedPosition.leftOffset .. ")",
-                        type = "range",
-                        min = math.floor(GetScreenWidth()) * -1,
-                        max = math.floor(GetScreenWidth()),
-                        step = 1,
-                        width = 1,
-                        order = 1,
-                        get = function(_) return module.profiles.Raid.savedPosition.leftOffset end,
-                        set = function(_, val)
-                            module.profiles.Raid.savedPosition.leftOffset = val
-                            self:UpdateProfilePositions()
-                        end,
-                    },
-                    top = {
-                        name = "Frame Top",
-                        desc = "Must be a number, this is the distance of the raid frame container from the top of the screen.\n(Default " .. defaults.profiles.Raid.savedPosition.topOffset .. ")",
-                        type = "range",
-                        min = math.floor(GetScreenHeight()) * -1,
-                        max = math.floor(GetScreenHeight()),
-                        step = 1,
-                        width = 1,
-                        order = 2,
-                        get = function(_) return module.profiles.Raid.savedPosition.topOffset end,
-                        set = function(_, val)
-                            module.profiles.Raid.savedPosition.topOffset = val
-                            self:UpdateProfilePositions()
-                        end,
-                    },
-                    bottom = {
-                        name = "Frame Bottom",
-                        desc = "Must be a number, this is the distance of the raid frame container from the bottom of the screen.\n(Default " .. defaults.profiles.Raid.savedPosition.bottomOffset .. ")",
-                        type = "range",
-                        min = math.floor(GetScreenHeight()) * -1,
-                        max = math.floor(GetScreenHeight()),
-                        step = 1,
-                        width = 1,
-                        order = 3,
-                        get = function(_) return module.profiles.Raid.savedPosition.bottomOffset end,
-                        set = function(_, val)
-                            module.profiles.Raid.savedPosition.bottomOffset = val
-                            self:UpdateProfilePositions()
-                        end,
-                    }
                 }
             }
         }

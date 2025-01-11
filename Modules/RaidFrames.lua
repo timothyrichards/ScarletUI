@@ -74,27 +74,35 @@ function ScarletUI:SetupRaidProfiles()
     end
 end
 
+function ScarletUI:DeleteRaidProfile(profile)
+    DeleteRaidProfile(profile)
+end
+
 function ScarletUI:UpdateProfileOptions()
     local raidFramesModule = self.db.global.raidFramesModule
 
     for profile, options in pairs(raidFramesModule.profiles) do
-        -- Create a new raid profile if it doesn't exist
-        if not RaidProfileExists(profile) then
-            CreateNewRaidProfile(profile)
-            self:ShowRaidFrameDialog()
-            self:InitializeRaidProfileSettings(profile, options)
-        end
+        if raidFramesModule.profiles[profile].createProfile then
+            -- Create a new raid profile if it doesn't exist
+            if not RaidProfileExists(profile) then
+                print(profile)
+                print(raidFramesModule.profiles[profile].createProfile)
+                CreateNewRaidProfile(profile)
+                self:ShowRaidFrameDialog()
+                self:InitializeRaidProfileSettings(profile, options)
+            end
 
-        -- Update settings if the profile does exist
-        self.updatingSettings = true
-        if RaidProfileExists(profile) then
-            -- Check and apply Raid Profile settings
-            self:InitializeRaidProfileSettings(profile, options)
+            -- Update settings if the profile does exist
+            self.updatingSettings = true
+            if RaidProfileExists(profile) then
+                -- Check and apply Raid Profile settings
+                self:InitializeRaidProfileSettings(profile, options)
 
-            -- Update position
-            self:UpdateProfilePositions()
+                -- Update position
+                self:UpdateProfilePositions()
+            end
+            self.updatingSettings = false
         end
-        self.updatingSettings = false
     end
 
     -- Check and apply Raid Style party frames setting
@@ -116,7 +124,7 @@ function ScarletUI:InitializeRaidProfileSettings(profile, options)
         end
 
         -- Don't remove k ~= "x" and k ~= "y" and k ~= "height", these are old settings that cause errors when they're still in the profile settings
-        if k ~= "move" and k ~= "savedPosition" and k ~= "x" and k ~= "y" and k ~= "height" then
+        if k ~= "move" and k ~= "createProfile" and k ~= "savedPosition" and k ~= "x" and k ~= "y" and k ~= "height" then
             local currentValue = tostring(GetRaidProfileOption(profile, k))
             local targetValue = tostring(v)
 
@@ -138,7 +146,7 @@ function ScarletUI:UpdateProfilePositions()
     for profile, profileOptions in pairs(raidFramesModule.profiles) do
         local options = profileOptions.savedPosition
 
-        if profileOptions.move then
+        if profileOptions.createProfile and profileOptions.move then
             local dynamic, topPoint, topOffset, bottomPoint, bottomOffset, leftPoint, leftOffset = GetRaidProfileSavedPosition(profile)
             if dynamic ~= options.dynamic or topPoint ~= options.topPoint or topOffset ~= options.topOffset or bottomPoint ~= options.bottomPoint or bottomOffset ~= options.bottomOffset or leftPoint ~= options.leftPoint or leftOffset ~= options.leftOffset then
                 SetRaidProfileSavedPosition(profile, options.dynamic, options.topPoint, options.topOffset, options.bottomPoint, options.bottomOffset, options.leftPoint, options.leftOffset)
