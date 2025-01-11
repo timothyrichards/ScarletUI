@@ -653,24 +653,24 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                 }
             },
             debuffTracker = {
-                name = "Debuff Tracker",
+                name = "Buff/Debuff Tracker",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
                 order = 1,
                 args = {
-                    track = {
-                        name = "Track Debuffs",
-                        desc = "Show debuffs and their durations on the nameplates.",
+                    trackBuffs = {
+                        name = "Track Purgable Buffs",
+                        desc = "Show purgable buffs and their durations on the nameplates.",
                         type = "toggle",
                         width = "full",
                         order = 0,
-                        get = function(_) return module.debuffTracker.track end,
+                        get = function(_) return module.buffTracker.track end,
                         set = function(_, val)
-                            module.debuffTracker.track = val
-                            self:ReapplySettingsToDebuffIcons()
+                            module.buffTracker.track = val
+                            self:ReapplySettingsToAuraIcons()
                         end,
                     },
-                    iconSize = {
+                    iconSizeBuffs = {
                         name = "Icon Size",
                         desc = "Must be a number, this is the size of the debuff icons.\n(Default " .. defaults.debuffTracker.iconSize .. ")",
                         type = "range",
@@ -678,14 +678,14 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                         max = 100,
                         step = 1,
                         width = 1,
-                        order = 2,
-                        get = function(_) return module.debuffTracker.iconSize end,
+                        order = 1,
+                        get = function(_) return module.buffTracker.iconSize end,
                         set = function(_, val)
-                            module.debuffTracker.iconSize = val
-                            self:ReapplySettingsToDebuffIcons()
+                            module.buffTracker.iconSize = val
+                            self:ReapplySettingsToAuraIcons()
                         end,
                     },
-                    spacing = {
+                    spacingBuffs = {
                         name = "Icon Spacing",
                         desc = "Must be a number, this is the space between the debuff icons.\n(Default " .. defaults.debuffTracker.spacing .. ")",
                         type = "range",
@@ -693,14 +693,14 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                         max = 100,
                         step = 1,
                         width = 1,
-                        order = 3,
-                        get = function(_) return module.debuffTracker.spacing end,
+                        order = 2,
+                        get = function(_) return module.buffTracker.spacing end,
                         set = function(_, val)
-                            module.debuffTracker.spacing = val
-                            self:ReapplySettingsToDebuffIcons()
+                            module.buffTracker.spacing = val
+                            self:ReapplySettingsToAuraIcons()
                         end,
                     },
-                    verticalOffset = {
+                    verticalOffsetBuffs = {
                         name = "Vertical Offset",
                         desc = "Must be a number, this is the vertical offset of the debuff row from the nameplate.\n(Default " .. defaults.debuffTracker.verticalOffset .. ")",
                         type = "range",
@@ -708,11 +708,68 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                         max = 100,
                         step = 1,
                         width = 1,
+                        order = 3,
+                        get = function(_) return module.buffTracker.verticalOffset end,
+                        set = function(_, val)
+                            module.buffTracker.verticalOffset = val
+                            self:ReapplySettingsToAuraIcons()
+                        end,
+                    },
+                    trackDebuffs = {
+                        name = "Track Debuffs",
+                        desc = "Show debuffs and their durations on the nameplates.",
+                        type = "toggle",
+                        width = "full",
                         order = 4,
+                        get = function(_) return module.debuffTracker.track end,
+                        set = function(_, val)
+                            module.buffTracker.track = val
+                            self:ReapplySettingsToAuraIcons()
+                        end,
+                    },
+                    iconSizeDebuffs = {
+                        name = "Icon Size",
+                        desc = "Must be a number, this is the size of the debuff icons.\n(Default " .. defaults.debuffTracker.iconSize .. ")",
+                        type = "range",
+                        min = 1,
+                        max = 100,
+                        step = 1,
+                        width = 1,
+                        order = 5,
+                        get = function(_) return module.debuffTracker.iconSize end,
+                        set = function(_, val)
+                            module.debuffTracker.iconSize = val
+                            self:ReapplySettingsToAuraIcons()
+                        end,
+                    },
+                    spacingDebuffs = {
+                        name = "Icon Spacing",
+                        desc = "Must be a number, this is the space between the debuff icons.\n(Default " .. defaults.debuffTracker.spacing .. ")",
+                        type = "range",
+                        min = 0,
+                        max = 100,
+                        step = 1,
+                        width = 1,
+                        order = 6,
+                        get = function(_) return module.debuffTracker.spacing end,
+                        set = function(_, val)
+                            module.debuffTracker.spacing = val
+                            self:ReapplySettingsToAuraIcons()
+                        end,
+                    },
+                    verticalOffsetDebuffs = {
+                        name = "Vertical Offset",
+                        desc = "Must be a number, this is the vertical offset of the debuff row from the nameplate.\n(Default " .. defaults.debuffTracker.verticalOffset .. ")",
+                        type = "range",
+                        min = -100,
+                        max = 100,
+                        step = 1,
+                        width = 1,
+                        order = 7,
                         get = function(_) return module.debuffTracker.verticalOffset end,
                         set = function(_, val)
                             module.debuffTracker.verticalOffset = val
-                            self:ReapplySettingsToDebuffIcons()
+                            self:ReapplySettingsToAuraIcons()
                         end,
                     },
                     priorityDebuffs = {
@@ -720,7 +777,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                         type = "input",
                         desc = "Add a comma seperated list of debuff spell names you wish to always track even if they're applied by another player, for example: Sunder Armor,Expose Armor,Hammer of Justice\n(This setting is saved per character)",
                         width = "full",
-                        order = 5,
+                        order = 8,
                         get = function(_) return characterDatabase.priorityDebuffs end,
                         set = function(_, value)
                             characterDatabase.priorityDebuffs = value

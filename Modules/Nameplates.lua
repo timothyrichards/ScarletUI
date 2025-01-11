@@ -477,11 +477,11 @@ function ScarletUI:SetupNameplates()
             end
 
             if event == "UNIT_AURA" then
-                ScarletUI:CheckUnitDebuffs(unitId)
+                ScarletUI:CheckUnitAuras(unitId)
             end
 
             if event == "NAME_PLATE_UNIT_ADDED" then
-                ScarletUI:CheckUnitDebuffs(unitId)
+                ScarletUI:CheckUnitAuras(unitId)
                 ScarletUI:UpdateNameplate(unitId)
                 ScarletUI:UpdateTargetArrows()
 
@@ -492,7 +492,7 @@ function ScarletUI:SetupNameplates()
             end
 
             if event == "NAME_PLATE_UNIT_REMOVED" then
-                ScarletUI:CheckUnitDebuffs(unitId)
+                ScarletUI:CheckUnitAuras(unitId)
                 ScarletUI:UpdateNameplate(unitId)
             end
 
@@ -501,6 +501,11 @@ function ScarletUI:SetupNameplates()
             end
         end)
     end
+end
+
+function ScarletUI:CheckUnitAuras(unitId)
+    self:CheckUnitDebuffs(unitId)
+    self:CheckUnitBuffs(unitId)
 end
 
 function ScarletUI:CheckUnitDebuffs(unitId)
@@ -564,11 +569,76 @@ function ScarletUI:CheckUnitDebuffs(unitId)
     end
 end
 
-function ScarletUI:ReapplySettingsToDebuffIcons()
+local function IsPurgeClass()
+    local _, class = UnitClass("player")
+    return class == "PRIEST" or class == "SHAMAN" or class == "MAGE"
+end
+
+function ScarletUI:CheckUnitBuffs(unitId)
+    local settings = self.db.global.nameplatesModule.buffTracker
+    if not settings.track or not unitId then
+        return
+    end
+
+    local nameplate = C_NamePlate.GetNamePlateForUnit(unitId)
+    if not nameplate then
+        return
+    end
+
+    nameplate.myBuffIcons = nameplate.myBuffIcons or {}
+
+    local i = 1
+    local buffName, icon, count, debuffType, duration, expireTime, _, _, _, spellId = UnitBuff(unitId, i)
+
+    -- store and display buffs for each unit
+    local plateBuffs = {}
+    while buffName do
+        if UnitIsEnemy("player", unitId) and IsPurgeClass() and debuffType == "Magic" then
+            plateBuffs[buffName] = true
+            ScarletUI:DisplayBuffIcon(settings, nameplate, buffName, icon, count, duration, expireTime)
+        end
+        i = i + 1
+        buffName, icon, count, debuffType, duration, expireTime, _, _, _, spellId = UnitBuff(unitId, i)
+    end
+
+    -- Remove icons for buffs no longer on the unit
+    for name, _icon in pairs(nameplate.myBuffIcons) do
+        if not plateBuffs[name] then
+            _icon.icon:Hide()
+            nameplate.myBuffIcons[name] = nil
+        end
+    end
+
+    -- Sort and reposition the icons based on remaining duration
+    local sortedBuffs = {}
+    for _, buffData in pairs(nameplate.myBuffIcons) do
+        if buffData.icon:IsShown() then
+            table.insert(sortedBuffs, buffData)
+        end
+    end
+
+    -- Sorting the table in ascending order of expireTime.
+    table.sort(sortedBuffs, function(a, b) return a.expireTime < b.expireTime end)
+
+    -- Reposition and resize icons
+    local shownCount = 0
+    local totalWidth = #sortedBuffs * (settings.iconSize + settings.spacing)
+    for _, buffData in ipairs(sortedBuffs) do
+        buffData.icon:SetSize(settings.iconSize, settings.iconSize)
+        buffData.icon:Hide()
+
+        local xOffset = (shownCount * (settings.iconSize + settings.spacing)) - totalWidth / 2
+        buffData.icon:SetPoint('BOTTOMLEFT', nameplate, 'CENTER' , xOffset, settings.verticalOffset + settings.iconSize + settings.spacing)
+        buffData.icon:Show()
+        shownCount = shownCount + 1
+    end
+end
+
+function ScarletUI:ReapplySettingsToAuraIcons()
     local activeNameplates = C_NamePlate.GetNamePlates()
 
     for _, nameplate in ipairs(activeNameplates) do
-        self:CheckUnitDebuffs(nameplate.UnitFrame.unit)
+        self:CheckUnitAuras(nameplate.UnitFrame.unit)
     end
 end
 
@@ -628,4 +698,62 @@ function ScarletUI:DisplayDebuffIcon(settings, plate, debuffName, icon, count, d
     local startTime = expireTime - duration
     debuffIcon.cooldown:SetCooldown(startTime, duration)
     debuffIcon:Show()
+end
+
+function ScarletUI:DisplayBuffIcon(settings, plate, buffName, icon, count, duration, expireTime)
+    -- Initialize the buff frame pool for the nameplate
+    plate.buffFramePool = plate.buffFramePool or {}
+
+    if not plate.myBuffIcons then
+        plate.myBuffIcons = {}
+    end
+
+    local buffIcon
+    if not plate.myBuffIcons[buffName] then
+        -- Check if there's an unused frame in the pool
+        for _, frame in ipairs(plate.buffFramePool) do
+            if not frame:IsShown() then
+                buffIcon = frame
+                break
+            end
+        end
+
+        -- If there's no unused frame, create a new one
+        if not buffIcon then
+            buffIcon = CreateFrame("Frame", nil, plate)
+            buffIcon:SetSize(settings.iconSize, settings.iconSize)
+
+            buffIcon.icon = buffIcon:CreateTexture(nil)
+            buffIcon.icon:SetAllPoints()
+
+            buffIcon.cooldown = CreateFrame("Cooldown", nil, buffIcon, "CooldownFrameTemplate")
+            buffIcon.cooldown:SetAllPoints()
+            buffIcon.cooldown:SetReverse(true)
+
+            buffIcon.stack = buffIcon:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
+            buffIcon.stack:SetPoint("BOTTOMRIGHT", -2, 2)
+
+            local fontName, _, fontFlags = buffIcon.stack:GetFont()
+            buffIcon.stack:SetFont(fontName, 11, fontFlags)
+
+            -- Add the new frame to the pool
+            table.insert(plate.buffFramePool, buffIcon)
+        end
+
+        plate.myBuffIcons[buffName] = { icon = buffIcon, expireTime = expireTime }
+    else
+        buffIcon = plate.myBuffIcons[buffName].icon
+        plate.myBuffIcons[buffName].expireTime = expireTime
+    end
+
+    -- Update the buff icon information
+    buffIcon.icon:SetTexture(icon)
+    if count and tonumber(count) >= 1 then
+        buffIcon.stack:SetText(count)
+    else
+        buffIcon.stack:SetText("")
+    end
+    local startTime = expireTime - duration
+    buffIcon.cooldown:SetCooldown(startTime, duration)
+    buffIcon:Show()
 end

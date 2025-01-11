@@ -69,7 +69,7 @@ ScarletUI.defaults = {
                 frameAnchor = 1, -- BOTTOM
                 screenAnchor = 1, -- BOTTOM
                 x = 234,
-                y = 140,
+                y = 145,
                 scale = 1
             },
             multiBarBottomLeft = {
@@ -276,6 +276,12 @@ ScarletUI.defaults = {
             threatColored = true,
             specialUnitsColored = true,
             dropdownMenuButton = true,
+            buffTracker = {
+                track = true,
+                iconSize = 30,
+                spacing = 2,
+                verticalOffset = 20,
+            },
             debuffTracker = {
                 track = true,
                 iconSize = 30,
@@ -665,6 +671,12 @@ ScarletUI.originalUIDefaults = {
             classColored = true,
             threatColored = true,
             specialUnitsColored = true,
+            buffTracker = {
+                track = true,
+                iconSize = 30,
+                spacing = 2,
+                verticalOffset = 20,
+            },
             debuffTracker = {
                 track = true,
                 iconSize = 30,
