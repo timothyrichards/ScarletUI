@@ -41,7 +41,7 @@ function ScarletUI:SetupRaidProfiles()
                         local profile = GetActiveRaidProfile()
                         if raidFramesModule.profiles[profile] then
                             for k, v in pairs(raidFramesModule.profiles[profile]) do
-                                if k ~= "move" and k ~= "savedPosition" then
+                                if k ~= "move" and k ~= "createProfile" and k ~= "savedPosition" then
                                     local currentValue = tostring(v)
                                     local targetValue = tostring(GetRaidProfileOption(profile, k))
 
