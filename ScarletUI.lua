@@ -115,14 +115,14 @@ function ScarletUI:OnInitialize()
 end
 
 function ScarletUI:OnEnable()
-    self:Setup()
-
     -- Check if lightWeightMode should be enabled
     if self:GetWoWVersion() == "RETAIL" then
         self.retail = true;
     elseif IsAddOnLoaded("ElvUI") then
         self.lightWeightMode = true;
     end
+
+    self:Setup()
 
     self.hideFrameContainer = _G["HideFrameContainer"] or CreateFrame("FRAME", "HideFrameContainer", UIParent)
     self.hideFrameContainer:Hide()

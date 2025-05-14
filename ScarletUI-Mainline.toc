@@ -1,4 +1,4 @@
-## Interface: 110105
+## Interface: 110107
 ## Title: Scarlet UI
 ## Author: ScarletPaladin
 ## Notes: Misc UI features/modifications preferred by ScarletPaladin
