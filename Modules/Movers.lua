@@ -460,8 +460,8 @@ function ScarletUI:GenerateAllMoversConfigs()
         end
 
         if frameName == "multiCastBar" then
-            local version = self:GetWoWVersion();
-            configs[frameName].hidden = function() return version ~= "WRATH" and version ~= "CATA" end
+            local versionText, interfaceVersion = self:GetWoWVersion();
+            configs[frameName].hidden = function() return interfaceVersion < 30000 or interfaceVersion > 50000 end
         end
 
         configs[frameName].args.spacer = {

@@ -77,12 +77,13 @@ local function calculateUnitItemLevel(unit)
     local mainHandItemLevel = mainHandItemLink and GetDetailedItemLevelInfo(mainHandItemLink) or 0
     local secondaryHandItemLevel = secondaryHandItemLink and GetDetailedItemLevelInfo(secondaryHandItemLink) or 0
     local dualWieldItemLevel = math.max(mainHandItemLevel, secondaryHandItemLevel)
+    local versionText, interfaceVersion = ScarletUI:GetWoWVersion()
 
     for _, slotName in ipairs(slots) do
         local skipSlot = false
 
         -- Skip MainHand and SecondaryHand slots if the player is a hunter and has a ranged weapon equipped
-        if isHunter and not ScarletUI.retail then
+        if isHunter and not interfaceVersion >= 50000 then
             local rangedItemLink = GetInventoryItemLink(unit, GetInventorySlotInfo("RangedSlot"))
 
             if rangedItemLink and (slotName == "MainHand" or slotName == "SecondaryHand") then
@@ -124,9 +125,10 @@ end
 
 function ScarletUI:CharacterFrameItemLevel()
     local hide = not self.db.global.itemLevelCharacter
+    local versionText, interfaceVersion = ScarletUI:GetWoWVersion()
 
     for _, slotName in ipairs(slots) do
-        if self.retail and slotName == "Ranged" then
+        if interfaceVersion >= 50000 and slotName == "Ranged" then
             -- nothing
         else
             local slotID = GetInventorySlotInfo(slotName .. "Slot")
@@ -171,8 +173,9 @@ function ScarletUI:InspectFrameItemLevel()
 
     self.inspectFrameItemLevelText:SetText("Item Level: " .. math.floor(averageItemLevel))
 
+    local versionText, interfaceVersion = ScarletUI:GetWoWVersion()
     for _, slotName in ipairs(slots) do
-        if self.retail and slotName == "Ranged" then
+        if interfaceVersion >= 50000 and slotName == "Ranged" then
             -- nothing
         else
             local slotID = GetInventorySlotInfo(slotName .. "Slot")

@@ -52,7 +52,8 @@ function ScarletUI:GetWoWVersion()
 end
 
 function ScarletUI:SetupExpandCharacterInfo()
-    if not self.db.global.expandCharacterInfo or self:GetWoWVersion() ~= "CATA" then
+    local versionText, interfaceVersion = self:GetWoWVersion()
+    if not self.db.global.expandCharacterInfo or versionText ~= "CATA" then
         return
     end
 
