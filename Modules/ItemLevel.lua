@@ -159,13 +159,17 @@ function ScarletUI:InspectFrameItemLevel()
         return
     end
 
+
     local averageItemLevel = calculateUnitItemLevel(unit)
 
     if not self.inspectFrameItemLevelText then
         self.inspectFrameItemLevelText = InspectFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 
+        local versionText, interfaceVersion = self:GetWoWVersion()
         if self.retail then
             self.inspectFrameItemLevelText:SetPoint("BOTTOMLEFT", InspectFrame, "BOTTOMLEFT", 10, 15)
+        elseif interfaceVersion >= 50000 then
+            self.inspectFrameItemLevelText:SetPoint("TOP", InspectFrame, "TOP", 0, -40)
         else
             self.inspectFrameItemLevelText:SetPoint("TOP", InspectFrame, "TOP", 0, -60)
         end
@@ -284,6 +288,7 @@ function ScarletUI:SetupItemLevels()
         CharacterFrame:HookScript("OnShow", function()
             ScarletUI:CharacterFrameItemLevel()
         end)
+
 
         EventRegistry:RegisterCallback("ContainerFrame.OpenBag", function()
             ScarletUI:BagItemLevel()

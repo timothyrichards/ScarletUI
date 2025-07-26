@@ -19,10 +19,27 @@ local function split(input)
     return ret
 end
 
+-- Cache for group information to prevent excessive API calls
+local groupInfoCache = { max = 1, prefix = "party", lastUpdate = 0 }
+local GROUP_INFO_CACHE_DURATION = 1 -- Cache for 1 second
+
+local function UpdateGroupInfoCache()
+    local currentTime = GetTime()
+    if currentTime - groupInfoCache.lastUpdate > GROUP_INFO_CACHE_DURATION then
+        local inRaid = IsInRaid()
+        local inGroup = IsInGroup()
+        
+        groupInfoCache.max = inRaid and GetNumGroupMembers() or inGroup and GetNumGroupMembers() or 1
+        groupInfoCache.prefix = inRaid and "raid" or "party"
+        groupInfoCache.lastUpdate = currentTime
+    end
+end
+
 local function IterateGroupMembers()
+    UpdateGroupInfoCache()
     local i = 0
-    local max = IsInRaid() and GetNumGroupMembers() or IsInGroup() and GetNumGroupMembers() or 1
-    local prefix = IsInRaid() and "raid" or "party"
+    local max = groupInfoCache.max
+    local prefix = groupInfoCache.prefix
 
     return function()
         i = i + 1
@@ -89,12 +106,31 @@ local function IsPet(unitId)
     return false
 end
 
-local function IsTank(playerName)
-    local mainTank = GetPartyAssignment("MAINTANK", playerName)
-    local mainAssist = GetPartyAssignment("MAINASSIST", playerName)
+-- Cache for party assignments to prevent excessive API calls
+local partyAssignmentCache = {}
+local lastPartyAssignmentCheck = 0
+local PARTY_ASSIGNMENT_CACHE_DURATION = 1 -- Cache for 1 second
 
-    -- Check if the player has the tank role
-    if mainTank or mainAssist then
+local function IsTank(playerName)
+    local currentTime = GetTime()
+    
+    -- Only check party assignments once per second to prevent spam
+    if currentTime - lastPartyAssignmentCheck > PARTY_ASSIGNMENT_CACHE_DURATION then
+        partyAssignmentCache = {}
+        lastPartyAssignmentCheck = currentTime
+        
+        -- Only make the API calls if we're actually in a group
+        if IsInGroup() then
+            local mainTank = GetPartyAssignment("MAINTANK", playerName)
+            local mainAssist = GetPartyAssignment("MAINASSIST", playerName)
+            partyAssignmentCache[playerName] = mainTank or mainAssist
+        else
+            partyAssignmentCache[playerName] = false
+        end
+    end
+
+    -- Check cached party assignment first
+    if partyAssignmentCache[playerName] then
         return true
     end
 
