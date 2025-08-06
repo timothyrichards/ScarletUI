@@ -172,15 +172,15 @@ function ScarletUI:microBar(module)
             "QuestLogMicroButton",
             "SocialsMicroButton",
             "GuildMicroButton",
-            "CollectionsMicroButton",
             "PVPMicroButton",
             "LFGMicroButton",
+            "CollectionsMicroButton",
             "EJMicroButton",
+            "StoreMicroButton",
             "MainMenuMicroButton",
             "WorldMapMicroButton",
             "HelpMicroButton",
-            "MainMenuBarPerformanceBarFrame",
-            "StoreMicroButton",
+            -- "MainMenuBarPerformanceBarFrame",
         }
         local buttonCount = 0
         for _, buttonName in ipairs(microButtons) do
@@ -589,6 +589,10 @@ function ScarletUI:SetupActionBars()
             if event == "PLAYER_REGEN_ENABLED" then
                 self:microBar(actionbarsModule)
                 self:possessBarFrame(actionbarsModule)
+            end
+
+            if event == "PLAYER_ENTERING_WORLD" then
+                self:microBar(actionbarsModule)
             end
 
             if event == "UNIT_EXITED_VEHICLE" then
