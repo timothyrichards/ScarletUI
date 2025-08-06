@@ -180,6 +180,7 @@ function ScarletUI:microBar(module)
             "WorldMapMicroButton",
             "HelpMicroButton",
             "MainMenuBarPerformanceBarFrame",
+            "StoreMicroButton",
         }
         local buttonCount = 0
         for _, buttonName in ipairs(microButtons) do
