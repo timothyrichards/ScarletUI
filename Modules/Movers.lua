@@ -569,6 +569,7 @@ function ScarletUI:GetFrameData(settingsKey)
 end
 
 function ScarletUI:CreateMover(targetFrame, settings, canMoveFrame)
+    local database = self.db.global;
     canMoveFrame = canMoveFrame or function() return true end
 
     if targetFrame.mover then
@@ -583,7 +584,7 @@ function ScarletUI:CreateMover(targetFrame, settings, canMoveFrame)
     targetFrame.locked = false
     targetFrame:SetMovable(true)
     targetFrame:SetUserPlaced(true)
-    targetFrame:SetClampedToScreen(true)
+    targetFrame:SetClampedToScreen(database.clampMovers)
 
     local mover = CreateFrame("Frame", targetFrameName .. "Mover", UIParent)
     mover.targetFrame = targetFrame

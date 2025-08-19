@@ -88,6 +88,19 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                             database.tidyIconsEnabled = val
                             self:SetupTidyIcons()
                         end,
+                    },
+                    clampMovers = {
+                        name = "Clamp Movers",
+                        desc = "Determines whether movers should be kept within the screens bounds or should be movable outside of them.",
+                        type = "toggle",
+                        disabled = function() return self.lightWeightMode end,
+                        width = 1,
+                        order = 2,
+                        get = function(_) return database.clampMovers end,
+                        set = function(_, val)
+                            database.clampMovers = val
+                            self:ShowReloadDialog()
+                        end,
                     }
                 }
             },
