@@ -379,6 +379,47 @@ function ScarletUI:possessBarFrame(module)
     end)
 end
 
+function ScarletUI:extraActionBar(module)
+    local extraActionBarSettings = module.extraActionBar;
+
+    if extraActionBarSettings.move then
+        local setup = function()
+            if self:InCombat() then
+                return
+            end
+
+            if extraActionBarSettings.showBackground then
+                ExtraActionButton1.style:Show()
+            else
+                ExtraActionButton1.style:Hide()
+            end
+
+            ExtraActionBarFrame:SetParent(UIParent)
+            ExtraActionBarFrame:ClearAllPoints()
+            ExtraActionBarFrame:SetPoint(
+                    self.frameAnchors[extraActionBarSettings.frameAnchor],
+                    UIParent,
+                    self.frameAnchors[extraActionBarSettings.screenAnchor],
+                    extraActionBarSettings.x,
+                    extraActionBarSettings.y
+            )
+            ExtraActionBarFrame:SetScale(extraActionBarSettings.scale)
+            ExtraActionBarFrame.settingsKey = "extraActionBar"
+            self:CreateMover(ExtraActionBarFrame, extraActionBarSettings)
+        end
+
+        setup()
+        ExtraActionBarFrame:HookScript("OnShow", function()
+            setup()
+        end)
+    end
+
+    if extraActionBarSettings.hide then
+        ExtraActionBarFrame:UnregisterAllEvents()
+        ExtraActionBarFrame:SetParent(self.hideFrameContainer)
+    end
+end
+
 function ScarletUI:experienceBar(module)
     local experienceBarSettings = module.experienceBar;
 
@@ -542,6 +583,7 @@ function ScarletUI:SetupActionBars()
     self:bagBar(actionbarsModule)
     self:multiCastBar(actionbarsModule)
     self:possessBarFrame(actionbarsModule)
+    self:extraActionBar(actionbarsModule)
     self:experienceBar(actionbarsModule)
     self:reputationBar(actionbarsModule)
 

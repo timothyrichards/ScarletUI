@@ -85,8 +85,6 @@ function ScarletUI:UpdateProfileOptions()
         if raidFramesModule.profiles[profile].createProfile then
             -- Create a new raid profile if it doesn't exist
             if not RaidProfileExists(profile) then
-                print(profile)
-                print(raidFramesModule.profiles[profile].createProfile)
                 CreateNewRaidProfile(profile)
                 self:ShowRaidFrameDialog()
                 self:InitializeRaidProfileSettings(profile, options)

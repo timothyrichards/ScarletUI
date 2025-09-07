@@ -143,6 +143,16 @@ ScarletUI.defaults = {
                 y = 145,
                 scale = 1
             },
+            extraActionBar = {
+                move = true,
+                hide = false,
+                frameAnchor = 1, -- BOTTOM
+                screenAnchor = 1, -- BOTTOM
+                x = 0,
+                y = 245,
+                scale = 1,
+                showBackground = false,
+            },
             experienceBar = {
                 move = true,
                 hide = false,
@@ -542,6 +552,16 @@ ScarletUI.originalUIDefaults = {
                 x = -361,
                 y = 103,
                 scale = 1
+            },
+            extraActionBar = {
+                move = true,
+                hide = false,
+                frameAnchor = 1, -- BOTTOM
+                screenAnchor = 1, -- BOTTOM
+                x = 0,
+                y = 245,
+                scale = 1,
+                showBackground = false,
             },
             experienceBar = {
                 move = true,

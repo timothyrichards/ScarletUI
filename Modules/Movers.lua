@@ -84,6 +84,26 @@ ScarletUI.frameData = {
         module = "actionbarsModule",
         databasePath = "actionbarsModule.experienceBar",
     },
+    extraActionBar = {
+        frame = ExtraActionBarFrame,
+        module = "actionbarsModule",
+        databasePath = "actionbarsModule.extraActionBar",
+        additionalSettings = {
+            showExtraActionBarBackground = {
+                name = "Background Texture",
+                desc = "Show background texture behind the extra action bar.",
+                type = "toggle",
+                disabled = function() return ScarletUI:SettingDisabled(ScarletUI.db.global.actionbarsModule.extraActionBar.move) end,
+                width = 1,
+                order = 0.7,
+                get = function(_) return ScarletUI.db.global.actionbarsModule.extraActionBar.showBackground end,
+                set = function(_, val)
+                    ScarletUI.db.global.actionbarsModule.extraActionBar.showBackground = val
+                    ScarletUI:SetupActionBars()
+                end,
+            },
+        },
+    },
     focusFrame = {
         frame = FocusFrame,
         module = "unitFramesModule",

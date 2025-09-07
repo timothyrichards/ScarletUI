@@ -97,7 +97,9 @@ local function calculateUnitItemLevel(unit)
             if slotName == "SecondaryHand" then
                 if mainHandItemLink then
                     local _, _, _, _, _, _, _, _, itemEquipLoc = GetItemInfo(mainHandItemLink)
-                    if itemEquipLoc == "INVTYPE_2HWEAPON" then
+                    -- INVTYPE_2HWEAPON includes 2H melee weapons
+                    -- INVTYPE_RANGED and INVTYPE_RANGEDRIGHT are for bows/guns/crossbows (used by hunters in MoP)
+                    if itemEquipLoc == "INVTYPE_2HWEAPON" or itemEquipLoc == "INVTYPE_RANGED" or itemEquipLoc == "INVTYPE_RANGEDRIGHT" then
                         skipSlot = true
                     end
                 end
