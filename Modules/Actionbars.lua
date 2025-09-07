@@ -418,6 +418,9 @@ end
 function ScarletUI:extraActionBar(module)
     local settings = module.extraActionBar;
     local frame = ExtraActionBarFrame
+    if not frame then
+        return
+    end
 
     local setup = function()
         if self:InCombat() then
@@ -450,6 +453,9 @@ end
 function ScarletUI:playerPowerBarAlt(module)
     local settings = module.playerPowerBarAlt;
     local frame = PlayerPowerBarAlt
+    if not frame then
+        return
+    end
 
     local setup = function()
         if self:InCombat() then
