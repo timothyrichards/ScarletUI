@@ -1,3 +1,48 @@
+function ScarletUI:SetupFrameWithOnShow(frame, settings, setupFunc)
+    if settings.move then
+        setupFunc()
+        frame:HookScript("OnShow", setupFunc)
+    end
+
+    self:HideFrame(frame, settings)
+end
+
+function ScarletUI:HideFrame(frame, settings)
+    if settings.hide then
+        frame:UnregisterAllEvents()
+        frame:SetParent(self.hideFrameContainer)
+    end
+end
+
+function ScarletUI:SetupBarWithSetPointHook(bar, settings, flagName, setupFunc)
+    if settings.move then
+        self[flagName] = true
+
+        bar:SetParent(UIParent)
+        bar:ClearAllPoints()
+        bar:SetPoint(
+            self.frameAnchors[settings.frameAnchor],
+            UIParent,
+            self.frameAnchors[settings.screenAnchor],
+            settings.x,
+            settings.y
+        )
+        bar:SetScale(settings.scale)
+
+        if not self[flagName .. "EventRegistered"] then
+            hooksecurefunc(bar, "SetPoint", function()
+                if self[flagName] then
+                    return
+                end
+                setupFunc()
+            end)
+            self[flagName .. "EventRegistered"] = true
+        end
+
+        self[flagName] = false
+    end
+end
+
 function ScarletUI:CreateActionBar(barName, settingsKey, settings)
     local frameData = self:GetFrameData(settingsKey)
     local buttonSize = frameData.buttonSize or 36
@@ -21,11 +66,11 @@ function ScarletUI:CreateActionBar(barName, settingsKey, settings)
         container:ClearAllPoints()
         container:SetSize(width + 2, height + 2)
         container:SetPoint(
-                self.frameAnchors[settings.frameAnchor],
-                UIParent,
-                self.frameAnchors[settings.screenAnchor],
-                settings.x,
-                settings.y
+            self.frameAnchors[settings.frameAnchor],
+            UIParent,
+            self.frameAnchors[settings.screenAnchor],
+            settings.x,
+            settings.y
         )
         container:SetScale(settings.scale)
 
@@ -55,9 +100,9 @@ function ScarletUI:CreateActionBar(barName, settingsKey, settings)
 end
 
 function ScarletUI:mainMenuBar(module)
-    local mainMenuBarSettings = module.mainMenuBar;
+    local settings = module.mainMenuBar;
 
-    if mainMenuBarSettings.move then
+    if settings.move then
         if module.showMainBarBackground then
             MainMenuBarTexture0:Show()
             MainMenuBarTexture0:ClearAllPoints()
@@ -82,7 +127,7 @@ function ScarletUI:mainMenuBar(module)
         ActionButton1:SetPoint("BOTTOMLEFT", MainMenuBarArtFrame, "BOTTOMLEFT", 8, 4)
 
         for i = 1, 12 do
-            local button = _G["ActionButton"..i]
+            local button = _G["ActionButton" .. i]
             button:SetAttribute("showgrid", 1)
             ActionButton_Update(button)
         end
@@ -113,47 +158,38 @@ function ScarletUI:mainMenuBar(module)
         end
     end
 
-    self:CreateMover(MainMenuBar, mainMenuBarSettings)
+    self:CreateMover(MainMenuBar, settings)
 
-    if mainMenuBarSettings.hide then
+    if settings.hide then
         MainMenuBar:UnregisterAllEvents()
         MainMenuBar:SetParent(self.hideFrameContainer)
     end
 end
 
 function ScarletUI:vehicleLeaveButton(module)
-    local vehicleLeaveButtonSettings = module.vehicleLeaveButton;
+    local settings = module.vehicleLeaveButton;
+    local frame = MainMenuBarVehicleLeaveButton
 
-    if vehicleLeaveButtonSettings.move then
-        local setup = function()
-            MainMenuBarVehicleLeaveButton:SetParent(UIParent)
-            MainMenuBarVehicleLeaveButton:ClearAllPoints()
-            MainMenuBarVehicleLeaveButton:SetPoint(
-                    self.frameAnchors[vehicleLeaveButtonSettings.frameAnchor],
-                    UIParent,
-                    self.frameAnchors[vehicleLeaveButtonSettings.screenAnchor],
-                    vehicleLeaveButtonSettings.x,
-                    vehicleLeaveButtonSettings.y
-            )
-            MainMenuBarVehicleLeaveButton:SetScale(vehicleLeaveButtonSettings.scale)
-            MainMenuBarVehicleLeaveButton.settingsKey = "vehicleLeaveButton"
-            self:CreateMover(MainMenuBarVehicleLeaveButton, vehicleLeaveButtonSettings)
-        end
-
-        setup()
-        MainMenuBarVehicleLeaveButton:HookScript("OnShow", function()
-            setup()
-        end)
+    local setup = function()
+        frame:SetParent(UIParent)
+        frame:ClearAllPoints()
+        frame:SetPoint(
+            self.frameAnchors[settings.frameAnchor],
+            UIParent,
+            self.frameAnchors[settings.screenAnchor],
+            settings.x,
+            settings.y
+        )
+        frame:SetScale(settings.scale)
+        frame.settingsKey = "vehicleLeaveButton"
+        self:CreateMover(frame, settings)
     end
 
-    if vehicleLeaveButtonSettings.hide then
-        MainMenuBarVehicleLeaveButton:UnregisterAllEvents()
-        MainMenuBarVehicleLeaveButton:SetParent(self.hideFrameContainer)
-    end
+    self:SetupFrameWithOnShow(frame, settings, setup)
 end
 
 function ScarletUI:microBar(module)
-    local microBarSettings = module.microBar;
+    local settings = module.microBar;
     if self:InCombat() then
         return
     end
@@ -163,7 +199,7 @@ function ScarletUI:microBar(module)
     -- Create or retrieve the MicroBar frame
     local MicroBar = _G["MicroBar"] or CreateFrame("Frame", "MicroBar", UIParent)
 
-    if microBarSettings.move then
+    if settings.move then
         local microButtons = {
             "CharacterMicroButton",
             "SpellbookMicroButton",
@@ -197,13 +233,13 @@ function ScarletUI:microBar(module)
         MicroBar:ClearAllPoints()
         MicroBar:SetSize(totalWidth, buttonHeight)
         MicroBar:SetPoint(
-                self.frameAnchors[microBarSettings.frameAnchor],
-                UIParent,
-                self.frameAnchors[microBarSettings.screenAnchor],
-                microBarSettings.x,
-                microBarSettings.y
+            self.frameAnchors[settings.frameAnchor],
+            UIParent,
+            self.frameAnchors[settings.screenAnchor],
+            settings.x,
+            settings.y
         )
-        MicroBar:SetScale(microBarSettings.scale)
+        MicroBar:SetScale(settings.scale)
 
         local previousButton = MicroBar
         for _, buttonName in ipairs(microButtons) do
@@ -235,22 +271,22 @@ function ScarletUI:microBar(module)
         end
     end
 
-    self:CreateMover(MicroBar, microBarSettings)
+    self:CreateMover(MicroBar, settings)
     self.movingMicroButtons = false;
 
-    if microBarSettings.hide then
+    if settings.hide then
         MicroBar:Hide()
     end
 end
 
 function ScarletUI:bagBar(module)
-    local bagBarSettings = module.bagBar;
+    local settings = module.bagBar;
 
     -- Create or retrieve the BagBar frame
     local BagBar = _G["BagBar"] or CreateFrame("Frame", "BagBar", UIParent)
 
-    if bagBarSettings.move then
-        local buttonSpacing = 5  -- Spacing between buttons, you can adjust this as needed
+    if settings.move then
+        local buttonSpacing = 5 -- Spacing between buttons, you can adjust this as needed
         local buttonWidth, buttonHeight = MainMenuBarBackpackButton:GetWidth(), MainMenuBarBackpackButton:GetHeight()
         local totalButtons = 5  -- Backpack + 4 Bag Slots + KeyRing
         local totalWidth = buttonWidth * totalButtons + buttonSpacing * (totalButtons - 1)
@@ -259,13 +295,13 @@ function ScarletUI:bagBar(module)
         BagBar:ClearAllPoints()
         BagBar:SetSize(totalWidth, buttonHeight)
         BagBar:SetPoint(
-                self.frameAnchors[bagBarSettings.frameAnchor],
-                UIParent,
-                self.frameAnchors[bagBarSettings.screenAnchor],
-                bagBarSettings.x,
-                bagBarSettings.y
+            self.frameAnchors[settings.frameAnchor],
+            UIParent,
+            self.frameAnchors[settings.screenAnchor],
+            settings.x,
+            settings.y
         )
-        BagBar:SetScale(bagBarSettings.scale)
+        BagBar:SetScale(settings.scale)
 
         -- Move the Backpack button to the new BagBar frame
         MainMenuBarBackpackButton:ClearAllPoints()
@@ -282,17 +318,17 @@ function ScarletUI:bagBar(module)
         CharacterBag0Slot:SetPoint("RIGHT", MainMenuBarBackpackButton, "LEFT", -buttonSpacing, 0)
 
         for i = 0, 3 do
-            local bag = _G["CharacterBag"..i.."Slot"]
+            local bag = _G["CharacterBag" .. i .. "Slot"]
             bag:SetParent(BagBar)
 
-            local texture = _G["CharacterBag"..i.."SlotNormalTexture"]
+            local texture = _G["CharacterBag" .. i .. "SlotNormalTexture"]
             texture:Hide()
         end
     end
 
     if module.microBag then
         for i = 0, 3 do
-            local frame = _G["CharacterBag"..i.."Slot"]
+            local frame = _G["CharacterBag" .. i .. "Slot"]
             frame:Hide()
         end
 
@@ -302,27 +338,27 @@ function ScarletUI:bagBar(module)
         end
     else
         for i = 0, 3 do
-            local frame = _G["CharacterBag"..i.."Slot"]
+            local frame = _G["CharacterBag" .. i .. "Slot"]
             frame:Show()
         end
     end
 
-    self:CreateMover(BagBar, bagBarSettings)
+    self:CreateMover(BagBar, settings)
 
-    if bagBarSettings.hide then
+    if settings.hide then
         BagBar:Hide()
     end
 end
 
 function ScarletUI:multiCastBar(module)
-    local multiCastBarSettings = module.multiCastBar;
+    local settings = module.multiCastBar;
     if not MultiCastActionBarFrame then
         return
     end
 
     MultiCastActionBarFrame.settingsKey = "multiCastBar"
 
-    if multiCastBarSettings.move then
+    if settings.move then
         -- stupid hack to fix the position of the MultiCastActionBarFrame
         C_Timer.NewTimer(1, function()
             if ScarletUI:InCombat() then
@@ -332,19 +368,19 @@ function ScarletUI:multiCastBar(module)
             MultiCastActionBarFrame:SetParent(UIParent)
             MultiCastActionBarFrame:ClearAllPoints()
             MultiCastActionBarFrame:SetPoint(
-                    self.frameAnchors[multiCastBarSettings.frameAnchor],
-                    UIParent,
-                    self.frameAnchors[multiCastBarSettings.screenAnchor],
-                    multiCastBarSettings.x,
-                    multiCastBarSettings.y
+                self.frameAnchors[settings.frameAnchor],
+                UIParent,
+                self.frameAnchors[settings.screenAnchor],
+                settings.x,
+                settings.y
             )
-            MultiCastActionBarFrame:SetScale(multiCastBarSettings.scale)
+            MultiCastActionBarFrame:SetScale(settings.scale)
         end)
     end
 
-    self:CreateMover(MultiCastActionBarFrame, multiCastBarSettings)
+    self:CreateMover(MultiCastActionBarFrame, settings)
 
-    if multiCastBarSettings.hide then
+    if settings.hide then
         MultiCastActionBarFrame:UnregisterAllEvents()
         MultiCastActionBarFrame:SetParent(self.hideFrameContainer)
     end
@@ -358,105 +394,98 @@ function ScarletUI:possessBarFrame(module)
 
     PossessBarFrame:ClearAllPoints()
     self:SetPoint(
+        PossessBarFrame,
+        "BOTTOMRIGHT",
+        MultiBarBottomRight,
+        "TOPRIGHT",
+        -100,
+        0
+    )
+
+    PossessBarFrame:HookScript("OnShow", function()
+        PossessBarFrame:ClearAllPoints()
+        self:SetPoint(
             PossessBarFrame,
             "BOTTOMRIGHT",
             MultiBarBottomRight,
             "TOPRIGHT",
             -100,
             0
-    )
-
-    PossessBarFrame:HookScript("OnShow", function()
-        PossessBarFrame:ClearAllPoints()
-        self:SetPoint(
-                PossessBarFrame,
-                "BOTTOMRIGHT",
-                MultiBarBottomRight,
-                "TOPRIGHT",
-                -100,
-                0
         )
     end)
 end
 
 function ScarletUI:extraActionBar(module)
-    local extraActionBarSettings = module.extraActionBar;
+    local settings = module.extraActionBar;
+    local frame = ExtraActionBarFrame
 
-    if extraActionBarSettings.move then
-        local setup = function()
-            if self:InCombat() then
-                return
-            end
-
-            if extraActionBarSettings.showBackground then
-                ExtraActionButton1.style:Show()
-            else
-                ExtraActionButton1.style:Hide()
-            end
-
-            ExtraActionBarFrame:SetParent(UIParent)
-            ExtraActionBarFrame:ClearAllPoints()
-            ExtraActionBarFrame:SetPoint(
-                    self.frameAnchors[extraActionBarSettings.frameAnchor],
-                    UIParent,
-                    self.frameAnchors[extraActionBarSettings.screenAnchor],
-                    extraActionBarSettings.x,
-                    extraActionBarSettings.y
-            )
-            ExtraActionBarFrame:SetScale(extraActionBarSettings.scale)
-            ExtraActionBarFrame.settingsKey = "extraActionBar"
-            self:CreateMover(ExtraActionBarFrame, extraActionBarSettings)
+    local setup = function()
+        if self:InCombat() then
+            return
         end
 
-        setup()
-        ExtraActionBarFrame:HookScript("OnShow", function()
-            setup()
-        end)
+        if settings.showBackground then
+            ExtraActionButton1.style:Show()
+        else
+            ExtraActionButton1.style:Hide()
+        end
+
+        frame:SetParent(UIParent)
+        frame:ClearAllPoints()
+        frame:SetPoint(
+            self.frameAnchors[settings.frameAnchor],
+            UIParent,
+            self.frameAnchors[settings.screenAnchor],
+            settings.x,
+            settings.y
+        )
+        frame:SetScale(settings.scale)
+        frame.settingsKey = "extraActionBar"
+        self:CreateMover(frame, settings)
     end
 
-    if extraActionBarSettings.hide then
-        ExtraActionBarFrame:UnregisterAllEvents()
-        ExtraActionBarFrame:SetParent(self.hideFrameContainer)
+    self:SetupFrameWithOnShow(frame, settings, setup)
+end
+
+function ScarletUI:playerPowerBarAlt(module)
+    local settings = module.playerPowerBarAlt;
+    local frame = PlayerPowerBarAlt
+
+    local setup = function()
+        if self:InCombat() then
+            return
+        end
+
+        frame:SetParent(UIParent)
+        frame:ClearAllPoints()
+        frame:SetPoint(
+            self.frameAnchors[settings.frameAnchor],
+            UIParent,
+            self.frameAnchors[settings.screenAnchor],
+            settings.x,
+            settings.y
+        )
+        frame:SetScale(settings.scale)
+        frame.settingsKey = "playerPowerBarAlt"
+        self:CreateMover(frame, settings)
     end
+
+    self:SetupFrameWithOnShow(frame, settings, setup)
 end
 
 function ScarletUI:experienceBar(module)
-    local experienceBarSettings = module.experienceBar;
+    local settings = module.experienceBar;
 
-    if experienceBarSettings.move then
-        self.movingExperienceBar = true
+    self:SetupBarWithSetPointHook(
+        MainMenuExpBar,
+        settings,
+        "movingExperienceBar",
+        function() self:experienceBar(module) end
+    )
 
-        MainMenuExpBar:SetParent(UIParent)
-        MainMenuExpBar:ClearAllPoints()
-        MainMenuExpBar:SetPoint(
-                self.frameAnchors[experienceBarSettings.frameAnchor],
-                UIParent,
-                self.frameAnchors[experienceBarSettings.screenAnchor],
-                experienceBarSettings.x,
-                experienceBarSettings.y
-        )
-        MainMenuExpBar:SetScale(experienceBarSettings.scale)
+    self:HideFrame(MainMenuExpBar, settings)
 
-        if not self.experienceBarEventRegistered then
-            hooksecurefunc(MainMenuExpBar, "SetPoint", function()
-                if self.movingExperienceBar then
-                    return
-                end
-
-                self:experienceBar(module)
-            end)
-            self.experienceBarEventRegistered = true
-        end
-
-        self.movingExperienceBar = false
-    end
-
-    if experienceBarSettings.hide then
-        MainMenuExpBar:UnregisterAllEvents()
-        MainMenuExpBar:SetParent(self.hideFrameContainer)
-    end
-
-    if experienceBarSettings.short then
+    if settings.short then
         MainMenuExpBar:SetSize(510, 10)
 
         MainMenuXPBarTexture0:SetWidth("255")
@@ -488,41 +517,20 @@ function ScarletUI:experienceBar(module)
     end)
 
     MainMenuExpBar.settingsKey = "experienceBar"
-    self:CreateMover(MainMenuExpBar, experienceBarSettings)
+    self:CreateMover(MainMenuExpBar, settings)
 end
 
 function ScarletUI:reputationBar(module)
-    local reputationBarSettings = module.reputationBar;
+    local settings = module.reputationBar;
 
-    if reputationBarSettings.move then
-        self.movingReputationBar = true
+    self:SetupBarWithSetPointHook(
+        ReputationWatchBar,
+        settings,
+        "movingReputationBar",
+        function() self:reputationBar(module) end
+    )
 
-        ReputationWatchBar:SetParent(UIParent)
-        ReputationWatchBar:ClearAllPoints()
-        ReputationWatchBar:SetPoint(
-                self.frameAnchors[reputationBarSettings.frameAnchor],
-                UIParent,
-                self.frameAnchors[reputationBarSettings.screenAnchor],
-                reputationBarSettings.x,
-                reputationBarSettings.y
-        )
-        ReputationWatchBar:SetScale(reputationBarSettings.scale)
-
-        if not self.reputationBarEventRegistered then
-            hooksecurefunc(ReputationWatchBar, "SetPoint", function()
-                if self.movingReputationBar then
-                    return
-                end
-
-                self:reputationBar(module)
-            end)
-            self.reputationBarEventRegistered = true
-        end
-
-        self.movingReputationBar = false
-    end
-
-    if reputationBarSettings.short then
+    if settings.short then
         ReputationWatchBar:SetWidth(510)
         ReputationWatchBar.StatusBar:SetWidth(510)
 
@@ -535,7 +543,8 @@ function ScarletUI:reputationBar(module)
         end
         ReputationWatchBar.StatusBar.WatchBarTexture2:Hide()
         ReputationWatchBar.StatusBar.WatchBarTexture3:ClearAllPoints()
-        ReputationWatchBar.StatusBar.WatchBarTexture3:SetPoint("LEFT", ReputationWatchBar.StatusBar.WatchBarTexture0, "RIGHT", 0, 0)
+        ReputationWatchBar.StatusBar.WatchBarTexture3:SetPoint("LEFT", ReputationWatchBar.StatusBar.WatchBarTexture0,
+            "RIGHT", 0, 0)
 
         -- Max level rep bar
         ReputationWatchBar.StatusBar.XPBarTexture1.Show = function()
@@ -546,13 +555,14 @@ function ScarletUI:reputationBar(module)
         end
         ReputationWatchBar.StatusBar.XPBarTexture2:Hide()
         ReputationWatchBar.StatusBar.XPBarTexture3:ClearAllPoints()
-        ReputationWatchBar.StatusBar.XPBarTexture3:SetPoint("LEFT", ReputationWatchBar.StatusBar.XPBarTexture0, "RIGHT", 0, 0)
+        ReputationWatchBar.StatusBar.XPBarTexture3:SetPoint("LEFT", ReputationWatchBar.StatusBar.XPBarTexture0, "RIGHT",
+            0, 0)
     end
 
     ReputationWatchBar.settingsKey = "reputationBar"
-    self:CreateMover(ReputationWatchBar, reputationBarSettings)
+    self:CreateMover(ReputationWatchBar, settings)
 
-    if reputationBarSettings.hide then
+    if settings.hide then
         ReputationWatchBar:UnregisterAllEvents()
         ReputationWatchBar:SetParent(self.hideFrameContainer)
     end
@@ -568,11 +578,11 @@ function ScarletUI:SetupActionBars()
     if mainMenuBarSettings.move then
         MainMenuBar:ClearAllPoints()
         MainMenuBar:SetPoint(
-                self.frameAnchors[mainMenuBarSettings.frameAnchor],
-                UIParent,
-                self.frameAnchors[mainMenuBarSettings.screenAnchor],
-                mainMenuBarSettings.x,
-                mainMenuBarSettings.y
+            self.frameAnchors[mainMenuBarSettings.frameAnchor],
+            UIParent,
+            self.frameAnchors[mainMenuBarSettings.screenAnchor],
+            mainMenuBarSettings.x,
+            mainMenuBarSettings.y
         )
         MainMenuBar:SetScale(mainMenuBarSettings.scale)
     end
@@ -584,6 +594,7 @@ function ScarletUI:SetupActionBars()
     self:multiCastBar(actionbarsModule)
     self:possessBarFrame(actionbarsModule)
     self:extraActionBar(actionbarsModule)
+    self:playerPowerBarAlt(actionbarsModule)
     self:experienceBar(actionbarsModule)
     self:reputationBar(actionbarsModule)
 

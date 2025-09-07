@@ -47,7 +47,8 @@ ScarletUI.frameData = {
         additionalSettings = {
             height = {
                 name = "Chat Height",
-                desc = "Desired height for the chat window.\n(Default " .. ScarletUI.defaults.global.chatModule.height .. ")",
+                desc = "Desired height for the chat window.\n(Default " ..
+                    ScarletUI.defaults.global.chatModule.height .. ")",
                 type = "range",
                 hidden = function() return ScarletUI.retail end,
                 min = 1,
@@ -63,7 +64,8 @@ ScarletUI.frameData = {
             },
             width = {
                 name = "Chat Width",
-                desc = "Desired width for the chat window.\n(Default " .. ScarletUI.defaults.global.chatModule.width .. ")",
+                desc = "Desired width for the chat window.\n(Default " ..
+                    ScarletUI.defaults.global.chatModule.width .. ")",
                 type = "range",
                 hidden = function() return ScarletUI.retail end,
                 min = 1,
@@ -93,7 +95,10 @@ ScarletUI.frameData = {
                 name = "Background Texture",
                 desc = "Show background texture behind the extra action bar.",
                 type = "toggle",
-                disabled = function() return ScarletUI:SettingDisabled(ScarletUI.db.global.actionbarsModule.extraActionBar.move) end,
+                disabled = function()
+                    return ScarletUI:SettingDisabled(ScarletUI.db.global.actionbarsModule
+                        .extraActionBar.move)
+                end,
                 width = 1,
                 order = 0.7,
                 get = function(_) return ScarletUI.db.global.actionbarsModule.extraActionBar.showBackground end,
@@ -118,7 +123,10 @@ ScarletUI.frameData = {
                 name = "Background Texture",
                 desc = "Show background texture behind the main bar.",
                 type = "toggle",
-                disabled = function() return ScarletUI:SettingDisabled(ScarletUI.db.global.actionbarsModule.mainMenuBar.move) end,
+                disabled = function()
+                    return ScarletUI:SettingDisabled(ScarletUI.db.global.actionbarsModule.mainMenuBar
+                        .move)
+                end,
                 width = 1,
                 order = 0.7,
                 get = function(_) return ScarletUI.db.global.actionbarsModule.showMainBarBackground end,
@@ -131,7 +139,10 @@ ScarletUI.frameData = {
                 name = "Gryphons",
                 desc = "Show the gryphon graphics on the sides of your main bar.",
                 type = "toggle",
-                disabled = function() return ScarletUI:SettingDisabled(ScarletUI.db.global.actionbarsModule.mainMenuBar.move) end,
+                disabled = function()
+                    return ScarletUI:SettingDisabled(ScarletUI.db.global.actionbarsModule.mainMenuBar
+                        .move)
+                end,
                 width = 1,
                 order = 0.8,
                 get = function(_) return ScarletUI.db.global.actionbarsModule.showGryphons end,
@@ -144,7 +155,10 @@ ScarletUI.frameData = {
                 name = "Paging Numbers",
                 desc = "Show the actionbar paging numbers and buttons.",
                 type = "toggle",
-                disabled = function() return ScarletUI:SettingDisabled(ScarletUI.db.global.actionbarsModule.mainMenuBar.move) end,
+                disabled = function()
+                    return ScarletUI:SettingDisabled(ScarletUI.db.global.actionbarsModule.mainMenuBar
+                        .move)
+                end,
                 width = 1,
                 order = 0.9,
                 get = function(_) return ScarletUI.db.global.actionbarsModule.showPagingNumbers end,
@@ -198,6 +212,11 @@ ScarletUI.frameData = {
         module = "unitFramesModule",
         databasePath = "unitFramesModule.playerFrame",
     },
+    playerPowerBarAlt = {
+        frame = PlayerPowerBarAlt,
+        module = "actionbarsModule",
+        databasePath = "actionbarsModule.playerPowerBarAlt",
+    },
     reputationBar = {
         frame = ReputationWatchBar,
         module = "actionbarsModule",
@@ -218,7 +237,8 @@ ScarletUI.frameData = {
         additionalSettings = {
             mirrorPlayerFrame = {
                 name = "Mirror Player Frame",
-                desc = "Mirrors the X and Y position of the player frame. (this will override where you move the target frame with the base ui)",
+                desc =
+                "Mirrors the X and Y position of the player frame. (this will override where you move the target frame with the base ui)",
                 type = "toggle",
                 width = 1,
                 order = 0.9,
@@ -314,7 +334,8 @@ function ScarletUI:GenerateMoverConfig(frameName, _order)
             },
             frameAnchor = {
                 name = "Frame Anchor",
-                desc = "Anchor point of the frame.\n(Default " .. self.frameAnchors[defaults[frameName].frameAnchor] .. ")",
+                desc = "Anchor point of the frame.\n(Default " ..
+                    self.frameAnchors[defaults[frameName].frameAnchor] .. ")",
                 type = "select",
                 disabled = function() return self:SettingDisabled(module[frameName].move) end,
                 width = 1,
@@ -328,7 +349,8 @@ function ScarletUI:GenerateMoverConfig(frameName, _order)
             },
             screenAnchor = {
                 name = "Screen Anchor",
-                desc = "Anchor point of the frame relative to the screen.\n(Default " .. self.frameAnchors[defaults[frameName].screenAnchor] .. ")",
+                desc = "Anchor point of the frame relative to the screen.\n(Default " ..
+                    self.frameAnchors[defaults[frameName].screenAnchor] .. ")",
                 type = "select",
                 disabled = function() return self:SettingDisabled(module[frameName].move) end,
                 width = 1,
@@ -348,7 +370,9 @@ function ScarletUI:GenerateMoverConfig(frameName, _order)
             },
             x = {
                 name = "Frame X",
-                desc = "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " .. defaults[frameName].x .. ")",
+                desc =
+                    "Must be a number, this is the X position of the frame anchor relative to the screen anchor.\n(Default " ..
+                    defaults[frameName].x .. ")",
                 type = "range",
                 disabled = function() return self:SettingDisabled(module[frameName].move) end,
                 min = math.floor(GetScreenWidth()) * -1,
@@ -364,7 +388,9 @@ function ScarletUI:GenerateMoverConfig(frameName, _order)
             },
             y = {
                 name = "Frame Y",
-                desc = "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " .. defaults[frameName].y .. ")",
+                desc =
+                    "Must be a number, this is the Y position of the frame anchor relative to the screen anchor.\n(Default " ..
+                    defaults[frameName].y .. ")",
                 type = "range",
                 disabled = function() return self:SettingDisabled(module[frameName].move) end,
                 min = math.floor(GetScreenHeight()) * -1,
@@ -405,7 +431,8 @@ function ScarletUI:GenerateMoverConfig(frameName, _order)
     if module[frameName].buttonsPerRow ~= nil then
         configs.args.buttonsPerRow = {
             name = "Buttons Per Row",
-            desc = "Configure the number of action buttons per row.\n(Default " .. defaults[frameName].buttonsPerRow .. ")",
+            desc = "Configure the number of action buttons per row.\n(Default " ..
+                defaults[frameName].buttonsPerRow .. ")",
             type = "range",
             disabled = function() return self:SettingDisabled(module[frameName].move) end,
             min = 1,
@@ -497,7 +524,7 @@ function ScarletUI:GenerateAllMoversConfigs()
 end
 
 function ScarletUI:GetMoversOptions()
-    if self.selectedMover == nil then
+    if self.currentFrameSettingsKey == nil then
         -- Grab the first available mover in alphabetical order
         local keys = {}
         for k in pairs(self.movers) do
@@ -509,13 +536,13 @@ function ScarletUI:GetMoversOptions()
     end
 
     local options = self:GenerateAllMoversConfigs()
-    local frameData = self:GetFrameData(self.selectedMover.settingsKey)
+    local frameData = self:GetFrameData(self.currentFrameSettingsKey)
     if frameData == nil then
-        self:Print("Frame data is nil for settings key: " .. self.selectedMover.settingsKey)
+        self:Print("Frame data is nil for settings key: " .. self.currentFrameSettingsKey)
         return
     end
 
-    local frameOptions = self:GetValueFromPath(options, self.selectedMover.settingsKey)
+    local frameOptions = self:GetValueFromPath(options, self.currentFrameSettingsKey)
 
     frameOptions.name = ""
     frameOptions.inline = true
@@ -523,9 +550,7 @@ function ScarletUI:GetMoversOptions()
 
     local frameSettingsOptions = {}
     for k, _ in pairs(self.frameData) do
-        if self.movers[k] then
-            frameSettingsOptions[k] = self:ConvertToPascalCase(k)
-        end
+        frameSettingsOptions[k] = self:ConvertToPascalCase(k)
     end
 
     return {
@@ -561,7 +586,9 @@ function ScarletUI:GetMoversOptions()
                 order = 3,
                 width = 1,
                 values = frameSettingsOptions,
-                get = function() return self.selectedMover.settingsKey end,
+                get = function()
+                    return self.currentFrameSettingsKey
+                end,
                 set = function(_, value)
                     self:SelectMover(self.movers[value])
                     self:RefreshMoverOptions()
@@ -770,6 +797,7 @@ function ScarletUI:SelectMover(mover)
     end
 
     self.selectedMover = mover
+    self.currentFrameSettingsKey = mover.settingsKey
 
     if self.selectedMover then
         self.selectedMover.background:SetColorTexture(0.4, 1, 0.6, 0.5)
@@ -910,7 +938,7 @@ function ScarletUI:CreateMoverGrid(spacing)
     end
 
     -- Create vertical and horizontal grid lines
-    CreateGridLines(true) -- Vertical lines
+    CreateGridLines(true)  -- Vertical lines
     CreateGridLines(false) -- Horizontal lines
 end
 
