@@ -56,7 +56,8 @@ local function ItemLevelText(itemLink, itemLocation, itemButton, hide)
                         itemButton.itemLevel:Show()
                         UpdateTextElement(itemButton.itemLevel, itemLevel, ITEM_QUALITY_COLORS[itemQuality])
                     else
-                        itemButton.itemLevel = CreateTextElement(itemButton, itemLevel, ITEM_QUALITY_COLORS[itemQuality], 0, 0)
+                        itemButton.itemLevel = CreateTextElement(itemButton, itemLevel, ITEM_QUALITY_COLORS[itemQuality],
+                            0, 0)
                     end
                 end
             end
@@ -217,43 +218,139 @@ function ScarletUI:LoopBagButtons(containerFrame)
     end
 end
 
+function ScarletUI:ClearBankItemLevels()
+    -- Clear item levels from all bank buttons to prevent stale data
+    if not BankFrame then return end
+
+    local function clearFrame(frame, depth)
+        if not frame or depth > 5 then return end
+
+        -- Check if this frame has an itemLevel text
+        if frame.itemLevel then
+            frame.itemLevel:Hide()
+        end
+
+        -- Scan children
+        local children = { frame:GetChildren() }
+        for _, child in ipairs(children) do
+            clearFrame(child, depth + 1)
+        end
+    end
+
+    clearFrame(BankFrame, 0)
+end
+
+function ScarletUI:UpdateBankButtonItemLevel(button, hide)
+    if not button then return end
+
+    local itemLink
+    local itemLocation
+
+    -- Get item info from the button
+    if button.GetItemLocation then
+        itemLocation = button:GetItemLocation()
+
+        if itemLocation and itemLocation:IsValid() then
+            itemLink = C_Item.GetItemLink(itemLocation)
+        end
+    else
+        return
+    end
+
+    -- Always call ItemLevelText - it will hide the text if there's no item
+    ItemLevelText(itemLink, itemLocation, button, hide)
+end
+
+function ScarletUI:ScanBankFrameForItems()
+    local hide = not self.db.global.itemLevelBag
+
+    if not (BankFrame and BankFrame:IsShown()) then return end
+
+    -- Clear all bank item levels first to prevent stale data
+    self:ClearBankItemLevels()
+
+    local itemButtonCount = 0
+
+    -- Scan all descendants looking for item buttons
+    local function scanFrame(frame, depth)
+        if not frame or depth > 5 then return end
+
+        -- Check if this frame is an item button and is visible
+        if frame:IsShown() then
+            if frame.GetItemLocation or frame.GetBagID or frame.hasItem or (frame.GetName and frame:GetName() and frame:GetName():match("Item")) then
+                itemButtonCount = itemButtonCount + 1
+                -- Only update if the button actually has an item
+                self:UpdateBankButtonItemLevel(frame, hide)
+            end
+        end
+
+        -- Scan children
+        local children = { frame:GetChildren() }
+        for _, child in ipairs(children) do
+            scanFrame(child, depth + 1)
+        end
+    end
+
+    scanFrame(BankFrame, 0)
+
+    if itemButtonCount == 0 then
+        self:HookBankUpdates()
+    end
+end
+
 function ScarletUI:BagItemLevel()
     local hide = not self.db.global.itemLevelBag
 
     if self.retail then
-        for container = -1, NUM_CONTAINER_FRAMES do
-            local containerFrame = _G["ContainerFrame" .. (container + 1)]
+        self:LoopBagButtons(_G["ContainerFrameCombinedBags"])
 
-            if container == BANK_CONTAINER then
-                containerFrame = _G["BankFrame"]
+        -- Handle bank if it's open
+        if BankFrame and BankFrame:IsShown() then
+            self:ScanBankFrameForItems()
+        end
+    else
+        -- Update custom bag frame if it exists
+        if ScarletUI_BagFrame then
+            for container = -1, NUM_CONTAINER_FRAMES do
+                local numberOfSlots = GetContainerNumSlots(container)
+                for slot = 1, numberOfSlots do
+                    local itemLink = GetContainerItemLink(container, slot)
+                    local index = container * numberOfSlots + slot
+                    local itemButton = self.bagSlots[index]
+                    if itemButton then
+                        ItemLevelText(itemLink, nil, itemButton, hide)
+                    end
+                end
             end
-
-            self:LoopBagButtons(containerFrame)
         end
 
-        self:LoopBagButtons(_G["ContainerFrameCombinedBags"])
-        -- TODO: Figure out how to get the AccountBankPanel to work
-        --self:LoopBagButtons(_G["AccountBankPanel"])
-    else
-        for container = -1, NUM_CONTAINER_FRAMES do
+        -- Update default bag frames
+        for frameIndex = 1, NUM_CONTAINER_FRAMES do
+            local frame = _G["ContainerFrame" .. frameIndex]
+            if frame and frame:IsShown() then
+                local container = frame:GetID()
+                local numberOfSlots = GetContainerNumSlots(container)
+
+                for slot = 1, numberOfSlots do
+                    local itemLink = GetContainerItemLink(container, slot)
+                    local adjustedSlot = numberOfSlots - slot + 1
+                    local itemButton = _G["ContainerFrame" .. frameIndex .. "Item" .. adjustedSlot]
+
+                    if itemButton then
+                        ItemLevelText(itemLink, nil, itemButton, hide)
+                    end
+                end
+            end
+        end
+
+        -- Update bank frame if it's open
+        if BankFrame and BankFrame:IsShown() then
+            local container = BANK_CONTAINER
             local numberOfSlots = GetContainerNumSlots(container)
 
             for slot = 1, numberOfSlots do
                 local itemLink = GetContainerItemLink(container, slot)
-                local itemButton
-
-                if ScarletUI_BagFrame then
-                    local index = container * numberOfSlots + slot
-                    itemButton = self.bagSlots[index]
-                else
-                    local adjustedSlot = numberOfSlots - slot + 1
-
-                    if container == BANK_CONTAINER then
-                        itemButton = _G["BankFrameItem" .. slot]
-                    else
-                        itemButton = _G["ContainerFrame" .. (container + 1) .. "Item" .. adjustedSlot]
-                    end
-                end
+                local itemButton = _G["BankFrameItem" .. slot]
 
                 if itemButton then
                     ItemLevelText(itemLink, nil, itemButton, hide)
@@ -273,6 +370,7 @@ function ScarletUI:SetupItemLevels()
         self.frame:RegisterEvent("UNIT_INVENTORY_CHANGED")
         self.frame:RegisterEvent("INSPECT_READY")
         self.frame:RegisterEvent("BAG_UPDATE")
+        self.frame:RegisterEvent("GLOBAL_MOUSE_UP") -- Catches tab clicks
         self.frame:HookScript("OnEvent", function(_, event, ...)
             if event == "PLAYER_EQUIPMENT_CHANGED" or event == "UNIT_INVENTORY_CHANGED" then
                 ScarletUI:CharacterFrameItemLevel()
@@ -282,8 +380,15 @@ function ScarletUI:SetupItemLevels()
                 else
                     ScarletUI.inspectOpened = false
                 end
-            elseif event == "BAG_UPDATE"or event == "BANKFRAME_OPENED" or event == "PLAYERBANKSLOTS_CHANGED" then
-                ScarletUI:BagItemLevel()
+            elseif event == "BAG_UPDATE" or event == "BANKFRAME_OPENED" or event == "PLAYERBANKSLOTS_CHANGED" then
+                C_Timer.After(0.05, function()
+                    ScarletUI:BagItemLevel()
+                end)
+            elseif event == "GLOBAL_MOUSE_UP" then
+                -- TODO: this sucks but its better than OnUpdate
+                if BankFrame and BankFrame:IsShown() then
+                    ScarletUI:ScanBankFrameForItems()
+                end
             end
         end)
 
@@ -291,10 +396,37 @@ function ScarletUI:SetupItemLevels()
             ScarletUI:CharacterFrameItemLevel()
         end)
 
+        if self.retail then
+            EventRegistry:RegisterCallback("ContainerFrame.OpenBag", function()
+                ScarletUI:BagItemLevel()
+            end);
+        else
+            -- Hook into each container frame's OnShow event for non-retail
+            for frameIndex = 1, NUM_CONTAINER_FRAMES do
+                local frame = _G["ContainerFrame" .. frameIndex]
+                if frame then
+                    frame:HookScript("OnShow", function()
+                        -- Use a small delay to ensure the frame is fully initialized
+                        C_Timer.After(0.01, function()
+                            ScarletUI:BagItemLevel()
+                        end)
+                    end)
+                end
+            end
 
-        EventRegistry:RegisterCallback("ContainerFrame.OpenBag", function()
-            ScarletUI:BagItemLevel()
-        end);
+            -- Also hook the toggle functions to catch bag opens
+            hooksecurefunc("ToggleBag", function()
+                C_Timer.After(0.01, function()
+                    ScarletUI:BagItemLevel()
+                end)
+            end)
+
+            hooksecurefunc("OpenBag", function()
+                C_Timer.After(0.01, function()
+                    ScarletUI:BagItemLevel()
+                end)
+            end)
+        end
 
         self:BagItemLevel()
     end
