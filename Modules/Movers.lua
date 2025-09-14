@@ -2,6 +2,7 @@ local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 
 ScarletUI.movers = {}
+ScarletUI.updateTimers = {}
 
 ScarletUI.frameAnchors = {
     'BOTTOM',
@@ -59,7 +60,7 @@ ScarletUI.frameData = {
                 get = function(_) return ScarletUI.db.global.chatModule.height end,
                 set = function(_, val)
                     ScarletUI.db.global.chatModule.height = val
-                    ScarletUI:SetupChat()
+                    ScarletUI:ThrottledSetupChat("chatHeight", 0.1)
                 end,
             },
             width = {
@@ -76,7 +77,7 @@ ScarletUI.frameData = {
                 get = function(_) return ScarletUI.db.global.chatModule.width end,
                 set = function(_, val)
                     ScarletUI.db.global.chatModule.width = val
-                    ScarletUI:SetupChat()
+                    ScarletUI:ThrottledSetupChat("chatWidth", 0.1)
                 end,
             },
         }
@@ -269,6 +270,48 @@ local function rotateMoverLabel(text, mover)
     end
 end
 
+function ScarletUI:ThrottledSetup(timerId, delay)
+    -- Cancel any existing timer for this slider
+    if self.updateTimers[timerId] then
+        self:CancelTimer(self.updateTimers[timerId])
+        self.updateTimers[timerId] = nil
+    end
+    
+    -- Create a new timer to call Setup after the delay
+    self.updateTimers[timerId] = self:ScheduleTimer(function()
+        self:Setup()
+        self.updateTimers[timerId] = nil
+    end, delay)
+end
+
+function ScarletUI:ThrottledSetupChat(timerId, delay)
+    -- Cancel any existing timer for this slider
+    if self.updateTimers[timerId] then
+        self:CancelTimer(self.updateTimers[timerId])
+        self.updateTimers[timerId] = nil
+    end
+    
+    -- Create a new timer to call SetupChat after the delay
+    self.updateTimers[timerId] = self:ScheduleTimer(function()
+        self:SetupChat()
+        self.updateTimers[timerId] = nil
+    end, delay)
+end
+
+function ScarletUI:ThrottledSetupActionBars(timerId, delay)
+    -- Cancel any existing timer for this slider
+    if self.updateTimers[timerId] then
+        self:CancelTimer(self.updateTimers[timerId])
+        self.updateTimers[timerId] = nil
+    end
+    
+    -- Create a new timer to call SetupActionBars after the delay
+    self.updateTimers[timerId] = self:ScheduleTimer(function()
+        self:SetupActionBars()
+        self.updateTimers[timerId] = nil
+    end, delay)
+end
+
 function ScarletUI:GenerateMoverConfig(frameName, _order)
     local frameData = self:GetFrameData(frameName)
     if frameData == nil then
@@ -383,7 +426,7 @@ function ScarletUI:GenerateMoverConfig(frameName, _order)
                 get = function(_) return module[frameName].x end,
                 set = function(_, val)
                     module[frameName].x = val
-                    self:Setup()
+                    self:ThrottledSetup(frameName .. "_x", 0.1)
                 end,
             },
             y = {
@@ -401,7 +444,7 @@ function ScarletUI:GenerateMoverConfig(frameName, _order)
                 get = function(_) return module[frameName].y end,
                 set = function(_, val)
                     module[frameName].y = val
-                    self:Setup()
+                    self:ThrottledSetup(frameName .. "_y", 0.1)
                 end,
             },
             scale = {
@@ -416,7 +459,7 @@ function ScarletUI:GenerateMoverConfig(frameName, _order)
                 get = function(_) return module[frameName].scale end,
                 set = function(_, val)
                     module[frameName].scale = val
-                    self:Setup()
+                    self:ThrottledSetup(frameName .. "_scale", 0.1)
                 end,
             },
             spacer3 = {
@@ -443,7 +486,7 @@ function ScarletUI:GenerateMoverConfig(frameName, _order)
             get = function(_) return module[frameName].buttonsPerRow end,
             set = function(_, val)
                 module[frameName].buttonsPerRow = val
-                self:SetupActionBars()
+                self:ThrottledSetupActionBars(frameName .. "_buttonsPerRow", 0.1)
             end,
         }
 

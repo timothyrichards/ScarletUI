@@ -63,6 +63,12 @@ function ScarletUI:CreateActionBar(barName, settingsKey, settings)
 
         -- Set dimensions and position of the action bar
         _G[barName]:SetParent(container)
+        _G[barName]:SetSize(width + 2, height + 2)
+        _G[barName]:ClearAllPoints()
+        _G[barName]:SetPoint("BOTTOMLEFT", container, "BOTTOMLEFT", 0, 0)
+        _G[barName]:SetFrameStrata("BACKGROUND")
+        _G[barName]:SetFrameLevel(0)
+
         container:ClearAllPoints()
         container:SetSize(width + 2, height + 2)
         container:SetPoint(
@@ -73,6 +79,7 @@ function ScarletUI:CreateActionBar(barName, settingsKey, settings)
             settings.y
         )
         container:SetScale(settings.scale)
+        container:SetFrameStrata("BACKGROUND")
 
         for i = 1, buttonCount do
             local button = _G[buttonName .. i]
