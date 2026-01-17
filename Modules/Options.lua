@@ -61,6 +61,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                 name = "General",
                 type = "group",
                 inline = true,
+                hidden = function() return self.retail end,
                 order = 0,
                 args = {
                     expandCharacterInfo = {
@@ -81,6 +82,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                         desc = "Make icons bigger to fill their actionbar slots.",
                         type = "toggle",
                         disabled = function() return self.lightWeightMode end,
+                        hidden = function() return self.retail end,
                         width = 1,
                         order = 1,
                         get = function(_) return database.tidyIconsEnabled end,
@@ -94,6 +96,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                         desc = "Determines whether movers should be kept within the screens bounds or should be movable outside of them.",
                         type = "toggle",
                         disabled = function() return self.lightWeightMode end,
+                        hidden = function() return self.retail end,
                         width = 1,
                         order = 2,
                         get = function(_) return database.clampMovers end,
@@ -484,7 +487,7 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
                 order = 0,
                 args = {
                     description = {
-                        name = "You can copy the Wowpedia link below for a reference to all console variables and what they do.\n\nIf you have any requests for new CVars to be added, please leave a comment on CurseForge page for ScarletUI.",
+                        name = "You can copy the Warcraft Wiki link below for a reference to all console variables and what they do.\n\nIf you have any requests for new CVars to be added, please leave a comment on CurseForge page for ScarletUI.",
                         type = "description",
                         width = "full",
                         fontSize = "medium",
@@ -495,7 +498,7 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
                         type = "input",
                         order = 1,
                         width = 2,
-                        get = function() return "https://wowpedia.fandom.com/wiki/Console_variables" end,
+                        get = function() return "https://warcraft.wiki.gg/wiki/Console_variables" end,
                     }
                 }
             },
