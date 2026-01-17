@@ -49,11 +49,11 @@ function ScarletUI:SetupChat()
     ChatFrame1:SetHeight(chatModule.height)
     ChatFrame1:SetWidth(chatModule.width)
     ChatFrame1:SetPoint(
-            self.frameAnchors[chatFrame.frameAnchor],
-            UIParent,
-            self.frameAnchors[chatFrame.screenAnchor],
-            chatFrame.x,
-            chatFrame.y
+        self.frameAnchors[chatFrame.frameAnchor],
+        UIParent,
+        self.frameAnchors[chatFrame.screenAnchor],
+        chatFrame.x,
+        chatFrame.y
     )
     ChatFrame1:SetScale(chatFrame.scale)
 
@@ -94,11 +94,20 @@ function ScarletUI:SetupChatTabs()
                 ChatFrame_RemoveMessageGroup(frame, "LOOT")
             end
             if tabs.trade then
-                ChatFrame_RemoveChannel(frame, 'Trade')
-                ChatFrame_RemoveChannel(frame, 'Services')
+                if ChatFrame_RemoveChannel then
+                    ChatFrame_RemoveChannel(frame, 'Trade')
+                    ChatFrame_RemoveChannel(frame, 'Services')
+                elseif RemoveChatWindowChannel then
+                    RemoveChatWindowChannel(id, 'Trade')
+                    RemoveChatWindowChannel(id, 'Services')
+                end
             end
             if tabs.lfg then
-                ChatFrame_RemoveChannel(frame, 'LookingForGroup')
+                if ChatFrame_RemoveChannel then
+                    ChatFrame_RemoveChannel(frame, 'LookingForGroup')
+                elseif RemoveChatWindowChannel then
+                    RemoveChatWindowChannel(id, 'LookingForGroup')
+                end
             end
             ChatFrame_RemoveMessageGroup(frame, 'IGNORED')
         elseif frame.name == 'Voice' then
@@ -113,15 +122,27 @@ function ScarletUI:SetupChatTabs()
         elseif frame.name == 'Trade' then
             ChatFrame_RemoveAllMessageGroups(frame)
             C_Timer.NewTimer(0.1, function()
-                ChatFrame_AddChannel(frame, 'Trade')
+                if ChatFrame_AddChannel then
+                    ChatFrame_AddChannel(frame, 'Trade')
+                elseif AddChatWindowChannel then
+                    AddChatWindowChannel(id, 'Trade')
+                end
                 JoinChannelByName('Services', nil, id, 0)
-                ChatFrame_AddChannel(frame, 'Services')
+                if ChatFrame_AddChannel then
+                    ChatFrame_AddChannel(frame, 'Services')
+                elseif AddChatWindowChannel then
+                    AddChatWindowChannel(id, 'Services')
+                end
             end)
         elseif frame.name == 'LFG' then
             ChatFrame_RemoveAllMessageGroups(frame)
             C_Timer.NewTimer(0.1, function()
                 JoinChannelByName('LookingForGroup', nil, id, 0)
-                ChatFrame_AddChannel(frame, 'LookingForGroup')
+                if ChatFrame_AddChannel then
+                    ChatFrame_AddChannel(frame, 'LookingForGroup')
+                elseif AddChatWindowChannel then
+                    AddChatWindowChannel(id, 'LookingForGroup')
+                end
             end)
         end
     end
