@@ -311,12 +311,37 @@ function ScarletUI:BagItemLevel()
     else
         -- Update custom bag frame if it exists
         if ScarletUI_BagFrame then
-            for container = -1, NUM_CONTAINER_FRAMES do
+            for container = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
                 local numberOfSlots = GetContainerNumSlots(container)
                 for slot = 1, numberOfSlots do
                     local itemLink = GetContainerItemLink(container, slot)
-                    local index = container * numberOfSlots + slot
-                    local itemButton = self.bagSlots[index]
+                    local index = container * 100 + slot
+                    local itemButton = self.bagSlots and self.bagSlots[index]
+                    if itemButton then
+                        ItemLevelText(itemLink, nil, itemButton, hide)
+                    end
+                end
+            end
+        end
+
+        -- Update custom bank frame if it exists
+        if self.bankSlots and ScarletUI_BankFrame and ScarletUI_BankFrame:IsShown() then
+            -- Main bank container
+            for slot = 1, GetContainerNumSlots(BANK_CONTAINER) do
+                local itemLink = GetContainerItemLink(BANK_CONTAINER, slot)
+                local index = BANK_CONTAINER * 100 + slot
+                local itemButton = self.bankSlots[index]
+                if itemButton then
+                    ItemLevelText(itemLink, nil, itemButton, hide)
+                end
+            end
+
+            -- Bank bag containers
+            for bag = NUM_BAG_SLOTS + 1, NUM_BAG_SLOTS + NUM_BANKBAGSLOTS do
+                for slot = 1, GetContainerNumSlots(bag) do
+                    local itemLink = GetContainerItemLink(bag, slot)
+                    local index = bag * 100 + slot
+                    local itemButton = self.bankSlots[index]
                     if itemButton then
                         ItemLevelText(itemLink, nil, itemButton, hide)
                     end
@@ -362,34 +387,55 @@ end
 
 function ScarletUI:SetupItemLevels()
     if not self.itemLevelEventRegistered then
-        self.itemLevelEventRegistered = true;
-        self.frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
-        self.frame:RegisterEvent("BANKFRAME_OPENED")
-        self.frame:RegisterEvent("BANKFRAME_CLOSED")
-        self.frame:RegisterEvent("PLAYERBANKSLOTS_CHANGED")
-        self.frame:RegisterEvent("UNIT_INVENTORY_CHANGED")
-        self.frame:RegisterEvent("INSPECT_READY")
-        self.frame:RegisterEvent("BAG_UPDATE")
-        self.frame:RegisterEvent("GLOBAL_MOUSE_UP") -- Catches tab clicks
-        self.frame:HookScript("OnEvent", function(_, event, ...)
-            if event == "PLAYER_EQUIPMENT_CHANGED" or event == "UNIT_INVENTORY_CHANGED" then
-                ScarletUI:CharacterFrameItemLevel()
-            elseif event == "INSPECT_READY" then
-                if not ScarletUI.inspectOpened then
-                    C_Timer.After(0.1, function() ScarletUI:InspectFrameItemLevel() end)
-                else
-                    ScarletUI.inspectOpened = false
-                end
-            elseif event == "BAG_UPDATE" or event == "BANKFRAME_OPENED" or event == "PLAYERBANKSLOTS_CHANGED" then
-                C_Timer.After(0.05, function()
-                    ScarletUI:BagItemLevel()
-                end)
-            elseif event == "GLOBAL_MOUSE_UP" then
-                -- TODO: this sucks but its better than OnUpdate
-                if BankFrame and BankFrame:IsShown() then
-                    ScarletUI:ScanBankFrameForItems()
+        self.itemLevelEventRegistered = true
+
+        self:RegisterEventHandler("PLAYER_EQUIPMENT_CHANGED", function()
+            ScarletUI:CharacterFrameItemLevel()
+        end)
+
+        self:RegisterEventHandler("UNIT_INVENTORY_CHANGED", function()
+            ScarletUI:CharacterFrameItemLevel()
+        end)
+
+        self:RegisterEventHandler("INSPECT_READY", function()
+            if not ScarletUI.inspectOpened then
+                C_Timer.After(0.1, function() ScarletUI:InspectFrameItemLevel() end)
+            else
+                ScarletUI.inspectOpened = false
+            end
+        end)
+
+        self:RegisterEventHandler("BAG_UPDATE", function()
+            C_Timer.After(0.05, function()
+                ScarletUI:BagItemLevel()
+            end)
+        end)
+
+        self:RegisterEventHandler("BANKFRAME_OPENED", function()
+            C_Timer.After(0.05, function()
+                ScarletUI:BagItemLevel()
+            end)
+
+            -- Hook bank tab buttons for retail to detect tab switches
+            if ScarletUI.retail and not ScarletUI.bankTabsHooked then
+                ScarletUI.bankTabsHooked = true
+                for i = 1, 5 do
+                    local tab = _G["BankFrameTab" .. i]
+                    if tab then
+                        tab:HookScript("OnClick", function()
+                            C_Timer.After(0.1, function()
+                                ScarletUI:ScanBankFrameForItems()
+                            end)
+                        end)
+                    end
                 end
             end
+        end)
+
+        self:RegisterEventHandler("PLAYERBANKSLOTS_CHANGED", function()
+            C_Timer.After(0.05, function()
+                ScarletUI:BagItemLevel()
+            end)
         end)
 
         CharacterFrame:HookScript("OnShow", function()

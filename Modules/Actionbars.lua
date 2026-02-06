@@ -94,6 +94,7 @@ function ScarletUI:CreateActionBar(barName, settingsKey, settings)
                 else
                     self:SetPoint(button, "LEFT", _G[buttonName .. (i - 1)], "RIGHT", spacing, 0)
                 end
+
             end
         end
     end
@@ -135,8 +136,46 @@ function ScarletUI:mainMenuBar(module)
 
         for i = 1, 12 do
             local button = _G["ActionButton" .. i]
+
+            -- Add FloatingBG shadow texture to match other action bars
+            local bg = button.FloatingBG or _G["ActionButton" .. i .. "FloatingBG"]
+            if not bg then
+                bg = button:CreateTexture(nil, "BACKGROUND", nil, -1)
+                bg:SetTexture("Interface\\Buttons\\UI-Quickslot")
+                bg:SetSize(66, 66)
+                bg:SetPoint("CENTER", 0, 0)
+                button.FloatingBG = bg
+            end
+            bg:SetAlpha(0.4)
+            bg:Show()
+
+            -- Match NormalTexture alpha to other action bars
+            local normalTexture = button:GetNormalTexture()
+            if normalTexture then
+                normalTexture:SetAlpha(0.5)
+            end
+
+            -- Show empty slots
+            if button.showgridCounter then
+                button.showgridCounter = button.showgridCounter + 1
+            end
             button:SetAttribute("showgrid", 1)
-            ActionButton_Update(button)
+            button:Show()
+        end
+
+        -- Hook ActionButton_HideGrid to prevent empty slots from being hidden
+        if not self.mainBarGridHookRegistered and ActionButton_HideGrid then
+            hooksecurefunc("ActionButton_HideGrid", function(button)
+                local name = button:GetName()
+                if name and name:match("^ActionButton%d+$") then
+                    if button.showgridCounter then
+                        button.showgridCounter = max(button.showgridCounter, 1)
+                    end
+                    button:SetAttribute("showgrid", max(button:GetAttribute("showgrid") or 0, 1))
+                    button:Show()
+                end
+            end)
+            self.mainBarGridHookRegistered = true
         end
 
         if module.showPagingNumbers then
@@ -274,6 +313,27 @@ function ScarletUI:microBar(module)
                 end
 
                 previousButton = button;
+            end
+        end
+
+        -- Keep latency/performance bar anchored to micro bar
+        local perfBar = MainMenuBarPerformanceBarFrame
+        if perfBar then
+            perfBar:SetParent(MicroBar)
+            self:SetPoint(perfBar, "LEFT", previousButton, "RIGHT", 0, -9)
+
+            if not perfBar.setPointEventRegistered then
+                local lastMicroButton = previousButton
+                hooksecurefunc(perfBar, "SetPoint", function()
+                    if self.movingPerfBar then
+                        return
+                    end
+                    self.movingPerfBar = true
+                    perfBar:ClearAllPoints()
+                    perfBar:SetPoint("LEFT", lastMicroButton, "RIGHT", 0, -9)
+                    self.movingPerfBar = false
+                end)
+                perfBar.setPointEventRegistered = true
             end
         end
     end
@@ -583,7 +643,7 @@ end
 
 function ScarletUI:SetupActionBars()
     local actionbarsModule = self.db.global.actionbarsModule;
-    if not actionbarsModule.enabled or self.lightWeightMode or self.retail then
+    if not actionbarsModule.enabled or self.lightWeightMode or self.editMode then
         return
     end
 
@@ -646,33 +706,29 @@ function ScarletUI:SetupActionBars()
     end
 
     if not self.actionbarEventRegistered then
-        self.actionbarEventRegistered = true;
-        self.frame:RegisterEvent("PLAYER_LEVEL_UP")
-        self.frame:RegisterEvent("UNIT_EXITED_VEHICLE")
-        self.frame:RegisterEvent("UPDATE_POSSESS_BAR")
-        self.frame:RegisterEvent("CINEMATIC_STOP")
-        self.frame:HookScript("OnEvent", function(_, event, ...)
-            if event == "PLAYER_REGEN_ENABLED" then
-                self:microBar(actionbarsModule)
-                self:possessBarFrame(actionbarsModule)
-            end
+        self.actionbarEventRegistered = true
 
-            if event == "PLAYER_ENTERING_WORLD" then
-                self:microBar(actionbarsModule)
-            end
-
-            if event == "UNIT_EXITED_VEHICLE" then
-                self:microBar(actionbarsModule)
-            end
-
-            if event == "UPDATE_POSSESS_BAR" then
-                self:possessBarFrame(actionbarsModule)
-            end
-
-            if event == "CINEMATIC_STOP" then
-                self:multiCastBar(actionbarsModule)
-            end
+        self:RegisterEventHandler("PLAYER_REGEN_ENABLED", function()
+            self:microBar(actionbarsModule)
+            self:possessBarFrame(actionbarsModule)
         end)
+
+        self:RegisterEventHandler("PLAYER_ENTERING_WORLD", function()
+            self:microBar(actionbarsModule)
+        end)
+
+        self:RegisterEventHandler("UNIT_EXITED_VEHICLE", function()
+            self:microBar(actionbarsModule)
+        end)
+
+        self:RegisterEventHandler("UPDATE_POSSESS_BAR", function()
+            self:possessBarFrame(actionbarsModule)
+        end)
+
+        self:RegisterEventHandler("CINEMATIC_STOP", function()
+            self:multiCastBar(actionbarsModule)
+        end)
+
         self.frame:SetScript("OnShow", function(...)
             self:microBar(actionbarsModule)
         end)

@@ -15,7 +15,7 @@ function ScarletUI:Options()
                 desc = "Enables mover frames so you can drag UI elements to a new position.",
                 type = "execute",
                 disabled = function() return self:InCombat() end,
-                hidden = function() return self.retail end,
+                hidden = function() return self.editMode or self.lightWeightMode end,
                 order = 0,
                 width = 1,
                 func = function()
@@ -26,6 +26,7 @@ function ScarletUI:Options()
                 type = "execute",
                 name = "Reset Positions",
                 desc = "Reset all frame positions to their default settings.",
+                hidden = function() return self.editMode or self.lightWeightMode end,
                 func = function() StaticPopup_Show('SCARLET_RESTORE_POSITIONS_DIALOG') end,
                 order = 1,
             },
@@ -41,11 +42,11 @@ function ScarletUI:Options()
                 end,
             },
             generalSettings = self:GetGeneralSettingsPage(database, 2),
-            --bagModuleSettings = self:GetBagModuleSettingsPage(database, defaults.bagModule, 2),
-            chatModuleSettings = self:GetChatModuleSettingsPage(database, defaults.chatModule, 3),
-            CVarModuleSettings = self:GetCVarModuleSettingsPage(database, 4),
-            nameplatesModuleSettings = self:GetNameplatesModuleSettingsPage(database, defaults.nameplatesModule, 5),
-            raidFramesModuleSettings = self:GetRaidFramesModuleSettingsPage(database, 6),
+            bagModuleSettings = self:GetBagModuleSettingsPage(database, defaults.bagModule, 3),
+            chatModuleSettings = self:GetChatModuleSettingsPage(database, defaults.chatModule, 4),
+            CVarModuleSettings = self:GetCVarModuleSettingsPage(database, 5),
+            nameplatesModuleSettings = self:GetNameplatesModuleSettingsPage(database, defaults.nameplatesModule, 6),
+            raidFramesModuleSettings = self:GetRaidFramesModuleSettingsPage(database, 7),
         }
     }
 end
@@ -61,7 +62,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                 name = "General",
                 type = "group",
                 inline = true,
-                hidden = function() return self.retail end,
+                hidden = function() return self.lightWeightMode end,
                 order = 0,
                 args = {
                     expandCharacterInfo = {
@@ -81,8 +82,6 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                         name = "Bigger Icons",
                         desc = "Make icons bigger to fill their actionbar slots.",
                         type = "toggle",
-                        disabled = function() return self.lightWeightMode end,
-                        hidden = function() return self.retail end,
                         width = 1,
                         order = 1,
                         get = function(_) return database.tidyIconsEnabled end,
@@ -95,8 +94,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                         name = "Clamp Movers",
                         desc = "Determines whether movers should be kept within the screens bounds or should be movable outside of them.",
                         type = "toggle",
-                        disabled = function() return self.lightWeightMode end,
-                        hidden = function() return self.retail end,
+                        hidden = function() return self.editMode end,
                         width = 1,
                         order = 2,
                         get = function(_) return database.clampMovers end,
@@ -162,7 +160,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                         name = "Actionbars",
                         desc = "Manage the position of your actionbars.",
                         type = "toggle",
-                        hidden = function() return self.retail end,
+                        hidden = function() return self.editMode or self.lightWeightMode end,
                         width = 1,
                         order = 0,
                         get = function(_) return database.actionbarsModule.enabled end,
@@ -175,22 +173,22 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                             end
                         end,
                     },
-                    --bagModuleEnabled = {
-                    --    name = "Bags",
-                    --    desc = "Manage the settings and position of your bags.",
-                    --    type = "toggle",
-                    --    width = 1,
-                    --    order = 1,
-                    --    get = function(_) return database.bagModule.enabled end,
-                    --    set = function(_, val)
-                    --        database.bagModule.enabled = val
-                    --        if not val then
-                    --            self:ShowReloadPopup()
-                    --        else
-                    --            ScarletUI:SetupBags()
-                    --        end
-                    --    end,
-                    --},
+                    bagModuleEnabled = {
+                        name = "Bags",
+                        desc = "Manage the settings and position of your bags.",
+                        type = "toggle",
+                        width = 1,
+                        order = 1,
+                        get = function(_) return database.bagModule.enabled end,
+                        set = function(_, val)
+                            database.bagModule.enabled = val
+                            if not val then
+                                self:ShowReloadDialog()
+                            else
+                                ScarletUI:SetupBags()
+                            end
+                        end,
+                    },
                     chatModuleEnabled = {
                         name = "Chat",
                         desc = "Manage the settings and position of your chat window.",
@@ -227,7 +225,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                         name = "Nameplates",
                         desc = "Manage your Nameplates and threat colors.",
                         type = "toggle",
-                        hidden = function() return self.retail end,
+                        hidden = function() return self.lightWeightMode end,
                         width = 1,
                         order = 4,
                         get = function(_) return database.nameplatesModule.enabled end,
@@ -244,7 +242,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                         name = "Raid Frames",
                         desc = "Manage the settings and position of your raid frames.",
                         type = "toggle",
-                        hidden = function() return self.retail end,
+                        hidden = function() return self.editMode or self.lightWeightMode end,
                         width = 1,
                         order = 5,
                         get = function(_) return database.raidFramesModule.enabled end,
@@ -262,7 +260,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                         desc = "Manage the position of your unit frames.",
                         type = "toggle",
                         disabled = function() return self:InCombat() end,
-                        hidden = function() return self.retail end,
+                        hidden = function() return self.editMode or self.lightWeightMode end,
                         width = 1,
                         order = 6,
                         get = function(_) return database.unitFramesModule.enabled end,
@@ -280,7 +278,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
             extras = {
                 name = "Extras",
                 type = "group",
-                hidden = function() return select(2, self:GetWoWVersion()) > 40000 end,
+                hidden = function() return self.editMode or self.lightWeightMode or select(2, self:GetWoWVersion()) > 40000 end,
                 inline = true,
                 order = 3,
                 args = {
@@ -317,8 +315,7 @@ function ScarletUI:GetBagModuleSettingsPage(database, defaults, order)
         desc = "Bag Module settings.",
         type = "group",
         order = order,
-        disabled = function() return self.lightWeightMode end,
-        hidden = function() return self.retail end,
+        hidden = function() return self.lightWeightMode end,
         args = {
             generalSettings = {
                 name = "General Settings",
@@ -339,7 +336,7 @@ function ScarletUI:GetBagModuleSettingsPage(database, defaults, order)
                         get = function(_) return module.slotsPerRow end,
                         set = function(_, val)
                             module.slotsPerRow = val
-                            self:SetupBags()
+                            StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
                         end,
                     },
                     slotSize = {
@@ -354,7 +351,7 @@ function ScarletUI:GetBagModuleSettingsPage(database, defaults, order)
                         get = function(_) return module.slotSize end,
                         set = function(_, val)
                             module.slotSize = val
-                            self:SetupBags()
+                            StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
                         end,
                     },
                     slotSpacing = {
@@ -369,9 +366,109 @@ function ScarletUI:GetBagModuleSettingsPage(database, defaults, order)
                         get = function(_) return module.slotSpacing end,
                         set = function(_, val)
                             module.slotSpacing = val
-                            self:SetupBags()
+                            StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
                         end,
                     }
+                }
+            },
+            playerBagSettings = {
+                name = "Player Bags",
+                type = "group",
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
+                inline = true,
+                order = 1,
+                args = {
+                    bagLocked = {
+                        name = "Lock Position",
+                        desc = "When checked, the bag frame cannot be dragged.",
+                        type = "toggle",
+                        width = 1,
+                        order = 0,
+                        get = function(_) return module.bagLocked end,
+                        set = function(_, val)
+                            module.bagLocked = val
+                        end,
+                    },
+                    bagAlpha = {
+                        name = "Background Opacity",
+                        desc = "Controls the background transparency of the bag frame.\n(Default " .. defaults.bagAlpha .. ")",
+                        type = "range",
+                        min = 0,
+                        max = 1,
+                        step = 0.05,
+                        width = 1,
+                        order = 1,
+                        get = function(_) return module.bagAlpha end,
+                        set = function(_, val)
+                            module.bagAlpha = val
+                            if self.bagFrame then
+                                self.bagFrame:SetBackdropColor(0, 0, 0, val)
+                            end
+                        end,
+                    },
+                    resetBagPosition = {
+                        name = "Reset Position",
+                        desc = "Reset the bag frame to its default position.",
+                        type = "execute",
+                        width = 1,
+                        order = 2,
+                        func = function()
+                            if self.bagFrame then
+                                self.bagFrame:ClearAllPoints()
+                                self.bagFrame:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -1, 40)
+                            end
+                        end,
+                    },
+                }
+            },
+            bankSettings = {
+                name = "Bank",
+                type = "group",
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
+                inline = true,
+                order = 2,
+                args = {
+                    bankLocked = {
+                        name = "Lock Position",
+                        desc = "When checked, the bank frame cannot be dragged.",
+                        type = "toggle",
+                        width = 1,
+                        order = 0,
+                        get = function(_) return module.bankLocked end,
+                        set = function(_, val)
+                            module.bankLocked = val
+                        end,
+                    },
+                    bankAlpha = {
+                        name = "Background Opacity",
+                        desc = "Controls the background transparency of the bank frame.\n(Default " .. defaults.bankAlpha .. ")",
+                        type = "range",
+                        min = 0,
+                        max = 1,
+                        step = 0.05,
+                        width = 1,
+                        order = 1,
+                        get = function(_) return module.bankAlpha end,
+                        set = function(_, val)
+                            module.bankAlpha = val
+                            if self.bankFrame then
+                                self.bankFrame:SetBackdropColor(0, 0, 0, val)
+                            end
+                        end,
+                    },
+                    resetBankPosition = {
+                        name = "Reset Position",
+                        desc = "Reset the bank frame to its default position.",
+                        type = "execute",
+                        width = 1,
+                        order = 2,
+                        func = function()
+                            if self.bankFrame then
+                                self.bankFrame:ClearAllPoints()
+                                self.bankFrame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 1, 40)
+                            end
+                        end,
+                    },
                 }
             }
         }
@@ -454,7 +551,7 @@ function ScarletUI:GetChatModuleSettingsPage(database, defaults, order)
                         name = "LFG Tab",
                         desc = "Create tab for lfg.",
                         type = "toggle",
-                        hidden = function() return self.retail end,
+                        hidden = function() return self.lightWeightMode end,
                         width = 1,
                         order = 3,
                         get = function(_) return module.tabs.lfg end,
@@ -596,8 +693,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
         type = "group",
         childGroups = "tab",
         order = order,
-        disabled = function() return self.lightWeightMode end,
-        hidden = function() return self.retail end,
+        hidden = function() return self.lightWeightMode end,
         args = {
             generalSettings = {
                 name = "Nameplate Settings",
@@ -1212,8 +1308,7 @@ function ScarletUI:GetRaidFramesModuleSettingsPage(database, order)
         desc = "Raid Frames Module settings.",
         type = "group",
         order = order,
-        disabled = function() return self.lightWeightMode end,
-        hidden = function() return self.retail end,
+        hidden = function() return self.editMode or self.lightWeightMode end,
         args = {
             partyFrames = {
                 name = "Party Frames",

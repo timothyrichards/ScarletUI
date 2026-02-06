@@ -91,6 +91,20 @@ StaticPopupDialogs['SCARLET_DELETE_RAID_PROFILE_DIALOG'] = {
     preferredIndex = 3,
 }
 
+-- Dialog to confirm purchasing a bank bag slot
+StaticPopupDialogs['SCARLET_PURCHASE_BANK_SLOT'] = {
+    text = '<Scarlet UI>\n\nPurchase this bank bag slot?\n\nCost: %s',
+    button1 = 'Purchase',
+    button2 = 'Cancel',
+    OnAccept = function()
+        PurchaseSlot()
+    end,
+    timeout = 0,
+    whileDead = false,
+    hideOnEscape = true,
+    preferredIndex = 3,
+}
+
 function ScarletUI:OnInitialize()
     -- Set up the database
     self.db = self.db or AceDB:New("ScarletUIDB", self.defaults, true)
@@ -109,6 +123,7 @@ function ScarletUI:OnInitialize()
     -- Initialize state properties
     self.lightWeightMode = false;
     self.retail = false;
+    self.editMode = false;
     self.inCombat = false;
     self.moversEnabled = false;
     self.selectedMover = nil;
@@ -118,8 +133,13 @@ function ScarletUI:OnEnable()
     -- Check if lightWeightMode should be enabled
     if self:GetWoWVersion() == "RETAIL" then
         self.retail = true;
-    elseif IsAddOnLoaded("ElvUI") then
         self.lightWeightMode = true;
+    elseif self:IsAddOnLoaded("ElvUI") then
+        self.lightWeightMode = true;
+    end
+
+    if self:IsAddOnLoaded("Blizzard_EditMode") then
+        self.editMode = true;
     end
 
     self:Setup()
@@ -140,7 +160,8 @@ function ScarletUI:Setup()
     -- Setup frames
     self:SetupChat()
     self:SetupCVars()
-    --self:SetupBags()
+    self:SetupBags()
+    self:SetupBank()
     self:SetupItemLevels()
     self:SetupActionBars()
     self:SetupUnitFrames()
@@ -175,8 +196,13 @@ function ScarletUI:SetupDebugFrame()
     retailText:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
     retailText:SetText("- retail: " .. tostring(self.retail))
 
+    local editModeText = self.debugContainer:CreateFontString("SUI_EditModePropertyText", "OVERLAY", "GameFontWhite")
+    editModeText:SetPoint("TOPLEFT", retailText, "BOTTOMLEFT")
+    editModeText:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
+    editModeText:SetText("- editMode: " .. tostring(self.editMode))
+
     local lightWeightText = self.debugContainer:CreateFontString("SUI_LightWeightPropertyText", "OVERLAY", "GameFontWhite")
-    lightWeightText:SetPoint("TOPLEFT", retailText, "BOTTOMLEFT")
+    lightWeightText:SetPoint("TOPLEFT", editModeText, "BOTTOMLEFT")
     lightWeightText:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
     lightWeightText:SetText("- lightWeightMode: " .. tostring(self.lightWeightMode))
 
@@ -206,8 +232,8 @@ function ScarletUI:SlashCommand(msg)
             return
         end
 
-        if self.retail then
-            self:Print("Movers are not available in retail, please use the WoW UI edit mode.")
+        if self.editMode or self.lightWeightMode then
+            self:Print("Movers are not available, please use your UI's edit mode.")
             return
         end
 
@@ -226,31 +252,45 @@ function ScarletUI:SlashCommand(msg)
 end
 
 ScarletUI.frame = CreateFrame("Frame", "SUI_Frame", UIParent)
-ScarletUI.frame:RegisterEvent("PLAYER_ENTERING_WORLD")
-ScarletUI.frame:RegisterEvent("PLAYER_LEAVING_WORLD")
-ScarletUI.frame:RegisterEvent("PLAYER_REGEN_DISABLED")
-ScarletUI.frame:RegisterEvent("PLAYER_REGEN_ENABLED")
-ScarletUI.frame:SetScript("OnEvent", function (_, event, ...)
-    if event == "PLAYER_ENTERING_WORLD" then
-        ScarletUI.pauseEvents = false
+ScarletUI.eventHandlers = {}
+
+function ScarletUI:RegisterEventHandler(event, handler)
+    if not self.eventHandlers[event] then
+        self.eventHandlers[event] = {}
+        self.frame:RegisterEvent(event)
     end
+    table.insert(self.eventHandlers[event], handler)
+end
 
-    if event == "PLAYER_LEAVING_WORLD" then
-        ScarletUI.pauseEvents = true
-        -- TODO: maybe move code for saving raid/party frame positions to be ran here instead of creating a hook, might be a few other good candidates too
-    end
-
-    if event == "PLAYER_REGEN_DISABLED" or event == "PLAYER_REGEN_ENABLED" then
-        ScarletUI.inCombat = event == "PLAYER_REGEN_DISABLED";
-
-        if ScarletUI:InCombat() and ScarletUI.moversEnabled then
-            ScarletUI:ToggleMovers()
+ScarletUI.frame:SetScript("OnEvent", function(_, event, ...)
+    local handlers = ScarletUI.eventHandlers[event]
+    if handlers then
+        for _, handler in ipairs(handlers) do
+            handler(event, ...)
         end
-
-        SUI_CombatPropertyText:SetText("- inCombat: " .. tostring(ScarletUI.inCombat))
-        AceConfigRegistry:NotifyChange("ScarletUI")
     end
 end)
+
+-- Core event handlers
+ScarletUI:RegisterEventHandler("PLAYER_ENTERING_WORLD", function()
+    ScarletUI.pauseEvents = false
+end)
+
+ScarletUI:RegisterEventHandler("PLAYER_LEAVING_WORLD", function()
+    ScarletUI.pauseEvents = true
+end)
+
+local function OnCombatChanged(event)
+    ScarletUI.inCombat = event == "PLAYER_REGEN_DISABLED"
+    if ScarletUI:InCombat() and ScarletUI.moversEnabled then
+        ScarletUI:ToggleMovers()
+    end
+    SUI_CombatPropertyText:SetText("- inCombat: " .. tostring(ScarletUI.inCombat))
+    AceConfigRegistry:NotifyChange("ScarletUI")
+end
+
+ScarletUI:RegisterEventHandler("PLAYER_REGEN_DISABLED", OnCombatChanged)
+ScarletUI:RegisterEventHandler("PLAYER_REGEN_ENABLED", OnCombatChanged)
 
 --hooksecurefunc("SetCVar", function(k, v)
 --    print("CVar", k, "changed to", v)

@@ -1,6 +1,40 @@
 local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 local lastNameplate
 
+-- Threat throttle: batch UNIT_THREAT_LIST_UPDATE into 0.1s intervals
+local dirtyThreatUnits = {}
+local threatThrottleFrame = CreateFrame("Frame")
+local threatThrottleTicker = 0
+threatThrottleFrame:SetScript("OnUpdate", function(_, dt)
+    threatThrottleTicker = threatThrottleTicker + dt
+    if threatThrottleTicker < 0.1 then return end
+    threatThrottleTicker = 0
+
+    local hasDirty = false
+    for unitId in pairs(dirtyThreatUnits) do
+        hasDirty = true
+        ScarletUI:UpdateNameplate(unitId)
+    end
+    if hasDirty then
+        wipe(dirtyThreatUnits)
+    end
+end)
+
+-- Pre-computed pet unit strings, rebuilt periodically
+local petUnitStrings = {}
+local lastPetRebuild = 0
+local function RebuildPetUnitStrings()
+    local now = GetTime()
+    if now - lastPetRebuild < 1 then return end
+    lastPetRebuild = now
+    wipe(petUnitStrings)
+    petUnitStrings["player"] = "playerpet"
+    for i = 1, 40 do
+        petUnitStrings["party" .. i] = "party" .. i .. "pet"
+        petUnitStrings["raid" .. i] = "raid" .. i .. "pet"
+    end
+end
+
 local function trim(s)
     return s:match("^%s*(.-)%s*$")
 end
@@ -52,6 +86,8 @@ local function IterateGroupMembers()
 end
 
 local function ThreatFunc(unit)
+    RebuildPetUnitStrings()
+
     local firstUnit, secondUnit
     local firstThreat, secondThreat = -1, -1  -- Initialize with values less than zero
     local threat, pet
@@ -71,7 +107,7 @@ local function ThreatFunc(unit)
             end
         end
 
-        pet = member.."pet"
+        pet = petUnitStrings[member] or (member .. "pet")
         if UnitExists(pet) then
             threat = select(5, UnitDetailedThreatSituation(pet, unit))
 
@@ -191,7 +227,7 @@ local function SetupNameplate(nameplate)
         nameplate.threatAmountText:Hide()
     end
 
-    local castBar = nameplate.UnitFrame and nameplate.UnitFrame.CastBar
+    local castBar = nameplate.UnitFrame and (nameplate.UnitFrame.CastBar or nameplate.UnitFrame.castBar)
     if module.castBarText.show then
         if castBar then
             -- Create a font string if it doesn't exist
@@ -230,7 +266,8 @@ end
 
 function ScarletUI:UpdateCastText(castBar)
     if castBar then
-        local abilityName = castBar.Text and castBar.Text:GetText()
+        local textRegion = castBar.Text or castBar.text
+        local abilityName = textRegion and textRegion:GetText()
         if castBar.castBarText then
             castBar.castBarText:SetText(abilityName)
             castBar.castBarText:Show()
@@ -239,13 +276,17 @@ function ScarletUI:UpdateCastText(castBar)
 end
 
 function ScarletUI:UpdateHealthText(healthBar)
-    if healthBar then
-        local unitID = healthBar:GetParent().unit or healthBar.unit
-        local healthPercent = (UnitHealth(unitID) / UnitHealthMax(unitID)) * 100;
-        if healthBar.healthBarText then
-            healthBar.healthBarText:SetText(string.format("%.0f%%", healthPercent))
-            healthBar.healthBarText:Show()
-        end
+    if not healthBar then return end
+
+    local unitFrame = healthBar:GetParent()
+    local nameplate = unitFrame and unitFrame:GetParent()
+    local unitID = (unitFrame and unitFrame.unit)
+        or (nameplate and (nameplate.namePlateUnitToken or nameplate.unit or nameplate.displayedUnit))
+
+    local healthPercent = (UnitHealth(unitID) / UnitHealthMax(unitID)) * 100;
+    if healthBar.healthBarText then
+        healthBar.healthBarText:SetText(string.format("%.0f%%", healthPercent))
+        healthBar.healthBarText:Show()
     end
 end
 
@@ -368,27 +409,40 @@ function ScarletUI:UpdateTargetArrows()
     local nameplate = C_NamePlate.GetNamePlateForUnit("target")
     if nameplate then
         -- Get the name text region of the nameplate.
-        local healthBarRegion = nameplate and nameplate.UnitFrame and nameplate.UnitFrame.healthBar.border
+        local healthBarRegion = nameplate.UnitFrame
         local size = module.targetIndicator.indicatorSize
         local spacer = module.targetIndicator.indicatorDistance * -1
         local height = module.targetIndicator.indicatorHeight
 
         if healthBarRegion then
-            -- Left texture
-            local leftTexture = nameplate:CreateTexture(nil, "OVERLAY")
-            leftTexture:SetTexture("interface/minimap/minimaparrow.blp")
-            leftTexture:SetSize(size, size)
-            leftTexture:SetPoint("RIGHT", healthBarRegion, "LEFT", spacer, height)
-            leftTexture:SetTexCoord(0, 1, 1, 1, 0, 0, 1, 0)
-            nameplate.leftArrow = leftTexture
+            -- Create a dedicated overlay frame so arrows draw above all nameplate children
+            if not nameplate.arrowFrame then
+                nameplate.arrowFrame = CreateFrame("Frame", nil, nameplate.UnitFrame)
+                nameplate.arrowFrame:SetAllPoints()
+                nameplate.arrowFrame:SetFrameLevel(nameplate.UnitFrame:GetFrameLevel() + 10)
+            end
 
-            -- Right texture
-            local rightTexture = nameplate:CreateTexture(nil, "OVERLAY")
-            rightTexture:SetTexture("interface/minimap/minimaparrow.blp")
-            rightTexture:SetSize(size, size)
-            rightTexture:SetPoint("LEFT", healthBarRegion, "RIGHT", spacer * -1, height)
-            rightTexture:SetTexCoord(1, 0, 0, 0, 1, 1, 0, 1)
-            nameplate.rightArrow = rightTexture
+            -- Left texture (create once, reuse)
+            if not nameplate.leftArrow then
+                nameplate.leftArrow = nameplate.arrowFrame:CreateTexture(nil, "OVERLAY")
+                nameplate.leftArrow:SetTexture("interface/minimap/minimaparrow.blp")
+                nameplate.leftArrow:SetTexCoord(0, 1, 1, 1, 0, 0, 1, 0)
+            end
+            nameplate.leftArrow:ClearAllPoints()
+            nameplate.leftArrow:SetSize(size, size)
+            nameplate.leftArrow:SetPoint("RIGHT", healthBarRegion, "LEFT", spacer, height)
+            nameplate.leftArrow:Show()
+
+            -- Right texture (create once, reuse)
+            if not nameplate.rightArrow then
+                nameplate.rightArrow = nameplate.arrowFrame:CreateTexture(nil, "OVERLAY")
+                nameplate.rightArrow:SetTexture("interface/minimap/minimaparrow.blp")
+                nameplate.rightArrow:SetTexCoord(1, 0, 0, 0, 1, 1, 0, 1)
+            end
+            nameplate.rightArrow:ClearAllPoints()
+            nameplate.rightArrow:SetSize(size, size)
+            nameplate.rightArrow:SetPoint("LEFT", healthBarRegion, "RIGHT", spacer * -1, height)
+            nameplate.rightArrow:Show()
         end
 
         lastNameplate = nameplate
@@ -487,7 +541,7 @@ end
 
 function ScarletUI:SetupNameplates()
     local nameplatesModule = self.db.global.nameplatesModule
-    if not nameplatesModule.enabled or self.lightWeightMode or self.retail then
+    if not nameplatesModule.enabled or self.lightWeightMode then
         return
     end
 
@@ -498,42 +552,48 @@ function ScarletUI:SetupNameplates()
 
     if not self.nameplateEventsRegistered then
         self.nameplateEventsRegistered = true
-        self.frame:RegisterEvent("PLAYER_TARGET_CHANGED")
-        self.frame:RegisterEvent("UNIT_AURA")
-        self.frame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
-        self.frame:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
-        self.frame:RegisterEvent("UNIT_THREAT_LIST_UPDATE")
-        self.frame:HookScript("OnEvent", function(_, event, unitId, ...)
-            if ScarletUI.pauseEvents then
-                return
-            end
 
-            if event == "PLAYER_TARGET_CHANGED" then
-                ScarletUI:UpdateTargetArrows()
-            end
-
-            if event == "UNIT_AURA" then
-                ScarletUI:CheckUnitAuras(unitId)
-            end
-
-            if event == "NAME_PLATE_UNIT_ADDED" then
-                ScarletUI:CheckUnitAuras(unitId)
-                ScarletUI:UpdateNameplate(unitId)
-                ScarletUI:UpdateTargetArrows()
-
-                local nameplate = C_NamePlate.GetNamePlateForUnit(unitId)
-                if nameplate then
-                    SetupNameplate(nameplate)
+        -- Hook Blizzard's health color update so our threat colors aren't overwritten
+        if CompactUnitFrame_UpdateHealthColor then
+            hooksecurefunc("CompactUnitFrame_UpdateHealthColor", function(frame)
+                if frame and frame.unit and strmatch(frame.unit, "^nameplate") then
+                    ScarletUI:UpdateNameplate(frame.unit)
                 end
-            end
+            end)
+        end
 
-            if event == "NAME_PLATE_UNIT_REMOVED" then
-                ScarletUI:CheckUnitAuras(unitId)
-                ScarletUI:UpdateNameplate(unitId)
-            end
+        self:RegisterEventHandler("PLAYER_TARGET_CHANGED", function()
+            if ScarletUI.pauseEvents then return end
+            ScarletUI:UpdateTargetArrows()
+        end)
 
-            if event == "UNIT_THREAT_LIST_UPDATE" then
-                ScarletUI:UpdateNameplate(unitId)
+        self:RegisterEventHandler("UNIT_AURA", function(_, unitId)
+            if ScarletUI.pauseEvents then return end
+            ScarletUI:CheckUnitAuras(unitId)
+        end)
+
+        self:RegisterEventHandler("NAME_PLATE_UNIT_ADDED", function(_, unitId)
+            if ScarletUI.pauseEvents then return end
+            ScarletUI:CheckUnitAuras(unitId)
+            ScarletUI:UpdateNameplate(unitId)
+            ScarletUI:UpdateTargetArrows()
+
+            local nameplate = C_NamePlate.GetNamePlateForUnit(unitId)
+            if nameplate then
+                SetupNameplate(nameplate)
+            end
+        end)
+
+        self:RegisterEventHandler("NAME_PLATE_UNIT_REMOVED", function(_, unitId)
+            if ScarletUI.pauseEvents then return end
+            ScarletUI:CheckUnitAuras(unitId)
+            ScarletUI:UpdateNameplate(unitId)
+        end)
+
+        self:RegisterEventHandler("UNIT_THREAT_LIST_UPDATE", function(_, unitId)
+            if ScarletUI.pauseEvents then return end
+            if unitId then
+                dirtyThreatUnits[unitId] = true
             end
         end)
     end

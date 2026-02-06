@@ -3,7 +3,7 @@ local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 function ScarletUI:SetupRaidProfiles()
     local raidFramesModule = self.db.global.raidFramesModule
 
-    if not raidFramesModule.enabled or self.lightWeightMode or self.retail then
+    if not raidFramesModule.enabled or self.lightWeightMode or self.editMode then
         return
     end
 

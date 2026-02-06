@@ -10,7 +10,8 @@ ScarletUI is a World of Warcraft addon that provides UI modifications and enhanc
 
 The addon supports four WoW versions through separate .toc files:
 - `ScarletUI-Vanilla.toc` - Interface 11507 (Classic Era)
-- `ScarletUI-Cata.toc` - Interface 40402 (Cataclysm Classic) 
+- `ScarletUI-TBC.toc` - Interface 20505 (Burning Crusade Classic)
+- `ScarletUI-Cata.toc` - Interface 40402 (Cataclysm Classic)
 - `ScarletUI-Mists.toc` - Interface 50500 (Mists of Pandaria Classic)
 - `ScarletUI-Mainline.toc` - Interface 110107 (Current Retail)
 

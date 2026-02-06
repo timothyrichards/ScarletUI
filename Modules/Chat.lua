@@ -9,15 +9,16 @@ function ScarletUI:SetupChat()
 
     if not self.chatEventRegistered then
         self.chatEventRegistered = true
-        self.frame:RegisterEvent("UPDATE_FLOATING_CHAT_WINDOWS")
-        self.frame:RegisterEvent("UPDATE_CHAT_COLOR_NAME_BY_CLASS")
-        self.frame:HookScript("OnEvent", function(_, event, type, set, ...)
-            if event == "UPDATE_FLOATING_CHAT_WINDOWS" then
-                ScarletUI:SetupChat()
-            elseif event == "UPDATE_CHAT_COLOR_NAME_BY_CLASS" then
-                if not set then SetChatColorNameByClass(type, true); end
-            end
+        self:RegisterEventHandler("UPDATE_FLOATING_CHAT_WINDOWS", function()
+            ScarletUI:SetupChat()
         end)
+        self:RegisterEventHandler("UPDATE_CHAT_COLOR_NAME_BY_CLASS", function(_, chatType, set)
+            if not set then SetChatColorNameByClass(chatType, true) end
+        end)
+    end
+
+    if self.lightWeightMode or self.editMode then
+        return
     end
 
     local chatFrame = chatModule.chatFrame
@@ -25,7 +26,7 @@ function ScarletUI:SetupChat()
     ChatFrame1.settingsKey = "chatFrame"
     self:CreateMover(ChatFrame1, chatFrame)
 
-    if not chatFrame.move or self.lightWeightMode or self.retail then
+    if not chatFrame.move then
         return
     end
 
@@ -75,7 +76,7 @@ function ScarletUI:SetupChatTabs()
     if tabs.trade and not self:ChatTabExists(_G.CHAT_FRAMES, "Trade") then
         FCF_OpenNewWindow("Trade")
     end
-    if tabs.lfg and not self.retail then
+    if tabs.lfg and not self.lightWeightMode then
         if not self:ChatTabExists(_G.CHAT_FRAMES, "LFG") then
             FCF_OpenNewWindow("LFG")
         end

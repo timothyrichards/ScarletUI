@@ -1,6 +1,6 @@
 function ScarletUI:SetupUnitFrames()
     local unitFramesModule = self.db.global.unitFramesModule
-    if not unitFramesModule.enabled or self.lightWeightMode or self.retail then
+    if not unitFramesModule.enabled or self.lightWeightMode or self.editMode then
         return
     end
 

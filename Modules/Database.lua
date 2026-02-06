@@ -315,7 +315,7 @@ ScarletUI.defaults = {
                 show = true,
                 indicatorSize = 30,
                 indicatorDistance = -5,
-                indicatorHeight = 0
+                indicatorHeight = -7
             },
             healthBarText = {
                 show = true,
@@ -353,6 +353,11 @@ ScarletUI.defaults = {
             slotsPerRow = 10,
             slotSize = 37,
             slotSpacing = 4,
+            bagLocked = true,
+            bagAlpha = 0.5,
+            bankLocked = true,
+            bankAlpha = 0.5,
+            hideKeyring = true,
         },
         CVarModule = {
             enabled = false,
@@ -733,7 +738,7 @@ ScarletUI.originalUIDefaults = {
                 show = true,
                 indicatorSize = 30,
                 indicatorDistance = -5,
-                indicatorHeight = 0
+                indicatorHeight = -7
             },
             healthBarText = {
                 show = true,
@@ -766,6 +771,11 @@ ScarletUI.originalUIDefaults = {
             slotsPerRow = 10,
             slotSize = 37,
             slotSpacing = 4,
+            bagLocked = true,
+            bagAlpha = 0.5,
+            bankLocked = true,
+            bankAlpha = 0.5,
+            hideKeyring = true,
         },
         CVarModule = {
             enabled = false,
