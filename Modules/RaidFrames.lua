@@ -56,11 +56,10 @@ function ScarletUI:SetupRaidProfiles()
 
                 hooksecurefunc("SetCVar", function(k, v)
                     if k == "useCompactPartyFrames" then
-                        local CVars = ScarletUI.db.global.CVarModule.CVars
-                        local currentValue = tostring(CVars.useCompactPartyFrames)
-                        local targetValue = tostring(v)
-                        if currentValue ~= targetValue then
-                            CVars.useCompactPartyFrames = v
+                        local overrides = ScarletUI.db.global.CVarModule.overrides
+                        local currentValue = overrides.useCompactPartyFrames
+                        if currentValue ~= nil and tostring(currentValue) ~= tostring(v) then
+                            overrides.useCompactPartyFrames = v
                         end
                     end
                 end)
@@ -104,11 +103,13 @@ function ScarletUI:UpdateProfileOptions()
     end
 
     -- Check and apply Raid Style party frames setting
-    local CVars = self.db.global.CVarModule.CVars
-    local currentValue = tostring(GetCVar("useCompactPartyFrames"))
-    local targetValue = tostring(CVars.useCompactPartyFrames)
-    if currentValue ~= targetValue then
-        SetCVar("useCompactPartyFrames", CVars.useCompactPartyFrames)
+    local overrides = self.db.global.CVarModule.overrides
+    if overrides.useCompactPartyFrames ~= nil then
+        local currentValue = tostring(GetCVar("useCompactPartyFrames"))
+        local targetValue = tostring(overrides.useCompactPartyFrames)
+        if currentValue ~= targetValue then
+            SetCVar("useCompactPartyFrames", overrides.useCompactPartyFrames)
+        end
     end
 end
 
