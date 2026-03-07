@@ -33,22 +33,6 @@ StaticPopupDialogs['SCARLET_UI_RAID_FRAME_DIALOG'] = {
     preferredIndex = 3,
 }
 
--- Dialog to confirm enabling of CVar module
-StaticPopupDialogs['SCARLET_ENABLE_CVARS_DIALOG'] = {
-    text = '<Scarlet UI>\n\nEnabling this module will change several CVars, overriding their current values\n\nDo you want to continue?',
-    button1 = 'Continue',
-    button2 = 'Cancel',
-    OnAccept = function()
-        ScarletUI.db.global.CVarModule.enabled = true
-        ScarletUI:SetupCVars()
-        AceConfigRegistry:NotifyChange("ScarletUI")
-    end,
-    timeout = 0,
-    whileDead = true,
-    hideOnEscape = false,
-    preferredIndex = 3,
-}
-
 -- Dialog to confirm restoration position of frames to default settings
 StaticPopupDialogs['SCARLET_RESTORE_POSITIONS_DIALOG'] = {
     text = '<Scarlet UI>\n\nAre you sure you want to restore all frame positions to their default positions?',
@@ -109,6 +93,19 @@ function ScarletUI:OnInitialize()
     -- Set up the database
     self.db = self.db or AceDB:New("ScarletUIDB", self.defaults, true)
     self.db:SetProfile("Default")
+
+    -- Migrate old CVarModule.CVars to new overrides format
+    if self.db.global.CVarModule.CVars then
+        if not self.db.global.CVarModule.overrides then
+            self.db.global.CVarModule.overrides = {}
+        end
+
+        for k, v in pairs(self.db.global.CVarModule.CVars) do
+            self.db.global.CVarModule.overrides[k] = v
+        end
+
+        self.db.global.CVarModule.CVars = nil
+    end
 
     -- Register the chat commands
     self:RegisterChatCommand("sui", "SlashCommand")

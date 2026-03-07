@@ -213,11 +213,11 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                         order = 3,
                         get = function(_) return database.CVarModule.enabled end,
                         set = function(_, val)
-                            if not val then
-                                database.CVarModule.enabled = val
-                                ScarletUI:RestoreCVarsDefaults()
+                            database.CVarModule.enabled = val
+                            if val then
+                                ScarletUI:SetupCVars()
                             else
-                                StaticPopup_Show('SCARLET_ENABLE_CVARS_DIALOG')
+                                ScarletUI:RestoreCVarsDefaults()
                             end
                         end,
                     },
@@ -569,11 +569,10 @@ end
 local searchQuery = ""
 function ScarletUI:GetCVarModuleSettingsPage(database, order)
     local module = database.CVarModule
-    local CVars = module.CVars
 
     local options = {
         name = "CVars",
-        desc = "CVars Module for advanced users to change console variables and have them automatically synchronize between characters.",
+        desc = "Set CVar overrides that sync across characters. Only CVars you explicitly set will be changed.",
         type = "group",
         order = order,
         args = {
@@ -584,7 +583,7 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
                 order = 0,
                 args = {
                     description = {
-                        name = "You can copy the Warcraft Wiki link below for a reference to all console variables and what they do.\n\nIf you have any requests for new CVars to be added, please leave a comment on CurseForge page for ScarletUI.",
+                        name = "Browse available CVars below. Set a value to override it, or clear to restore the WoW default.\n\nYou can also add custom CVars by name using the field below.",
                         type = "description",
                         width = "full",
                         fontSize = "medium",
@@ -599,12 +598,60 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
                     }
                 }
             },
+            addCustom = {
+                name = "Add Custom CVar",
+                type = "group",
+                inline = true,
+                order = 1,
+                args = {
+                    addField = {
+                        order = 0,
+                        name = "",
+                        desc = "Type a CVar name and press Enter to add it",
+                        type = "input",
+                        width = 1.5,
+                        get = function() return "" end,
+                        set = function(_, val)
+                            if val == "" then return end
+
+                            -- Check if already in the list
+                            if ScarletUI:ArrayHasValue(ScarletUI.knownCVars, val) then
+                                ScarletUI:Print("|cffff4444" .. val .. "|r is already in the CVar list.")
+                                return
+                            end
+
+                            -- Check if it's a valid CVar
+                            if GetCVar(val) == nil then
+                                ScarletUI:Print("|cffff4444" .. val .. "|r is not a valid CVar.")
+                                return
+                            end
+
+                            table.insert(ScarletUI.knownCVars, val)
+                            table.sort(ScarletUI.knownCVars, function(a, b)
+                                return string.lower(a) < string.lower(b)
+                            end)
+
+                            -- Auto-override if current value differs from default
+                            local currentVal = tostring(GetCVar(val))
+                            local defaultVal = tostring(GetCVarDefault(val))
+                            if currentVal ~= defaultVal then
+                                module.overrides[val] = currentVal
+                                ScarletUI:Print("Added CVar: |cff00ff00" .. val .. "|r (override set — current value differs from default)")
+                            else
+                                ScarletUI:Print("Added CVar: |cff00ff00" .. val .. "|r")
+                            end
+
+                            AceConfigRegistry:NotifyChange("ScarletUI")
+                        end,
+                    },
+                }
+            },
             search = {
-                name = "Search",
+                name = "CVars",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
                 inline = true,
-                order = 1,
+                order = 2,
                 args = {
                     searchField = {
                         order = 0,
@@ -623,60 +670,111 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
         }
     }
 
-    local function ShouldOptionBeHidden(optionKey)
-        -- If searchQuery is empty, show all options
+    local function ShouldOptionBeHidden(cvarName)
         if searchQuery == "" then
             return false
         end
-        -- Convert both strings to lower case for case-insensitive comparison
-        return not string.find(string.lower(optionKey), string.lower(searchQuery), 1, true)
+        return not string.find(string.lower(cvarName), string.lower(searchQuery), 1, true)
     end
 
-    -- Create a table of keys
-    local keys = {}
-    for k in pairs(CVars) do
-        table.insert(keys, k)
+    -- Sort the known CVars
+    local sortedCVars = {}
+    for _, name in ipairs(ScarletUI.knownCVars) do
+        table.insert(sortedCVars, name)
     end
-
-    -- Sort the keys in a case-insensitive manner
-    table.sort(keys, function(a, b)
+    -- Also include any overrides that aren't in the known list (custom CVars from previous sessions)
+    for name, _ in pairs(module.overrides) do
+        if not ScarletUI:ArrayHasValue(sortedCVars, name) then
+            table.insert(sortedCVars, name)
+        end
+    end
+    table.sort(sortedCVars, function(a, b)
         return string.lower(a) < string.lower(b)
     end)
 
     local orderCounter = 0
-    for _, k in pairs(keys) do
+    for _, cvarName in ipairs(sortedCVars) do
         orderCounter = orderCounter + 1
-        local labelName = "label" .. orderCounter
-        local spacerName = "spacer" .. orderCounter
+        local labelKey = "label" .. orderCounter
+        local inputKey = "input" .. orderCounter
+        local clearKey = "clear" .. orderCounter
+        local spacerKey = "spacer" .. orderCounter
 
-        options.args.search.args[labelName] = {
-            name = k,
+        local isValid = GetCVar(cvarName) ~= nil
+        local hasOverride = module.overrides[cvarName] ~= nil
+
+        -- CVar name label — red if invalid, green if overridden
+        local labelText
+        if not isValid then
+            labelText = "|cffff4444" .. cvarName .. " (invalid)|r"
+        elseif hasOverride then
+            labelText = "|cff00ff00" .. cvarName .. "|r"
+        else
+            labelText = cvarName
+        end
+
+        local labelDesc = ""
+        if isValid then
+            labelDesc = "Default: " .. tostring(GetCVarDefault(cvarName))
+        end
+
+        options.args.search.args[labelKey] = {
+            name = labelText,
+            desc = labelDesc,
             type = "description",
             width = 1.25,
-            order = orderCounter * 3 - 2,
-            hidden = function() return ShouldOptionBeHidden(k) end,
+            order = orderCounter * 4 - 3,
+            hidden = function() return ShouldOptionBeHidden(cvarName) end,
         }
 
-        options.args.search.args[k] = {
+        -- Override input field
+        options.args.search.args[inputKey] = {
             name = "",
-            desc = "",
+            desc = isValid and ("Current: " .. tostring(GetCVar(cvarName))) or "This CVar does not exist in your WoW version",
             type = "input",
             width = 0.5,
-            order = orderCounter * 3 - 1,
-            get = function(_) return CVars[k] end,
-            set = function(_, val)
-                CVars[k] = val
-                ScarletUI:SetupCVars()
+            order = orderCounter * 4 - 2,
+            get = function()
+                if module.overrides[cvarName] then
+                    return module.overrides[cvarName]
+                end
+                return isValid and tostring(GetCVarDefault(cvarName)) or ""
             end,
-            hidden = function() return ShouldOptionBeHidden(k) end,
+            set = function(_, val)
+                if val == "" then
+                    ScarletUI:ClearCVarOverride(cvarName)
+                else
+                    module.overrides[cvarName] = val
+                    ScarletUI:SetupCVars()
+                end
+                AceConfigRegistry:NotifyChange("ScarletUI")
+            end,
+            disabled = function() return not isValid end,
+            hidden = function() return ShouldOptionBeHidden(cvarName) end,
         }
 
-        options.args.search.args[spacerName] = {
+        -- Clear button
+        options.args.search.args[clearKey] = {
+            name = "X",
+            desc = "Clear override and restore WoW default",
+            type = "execute",
+            width = 0.25,
+            order = orderCounter * 4 - 1,
+            func = function()
+                ScarletUI:ClearCVarOverride(cvarName)
+                AceConfigRegistry:NotifyChange("ScarletUI")
+            end,
+            disabled = function() return not hasOverride end,
+            hidden = function() return ShouldOptionBeHidden(cvarName) end,
+        }
+
+        -- Spacer
+        options.args.search.args[spacerKey] = {
             name = "",
             type = "description",
             width = "full",
-            order = orderCounter * 3,
-            hidden = function() return ShouldOptionBeHidden(k) end,
+            order = orderCounter * 4,
+            hidden = function() return ShouldOptionBeHidden(cvarName) end,
         }
     end
 
