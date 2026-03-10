@@ -147,6 +147,36 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                             self:BagItemLevel()
                         end,
                     },
+                    itemLevelColorOverride = {
+                        name = "Override Color",
+                        desc = "Use a custom color for item level text instead of item quality colors.",
+                        type = "toggle",
+                        width = 1,
+                        order = 3,
+                        get = function(_) return database.itemLevelColorOverride end,
+                        set = function(_, val)
+                            database.itemLevelColorOverride = val
+                            self:CharacterFrameItemLevel()
+                            self:BagItemLevel()
+                        end,
+                    },
+                    itemLevelColor = {
+                        name = "Item Level Color",
+                        desc = "Custom color for item level text.",
+                        type = "color",
+                        width = 1,
+                        order = 4,
+                        disabled = function() return not database.itemLevelColorOverride end,
+                        get = function(_)
+                            local c = database.itemLevelColor
+                            return c.r, c.g, c.b
+                        end,
+                        set = function(_, r, g, b)
+                            database.itemLevelColor = { r = r, g = g, b = b }
+                            self:CharacterFrameItemLevel()
+                            self:BagItemLevel()
+                        end,
+                    },
                 },
             },
             modules = {
@@ -614,6 +644,20 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
                         set = function(_, val)
                             if val == "" then return end
 
+                            -- Un-hide if previously hidden
+                            if module.hiddenCVars[val] then
+                                module.hiddenCVars[val] = nil
+                                if not ScarletUI:ArrayHasValue(ScarletUI.knownCVars, val) then
+                                    table.insert(ScarletUI.knownCVars, val)
+                                    table.sort(ScarletUI.knownCVars, function(a, b)
+                                        return string.lower(a) < string.lower(b)
+                                    end)
+                                end
+                                ScarletUI:Print("Restored CVar: |cff00ff00" .. val .. "|r")
+                                AceConfigRegistry:NotifyChange("ScarletUI")
+                                return
+                            end
+
                             -- Check if already in the list
                             if ScarletUI:ArrayHasValue(ScarletUI.knownCVars, val) then
                                 ScarletUI:Print("|cffff4444" .. val .. "|r is already in the CVar list.")
@@ -677,14 +721,16 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
         return not string.find(string.lower(cvarName), string.lower(searchQuery), 1, true)
     end
 
-    -- Sort the known CVars
+    -- Sort the known CVars, excluding hidden ones
     local sortedCVars = {}
     for _, name in ipairs(ScarletUI.knownCVars) do
-        table.insert(sortedCVars, name)
+        if not module.hiddenCVars[name] then
+            table.insert(sortedCVars, name)
+        end
     end
     -- Also include any overrides that aren't in the known list (custom CVars from previous sessions)
     for name, _ in pairs(module.overrides) do
-        if not ScarletUI:ArrayHasValue(sortedCVars, name) then
+        if not module.hiddenCVars[name] and not ScarletUI:ArrayHasValue(sortedCVars, name) then
             table.insert(sortedCVars, name)
         end
     end
@@ -722,8 +768,8 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
             name = labelText,
             desc = labelDesc,
             type = "description",
-            width = 1.25,
-            order = orderCounter * 4 - 3,
+            width = 1.2,
+            order = orderCounter * 5 - 4,
             hidden = function() return ShouldOptionBeHidden(cvarName) end,
         }
 
@@ -732,8 +778,8 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
             name = "",
             desc = isValid and ("Current: " .. tostring(GetCVar(cvarName))) or "This CVar does not exist in your WoW version",
             type = "input",
-            width = 0.5,
-            order = orderCounter * 4 - 2,
+            width = 0.6,
+            order = orderCounter * 5 - 3,
             get = function()
                 if module.overrides[cvarName] then
                     return module.overrides[cvarName]
@@ -755,11 +801,11 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
 
         -- Clear button
         options.args.search.args[clearKey] = {
-            name = "X",
+            name = "Default",
             desc = "Clear override and restore WoW default",
             type = "execute",
-            width = 0.25,
-            order = orderCounter * 4 - 1,
+            width = 0.5,
+            order = orderCounter * 5 - 2,
             func = function()
                 ScarletUI:ClearCVarOverride(cvarName)
                 AceConfigRegistry:NotifyChange("ScarletUI")
@@ -768,12 +814,28 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
             hidden = function() return ShouldOptionBeHidden(cvarName) end,
         }
 
+        -- Remove button
+        local removeKey = "remove" .. orderCounter
+        options.args.search.args[removeKey] = {
+            name = "Remove",
+            desc = "Remove this CVar from the list (re-add via the custom CVar field)",
+            type = "execute",
+            width = 0.5,
+            order = orderCounter * 5 - 1,
+            func = function()
+                ScarletUI:ClearCVarOverride(cvarName)
+                module.hiddenCVars[cvarName] = true
+                AceConfigRegistry:NotifyChange("ScarletUI")
+            end,
+            hidden = function() return ShouldOptionBeHidden(cvarName) end,
+        }
+
         -- Spacer
         options.args.search.args[spacerKey] = {
             name = "",
             type = "description",
             width = "full",
-            order = orderCounter * 4,
+            order = orderCounter * 5,
             hidden = function() return ShouldOptionBeHidden(cvarName) end,
         }
     end

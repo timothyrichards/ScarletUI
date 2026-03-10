@@ -7,6 +7,8 @@ ScarletUI.defaults = {
         itemLevelCharacter = true,
         itemLevelInspect = true,
         itemLevelBag = true,
+        itemLevelColorOverride = false,
+        itemLevelColor = { r = 1, g = 1, b = 1 },
         expandCharacterInfo = true,
         clampMovers = true,
         unitFramesModule = {
@@ -362,6 +364,7 @@ ScarletUI.defaults = {
         CVarModule = {
             enabled = true,
             overrides = {},
+            hiddenCVars = {},
         }
     },
     char = {
@@ -376,6 +379,8 @@ ScarletUI.originalUIDefaults = {
         itemLevelCharacter = true,
         itemLevelInspect = true,
         itemLevelBag = true,
+        itemLevelColorOverride = false,
+        itemLevelColor = { r = 1, g = 1, b = 1 },
         expandCharacterInfo = false,
         clampMovers = true,
         unitFramesModule = {
@@ -725,6 +730,7 @@ ScarletUI.originalUIDefaults = {
         CVarModule = {
             enabled = true,
             overrides = {},
+            hiddenCVars = {},
         }
     },
     char = {

@@ -52,12 +52,18 @@ local function ItemLevelText(itemLink, itemLocation, itemButton, hide)
         if itemType == 'Armor' or itemType == 'Weapon' then
             if itemQuality and itemLevel then
                 if itemButton then
+                    local color
+                    if ScarletUI.db.global.itemLevelColorOverride then
+                        color = ScarletUI.db.global.itemLevelColor
+                    else
+                        color = ITEM_QUALITY_COLORS[itemQuality]
+                    end
+
                     if itemButton.itemLevel then
                         itemButton.itemLevel:Show()
-                        UpdateTextElement(itemButton.itemLevel, itemLevel, ITEM_QUALITY_COLORS[itemQuality])
+                        UpdateTextElement(itemButton.itemLevel, itemLevel, color)
                     else
-                        itemButton.itemLevel = CreateTextElement(itemButton, itemLevel, ITEM_QUALITY_COLORS[itemQuality],
-                            0, 0)
+                        itemButton.itemLevel = CreateTextElement(itemButton, itemLevel, color, 0, 0)
                     end
                 end
             end
@@ -293,9 +299,6 @@ function ScarletUI:ScanBankFrameForItems()
 
     scanFrame(BankFrame, 0)
 
-    if itemButtonCount == 0 then
-        self:HookBankUpdates()
-    end
 end
 
 function ScarletUI:BagItemLevel()

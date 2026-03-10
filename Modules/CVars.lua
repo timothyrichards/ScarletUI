@@ -69,7 +69,7 @@ function ScarletUI:SetupCVars()
 
     -- Auto-override known CVars that have non-default values
     for _, name in ipairs(self.knownCVars) do
-        if CVarModule.overrides[name] == nil and GetCVar(name) ~= nil then
+        if CVarModule.overrides[name] == nil and not CVarModule.hiddenCVars[name] and GetCVar(name) ~= nil then
             local currentVal = tostring(GetCVar(name))
             local defaultVal = tostring(GetCVarDefault(name))
             if currentVal ~= defaultVal then
