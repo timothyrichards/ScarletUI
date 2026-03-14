@@ -42,12 +42,6 @@ local headerHeight = 28
 local lastBagCounts = {}
 local bagEquipInProgress = false
 local origPutItemInBag = PutItemInBag
-PutItemInBag = function(slot)
-    if CursorHasItem() then
-        bagEquipInProgress = true
-    end
-    origPutItemInBag(slot)
-end
 
 local bankSlots = {}
 local orderedBankSlots = {}
@@ -1088,17 +1082,44 @@ function ScarletUI:SetupBags()
         self.bagFrame.currencyFooter.goldIcon:SetSize(16, 16)
         self.bagFrame.currencyFooter.goldIcon:SetPoint("LEFT", self.bagFrame.currencyFooter.goldText, "RIGHT", 1, 0)
 
-        -- Override the default bag functions
-        OpenAllBags = function() ScarletUI_BagFrame:Show() end
-        ToggleAllBags = function() ScarletUI_BagFrame:SetShown(not ScarletUI_BagFrame:IsShown()) end
-        OpenBackpack = function() ScarletUI_BagFrame:Show() end
-        ToggleBackpack = function() ScarletUI_BagFrame:SetShown(not ScarletUI_BagFrame:IsShown()) end
-        OpenBag = function(bagID)
+        -- Override PutItemInBag to detect bag equips (must be pre-hook; no hooksecurefunc alternative)
+        PutItemInBag = function(slot)
+            if CursorHasItem() then
+                bagEquipInProgress = true
+            end
+            origPutItemInBag(slot)
+        end
+
+        -- Suppress default container frames so only the custom bag UI shows
+        for i = 1, NUM_CONTAINER_FRAMES do
+            local frame = _G["ContainerFrame" .. i]
+            if frame then
+                frame:HookScript("OnShow", function(f) f:Hide() end)
+            end
+        end
+
+        -- Hook bag functions to drive the custom frame (preserves secure status of originals)
+        hooksecurefunc("OpenAllBags", function() ScarletUI_BagFrame:Show() end)
+        hooksecurefunc("CloseAllBags", function() ScarletUI_BagFrame:Hide() end)
+        hooksecurefunc("ToggleAllBags", function()
+            ScarletUI_BagFrame:SetShown(not ScarletUI_BagFrame:IsShown())
+        end)
+        hooksecurefunc("OpenBackpack", function() ScarletUI_BagFrame:Show() end)
+        hooksecurefunc("CloseBackpack", function() ScarletUI_BagFrame:Hide() end)
+        hooksecurefunc("ToggleBackpack", function()
+            ScarletUI_BagFrame:SetShown(not ScarletUI_BagFrame:IsShown())
+        end)
+        hooksecurefunc("OpenBag", function(bagID)
             if bagID >= BACKPACK_CONTAINER and bagID <= NUM_BAG_SLOTS then
                 ScarletUI_BagFrame:Show()
             end
-        end
-        ToggleBag = function(bagID)
+        end)
+        hooksecurefunc("CloseBag", function(bagID)
+            if bagID >= BACKPACK_CONTAINER and bagID <= NUM_BAG_SLOTS then
+                ScarletUI_BagFrame:Hide()
+            end
+        end)
+        hooksecurefunc("ToggleBag", function(bagID)
             if bagEquipInProgress then
                 bagEquipInProgress = false
                 return
@@ -1106,16 +1127,11 @@ function ScarletUI:SetupBags()
             if bagID >= BACKPACK_CONTAINER and bagID <= NUM_BAG_SLOTS then
                 ScarletUI_BagFrame:SetShown(not ScarletUI_BagFrame:IsShown())
             end
-        end
-        CloseBag = function(bagID)
-            if bagID >= BACKPACK_CONTAINER and bagID <= NUM_BAG_SLOTS then
-                ScarletUI_BagFrame:Hide()
-            end
-        end
-        CloseBackpack = function() ScarletUI_BagFrame:Hide() end
-        CloseAllBags = function() ScarletUI_BagFrame:Hide() end
-        if KEYRING_CONTAINER then
-            ToggleKeyRing = function() ScarletUI_BagFrame:SetShown(not ScarletUI_BagFrame:IsShown()) end
+        end)
+        if ToggleKeyRing then
+            hooksecurefunc("ToggleKeyRing", function()
+                ScarletUI_BagFrame:SetShown(not ScarletUI_BagFrame:IsShown())
+            end)
         end
     end
 
@@ -1370,14 +1386,10 @@ function ScarletUI:SetupBank()
     -- Suppress the default bank frame so only the SUI bank shows
     if BankFrame and not self.bankFrameSuppressed then
         BankFrame:UnregisterAllEvents()
-        BankFrame:SetScript("OnEvent", nil)
         BankFrame:SetScript("OnHide", nil)
-        BankFrame:SetScript("OnShow", function(f) f:Hide() end)
+        BankFrame:HookScript("OnShow", function(f) f:Hide() end)
         BankFrame:Hide()
         BankFrame:EnableMouse(false)
-        if UIPanelWindows then
-            UIPanelWindows["BankFrame"] = nil
-        end
         self.bankFrameSuppressed = true
     end
 
