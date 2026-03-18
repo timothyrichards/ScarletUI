@@ -224,81 +224,81 @@ function ScarletUI:LoopBagButtons(containerFrame)
     end
 end
 
+-- Hide all item level labels in the bank frame tree.
+-- Used to clear stale labels before pooled buttons are regenerated.
 function ScarletUI:ClearBankItemLevels()
-    -- Clear item levels from all bank buttons to prevent stale data
     if not BankFrame then return end
-
-    local function clearFrame(frame, depth)
-        if not frame or depth > 5 then return end
-
-        -- Check if this frame has an itemLevel text
+    local function clear(frame, depth)
+        if not frame or depth > 4 then return end
         if frame.itemLevel then
             frame.itemLevel:Hide()
         end
-
-        -- Scan children
-        local children = { frame:GetChildren() }
-        for _, child in ipairs(children) do
-            clearFrame(child, depth + 1)
+        for _, child in ipairs({ frame:GetChildren() }) do
+            clear(child, depth + 1)
         end
     end
-
-    clearFrame(BankFrame, 0)
+    clear(BankFrame, 0)
 end
 
-function ScarletUI:UpdateBankButtonItemLevel(button, hide)
-    if not button then return end
-
-    local itemLink
-    local itemLocation
-
-    -- Get item info from the button
-    if button.GetItemLocation then
-        itemLocation = button:GetItemLocation()
-
-        if itemLocation and itemLocation:IsValid() then
-            itemLink = C_Item.GetItemLink(itemLocation)
-        end
-    else
-        return
-    end
-
-    -- Always call ItemLevelText - it will hide the text if there's no item
-    ItemLevelText(itemLink, itemLocation, button, hide)
+-- Schedule a bank item level update for next frame, with debouncing.
+-- Multiple calls per frame (e.g. rapid BAG_UPDATE) collapse into one scan.
+function ScarletUI:ScheduleBankUpdate()
+    if self.bankUpdatePending then return end
+    self.bankUpdatePending = true
+    C_Timer.After(0, function()
+        self.bankUpdatePending = false
+        self:UpdateBankItemLevels()
+    end)
 end
 
-function ScarletUI:ScanBankFrameForItems()
+function ScarletUI:UpdateBankItemLevels()
     local hide = not self.db.global.itemLevelBag
-
     if not (BankFrame and BankFrame:IsShown()) then return end
 
-    -- Clear all bank item levels first to prevent stale data
-    self:ClearBankItemLevels()
-
-    local itemButtonCount = 0
-
-    -- Scan all descendants looking for item buttons
-    local function scanFrame(frame, depth)
-        if not frame or depth > 5 then return end
-
-        -- Check if this frame is an item button and is visible
-        if frame:IsShown() then
-            if frame.GetItemLocation or frame.GetBagID or frame.hasItem or (frame.GetName and frame:GetName() and frame:GetName():match("Item")) then
-                itemButtonCount = itemButtonCount + 1
-                -- Only update if the button actually has an item
-                self:UpdateBankButtonItemLevel(frame, hide)
+    -- Classic: character bank uses known global button names (BankFrameItem1..N)
+    -- Retail: BankSlotsFrame may not exist; the scan below handles all panels
+    local bankSlotsFrame = _G["BankSlotsFrame"]
+    if bankSlotsFrame and bankSlotsFrame:IsShown() then
+        local numSlots = GetContainerNumSlots(BANK_CONTAINER)
+        for slot = 1, numSlots do
+            local button = _G["BankFrameItem" .. slot]
+            if button then
+                local itemLocation = ItemLocation:CreateFromBagAndSlot(BANK_CONTAINER, slot)
+                local itemLink
+                if itemLocation:IsValid() then
+                    itemLink = C_Item.GetItemLink(itemLocation)
+                else
+                    itemLocation = nil
+                end
+                ItemLevelText(itemLink, itemLocation, button, hide)
             end
-        end
-
-        -- Scan children
-        local children = { frame:GetChildren() }
-        for _, child in ipairs(children) do
-            scanFrame(child, depth + 1)
         end
     end
 
-    scanFrame(BankFrame, 0)
+    -- Retail: bank panels use pooled buttons with GetItemLocation (BankPanelItemButtonMixin).
+    -- Duck-type to find them — works across expansions regardless of frame naming.
+    local function scanForItemButtons(frame, depth)
+        if not frame or not frame:IsShown() or depth > 3 then return end
+        if frame.GetItemLocation then
+            local itemLocation = frame:GetItemLocation()
+            local itemLink
+            if itemLocation and itemLocation:IsValid() then
+                itemLink = C_Item.GetItemLink(itemLocation)
+            else
+                itemLocation = nil
+            end
+            ItemLevelText(itemLink, itemLocation, frame, hide)
+        end
+        for _, child in ipairs({ frame:GetChildren() }) do
+            scanForItemButtons(child, depth + 1)
+        end
+    end
 
+    for _, panel in ipairs({ BankFrame:GetChildren() }) do
+        if panel ~= bankSlotsFrame and panel:IsShown() then
+            scanForItemButtons(panel, 1)
+        end
+    end
 end
 
 function ScarletUI:BagItemLevel()
@@ -307,10 +307,7 @@ function ScarletUI:BagItemLevel()
     if self.retail then
         self:LoopBagButtons(_G["ContainerFrameCombinedBags"])
 
-        -- Handle bank if it's open
-        if BankFrame and BankFrame:IsShown() then
-            self:ScanBankFrameForItems()
-        end
+        self:UpdateBankItemLevels()
     else
         -- Update custom bag frame if it exists
         if ScarletUI_BagFrame then
@@ -409,7 +406,7 @@ function ScarletUI:SetupItemLevels()
         end)
 
         self:RegisterEventHandler("BAG_UPDATE", function()
-            C_Timer.After(0.05, function()
+            C_Timer.After(0, function()
                 ScarletUI:BagItemLevel()
             end)
         end)
@@ -419,16 +416,39 @@ function ScarletUI:SetupItemLevels()
                 ScarletUI:BagItemLevel()
             end)
 
-            -- Hook bank tab buttons for retail to detect tab switches
-            if ScarletUI.retail and not ScarletUI.bankTabsHooked then
-                ScarletUI.bankTabsHooked = true
+            if ScarletUI.retail and not ScarletUI.bankHooked then
+                ScarletUI.bankHooked = true
+
+                -- Hook main bank tab buttons (Bank / Warband Bank switching)
                 for i = 1, 5 do
                     local tab = _G["BankFrameTab" .. i]
                     if tab then
                         tab:HookScript("OnClick", function()
-                            C_Timer.After(0.1, function()
-                                ScarletUI:ScanBankFrameForItems()
-                            end)
+                            ScarletUI:ClearBankItemLevels()
+                            ScarletUI:ScheduleBankUpdate()
+                        end)
+                    end
+                end
+
+                -- Hook all bank panels for sub-tab switches and item refreshes.
+                -- Duck-type BankFrame children to find panels with BankPanelMixin methods.
+                for _, panel in ipairs({ BankFrame:GetChildren() }) do
+                    if panel.SelectTab then
+                        hooksecurefunc(panel, "SelectTab", function()
+                            ScarletUI:ClearBankItemLevels()
+                            ScarletUI:ScheduleBankUpdate()
+                        end)
+                    end
+
+                    if panel.GenerateItemSlotsForSelectedTab then
+                        hooksecurefunc(panel, "GenerateItemSlotsForSelectedTab", function()
+                            ScarletUI:UpdateBankItemLevels()
+                        end)
+                    end
+
+                    if panel.RefreshAllItemsForSelectedTab then
+                        hooksecurefunc(panel, "RefreshAllItemsForSelectedTab", function()
+                            ScarletUI:UpdateBankItemLevels()
                         end)
                     end
                 end
@@ -436,9 +456,7 @@ function ScarletUI:SetupItemLevels()
         end)
 
         self:RegisterEventHandler("PLAYERBANKSLOTS_CHANGED", function()
-            C_Timer.After(0.05, function()
-                ScarletUI:BagItemLevel()
-            end)
+            ScarletUI:BagItemLevel()
         end)
 
         CharacterFrame:HookScript("OnShow", function()
