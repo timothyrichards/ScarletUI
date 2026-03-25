@@ -80,10 +80,7 @@ local function calculateUnitItemLevel(unit)
     local itemCount = 0
     local isHunter = (select(2, UnitClass(unit)) == "HUNTER")
     local mainHandItemLink = GetInventoryItemLink(unit, GetInventorySlotInfo("MainHandSlot"))
-    local secondaryHandItemLink = GetInventoryItemLink(unit, GetInventorySlotInfo("SecondaryHandSlot"))
     local mainHandItemLevel = mainHandItemLink and GetDetailedItemLevelInfo(mainHandItemLink) or 0
-    local secondaryHandItemLevel = secondaryHandItemLink and GetDetailedItemLevelInfo(secondaryHandItemLink) or 0
-    local dualWieldItemLevel = math.max(mainHandItemLevel, secondaryHandItemLevel)
     local versionText, interfaceVersion = ScarletUI:GetWoWVersion()
 
     for _, slotName in ipairs(slots) do
@@ -101,16 +98,6 @@ local function calculateUnitItemLevel(unit)
                 skipSlot = true
             end
 
-            if slotName == "SecondaryHand" then
-                if mainHandItemLink then
-                    local _, _, _, _, _, _, _, _, itemEquipLoc = GetItemInfo(mainHandItemLink)
-                    -- INVTYPE_2HWEAPON includes 2H melee weapons
-                    -- INVTYPE_RANGED and INVTYPE_RANGEDRIGHT are for bows/guns/crossbows (used by hunters in MoP)
-                    if itemEquipLoc == "INVTYPE_2HWEAPON" or itemEquipLoc == "INVTYPE_RANGED" or itemEquipLoc == "INVTYPE_RANGEDRIGHT" then
-                        skipSlot = true
-                    end
-                end
-            end
         end
 
         if not skipSlot then
@@ -118,11 +105,13 @@ local function calculateUnitItemLevel(unit)
             local itemLink = GetInventoryItemLink(unit, slotID)
             if itemLink then
                 local itemLevel = GetDetailedItemLevelInfo(itemLink)
-                if slotName == "MainHand" or slotName == "SecondaryHand" then
-                    -- Player is dual wielding, use the higher item level item for the calculation
-                    totalItemLevel = totalItemLevel + dualWieldItemLevel
-                else
-                    totalItemLevel = totalItemLevel + itemLevel
+                totalItemLevel = totalItemLevel + itemLevel
+            elseif slotName == "SecondaryHand" and mainHandItemLink then
+                -- Only 2H weapons count MH ilvl for both weapon slots
+                -- 1H with no off-hand: OH is 0 (empty slot penalty)
+                local _, _, _, _, _, _, _, _, itemEquipLoc = GetItemInfo(mainHandItemLink)
+                if itemEquipLoc == "INVTYPE_2HWEAPON" or itemEquipLoc == "INVTYPE_RANGED" or itemEquipLoc == "INVTYPE_RANGEDRIGHT" then
+                    totalItemLevel = totalItemLevel + mainHandItemLevel
                 end
             end
             itemCount = itemCount + 1
