@@ -42,6 +42,10 @@ local headerHeight = 28
 local lastBagCounts = {}
 local bagEquipInProgress = false
 local origPutItemInBag = PutItemInBag
+local bagStateHandled = false
+local bagStateResetFrame
+local bagBindingFrame
+local bagBindingButton
 
 local bankSlots = {}
 local orderedBankSlots = {}
@@ -83,6 +87,116 @@ local function ResizeSlotButton(button, size)
     end
     if button.IconOverlay then
         button.IconOverlay:SetSize(size, size)
+    end
+end
+
+local function IsPlayerBag(bagID)
+    return bagID
+        and ((bagID >= BACKPACK_CONTAINER and bagID <= NUM_BAG_SLOTS)
+            or (KEYRING_CONTAINER and bagID == KEYRING_CONTAINER))
+end
+
+local function MarkBagStateHandled()
+    bagStateHandled = true
+
+    if bagStateResetFrame then
+        bagStateResetFrame:SetScript("OnUpdate", function(frame)
+            bagStateHandled = false
+            frame:SetScript("OnUpdate", nil)
+        end)
+    end
+end
+
+local function ShowBagFrame()
+    if ScarletUI_BagFrame then
+        local wasShown = ScarletUI_BagFrame:IsShown()
+        ScarletUI_BagFrame:Show()
+        if not wasShown then
+            MarkBagStateHandled()
+        end
+    end
+end
+
+local function HideBagFrame()
+    if ScarletUI_BagFrame then
+        local wasShown = ScarletUI_BagFrame:IsShown()
+        ScarletUI_BagFrame:Hide()
+        if wasShown then
+            MarkBagStateHandled()
+        end
+    end
+end
+
+local function ToggleBagFrameIfUnhandled()
+    if bagStateHandled then
+        bagStateHandled = false
+        return
+    end
+
+    if ScarletUI_BagFrame then
+        ScarletUI_BagFrame:SetShown(not ScarletUI_BagFrame:IsShown())
+    end
+end
+
+local function ToggleBagFrame()
+    if ScarletUI_BagFrame then
+        ScarletUI_BagFrame:SetShown(not ScarletUI_BagFrame:IsShown())
+    end
+end
+
+local function ApplyBagKeybindOverrides()
+    if not SetOverrideBindingClick or not ClearOverrideBindings or not GetBindingKey or (InCombatLockdown and InCombatLockdown()) then
+        return
+    end
+
+    if not bagBindingButton then
+        bagBindingButton = CreateFrame("Button", "ScarletUI_BagKeybindButton", UIParent)
+        bagBindingButton:SetScript("OnClick", ToggleBagFrame)
+    end
+
+    ClearOverrideBindings(bagBindingButton)
+
+    local commands = { "OPENALLBAGS", "TOGGLEBACKPACK", "TOGGLEBAG1", "TOGGLEBAG2", "TOGGLEBAG3", "TOGGLEBAG4", "TOGGLEKEYRING" }
+    for _, command in ipairs(commands) do
+        local keys = { GetBindingKey(command) }
+        for _, key in ipairs(keys) do
+            SetOverrideBindingClick(bagBindingButton, false, key, "ScarletUI_BagKeybindButton")
+        end
+    end
+end
+
+local function HideTooltipIfOwned(frame)
+    if GameTooltip.IsOwned and not GameTooltip:IsOwned(frame) then
+        return
+    end
+
+    GameTooltip:Hide()
+end
+
+local function UpdateBagCursor(frame)
+    if ShowContainerSellCursor and IsPlayerBag(frame.bag) and MerchantFrame and MerchantFrame:IsShown() and MerchantFrame.selectedTab == 1 then
+        ShowContainerSellCursor(frame.bag, frame.slot)
+    end
+end
+
+local function ResetBagCursor()
+    if ResetCursor and (not CursorHasItem or not CursorHasItem()) then
+        ResetCursor()
+    end
+end
+
+local function RefreshHoveredTooltip(frame, elapsed)
+    frame.scarletTooltipElapsed = (frame.scarletTooltipElapsed or 0) + elapsed
+    if frame.scarletTooltipElapsed < 0.25 then
+        return
+    end
+    frame.scarletTooltipElapsed = 0
+
+    if frame:IsMouseOver() and frame.UpdateTooltip then
+        frame:UpdateTooltip()
+        UpdateBagCursor(frame)
+    else
+        frame:SetScript("OnUpdate", nil)
     end
 end
 
@@ -265,6 +379,50 @@ local function GetBagType(bag)
     return bagType or 0
 end
 
+local function GetSortSlotKey(slot)
+    return slot.bag .. ":" .. slot.slot
+end
+
+local function BuildFinalSortMoves(allSlots, items)
+    local slotToItem = {}
+    local itemToSlot = {}
+    local moves = {}
+
+    for _, item in ipairs(items) do
+        item.key = item.key or GetSortSlotKey(item)
+        slotToItem[item.key] = item
+        itemToSlot[item.key] = { bag = item.bag, slot = item.slot }
+    end
+
+    for index, desiredItem in ipairs(items) do
+        local targetSlot = allSlots[index]
+        if targetSlot then
+            local targetKey = GetSortSlotKey(targetSlot)
+            local currentItem = slotToItem[targetKey]
+
+            if not currentItem or currentItem.key ~= desiredItem.key then
+                local sourceSlot = itemToSlot[desiredItem.key]
+                if sourceSlot then
+                    table.insert(moves, {
+                        source = { bag = sourceSlot.bag, slot = sourceSlot.slot },
+                        target = { bag = targetSlot.bag, slot = targetSlot.slot },
+                    })
+
+                    local sourceKey = GetSortSlotKey(sourceSlot)
+                    slotToItem[sourceKey] = currentItem
+                    if currentItem then
+                        itemToSlot[currentItem.key] = { bag = sourceSlot.bag, slot = sourceSlot.slot }
+                    end
+                    slotToItem[targetKey] = desiredItem
+                    itemToSlot[desiredItem.key] = { bag = targetSlot.bag, slot = targetSlot.slot }
+                end
+            end
+        end
+    end
+
+    return moves
+end
+
 local function CustomSortBags()
     -- Group bags by their bag type so we never move items across bag types
     local bagGroups = {}
@@ -337,6 +495,7 @@ local function CustomSortBags()
                         local itemID = containerInfo and containerInfo.itemID or 0
                         table.insert(items, {
                             bag = bag, slot = slot,
+                            key = bag .. ":" .. slot,
                             name = name, quality = quality or 0,
                             itemType = itemType or "", subType = subType or "",
                             stackCount = stackCount, itemID = itemID,
@@ -367,6 +526,8 @@ local function CustomSortBags()
     local passes = 0
     local phase = "merge"
     local groupIndex = 1
+    local sortMoves
+    local moveIndex = 1
 
     sortFrame:SetScript("OnUpdate", function(self, dt)
         ticker = ticker + dt
@@ -397,53 +558,30 @@ local function CustomSortBags()
         if phase == "merge" then
             if not FindMergeInBags(currentBags) then
                 phase = "sort"
+                sortMoves = nil
+                moveIndex = 1
             end
             return
         end
 
-        -- Phase 2: positional sort within this bag type group
-        local allSlots, items = ScanAndSortBags(currentBags)
-        local swapped = false
-        local touched = {}
-
-        for i, item in ipairs(items) do
-            local target = allSlots[i]
-            if item.bag ~= target.bag or item.slot ~= target.slot then
-                local srcKey = item.bag .. ":" .. item.slot
-                local dstKey = target.bag .. ":" .. target.slot
-                if not touched[srcKey] and not touched[dstKey] then
-                    local targetLink = GetContainerItemLink(target.bag, target.slot)
-                    local needsSwap = true
-                    if targetLink then
-                        local tInfo = GetContainerItemInfo(target.bag, target.slot)
-                        local tItemID = tInfo and tInfo.itemID or 0
-                        if item.itemID == tItemID then
-                            local tStack = tInfo and tInfo.stackCount or 1
-                            if item.stackCount == tStack then
-                                needsSwap = false
-                            else
-                                local _, _, _, _, _, _, _, maxStack = GetItemInfo(targetLink)
-                                maxStack = maxStack or 1
-                                if item.stackCount < maxStack and tStack < maxStack then
-                                    needsSwap = false
-                                end
-                            end
-                        end
-                    end
-                    if needsSwap then
-                        PickupContainerItem(item.bag, item.slot)
-                        PickupContainerItem(target.bag, target.slot)
-                        touched[srcKey] = true
-                        touched[dstKey] = true
-                        swapped = true
-                    end
-                end
-            end
+        -- Phase 2: execute a fixed positional plan within this bag type group.
+        if not sortMoves then
+            local allSlots, items = ScanAndSortBags(currentBags)
+            sortMoves = BuildFinalSortMoves(allSlots, items)
+            moveIndex = 1
         end
 
-        if not swapped then
+        local move = sortMoves[moveIndex]
+        if move then
+            PickupContainerItem(move.source.bag, move.source.slot)
+            PickupContainerItem(move.target.bag, move.target.slot)
+            if CursorHasItem() then ClearCursor() end
+            moveIndex = moveIndex + 1
+        else
             groupIndex = groupIndex + 1
             phase = "merge"
+            sortMoves = nil
+            moveIndex = 1
         end
     end)
 end
@@ -701,6 +839,7 @@ local function CustomSortBank()
                         local itemID = containerInfo and containerInfo.itemID or 0
                         table.insert(items, {
                             bag = bag, slot = slot,
+                            key = bag .. ":" .. slot,
                             name = name, quality = quality or 0,
                             itemType = itemType or "", subType = subType or "",
                             stackCount = stackCount, itemID = itemID,
@@ -731,6 +870,8 @@ local function CustomSortBank()
     local passes = 0
     local phase = "merge"
     local groupIndex = 1
+    local sortMoves
+    local moveIndex = 1
 
     sortFrame:SetScript("OnUpdate", function(self, dt)
         ticker = ticker + dt
@@ -760,52 +901,29 @@ local function CustomSortBank()
         if phase == "merge" then
             if not FindBankMergeInBags(currentBags) then
                 phase = "sort"
+                sortMoves = nil
+                moveIndex = 1
             end
             return
         end
 
-        local allSlots, items = ScanAndSortBankBags(currentBags)
-        local swapped = false
-        local touched = {}
-
-        for i, item in ipairs(items) do
-            local target = allSlots[i]
-            if item.bag ~= target.bag or item.slot ~= target.slot then
-                local srcKey = item.bag .. ":" .. item.slot
-                local dstKey = target.bag .. ":" .. target.slot
-                if not touched[srcKey] and not touched[dstKey] then
-                    local targetLink = GetContainerItemLink(target.bag, target.slot)
-                    local needsSwap = true
-                    if targetLink then
-                        local tInfo = GetContainerItemInfo(target.bag, target.slot)
-                        local tItemID = tInfo and tInfo.itemID or 0
-                        if item.itemID == tItemID then
-                            local tStack = tInfo and tInfo.stackCount or 1
-                            if item.stackCount == tStack then
-                                needsSwap = false
-                            else
-                                local _, _, _, _, _, _, _, maxStack = GetItemInfo(targetLink)
-                                maxStack = maxStack or 1
-                                if item.stackCount < maxStack and tStack < maxStack then
-                                    needsSwap = false
-                                end
-                            end
-                        end
-                    end
-                    if needsSwap then
-                        PickupContainerItem(item.bag, item.slot)
-                        PickupContainerItem(target.bag, target.slot)
-                        touched[srcKey] = true
-                        touched[dstKey] = true
-                        swapped = true
-                    end
-                end
-            end
+        if not sortMoves then
+            local allSlots, items = ScanAndSortBankBags(currentBags)
+            sortMoves = BuildFinalSortMoves(allSlots, items)
+            moveIndex = 1
         end
 
-        if not swapped then
+        local move = sortMoves[moveIndex]
+        if move then
+            PickupContainerItem(move.source.bag, move.source.slot)
+            PickupContainerItem(move.target.bag, move.target.slot)
+            if CursorHasItem() then ClearCursor() end
+            moveIndex = moveIndex + 1
+        else
             groupIndex = groupIndex + 1
             phase = "merge"
+            sortMoves = nil
+            moveIndex = 1
         end
     end)
 end
@@ -862,6 +980,11 @@ function ScarletUI:SetupBags()
         self.bagFrame:SetScript("OnHide", function()
             PlaySound(617)
         end)
+        bagStateResetFrame = bagStateResetFrame or CreateFrame("Frame")
+        bagBindingFrame = bagBindingFrame or CreateFrame("Frame")
+        bagBindingFrame:RegisterEvent("UPDATE_BINDINGS")
+        bagBindingFrame:SetScript("OnEvent", ApplyBagKeybindOverrides)
+        ApplyBagKeybindOverrides()
 
         -- Create header bar with bag toggles, search, and sort button
         local headerFrame = CreateFrame("Frame", nil, self.bagFrame)
@@ -1099,24 +1222,20 @@ function ScarletUI:SetupBags()
         end
 
         -- Hook bag functions to drive the custom frame (preserves secure status of originals)
-        hooksecurefunc("OpenAllBags", function() ScarletUI_BagFrame:Show() end)
-        hooksecurefunc("CloseAllBags", function() ScarletUI_BagFrame:Hide() end)
-        hooksecurefunc("ToggleAllBags", function()
-            ScarletUI_BagFrame:SetShown(not ScarletUI_BagFrame:IsShown())
-        end)
-        hooksecurefunc("OpenBackpack", function() ScarletUI_BagFrame:Show() end)
-        hooksecurefunc("CloseBackpack", function() ScarletUI_BagFrame:Hide() end)
-        hooksecurefunc("ToggleBackpack", function()
-            ScarletUI_BagFrame:SetShown(not ScarletUI_BagFrame:IsShown())
-        end)
+        hooksecurefunc("OpenAllBags", ShowBagFrame)
+        hooksecurefunc("CloseAllBags", HideBagFrame)
+        hooksecurefunc("ToggleAllBags", ToggleBagFrameIfUnhandled)
+        hooksecurefunc("OpenBackpack", ShowBagFrame)
+        hooksecurefunc("CloseBackpack", HideBagFrame)
+        hooksecurefunc("ToggleBackpack", ToggleBagFrameIfUnhandled)
         hooksecurefunc("OpenBag", function(bagID)
-            if bagID >= BACKPACK_CONTAINER and bagID <= NUM_BAG_SLOTS then
-                ScarletUI_BagFrame:Show()
+            if IsPlayerBag(bagID) then
+                ShowBagFrame()
             end
         end)
         hooksecurefunc("CloseBag", function(bagID)
-            if bagID >= BACKPACK_CONTAINER and bagID <= NUM_BAG_SLOTS then
-                ScarletUI_BagFrame:Hide()
+            if IsPlayerBag(bagID) then
+                HideBagFrame()
             end
         end)
         hooksecurefunc("ToggleBag", function(bagID)
@@ -1124,14 +1243,12 @@ function ScarletUI:SetupBags()
                 bagEquipInProgress = false
                 return
             end
-            if bagID >= BACKPACK_CONTAINER and bagID <= NUM_BAG_SLOTS then
-                ScarletUI_BagFrame:SetShown(not ScarletUI_BagFrame:IsShown())
+            if IsPlayerBag(bagID) then
+                ToggleBagFrameIfUnhandled()
             end
         end)
         if ToggleKeyRing then
-            hooksecurefunc("ToggleKeyRing", function()
-                ScarletUI_BagFrame:SetShown(not ScarletUI_BagFrame:IsShown())
-            end)
+            hooksecurefunc("ToggleKeyRing", ToggleBagFrameIfUnhandled)
         end
     end
 
@@ -1277,15 +1394,28 @@ function ScarletUI:SetupBags()
             bagSlots[bag * 100 + slot] = button
             orderedSlots[#orderedSlots + 1] = button
 
-            -- Always SetScript (replaces, safe) to update tooltip closures for new bag/slot
-            button:SetScript("OnEnter", function(self)
-                GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-                GameTooltip:SetBagItem(bag, slot)
+            local function SetBagTooltip(btn)
+                GameTooltip:SetOwner(btn, "ANCHOR_LEFT")
+                GameTooltip:SetBagItem(btn.bag, btn.slot)
                 GameTooltip:Show()
+            end
+
+            button.UpdateTooltip = SetBagTooltip
+            button:SetScript("OnEnter", function(self)
+                self.scarletTooltipElapsed = 0
+                if ContainerFrameItemButton_OnEnter then
+                    ContainerFrameItemButton_OnEnter(self)
+                else
+                    self:UpdateTooltip()
+                end
+                UpdateBagCursor(self)
+                self:SetScript("OnUpdate", RefreshHoveredTooltip)
             end)
 
-            button:SetScript("OnLeave", function()
-                GameTooltip:Hide()
+            button:SetScript("OnLeave", function(self)
+                self:SetScript("OnUpdate", nil)
+                ResetBagCursor()
+                HideTooltipIfOwned(self)
             end)
         end
     end
@@ -1314,18 +1444,30 @@ function ScarletUI:SetupBags()
 
             local function SetKeyTooltip(btn)
                 GameTooltip:SetOwner(btn, "ANCHOR_LEFT")
-                local link = GetContainerItemLink(keyBag, slot)
+                local link = GetContainerItemLink(btn.bag, btn.slot)
                 if link then
                     GameTooltip:SetHyperlink(link)
                 end
                 GameTooltip:Show()
             end
 
-            button:SetScript("OnEnter", SetKeyTooltip)
             button.UpdateTooltip = SetKeyTooltip
 
-            button:SetScript("OnLeave", function()
-                GameTooltip:Hide()
+            button:SetScript("OnEnter", function(self)
+                self.scarletTooltipElapsed = 0
+                if ContainerFrameItemButton_OnEnter then
+                    ContainerFrameItemButton_OnEnter(self)
+                else
+                    self:UpdateTooltip()
+                end
+                UpdateBagCursor(self)
+                self:SetScript("OnUpdate", RefreshHoveredTooltip)
+            end)
+
+            button:SetScript("OnLeave", function(self)
+                self:SetScript("OnUpdate", nil)
+                ResetBagCursor()
+                HideTooltipIfOwned(self)
             end)
         end
     end
@@ -1822,11 +1964,17 @@ function ScarletUI:SetupBank()
             GameTooltip:Show()
         end
 
-        button:SetScript("OnEnter", SetBankTooltip)
         button.UpdateTooltip = SetBankTooltip
 
-        button:SetScript("OnLeave", function()
-            GameTooltip:Hide()
+        button:SetScript("OnEnter", function(self)
+            self.scarletTooltipElapsed = 0
+            self:UpdateTooltip()
+            self:SetScript("OnUpdate", RefreshHoveredTooltip)
+        end)
+
+        button:SetScript("OnLeave", function(self)
+            self:SetScript("OnUpdate", nil)
+            HideTooltipIfOwned(self)
         end)
 
         return button
