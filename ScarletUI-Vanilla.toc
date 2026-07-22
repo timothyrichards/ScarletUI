@@ -17,6 +17,8 @@ Modules\Chat.lua
 Modules\CVars.lua
 Modules\Database.lua
 Modules\Helpers.lua
+Modules\EditModeLayouts.lua
+Modules\EditMode.lua
 Modules\ItemLevel.lua
 Modules\Movers.lua
 Modules\Nameplates.lua

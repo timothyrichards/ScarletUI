@@ -641,9 +641,145 @@ function ScarletUI:reputationBar(module)
     end
 end
 
+local function ApplyShortStatusTrackingBar(container)
+    if not container then
+        return
+    end
+
+    local width = 510
+    container:SetWidth(width)
+
+    for _, bar in pairs(container.bars or {}) do
+        bar:SetWidth(width)
+        if bar.StatusBar then
+            bar.StatusBar:SetWidth(width)
+        end
+    end
+
+    -- Classic's attached artwork is four 256px pieces. Match the old short
+    -- bar by retaining the two end pieces and joining them in the middle.
+    local attached = container.MainMenuBarTextures
+    if attached and attached[1] and attached[4] then
+        attached[1]:SetWidth(255)
+        attached[1]:ClearAllPoints()
+        attached[1]:SetPoint("LEFT", container, "LEFT", 0, 0)
+        if attached[2] then attached[2]:Hide() end
+        if attached[3] then attached[3]:Hide() end
+        attached[4]:SetWidth(255)
+        attached[4]:ClearAllPoints()
+        attached[4]:SetPoint("LEFT", attached[1], "RIGHT", 0, 0)
+    end
+
+    -- The standalone artwork has a split 256px left edge followed by three
+    -- 256px pieces. Keep the split edge and final right piece at full height.
+    local standalone = container.StandaloneTextures
+    if standalone and standalone[1] and standalone[2] and standalone[5] then
+        standalone[1]:SetWidth(16)
+        standalone[1]:ClearAllPoints()
+        standalone[1]:SetPoint("LEFT", container, "LEFT", 0, 0)
+        standalone[2]:SetWidth(239)
+        standalone[2]:ClearAllPoints()
+        standalone[2]:SetPoint("LEFT", standalone[1], "RIGHT", 0, 0)
+        if standalone[3] then standalone[3]:Hide() end
+        if standalone[4] then standalone[4]:Hide() end
+        standalone[5]:SetWidth(255)
+        standalone[5]:ClearAllPoints()
+        standalone[5]:SetPoint("LEFT", standalone[2], "RIGHT", 0, 0)
+    end
+end
+
+function ScarletUI:ApplyShortStatusTrackingBars()
+    local module = self.db and self.db.global and self.db.global.actionbarsModule
+    if not module or not module.enabled then
+        return
+    end
+
+    if module.experienceBar.short then
+        ApplyShortStatusTrackingBar(MainStatusTrackingBarContainer)
+    end
+    if module.reputationBar.short then
+        ApplyShortStatusTrackingBar(SecondaryStatusTrackingBarContainer)
+    end
+end
+
+function ScarletUI:SetupActionBarPreferences()
+    if not self.db or not self.db.global then
+        return
+    end
+
+    local module = self.db.global.actionbarsModule
+    if not module or not module.enabled then
+        return
+    end
+
+    -- This preference is intentionally independent from frame placement.
+    for i = 0, 3 do
+        local bagButton = _G["CharacterBag" .. i .. "Slot"]
+        if bagButton then
+            bagButton:SetShown(not module.microBag)
+        end
+    end
+
+    if ExtraActionButton1 and ExtraActionButton1.style then
+        ExtraActionButton1.style:SetShown(module.extraActionBar.showBackground)
+    end
+
+    -- These texture changes only exist on the older action bar implementation.
+    if module.experienceBar.short and MainMenuExpBar and MainMenuXPBarTexture0 and MainMenuXPBarTexture3 then
+        MainMenuExpBar:SetSize(510, 10)
+        MainMenuXPBarTexture0:SetWidth(255)
+        MainMenuXPBarTexture0:ClearAllPoints()
+        MainMenuXPBarTexture0:SetPoint("LEFT", MainMenuExpBar, "LEFT", 0, 0)
+
+        if MainMenuXPBarTexture1 then MainMenuXPBarTexture1:Hide() end
+        if MainMenuXPBarTexture2 then MainMenuXPBarTexture2:Hide() end
+
+        MainMenuXPBarTexture3:SetWidth(255)
+        MainMenuXPBarTexture3:ClearAllPoints()
+        MainMenuXPBarTexture3:SetPoint("LEFT", MainMenuXPBarTexture0, "RIGHT", 0, 0)
+    end
+
+    local reputationBar = ReputationWatchBar
+    local statusBar = reputationBar and reputationBar.StatusBar
+    if module.reputationBar.short and reputationBar and statusBar then
+        reputationBar:SetWidth(510)
+        statusBar:SetWidth(510)
+
+        local texture0 = statusBar.WatchBarTexture0 or statusBar.XPBarTexture0
+        local texture1 = statusBar.WatchBarTexture1 or statusBar.XPBarTexture1
+        local texture2 = statusBar.WatchBarTexture2 or statusBar.XPBarTexture2
+        local texture3 = statusBar.WatchBarTexture3 or statusBar.XPBarTexture3
+        if texture1 then texture1:Hide() end
+        if texture2 then texture2:Hide() end
+        if texture0 and texture3 then
+            texture3:ClearAllPoints()
+            texture3:SetPoint("LEFT", texture0, "RIGHT", 0, 0)
+        end
+    end
+
+    self:ApplyShortStatusTrackingBars()
+
+    if StatusTrackingBarManager and not self.shortStatusTrackingBarsHooked then
+        self.shortStatusTrackingBarsHooked = true
+        hooksecurefunc(StatusTrackingBarManager, "UpdateBarVisuals", function()
+            ScarletUI:ApplyShortStatusTrackingBars()
+        end)
+    end
+end
+
 function ScarletUI:SetupActionBars()
     local actionbarsModule = self.db.global.actionbarsModule;
-    if not actionbarsModule.enabled or self.lightWeightMode or self.editMode then
+    if not actionbarsModule.enabled then
+        return
+    end
+
+    if self.lightWeightMode and not self.editMode then
+        return
+    end
+
+    self:SetupActionBarPreferences()
+
+    if self.lightWeightMode or self.editMode then
         return
     end
 

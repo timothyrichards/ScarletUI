@@ -52,6 +52,9 @@ ScarletUI.defaults = {
         moversModule = {
             enabled = true
         },
+        editMode = {
+            installed = {},
+        },
         actionbarsModule = {
             enabled = true,
             showPagingNumbers = true,
@@ -369,6 +372,12 @@ ScarletUI.defaults = {
     },
     char = {
         priorityDebuffs = "",
+        editMode = {
+            promptedVersions = {},
+            declinedVersions = {},
+            activationPromptedVersions = {},
+            lastDisplayVariant = nil,
+        },
     }
 }
 

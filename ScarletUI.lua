@@ -135,9 +135,7 @@ function ScarletUI:OnEnable()
         self.lightWeightMode = true;
     end
 
-    if self:IsAddOnLoaded("Blizzard_EditMode") then
-        self.editMode = true;
-    end
+    self:InitializeEditMode()
 
     self:Setup()
 
@@ -151,8 +149,10 @@ function ScarletUI:Setup()
     -- Set up debug frame
     self:SetupDebugFrame()
 
-    -- Setup mover grid
-    self:CreateMoverGrid(25)
+    -- The legacy grid is only needed on clients without Blizzard Edit Mode.
+    if not self.editMode then
+        self:CreateMoverGrid(25)
+    end
 
     -- Setup frames
     self:SetupChat()
@@ -229,8 +229,11 @@ function ScarletUI:SlashCommand(msg)
             return
         end
 
-        if self.editMode or self.lightWeightMode then
-            self:Print("Movers are not available, please use your UI's edit mode.")
+        if self.editMode then
+            self:OpenEditMode()
+            return
+        elseif self.lightWeightMode then
+            self:Print("Movers are not available while another UI manages frame positions.")
             return
         end
 
@@ -240,7 +243,7 @@ function ScarletUI:SlashCommand(msg)
     elseif msg == "help" then
         self:Print("Available commands:")
         self:Print("- /sui: Open the options panel.")
-        self:Print("- /sui move: Toggle the movers.")
+        self:Print("- /sui move: Open Edit Mode or toggle legacy movers.")
         self:Print("- /sui debug: Toggle the debug frame.")
         self:Print("- /sui help: Display this message.")
     else
