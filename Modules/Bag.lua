@@ -61,6 +61,7 @@ local bankButtonPool = {}
 -- Sort frame singletons (avoid creating new frames per sort)
 local bagSortFrame
 local bankSortFrame
+local sortMoveDelay = 0.05
 
 local function ResizeSlotButton(button, size)
     button:SetSize(size, size)
@@ -129,12 +130,15 @@ end
 
 local function ToggleBagFrameIfUnhandled()
     if bagStateHandled then
-        bagStateHandled = false
         return
     end
 
     if ScarletUI_BagFrame then
         ScarletUI_BagFrame:SetShown(not ScarletUI_BagFrame:IsShown())
+        -- Classic clients can nest bag toggle functions (for example,
+        -- ToggleBackpack calling ToggleBag). Keep the guard set until the next
+        -- frame so every hook in the same call chain cannot toggle us again.
+        MarkBagStateHandled()
     end
 end
 
@@ -383,38 +387,96 @@ local function GetSortSlotKey(slot)
     return slot.bag .. ":" .. slot.slot
 end
 
+local function GetSortItemSignature(item)
+    if not item then return nil end
+
+    if item.itemID and item.itemID ~= 0 then
+        return "id:" .. tostring(item.itemID) .. ":" .. tostring(item.stackCount or 1)
+    end
+
+    return "name:"
+        .. tostring(item.name or "") .. ":"
+        .. tostring(item.quality or 0) .. ":"
+        .. tostring(item.itemType or "") .. ":"
+        .. tostring(item.subType or "") .. ":"
+        .. tostring(item.stackCount or 1)
+end
+
+local function IsSortSlotLocked(slot)
+    if not slot then return false end
+
+    local info, _, locked = GetContainerItemInfo(slot.bag, slot.slot)
+    if type(info) == "table" then
+        return info.isLocked
+    end
+
+    return locked
+end
+
+local function IsSortMoveLocked(move)
+    return move and (IsSortSlotLocked(move.source) or IsSortSlotLocked(move.target))
+end
+
 local function BuildFinalSortMoves(allSlots, items)
+    local slotByKey = {}
     local slotToItem = {}
-    local itemToSlot = {}
+    local targetSignatureBySlotKey = {}
     local moves = {}
+
+    for _, slot in ipairs(allSlots) do
+        slotByKey[GetSortSlotKey(slot)] = slot
+    end
 
     for _, item in ipairs(items) do
         item.key = item.key or GetSortSlotKey(item)
         slotToItem[item.key] = item
-        itemToSlot[item.key] = { bag = item.bag, slot = item.slot }
+    end
+
+    for index, desiredItem in ipairs(items) do
+        local targetSlot = allSlots[index]
+        if targetSlot then
+            targetSignatureBySlotKey[GetSortSlotKey(targetSlot)] = GetSortItemSignature(desiredItem)
+        end
+    end
+
+    local function FindSourceItem(signature, targetKey)
+        local fallbackKey, fallbackItem
+
+        for sourceKey, item in pairs(slotToItem) do
+            if sourceKey ~= targetKey and GetSortItemSignature(item) == signature then
+                if targetSignatureBySlotKey[sourceKey] ~= signature then
+                    return sourceKey, item
+                end
+
+                if not fallbackKey then
+                    fallbackKey = sourceKey
+                    fallbackItem = item
+                end
+            end
+        end
+
+        return fallbackKey, fallbackItem
     end
 
     for index, desiredItem in ipairs(items) do
         local targetSlot = allSlots[index]
         if targetSlot then
             local targetKey = GetSortSlotKey(targetSlot)
+            local desiredSignature = GetSortItemSignature(desiredItem)
             local currentItem = slotToItem[targetKey]
 
-            if not currentItem or currentItem.key ~= desiredItem.key then
-                local sourceSlot = itemToSlot[desiredItem.key]
-                if sourceSlot then
+            if GetSortItemSignature(currentItem) ~= desiredSignature then
+                local sourceKey, sourceItem = FindSourceItem(desiredSignature, targetKey)
+                local sourceSlot = sourceKey and slotByKey[sourceKey]
+
+                if sourceSlot and sourceItem then
                     table.insert(moves, {
                         source = { bag = sourceSlot.bag, slot = sourceSlot.slot },
                         target = { bag = targetSlot.bag, slot = targetSlot.slot },
                     })
 
-                    local sourceKey = GetSortSlotKey(sourceSlot)
                     slotToItem[sourceKey] = currentItem
-                    if currentItem then
-                        itemToSlot[currentItem.key] = { bag = sourceSlot.bag, slot = sourceSlot.slot }
-                    end
-                    slotToItem[targetKey] = desiredItem
-                    itemToSlot[desiredItem.key] = { bag = targetSlot.bag, slot = targetSlot.slot }
+                    slotToItem[targetKey] = sourceItem
                 end
             end
         end
@@ -470,10 +532,14 @@ local function CustomSortBags()
                 table.sort(slots, function(a, b) return a.count > b.count end)
                 local dst = slots[1]
                 local src = slots[#slots]
+                local move = {
+                    source = { bag = src.bag, slot = src.slot },
+                    target = { bag = dst.bag, slot = dst.slot },
+                }
                 PickupContainerItem(src.bag, src.slot)
                 PickupContainerItem(dst.bag, dst.slot)
                 if CursorHasItem() then ClearCursor() end
-                return true
+                return true, move
             end
         end
         return false
@@ -528,16 +594,23 @@ local function CustomSortBags()
     local groupIndex = 1
     local sortMoves
     local moveIndex = 1
+    local pendingMove
 
     sortFrame:SetScript("OnUpdate", function(self, dt)
         ticker = ticker + dt
-        if ticker < 0.05 then return end
-        ticker = 0
 
         if CursorHasItem() then
             ClearCursor()
             return
         end
+
+        if IsSortMoveLocked(pendingMove) then
+            return
+        end
+        pendingMove = nil
+
+        if ticker < sortMoveDelay then return end
+        ticker = 0
 
         passes = passes + 1
         if passes > 200 then
@@ -556,7 +629,10 @@ local function CustomSortBags()
 
         -- Phase 1: merge partial stacks within this bag type group
         if phase == "merge" then
-            if not FindMergeInBags(currentBags) then
+            local merged, mergeMove = FindMergeInBags(currentBags)
+            if merged then
+                pendingMove = mergeMove
+            else
                 phase = "sort"
                 sortMoves = nil
                 moveIndex = 1
@@ -576,12 +652,21 @@ local function CustomSortBags()
             PickupContainerItem(move.source.bag, move.source.slot)
             PickupContainerItem(move.target.bag, move.target.slot)
             if CursorHasItem() then ClearCursor() end
+            pendingMove = move
             moveIndex = moveIndex + 1
         else
-            groupIndex = groupIndex + 1
-            phase = "merge"
-            sortMoves = nil
-            moveIndex = 1
+            local allSlots, items = ScanAndSortBags(currentBags)
+            local validationMoves = BuildFinalSortMoves(allSlots, items)
+            if #validationMoves > 0 then
+                sortMoves = validationMoves
+                moveIndex = 1
+            else
+                groupIndex = groupIndex + 1
+                phase = "merge"
+                sortMoves = nil
+                moveIndex = 1
+                pendingMove = nil
+            end
         end
     end)
 end
@@ -814,10 +899,14 @@ local function CustomSortBank()
                 table.sort(slots, function(a, b) return a.count > b.count end)
                 local dst = slots[1]
                 local src = slots[#slots]
+                local move = {
+                    source = { bag = src.bag, slot = src.slot },
+                    target = { bag = dst.bag, slot = dst.slot },
+                }
                 PickupContainerItem(src.bag, src.slot)
                 PickupContainerItem(dst.bag, dst.slot)
                 if CursorHasItem() then ClearCursor() end
-                return true
+                return true, move
             end
         end
         return false
@@ -872,16 +961,23 @@ local function CustomSortBank()
     local groupIndex = 1
     local sortMoves
     local moveIndex = 1
+    local pendingMove
 
     sortFrame:SetScript("OnUpdate", function(self, dt)
         ticker = ticker + dt
-        if ticker < 0.05 then return end
-        ticker = 0
 
         if CursorHasItem() then
             ClearCursor()
             return
         end
+
+        if IsSortMoveLocked(pendingMove) then
+            return
+        end
+        pendingMove = nil
+
+        if ticker < sortMoveDelay then return end
+        ticker = 0
 
         passes = passes + 1
         if passes > 200 then
@@ -899,7 +995,10 @@ local function CustomSortBank()
         local currentBags = bagGroups[groupOrder[groupIndex]]
 
         if phase == "merge" then
-            if not FindBankMergeInBags(currentBags) then
+            local merged, mergeMove = FindBankMergeInBags(currentBags)
+            if merged then
+                pendingMove = mergeMove
+            else
                 phase = "sort"
                 sortMoves = nil
                 moveIndex = 1
@@ -918,12 +1017,21 @@ local function CustomSortBank()
             PickupContainerItem(move.source.bag, move.source.slot)
             PickupContainerItem(move.target.bag, move.target.slot)
             if CursorHasItem() then ClearCursor() end
+            pendingMove = move
             moveIndex = moveIndex + 1
         else
-            groupIndex = groupIndex + 1
-            phase = "merge"
-            sortMoves = nil
-            moveIndex = 1
+            local allSlots, items = ScanAndSortBankBags(currentBags)
+            local validationMoves = BuildFinalSortMoves(allSlots, items)
+            if #validationMoves > 0 then
+                sortMoves = validationMoves
+                moveIndex = 1
+            else
+                groupIndex = groupIndex + 1
+                phase = "merge"
+                sortMoves = nil
+                moveIndex = 1
+                pendingMove = nil
+            end
         end
     end)
 end
