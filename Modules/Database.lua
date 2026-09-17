@@ -10,69 +10,17 @@ ScarletUI.defaults = {
         itemLevelColorOverride = false,
         itemLevelColor = { r = 1, g = 1, b = 1 },
         expandCharacterInfo = true,
-        clampMovers = true,
-        unitFramesModule = {
-            enabled = true,
-            playerFrame = {
-                move = true,
-                frameAnchor = 9,  -- TOPRIGHT
-                screenAnchor = 4, -- CENTER
-                x = -65,
-                y = -190,
-                scale = 1
-            },
-            targetFrame = {
-                mirrorPlayerFrame = true,
-                buffsOnTop = true,
-                move = true,
-                frameAnchor = 8,  -- TOPLEFT
-                screenAnchor = 4, -- CENTER
-                x = 65,
-                y = -190,
-                scale = 1
-            },
-            focusFrame = {
-                buffsOnTop = true,
-                move = true,
-                frameAnchor = 9,  -- TOPRIGHT
-                screenAnchor = 4, -- CENTER
-                x = -220,
-                y = -255,
-                scale = 1
-            },
-            castBar = {
-                move = true,
-                frameAnchor = 1,  -- BOTTOM
-                screenAnchor = 1, -- BOTTOM
-                x = 0,
-                y = 192,
-                scale = 1
-            },
-        },
-        moversModule = {
-            enabled = true
-        },
         editMode = {
             installed = {},
         },
         chatModule = {
             enabled = true,
             fontSize = 14,
-            height = 150,
-            width = 400,
             tabs = {
                 loot = true,
                 trade = true,
                 lfg = true
             },
-            chatFrame = {
-                move = true,
-                frameAnchor = 2,  -- BOTTOMLEFT
-                screenAnchor = 2, -- BOTTOMLEFT
-                x = 0,
-                y = 75,
-                scale = 1
-            }
         },
         raidFramesModule = {
             enabled = true,
@@ -229,66 +177,14 @@ ScarletUI.originalUIDefaults = {
         itemLevelColorOverride = false,
         itemLevelColor = { r = 1, g = 1, b = 1 },
         expandCharacterInfo = false,
-        clampMovers = true,
-        unitFramesModule = {
-            enabled = true,
-            playerFrame = {
-                move = true,
-                frameAnchor = 8,  -- TOPLEFT
-                screenAnchor = 8, -- TOPLEFT
-                x = -19,
-                y = -4,
-                scale = 1
-            },
-            targetFrame = {
-                mirrorPlayerFrame = false,
-                buffsOnTop = false,
-                move = true,
-                frameAnchor = 8,  -- TOPLEFT
-                screenAnchor = 8, -- TOPLEFT
-                x = 250,
-                y = -4,
-                scale = 1
-            },
-            focusFrame = {
-                buffsOnTop = false,
-                move = true,
-                frameAnchor = 8,  -- TOPLEFT
-                screenAnchor = 8, -- TOPLEFT
-                x = 250,
-                y = -240,
-                scale = 1
-            },
-            castBar = {
-                move = true,
-                frameAnchor = 1,  -- BOTTOM
-                screenAnchor = 1, -- BOTTOM
-                x = 0,
-                y = 192,
-                scale = 1
-            },
-        },
-        moversModule = {
-            enabled = true
-        },
         chatModule = {
             enabled = true,
             fontSize = 14,
-            height = 120,
-            width = 430,
             tabs = {
                 loot = true,
                 trade = true,
                 lfg = true
             },
-            chatFrame = {
-                move = true,
-                frameAnchor = 2,  -- BOTTOMLEFT
-                screenAnchor = 2, -- BOTTOMLEFT
-                x = 35,
-                y = 184,
-                scale = 1
-            }
         },
         raidFramesModule = {
             enabled = true,

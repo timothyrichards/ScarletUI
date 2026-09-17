@@ -1,5 +1,3 @@
-local AceConfigDialog = LibStub("AceConfigDialog-3.0")
-
 function ScarletUI:IsAddOnLoaded(name)
     if C_AddOns and C_AddOns.IsAddOnLoaded then
         return C_AddOns.IsAddOnLoaded(name)
@@ -88,33 +86,6 @@ function ScarletUI:SetupExpandCharacterInfo()
     end
 end
 
-function ScarletUI:OppositeFrameAnchor(index)
-    local anchor = self.frameAnchors[index]
-    if anchor == "BOTTOM" then
-        return "BOTTOM"
-    elseif anchor == "BOTTOMLEFT" then
-        return "BOTTOMRIGHT"
-    elseif anchor == "BOTTOMRIGHT" then
-        return "BOTTOMLEFT"
-    elseif anchor == "CENTER" then
-        return "CENTER"
-    elseif anchor == "LEFT" then
-        return "RIGHT"
-    elseif anchor == "RIGHT" then
-        return "LEFT"
-    elseif anchor == "TOP" then
-        return "TOP"
-    elseif anchor == "TOPLEFT" then
-        return "TOPRIGHT"
-    elseif anchor == "TOPRIGHT" then
-        return "TOPLEFT"
-    end
-end
-
-function ScarletUI:IsAceDialogOpen(dialog)
-    return AceConfigDialog.OpenFrames[dialog] ~= nil
-end
-
 function ScarletUI:SettingDisabled(moduleEnabled, ignoreCombat)
     if self:InCombat() and not ignoreCombat then
         return true
@@ -128,20 +99,6 @@ function ScarletUI:FixChatBug()
         local cf = _G['ChatFrame'..i]
         cf.oldAlpha = cf.oldAlpha or 0 -- Fix 'max-bug' in FCF.lua
     end
-end
-
-function ScarletUI:GetValueFromPath(table, path)
-    if path == nil or type(path) ~= "string" then
-        print("Invalid path: " .. path .. "\nExpected a string, got: " .. type(path))
-        return nil
-    end
-
-    local value = table
-    for key in string.gmatch(path, "([^.]+)") do
-        value = value[key]
-    end
-
-    return value
 end
 
 function ScarletUI:MergeTables(t1, t2)
@@ -184,22 +141,6 @@ function ScarletUI:ArrayHasValue(array, value)
     end
 
     return false
-end
-
-function ScarletUI:GetArrayIndex(array, value)
-    for index, v in ipairs(array) do
-        if v == value then
-            return index
-        end
-    end
-
-    return nil
-end
-
-function ScarletUI:ConvertToCamelCase(string)
-    return string:gsub("(%w)(%w*)", function(first, rest)
-        return first:lower()..rest
-    end)
 end
 
 function ScarletUI:ConvertToPascalCase(string)

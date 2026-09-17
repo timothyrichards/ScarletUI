@@ -10,26 +10,6 @@ function ScarletUI:Options()
         type = "group",
         childGroups = "tree",
         args = {
-            toggleMovers = {
-                name = "Unlock Frames",
-                desc = "Enables mover frames so you can drag UI elements to a new position.",
-                type = "execute",
-                disabled = function() return self:InCombat() end,
-                hidden = function() return self.editMode or self.lightWeightMode end,
-                order = 0,
-                width = 1,
-                func = function()
-                    self:ToggleMovers()
-                end,
-            },
-            resetPositions = {
-                type = "execute",
-                name = "Reset Positions",
-                desc = "Reset all frame positions to their default settings.",
-                hidden = function() return self.editMode or self.lightWeightMode end,
-                func = function() StaticPopup_Show('SCARLET_RESTORE_POSITIONS_DIALOG') end,
-                order = 1,
-            },
             defaultSettings = {
                 name = "Restore Defaults",
                 desc = "Restores all settings back to default settings.",
@@ -90,19 +70,6 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                             self:SetupTidyIcons()
                         end,
                     },
-                    clampMovers = {
-                        name = "Clamp Movers",
-                        desc = "Determines whether movers should be kept within the screens bounds or should be movable outside of them.",
-                        type = "toggle",
-                        hidden = function() return self.editMode end,
-                        width = 1,
-                        order = 2,
-                        get = function(_) return database.clampMovers end,
-                        set = function(_, val)
-                            database.clampMovers = val
-                            self:ShowReloadDialog()
-                        end,
-                    }
                 }
             },
             itemLevel = {
@@ -188,7 +155,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                 args = {
                     chatModuleEnabled = {
                         name = "Chat",
-                        desc = "Manage the settings and position of your chat window.",
+                        desc = "Configure chat tabs and font size.",
                         type = "toggle",
                         width = 1,
                         order = 2,
@@ -252,24 +219,6 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                             end
                         end,
                     },
-                    unitFramesModuleEnabled = {
-                        name = "Unit Frames",
-                        desc = "Manage the position of your unit frames.",
-                        type = "toggle",
-                        disabled = function() return self:InCombat() end,
-                        hidden = function() return self.editMode or self.lightWeightMode end,
-                        width = 1,
-                        order = 6,
-                        get = function(_) return database.unitFramesModule.enabled end,
-                        set = function(_, val)
-                            database.unitFramesModule.enabled = val
-                            if not val then
-                                self:ShowReloadDialog()
-                            else
-                                self:SetupUnitFrames()
-                            end
-                        end,
-                    }
                 }
             },
             extras = {

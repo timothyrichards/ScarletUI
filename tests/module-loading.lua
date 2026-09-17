@@ -9,7 +9,7 @@ GetScreenWidth = function() return 1920 end
 GetScreenHeight = function() return 1080 end
 GetBuildInfo = function() return nil, nil, nil, 16001 end
 Enum = { EditModeLayoutType = { Account = 1 } }
-for _, name in ipairs({ "Database", "Helpers", "Movers", "Options", "EditModeLayouts", "EditMode" }) do
+for _, name in ipairs({ "Database", "Helpers", "Options", "EditModeLayouts", "EditMode" }) do
     dofile("Modules/" .. name .. ".lua")
 end
 ScarletUI.db = {
@@ -23,29 +23,28 @@ assert(ScarletUI.originalUIDefaults.global.actionbarsModule == nil)
 assert(ScarletUI.SetupActionBars == nil and ScarletUI.SetupActionBarPreferences == nil)
 assert(ScarletUI.defaults.global.bagModule == nil and ScarletUI.originalUIDefaults.global.bagModule == nil)
 assert(ScarletUI.SetupBags == nil and ScarletUI.SetupBank == nil)
+assert(ScarletUI.CreateMover == nil and ScarletUI.SetupUnitFrames == nil)
+assert(ScarletUI.defaults.global.moversModule == nil and ScarletUI.defaults.global.unitFramesModule == nil)
 
 -- Both fresh settings and saved settings from before removal must load.
 for _, oldSettings in ipairs({ false, true }) do
     ScarletUI.db.global.actionbarsModule = oldSettings and { enabled = true } or nil
     ScarletUI.db.global.bagModule = oldSettings and { enabled = true } or nil
+    ScarletUI.db.global.moversModule = oldSettings and { enabled = true } or nil
     local options = ScarletUI:Options()
     assert(options.args.actionBarSettings == nil)
     assert(options.args.generalSettings.args.modules.args.actionbarsModuleEnabled == nil)
     assert(options.args.bagModuleSettings == nil and options.args.editModeSettings)
     assert(options.args.generalSettings.args.modules.args.bagModuleEnabled == nil)
-    local configs = ScarletUI:GenerateAllMoversConfigs()
-    local remaining = { castBar = true, chatFrame = true, focusFrame = true, playerFrame = true, targetFrame = true }
-    for name in pairs(configs) do
-        assert(remaining[name], "Unexpected mover: " .. name)
-        remaining[name] = nil
-    end
-    assert(next(remaining) == nil, "A remaining mover was lost")
+    assert(options.args.toggleMovers == nil and options.args.resetPositions == nil)
+    assert(options.args.generalSettings.args.general.args.clampMovers == nil)
+    assert(options.args.generalSettings.args.modules.args.unitFramesModuleEnabled == nil)
 end
 
 -- Exercise the real setup dispatcher with only the remaining module methods.
 local calls = {}
-local setupMethods = { "SetupDebugFrame", "CreateMoverGrid", "SetupChat", "SetupCVars",
-    "SetupItemLevels", "SetupUnitFrames", "SetupRaidProfiles",
+local setupMethods = { "SetupDebugFrame", "SetupChat", "SetupCVars",
+    "SetupItemLevels", "SetupRaidProfiles",
     "SetupTidyIcons", "SetupNameplates", "SetupExpandCharacterInfo" }
 for _, name in ipairs(setupMethods) do
     ScarletUI[name] = function() calls[name] = true end
@@ -55,7 +54,7 @@ for _, editMode in ipairs({ false, true }) do
     ScarletUI.editMode = editMode
     ScarletUI:Setup()
     for _, name in ipairs(setupMethods) do
-        assert(not not calls[name] == (name ~= "CreateMoverGrid" or not editMode), name)
+        assert(calls[name], name)
     end
 end
 
@@ -100,4 +99,43 @@ ScarletUI.ApplyEditModeLayout = function() return true end
 ScarletUI:InstallEditModeProfile("STANDARD")
 assert(ScarletUI.editModeLastError == nil)
 assert(ScarletUI.db.global.editMode.installed["FOREVER:STANDARD"])
-print("PASS: remaining settings, movers, setup dispatcher, shared Era presets, and Edit Mode installation")
+
+-- The move command uses Blizzard Edit Mode and preserves its combat guard.
+local opened, message
+ShowUIPanel = function(frame) opened = frame end
+EditModeManagerFrame = {}
+ScarletUI:SlashCommand("move")
+assert(opened == EditModeManagerFrame)
+opened = nil
+ScarletUI.InCombat = function() return true end
+ScarletUI:SlashCommand("move")
+assert(opened == nil)
+ScarletUI.InCombat = function() return false end
+EditModeManagerFrame = nil
+ScarletUI.Print = function(_, text) message = text end
+ScarletUI:SlashCommand("move")
+assert(message == "Blizzard Edit Mode is unavailable on this client.")
+
+-- Chat tabs and font size still work without legacy position settings or frames.
+dofile("Modules/Chat.lua")
+CHAT_FRAMES, NUM_CHAT_WINDOWS = { "ChatFrame1" }, 1
+ChatFrame1 = { name = "General", GetID = function() return 1 end }
+FCF_OpenNewWindow = function(name)
+    local id = #CHAT_FRAMES + 1
+    local key = "ChatFrame" .. id
+    _G[key] = { name = name, GetID = function() return id end }
+    table.insert(CHAT_FRAMES, key)
+end
+GetChatWindowInfo = function(id) return _G[CHAT_FRAMES[id]].name end
+FCF_SetChatWindowFontSize = function(_, frame, size) frame.fontSize = size end
+ChatFrame_RemoveMessageGroup, ChatFrame_RemoveAllMessageGroups = noop, noop
+ChatFrame_AddMessageGroup, ChatFrame_AddChannel, JoinChannelByName = noop, noop, noop
+FCFDock_SelectWindow = noop
+C_Timer = { NewTimer = function(_, callback) callback() end }
+ScarletUI.lightWeightMode, ScarletUI.editMode = false, false
+ScarletUI:SetupChat()
+assert(#CHAT_FRAMES == 4)
+for _, key in ipairs(CHAT_FRAMES) do
+    assert(_G[key].fontSize == ScarletUI.db.global.chatModule.fontSize)
+end
+print("PASS: remaining settings, setup dispatcher, shared Era presets, and Edit Mode installation")

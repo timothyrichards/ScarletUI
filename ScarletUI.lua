@@ -33,20 +33,6 @@ StaticPopupDialogs['SCARLET_UI_RAID_FRAME_DIALOG'] = {
     preferredIndex = 3,
 }
 
--- Dialog to confirm restoration position of frames to default settings
-StaticPopupDialogs['SCARLET_RESTORE_POSITIONS_DIALOG'] = {
-    text = '<Scarlet UI>\n\nAre you sure you want to restore all frame positions to their default positions?',
-    button1 = 'Confirm',
-    button2 = 'Cancel',
-    OnAccept = function()
-        ScarletUI:ResetPositions()
-    end,
-    timeout = 0,
-    whileDead = true,
-    hideOnEscape = false,
-    preferredIndex = 3,
-}
-
 -- Dialog to confirm restoration of default settings
 StaticPopupDialogs['SCARLET_RESTORE_DEFAULTS_DIALOG'] = {
     text = '<Scarlet UI>\n\nAre you sure you want to restore all settings to default settings?',
@@ -99,8 +85,6 @@ function ScarletUI:OnInitialize()
     -- Register the options table
     AceConfigDialog:SetDefaultSize("ScarletUI", 800, 525)
     AceConfig:RegisterOptionsTable("ScarletUI", function() return self:Options() end)
-    AceConfigDialog:SetDefaultSize("ScarletUI_Movers", 400, 375)
-    AceConfig:RegisterOptionsTable("ScarletUI_Movers", function() return self:GetMoversOptions() end)
     AceConfigDialog:AddToBlizOptions("ScarletUI")
 
     -- Initialize state properties
@@ -108,8 +92,6 @@ function ScarletUI:OnInitialize()
     self.retail = false;
     self.editMode = false;
     self.inCombat = false;
-    self.moversEnabled = false;
-    self.selectedMover = nil;
 end
 
 function ScarletUI:OnEnable()
@@ -127,9 +109,6 @@ function ScarletUI:OnEnable()
 
     self:Setup()
 
-    self.hideFrameContainer = _G["HideFrameContainer"] or CreateFrame("FRAME", "HideFrameContainer", UIParent)
-    self.hideFrameContainer:Hide()
-
     self:Print("Scarlet UI setup successful, use the command /sui to open the options panel.")
 end
 
@@ -137,16 +116,10 @@ function ScarletUI:Setup()
     -- Set up debug frame
     self:SetupDebugFrame()
 
-    -- The legacy grid is only needed on clients without Blizzard Edit Mode.
-    if not self.editMode then
-        self:CreateMoverGrid(25)
-    end
-
     -- Setup frames
     self:SetupChat()
     self:SetupCVars()
     self:SetupItemLevels()
-    self:SetupUnitFrames()
     self:SetupRaidProfiles()
     self:SetupTidyIcons()
     self:SetupNameplates()
@@ -193,42 +166,20 @@ function ScarletUI:SetupDebugFrame()
     combatText:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
     combatText:SetText("- inCombat: false")
 
-    local moverText = self.debugContainer:CreateFontString("SUI_MoverPropertyText", "OVERLAY", "GameFontWhite")
-    moverText:SetPoint("TOPLEFT", combatText, "BOTTOMLEFT")
-    moverText:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
-    moverText:SetText("- moversEnabled: " .. tostring(self.moversEnabled))
-
     self.debugContainer:Hide()
 end
 
 function ScarletUI:SlashCommand(msg)
     if msg == "" then
         AceConfigDialog:Open("ScarletUI")
-
-        if self.moversEnabled then
-            self:ToggleMovers()
-        end
     elseif msg == "move" then
-        if self:InCombat() then
-            self:Print("Cannot move frames while in combat.")
-            return
-        end
-
-        if self.editMode then
-            self:OpenEditMode()
-            return
-        elseif self.lightWeightMode then
-            self:Print("Movers are not available while another UI manages frame positions.")
-            return
-        end
-
-        self:ToggleMovers()
+        self:OpenEditMode()
     elseif msg == "debug" then
         self.debugContainer:SetShown(not self.debugContainer:IsShown())
     elseif msg == "help" then
         self:Print("Available commands:")
         self:Print("- /sui: Open the options panel.")
-        self:Print("- /sui move: Open Edit Mode or toggle legacy movers.")
+        self:Print("- /sui move: Open Blizzard Edit Mode.")
         self:Print("- /sui debug: Toggle the debug frame.")
         self:Print("- /sui help: Display this message.")
     else
@@ -267,9 +218,6 @@ end)
 
 local function OnCombatChanged(event)
     ScarletUI.inCombat = event == "PLAYER_REGEN_DISABLED"
-    if ScarletUI:InCombat() and ScarletUI.moversEnabled then
-        ScarletUI:ToggleMovers()
-    end
     SUI_CombatPropertyText:SetText("- inCombat: " .. tostring(ScarletUI.inCombat))
     AceConfigRegistry:NotifyChange("ScarletUI")
 end

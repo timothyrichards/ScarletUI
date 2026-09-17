@@ -16,50 +16,6 @@ function ScarletUI:SetupChat()
             if not set then SetChatColorNameByClass(chatType, true) end
         end)
     end
-
-    if self.lightWeightMode or self.editMode then
-        return
-    end
-
-    local chatFrame = chatModule.chatFrame
-
-    ChatFrame1.settingsKey = "chatFrame"
-    self:CreateMover(ChatFrame1, chatFrame)
-
-    if not chatFrame.move then
-        return
-    end
-
-    hooksecurefunc("FCF_SavePositionAndDimensions", function()
-        if not ScarletUI.movingChatFrame then
-            local point, _, relativePoint, offsetX, offsetY = ChatFrame1:GetPoint()
-
-            chatFrame.frameAnchor = ScarletUI:GetArrayIndex(ScarletUI.frameAnchors, point)
-            chatFrame.screenAnchor = ScarletUI:GetArrayIndex(ScarletUI.frameAnchors, relativePoint)
-            chatFrame.x = offsetX
-            chatFrame.y = offsetY
-            chatModule.height = ChatFrame1:GetHeight()
-            chatModule.width = ChatFrame1:GetWidth()
-
-            ScarletUI:RefreshMoverOptions()
-        end
-    end)
-
-    self.movingChatFrame = true
-    ChatFrame1:ClearAllPoints()
-    ChatFrame1:SetHeight(chatModule.height)
-    ChatFrame1:SetWidth(chatModule.width)
-    ChatFrame1:SetPoint(
-        self.frameAnchors[chatFrame.frameAnchor],
-        UIParent,
-        self.frameAnchors[chatFrame.screenAnchor],
-        chatFrame.x,
-        chatFrame.y
-    )
-    ChatFrame1:SetScale(chatFrame.scale)
-
-    FCF_SavePositionAndDimensions(ChatFrame1)
-    self.movingChatFrame = false
 end
 
 function ScarletUI:SetupChatTabs()
@@ -150,11 +106,6 @@ function ScarletUI:SetupChatTabs()
 
     -- Jump back to main tab
     FCFDock_SelectWindow(_G.GENERAL_CHAT_DOCK, _G.ChatFrame1)
-
-    if module.chatFrame.hide then
-        ChatFrame1:UnregisterAllEvents()
-        ChatFrame1:SetParent(self.hideFrameContainer)
-    end
 end
 
 function ScarletUI:ChatTabExists(table, value)

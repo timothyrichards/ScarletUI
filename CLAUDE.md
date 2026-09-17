@@ -38,25 +38,23 @@ Each module in `Modules/` provides specific functionality:
 - `Database.lua` - Default settings and configuration structure
 - `Options.lua` - Configuration UI generation
 - `Helpers.lua` - Utility functions and version detection
-- `UnitFrames.lua` - Player/target/focus frame positioning
 - `RaidFrames.lua` - Raid frame enhancements
 - `Nameplates.lua` - Nameplate customizations
 - `Chat.lua` - Chat window modifications
 - `ItemLevel.lua` - Item level display features
 - `CVars.lua` - Game console variable management
-- `Movers.lua` - Frame movement system
 - `TidyIcons.lua` - Icon size improvements
 
 ### Database Structure
 Settings are stored in `ScarletUIDB` saved variable with the following pattern:
 - Global settings in `db.global`
-- Each module has its own settings section (e.g., `unitFramesModule`, `chatModule`)
-- Frame positioning stored with anchor points, coordinates, and scale
+- Each module has its own settings section (e.g., `chatModule`, `nameplatesModule`)
+- Frame positioning managed through Blizzard Edit Mode profiles
 - Module enable/disable flags for each feature
 
 ## Development Commands
 
-This addon uses CurseForge packaging via `.pkgmeta` file. Run `lua tests/module-loading.lua` and `lua tests/bag-item-level.lua` from the addon root to check client compatibility, module loading, settings, movers, and Edit Mode installation. No build scripts or linting tools are configured.
+This addon uses CurseForge packaging via `.pkgmeta` file. Run `lua tests/module-loading.lua` and `lua tests/bag-item-level.lua` from the addon root to check client compatibility, module loading, settings and Edit Mode installation. No build scripts or linting tools are configured.
 
 ### Packaging
 The `.pkgmeta` file defines:
@@ -76,12 +74,8 @@ Use `ScarletUI:GetWoWVersion()` from Helpers.lua to detect WoW version:
 - Used to show/hide version-specific features
 
 ### Frame Movement
-Frames use a standardized positioning system with:
-- `frameAnchor` and `screenAnchor` (numeric anchor point IDs)
-- `x`, `y` coordinates relative to anchors  
-- `scale` for frame scaling
-- `move` boolean to enable positioning
-- `hide` boolean to hide frames
+Use Blizzard Edit Mode through `EditMode.lua` and preset definitions in `EditModeLayouts.lua`.
+`/sui move` opens Edit Mode.
 
 ### Module Structure
 Each module typically implements:

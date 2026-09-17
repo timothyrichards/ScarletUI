@@ -18,9 +18,7 @@ Modules\Helpers.lua
 Modules\EditModeLayouts.lua
 Modules\EditMode.lua
 Modules\ItemLevel.lua
-Modules\Movers.lua
 Modules\Nameplates.lua
 Modules\Options.lua
 Modules\RaidFrames.lua
 Modules\TidyIcons.lua
-Modules\UnitFrames.lua

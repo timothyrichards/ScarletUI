@@ -437,7 +437,7 @@ end
 
 function ScarletUI:GetEditModeStatusText()
     if not self.editMode then
-        return "Blizzard Edit Mode is unavailable on this client. Legacy movers remain active."
+        return "Blizzard Edit Mode is unavailable on this client."
     elseif not GetEditModeLibrary() then
         return "Edit Mode support is missing LibEditModeOverride-1.0."
     elseif not self.editModeReady then
