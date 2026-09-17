@@ -56,6 +56,8 @@ function ScarletUI:GetWoWVersion()
         versionText = "WOTLK"
     elseif interfaceVersion >= 20000 then
         versionText = "TBC"
+    elseif interfaceVersion >= 16000 then
+        versionText = "FOREVER"
     elseif interfaceVersion >= 10000 then
         versionText = "VANILLA"
     else

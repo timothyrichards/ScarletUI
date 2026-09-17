@@ -128,7 +128,9 @@ end
 
 function ScarletUI:OnEnable()
     -- Check if lightWeightMode should be enabled
-    if self:GetWoWVersion() == "RETAIL" then
+    local client = self:GetWoWVersion()
+    -- Forever uses Mainline frames and bags despite its Classic version number.
+    if client == "RETAIL" or client == "FOREVER" then
         self.retail = true;
         self.lightWeightMode = true;
     elseif self:IsAddOnLoaded("ElvUI") then
