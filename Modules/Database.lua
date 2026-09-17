@@ -202,17 +202,6 @@ ScarletUI.defaults = {
             specialUnitColor = { 1, 0, 1, 1 },
             specialUnitNames = ""
         },
-        bagModule = {
-            enabled = true,
-            slotsPerRow = 10,
-            slotSize = 37,
-            slotSpacing = 4,
-            bagLocked = true,
-            bagAlpha = 0.5,
-            bankLocked = true,
-            bankAlpha = 0.5,
-            hideKeyring = true,
-        },
         CVarModule = {
             enabled = true,
             overrides = {},
@@ -422,17 +411,6 @@ ScarletUI.originalUIDefaults = {
             tankNames = "",
             specialUnitColor = { 1, 0, 1, 1 },
             specialUnitNames = ""
-        },
-        bagModule = {
-            enabled = true,
-            slotsPerRow = 10,
-            slotSize = 37,
-            slotSpacing = 4,
-            bagLocked = true,
-            bagAlpha = 0.5,
-            bankLocked = true,
-            bankAlpha = 0.5,
-            hideKeyring = true,
         },
         CVarModule = {
             enabled = true,

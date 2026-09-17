@@ -42,7 +42,6 @@ Each module in `Modules/` provides specific functionality:
 - `RaidFrames.lua` - Raid frame enhancements
 - `Nameplates.lua` - Nameplate customizations
 - `Chat.lua` - Chat window modifications
-- `Bag.lua` - Bag/inventory enhancements
 - `ItemLevel.lua` - Item level display features
 - `CVars.lua` - Game console variable management
 - `Movers.lua` - Frame movement system
@@ -51,13 +50,13 @@ Each module in `Modules/` provides specific functionality:
 ### Database Structure
 Settings are stored in `ScarletUIDB` saved variable with the following pattern:
 - Global settings in `db.global`
-- Each module has its own settings section (e.g., `unitFramesModule`, `bagModule`)
+- Each module has its own settings section (e.g., `unitFramesModule`, `chatModule`)
 - Frame positioning stored with anchor points, coordinates, and scale
 - Module enable/disable flags for each feature
 
 ## Development Commands
 
-This addon uses CurseForge packaging via `.pkgmeta` file. Run `lua tests/module-loading.lua` from the addon root to check client compatibility, module loading, settings, movers, and Edit Mode installation. No build scripts or linting tools are configured.
+This addon uses CurseForge packaging via `.pkgmeta` file. Run `lua tests/module-loading.lua` and `lua tests/bag-item-level.lua` from the addon root to check client compatibility, module loading, settings, movers, and Edit Mode installation. No build scripts or linting tools are configured.
 
 ### Packaging
 The `.pkgmeta` file defines:

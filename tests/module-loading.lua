@@ -21,14 +21,18 @@ ScarletUI.knownCVars = {}
 assert(ScarletUI.defaults.global.actionbarsModule == nil)
 assert(ScarletUI.originalUIDefaults.global.actionbarsModule == nil)
 assert(ScarletUI.SetupActionBars == nil and ScarletUI.SetupActionBarPreferences == nil)
+assert(ScarletUI.defaults.global.bagModule == nil and ScarletUI.originalUIDefaults.global.bagModule == nil)
+assert(ScarletUI.SetupBags == nil and ScarletUI.SetupBank == nil)
 
 -- Both fresh settings and saved settings from before removal must load.
 for _, oldSettings in ipairs({ false, true }) do
     ScarletUI.db.global.actionbarsModule = oldSettings and { enabled = true } or nil
+    ScarletUI.db.global.bagModule = oldSettings and { enabled = true } or nil
     local options = ScarletUI:Options()
     assert(options.args.actionBarSettings == nil)
     assert(options.args.generalSettings.args.modules.args.actionbarsModuleEnabled == nil)
-    assert(options.args.bagModuleSettings and options.args.editModeSettings)
+    assert(options.args.bagModuleSettings == nil and options.args.editModeSettings)
+    assert(options.args.generalSettings.args.modules.args.bagModuleEnabled == nil)
     local configs = ScarletUI:GenerateAllMoversConfigs()
     local remaining = { castBar = true, chatFrame = true, focusFrame = true, playerFrame = true, targetFrame = true }
     for name in pairs(configs) do
@@ -41,7 +45,7 @@ end
 -- Exercise the real setup dispatcher with only the remaining module methods.
 local calls = {}
 local setupMethods = { "SetupDebugFrame", "CreateMoverGrid", "SetupChat", "SetupCVars",
-    "SetupBags", "SetupBank", "SetupItemLevels", "SetupUnitFrames", "SetupRaidProfiles",
+    "SetupItemLevels", "SetupUnitFrames", "SetupRaidProfiles",
     "SetupTidyIcons", "SetupNameplates", "SetupExpandCharacterInfo" }
 for _, name in ipairs(setupMethods) do
     ScarletUI[name] = function() calls[name] = true end

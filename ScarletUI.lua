@@ -75,20 +75,6 @@ StaticPopupDialogs['SCARLET_DELETE_RAID_PROFILE_DIALOG'] = {
     preferredIndex = 3,
 }
 
--- Dialog to confirm purchasing a bank bag slot
-StaticPopupDialogs['SCARLET_PURCHASE_BANK_SLOT'] = {
-    text = '<Scarlet UI>\n\nPurchase this bank bag slot?\n\nCost: %s',
-    button1 = 'Purchase',
-    button2 = 'Cancel',
-    OnAccept = function()
-        PurchaseSlot()
-    end,
-    timeout = 0,
-    whileDead = false,
-    hideOnEscape = true,
-    preferredIndex = 3,
-}
-
 function ScarletUI:OnInitialize()
     -- Set up the database
     self.db = self.db or AceDB:New("ScarletUIDB", self.defaults, true)
@@ -159,8 +145,6 @@ function ScarletUI:Setup()
     -- Setup frames
     self:SetupChat()
     self:SetupCVars()
-    self:SetupBags()
-    self:SetupBank()
     self:SetupItemLevels()
     self:SetupUnitFrames()
     self:SetupRaidProfiles()

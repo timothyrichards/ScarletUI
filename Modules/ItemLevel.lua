@@ -298,46 +298,6 @@ function ScarletUI:BagItemLevel()
 
         self:UpdateBankItemLevels()
     else
-        -- Update custom bag frame if it exists
-        if ScarletUI_BagFrame then
-            for container = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
-                local numberOfSlots = GetContainerNumSlots(container)
-                for slot = 1, numberOfSlots do
-                    local itemLink = GetContainerItemLink(container, slot)
-                    local index = container * 100 + slot
-                    local itemButton = self.bagSlots and self.bagSlots[index]
-                    if itemButton then
-                        ItemLevelText(itemLink, nil, itemButton, hide)
-                    end
-                end
-            end
-        end
-
-        -- Update custom bank frame if it exists
-        if self.bankSlots and ScarletUI_BankFrame and ScarletUI_BankFrame:IsShown() then
-            -- Main bank container
-            for slot = 1, GetContainerNumSlots(BANK_CONTAINER) do
-                local itemLink = GetContainerItemLink(BANK_CONTAINER, slot)
-                local index = BANK_CONTAINER * 100 + slot
-                local itemButton = self.bankSlots[index]
-                if itemButton then
-                    ItemLevelText(itemLink, nil, itemButton, hide)
-                end
-            end
-
-            -- Bank bag containers
-            for bag = NUM_BAG_SLOTS + 1, NUM_BAG_SLOTS + NUM_BANKBAGSLOTS do
-                for slot = 1, GetContainerNumSlots(bag) do
-                    local itemLink = GetContainerItemLink(bag, slot)
-                    local index = bag * 100 + slot
-                    local itemButton = self.bankSlots[index]
-                    if itemButton then
-                        ItemLevelText(itemLink, nil, itemButton, hide)
-                    end
-                end
-            end
-        end
-
         -- Update default bag frames
         for frameIndex = 1, NUM_CONTAINER_FRAMES do
             local frame = _G["ContainerFrame" .. frameIndex]

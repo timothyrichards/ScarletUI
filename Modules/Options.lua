@@ -43,7 +43,6 @@ function ScarletUI:Options()
             },
             generalSettings = self:GetGeneralSettingsPage(database, 2),
             editModeSettings = self:GetEditModeSettingsPage(3),
-            bagModuleSettings = self:GetBagModuleSettingsPage(database, defaults.bagModule, 5),
             chatModuleSettings = self:GetChatModuleSettingsPage(database, defaults.chatModule, 6),
             CVarModuleSettings = self:GetCVarModuleSettingsPage(database, 7),
             nameplatesModuleSettings = self:GetNameplatesModuleSettingsPage(database, defaults.nameplatesModule, 8),
@@ -187,22 +186,6 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                 inline = true,
                 order = 2,
                 args = {
-                    bagModuleEnabled = {
-                        name = "Bags",
-                        desc = "Manage the settings and position of your bags.",
-                        type = "toggle",
-                        width = 1,
-                        order = 1,
-                        get = function(_) return database.bagModule.enabled end,
-                        set = function(_, val)
-                            database.bagModule.enabled = val
-                            if not val then
-                                self:ShowReloadDialog()
-                            else
-                                ScarletUI:SetupBags()
-                            end
-                        end,
-                    },
                     chatModuleEnabled = {
                         name = "Chat",
                         desc = "Manage the settings and position of your chat window.",
@@ -315,174 +298,6 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                             ReloadUI()
                         end,
                     }
-                }
-            }
-        }
-    }
-end
-
-function ScarletUI:GetBagModuleSettingsPage(database, defaults, order)
-    local module = database.bagModule;
-
-    return {
-        name = "Bag",
-        desc = "Bag Module settings.",
-        type = "group",
-        order = order,
-        hidden = function() return self.lightWeightMode end,
-        args = {
-            generalSettings = {
-                name = "General Settings",
-                type = "group",
-                disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
-                inline = true,
-                order = 0,
-                args = {
-                    slotsPerRow = {
-                        name = "Bag Slots Per Row",
-                        desc = "Must be a number, this is the number of bag slots per row.\n(Default " .. defaults.slotsPerRow .. ")",
-                        type = "range",
-                        min = 1,
-                        max = 20,
-                        step = 1,
-                        width = 1,
-                        order = 0,
-                        get = function(_) return module.slotsPerRow end,
-                        set = function(_, val)
-                            module.slotsPerRow = val
-                            StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
-                        end,
-                    },
-                    slotSize = {
-                        name = "Bag Slot Size",
-                        desc = "Must be a number, this is the size of the bag slots.\n(Default " .. defaults.slotSize .. ")",
-                        type = "range",
-                        min = 16,
-                        max = 64,
-                        step = 1,
-                        width = 1,
-                        order = 1,
-                        get = function(_) return module.slotSize end,
-                        set = function(_, val)
-                            module.slotSize = val
-                            StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
-                        end,
-                    },
-                    slotSpacing = {
-                        name = "Bag Slot Spacing",
-                        desc = "Must be a number, this is the space between the bag slots.\n(Default " .. defaults.slotSpacing .. ")",
-                        type = "range",
-                        min = 0,
-                        max = 20,
-                        step = 1,
-                        width = 1,
-                        order = 2,
-                        get = function(_) return module.slotSpacing end,
-                        set = function(_, val)
-                            module.slotSpacing = val
-                            StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
-                        end,
-                    }
-                }
-            },
-            playerBagSettings = {
-                name = "Player Bags",
-                type = "group",
-                disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
-                inline = true,
-                order = 1,
-                args = {
-                    bagLocked = {
-                        name = "Lock Position",
-                        desc = "When checked, the bag frame cannot be dragged.",
-                        type = "toggle",
-                        width = 1,
-                        order = 0,
-                        get = function(_) return module.bagLocked end,
-                        set = function(_, val)
-                            module.bagLocked = val
-                        end,
-                    },
-                    bagAlpha = {
-                        name = "Background Opacity",
-                        desc = "Controls the background transparency of the bag frame.\n(Default " .. defaults.bagAlpha .. ")",
-                        type = "range",
-                        min = 0,
-                        max = 1,
-                        step = 0.05,
-                        width = 1,
-                        order = 1,
-                        get = function(_) return module.bagAlpha end,
-                        set = function(_, val)
-                            module.bagAlpha = val
-                            if self.bagFrame then
-                                self.bagFrame:SetBackdropColor(0, 0, 0, val)
-                            end
-                        end,
-                    },
-                    resetBagPosition = {
-                        name = "Reset Position",
-                        desc = "Reset the bag frame to its default position.",
-                        type = "execute",
-                        width = 1,
-                        order = 2,
-                        func = function()
-                            if self.bagFrame then
-                                self.bagFrame:ClearAllPoints()
-                                self.bagFrame:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -1, 40)
-                            end
-                        end,
-                    },
-                }
-            },
-            bankSettings = {
-                name = "Bank",
-                type = "group",
-                disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
-                inline = true,
-                order = 2,
-                args = {
-                    bankLocked = {
-                        name = "Lock Position",
-                        desc = "When checked, the bank frame cannot be dragged.",
-                        type = "toggle",
-                        width = 1,
-                        order = 0,
-                        get = function(_) return module.bankLocked end,
-                        set = function(_, val)
-                            module.bankLocked = val
-                        end,
-                    },
-                    bankAlpha = {
-                        name = "Background Opacity",
-                        desc = "Controls the background transparency of the bank frame.\n(Default " .. defaults.bankAlpha .. ")",
-                        type = "range",
-                        min = 0,
-                        max = 1,
-                        step = 0.05,
-                        width = 1,
-                        order = 1,
-                        get = function(_) return module.bankAlpha end,
-                        set = function(_, val)
-                            module.bankAlpha = val
-                            if self.bankFrame then
-                                self.bankFrame:SetBackdropColor(0, 0, 0, val)
-                            end
-                        end,
-                    },
-                    resetBankPosition = {
-                        name = "Reset Position",
-                        desc = "Reset the bank frame to its default position.",
-                        type = "execute",
-                        width = 1,
-                        order = 2,
-                        func = function()
-                            if self.bankFrame then
-                                self.bankFrame:ClearAllPoints()
-                                self.bankFrame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 1, 40)
-                            end
-                        end,
-                    },
                 }
             }
         }
