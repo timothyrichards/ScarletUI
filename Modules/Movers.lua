@@ -17,25 +17,6 @@ ScarletUI.frameAnchors = {
 }
 
 ScarletUI.frameData = {
-    bagBar = {
-        frame = BagBar,
-        module = "actionbarsModule",
-        databasePath = "actionbarsModule.bagBar",
-        additionalSettings = {
-            microBag = {
-                name = "Micro Bag",
-                desc = "Hide all non backpack bag icons.",
-                type = "toggle",
-                width = "full",
-                order = 0.9,
-                get = function(_) return ScarletUI.db.global.actionbarsModule.microBag end,
-                set = function(_, val)
-                    ScarletUI.db.global.actionbarsModule.microBag = val
-                    ScarletUI:SetupActionBars()
-                end,
-            }
-        }
-    },
     castBar = {
         frame = CastingBarFrame,
         module = "unitFramesModule",
@@ -82,154 +63,15 @@ ScarletUI.frameData = {
             },
         }
     },
-    experienceBar = {
-        frame = MainMenuExpBar,
-        module = "actionbarsModule",
-        databasePath = "actionbarsModule.experienceBar",
-    },
-    extraActionBar = {
-        frame = ExtraActionBarFrame,
-        module = "actionbarsModule",
-        databasePath = "actionbarsModule.extraActionBar",
-        additionalSettings = {
-            showExtraActionBarBackground = {
-                name = "Background Texture",
-                desc = "Show background texture behind the extra action bar.",
-                type = "toggle",
-                disabled = function()
-                    return ScarletUI:SettingDisabled(ScarletUI.db.global.actionbarsModule
-                        .extraActionBar.move)
-                end,
-                width = 1,
-                order = 0.7,
-                get = function(_) return ScarletUI.db.global.actionbarsModule.extraActionBar.showBackground end,
-                set = function(_, val)
-                    ScarletUI.db.global.actionbarsModule.extraActionBar.showBackground = val
-                    ScarletUI:SetupActionBars()
-                end,
-            },
-        },
-    },
     focusFrame = {
         frame = FocusFrame,
         module = "unitFramesModule",
         databasePath = "unitFramesModule.focusFrame",
     },
-    mainMenuBar = {
-        frame = MainMenuBar,
-        module = "actionbarsModule",
-        databasePath = "actionbarsModule.mainMenuBar",
-        additionalSettings = {
-            showMainBarBackground = {
-                name = "Background Texture",
-                desc = "Show background texture behind the main bar.",
-                type = "toggle",
-                disabled = function()
-                    return ScarletUI:SettingDisabled(ScarletUI.db.global.actionbarsModule.mainMenuBar
-                        .move)
-                end,
-                width = 1,
-                order = 0.7,
-                get = function(_) return ScarletUI.db.global.actionbarsModule.showMainBarBackground end,
-                set = function(_, val)
-                    ScarletUI.db.global.actionbarsModule.showMainBarBackground = val
-                    ScarletUI:SetupActionBars()
-                end,
-            },
-            showGryphons = {
-                name = "Gryphons",
-                desc = "Show the gryphon graphics on the sides of your main bar.",
-                type = "toggle",
-                disabled = function()
-                    return ScarletUI:SettingDisabled(ScarletUI.db.global.actionbarsModule.mainMenuBar
-                        .move)
-                end,
-                width = 1,
-                order = 0.8,
-                get = function(_) return ScarletUI.db.global.actionbarsModule.showGryphons end,
-                set = function(_, val)
-                    ScarletUI.db.global.actionbarsModule.showGryphons = val
-                    ScarletUI:SetupActionBars()
-                end,
-            },
-            pagingNumbers = {
-                name = "Paging Numbers",
-                desc = "Show the actionbar paging numbers and buttons.",
-                type = "toggle",
-                disabled = function()
-                    return ScarletUI:SettingDisabled(ScarletUI.db.global.actionbarsModule.mainMenuBar
-                        .move)
-                end,
-                width = 1,
-                order = 0.9,
-                get = function(_) return ScarletUI.db.global.actionbarsModule.showPagingNumbers end,
-                set = function(_, val)
-                    ScarletUI.db.global.actionbarsModule.showPagingNumbers = val
-                    ScarletUI:SetupActionBars()
-                end,
-            }
-        }
-    },
-    microBar = {
-        frame = MicroButtonAndBagsBar,
-        module = "actionbarsModule",
-        databasePath = "actionbarsModule.microBar",
-    },
-    multiBarBottomLeft = {
-        frame = MultiBarBottomLeft,
-        module = "actionbarsModule",
-        databasePath = "actionbarsModule.multiBarBottomLeft",
-    },
-    multiBarBottomRight = {
-        frame = MultiBarBottomRight,
-        module = "actionbarsModule",
-        databasePath = "actionbarsModule.multiBarBottomRight",
-    },
-    multiBarLeft = {
-        frame = MultiBarLeft,
-        module = "actionbarsModule",
-        databasePath = "actionbarsModule.multiBarLeft",
-    },
-    multiBarRight = {
-        frame = MultiBarRight,
-        module = "actionbarsModule",
-        databasePath = "actionbarsModule.multiBarRight",
-    },
-    multiCastBar = {
-        frame = MultiCastActionBarFrame,
-        module = "actionbarsModule",
-        databasePath = "actionbarsModule.multiCastBar",
-    },
-    petBar = {
-        frame = PetActionBarFrame,
-        module = "actionbarsModule",
-        databasePath = "actionbarsModule.petBar",
-        buttonSize = 30,
-        buttonCount = 10,
-        buttonName = "PetActionButton",
-    },
     playerFrame = {
         frame = PlayerFrame,
         module = "unitFramesModule",
         databasePath = "unitFramesModule.playerFrame",
-    },
-    playerPowerBarAlt = {
-        frame = PlayerPowerBarAlt,
-        module = "actionbarsModule",
-        databasePath = "actionbarsModule.playerPowerBarAlt",
-    },
-    reputationBar = {
-        frame = ReputationWatchBar,
-        module = "actionbarsModule",
-        databasePath = "actionbarsModule.reputationBar",
-    },
-    stanceBar = {
-        frame = StanceBarFrame,
-        module = "actionbarsModule",
-        databasePath = "actionbarsModule.stanceBar",
-        buttonSize = 30,
-        buttonCount = 10,
-        buttonName = "StanceButton",
     },
     targetFrame = {
         frame = TargetFrame,
@@ -250,11 +92,6 @@ ScarletUI.frameData = {
                 end,
             }
         }
-    },
-    vehicleLeaveButton = {
-        frame = MainMenuBarVehicleLeaveButton,
-        module = "actionbarsModule",
-        databasePath = "actionbarsModule.vehicleLeaveButton",
     },
 }
 
@@ -294,20 +131,6 @@ function ScarletUI:ThrottledSetupChat(timerId, delay)
     -- Create a new timer to call SetupChat after the delay
     self.updateTimers[timerId] = self:ScheduleTimer(function()
         self:SetupChat()
-        self.updateTimers[timerId] = nil
-    end, delay)
-end
-
-function ScarletUI:ThrottledSetupActionBars(timerId, delay)
-    -- Cancel any existing timer for this slider
-    if self.updateTimers[timerId] then
-        self:CancelTimer(self.updateTimers[timerId])
-        self.updateTimers[timerId] = nil
-    end
-    
-    -- Create a new timer to call SetupActionBars after the delay
-    self.updateTimers[timerId] = self:ScheduleTimer(function()
-        self:SetupActionBars()
         self.updateTimers[timerId] = nil
     end, delay)
 end
@@ -471,53 +294,6 @@ function ScarletUI:GenerateMoverConfig(frameName, _order)
         }
     }
 
-    if module[frameName].buttonsPerRow ~= nil then
-        configs.args.buttonsPerRow = {
-            name = "Buttons Per Row",
-            desc = "Configure the number of action buttons per row.\n(Default " ..
-                defaults[frameName].buttonsPerRow .. ")",
-            type = "range",
-            disabled = function() return self:SettingDisabled(module[frameName].move) end,
-            min = 1,
-            max = frameData.buttonCount or 12,
-            step = 1,
-            width = 1,
-            order = 3.1,
-            get = function(_) return module[frameName].buttonsPerRow end,
-            set = function(_, val)
-                module[frameName].buttonsPerRow = val
-                self:ThrottledSetupActionBars(frameName .. "_buttonsPerRow", 0.1)
-            end,
-        }
-
-        configs.args.buttonsPerRowSpacer = {
-            name = "",
-            type = "description",
-            width = "full",
-            order = 3.2,
-        }
-    end
-
-    if module[frameName].short ~= nil then
-        configs.args.short = {
-            name = "Short",
-            desc = "Shorten the bar to a smaller size.",
-            type = "toggle",
-            width = 1,
-            order = 0.1,
-            get = function(_) return module[frameName].short end,
-            set = function(_, val)
-                module[frameName].short = val
-
-                if val then
-                    self:SetupActionBars()
-                else
-                    self:ShowReloadDialog()
-                end
-            end,
-        }
-    end
-
     if module[frameName].buffsOnTop ~= nil then
         configs.args.buffsOnTop = {
             name = "Buffs On Top",
@@ -547,11 +323,6 @@ function ScarletUI:GenerateAllMoversConfigs()
             for k, v in pairs(frameData.additionalSettings) do
                 configs[frameName].args[k] = v
             end
-        end
-
-        if frameName == "multiCastBar" then
-            local versionText, interfaceVersion = self:GetWoWVersion();
-            configs[frameName].hidden = function() return interfaceVersion < 30000 or interfaceVersion > 50000 end
         end
 
         configs[frameName].args.spacer = {
@@ -983,16 +754,4 @@ function ScarletUI:CreateMoverGrid(spacing)
     -- Create vertical and horizontal grid lines
     CreateGridLines(true)  -- Vertical lines
     CreateGridLines(false) -- Horizontal lines
-end
-
-function ScarletUI:SetPoint(frame, frameAnchor, frameParent, parentAnchor, x, y)
-    if self:InCombat() then
-        return
-    end
-
-    frame:SetMovable(true)
-    frame:ClearAllPoints()
-    frame:SetPoint(frameAnchor, frameParent, parentAnchor, x, y)
-    frame:SetUserPlaced(true)
-    frame:SetMovable(false)
 end

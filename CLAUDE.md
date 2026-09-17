@@ -38,7 +38,6 @@ Each module in `Modules/` provides specific functionality:
 - `Database.lua` - Default settings and configuration structure
 - `Options.lua` - Configuration UI generation
 - `Helpers.lua` - Utility functions and version detection
-- `Actionbars.lua` - Action bar positioning and modifications
 - `UnitFrames.lua` - Player/target/focus frame positioning
 - `RaidFrames.lua` - Raid frame enhancements
 - `Nameplates.lua` - Nameplate customizations
@@ -52,13 +51,13 @@ Each module in `Modules/` provides specific functionality:
 ### Database Structure
 Settings are stored in `ScarletUIDB` saved variable with the following pattern:
 - Global settings in `db.global`
-- Each module has its own settings section (e.g., `unitFramesModule`, `actionbarsModule`)
+- Each module has its own settings section (e.g., `unitFramesModule`, `bagModule`)
 - Frame positioning stored with anchor points, coordinates, and scale
 - Module enable/disable flags for each feature
 
 ## Development Commands
 
-This addon uses CurseForge packaging via `.pkgmeta` file. No build scripts, tests, or linting tools are configured.
+This addon uses CurseForge packaging via `.pkgmeta` file. Run `lua tests/module-loading.lua` from the addon root to check client compatibility, module loading, settings, movers, and Edit Mode installation. No build scripts or linting tools are configured.
 
 ### Packaging
 The `.pkgmeta` file defines:

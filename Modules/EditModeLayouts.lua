@@ -148,8 +148,6 @@ local standardFrames = {
     experienceBar = {
         point = "BOTTOM", relativePoint = "BOTTOM", x = 0, y = 0,
         settings = {
-            -- Scale remains an Edit Mode preference. ScarletUI's separate
-            -- "Short" preference changes width without shrinking the bar.
             { setting = EnumValue("EditModeStatusTrackingBarSetting", "Size"), value = 100 },
         },
     },

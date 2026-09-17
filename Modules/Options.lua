@@ -43,7 +43,6 @@ function ScarletUI:Options()
             },
             generalSettings = self:GetGeneralSettingsPage(database, 2),
             editModeSettings = self:GetEditModeSettingsPage(3),
-            actionBarSettings = self:GetActionBarSettingsPage(database, 4),
             bagModuleSettings = self:GetBagModuleSettingsPage(database, defaults.bagModule, 5),
             chatModuleSettings = self:GetChatModuleSettingsPage(database, defaults.chatModule, 6),
             CVarModuleSettings = self:GetCVarModuleSettingsPage(database, 7),
@@ -188,23 +187,6 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                 inline = true,
                 order = 2,
                 args = {
-                    actionbarsModuleEnabled = {
-                        name = "Action Bars",
-                        desc = "Apply ScarletUI-specific action bar preferences.",
-                        type = "toggle",
-                        hidden = function() return self.lightWeightMode and not self.editMode end,
-                        width = 1,
-                        order = 0,
-                        get = function(_) return database.actionbarsModule.enabled end,
-                        set = function(_, val)
-                            database.actionbarsModule.enabled = val
-                            if not val then
-                                self:ShowReloadDialog()
-                            else
-                                self:SetupActionBars()
-                            end
-                        end,
-                    },
                     bagModuleEnabled = {
                         name = "Bags",
                         desc = "Manage the settings and position of your bags.",
@@ -336,96 +318,6 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                 }
             }
         }
-    }
-end
-
-function ScarletUI:GetActionBarSettingsPage(database, order)
-    local module = database.actionbarsModule
-
-    return {
-        name = "Action Bars",
-        desc = "ScarletUI-specific action bar preferences. Position and Blizzard appearance settings are managed in Edit Mode.",
-        type = "group",
-        hidden = function() return self.lightWeightMode and not self.editMode end,
-        order = order,
-        args = {
-            preferences = {
-                name = "ScarletUI Preferences",
-                type = "group",
-                inline = true,
-                disabled = function() return self:SettingDisabled(module.enabled) end,
-                order = 0,
-                args = {
-                    microBag = {
-                        name = "Micro Bag",
-                        desc = "Hide all equipped-bag buttons except the backpack.",
-                        type = "toggle",
-                        hidden = function() return not MainMenuBarBackpackButton end,
-                        width = 1,
-                        order = 1,
-                        get = function() return module.microBag end,
-                        set = function(_, value)
-                            module.microBag = value
-                            self:SetupActionBarPreferences()
-                        end,
-                    },
-                    extraActionBackground = {
-                        name = "Extra Action Background",
-                        desc = "Show the background artwork behind the extra action button.",
-                        type = "toggle",
-                        hidden = function()
-                            local _, interfaceVersion = self:GetWoWVersion()
-                            return interfaceVersion < 50000 or not ExtraActionButton1
-                        end,
-                        width = 1.25,
-                        order = 2,
-                        get = function() return module.extraActionBar.showBackground end,
-                        set = function(_, value)
-                            module.extraActionBar.showBackground = value
-                            self:SetupActionBarPreferences()
-                        end,
-                    },
-                    shortExperienceBar = {
-                        name = "Short Experience Bar",
-                        desc = "Shorten the experience bar without changing its Edit Mode scale.",
-                        type = "toggle",
-                        hidden = function()
-                            return not MainMenuExpBar and not MainStatusTrackingBarContainer
-                        end,
-                        width = 1.25,
-                        order = 3,
-                        get = function() return module.experienceBar.short end,
-                        set = function(_, value)
-                            module.experienceBar.short = value
-                            if value then
-                                self:SetupActionBarPreferences()
-                            else
-                                self:ShowReloadDialog()
-                            end
-                        end,
-                    },
-                    shortReputationBar = {
-                        name = "Short Reputation Bar",
-                        desc = "Shorten the reputation bar without changing its Edit Mode scale.",
-                        type = "toggle",
-                        hidden = function()
-                            return not ReputationWatchBar and not SecondaryStatusTrackingBarContainer
-                        end,
-                        width = 1.25,
-                        order = 4,
-                        get = function() return module.reputationBar.short end,
-                        set = function(_, value)
-                            module.reputationBar.short = value
-                            if value then
-                                self:SetupActionBarPreferences()
-                            else
-                                self:ShowReloadDialog()
-                            end
-                        end,
-                    },
-                },
-            },
-        },
     }
 end
 

@@ -88,39 +88,6 @@ function ScarletUI:SetupExpandCharacterInfo()
     end
 end
 
-function ScarletUI:SwapActionbar(sourceBar, destinationBar)
-    for i = 1, 12 do
-        local sourceButton = _G[sourceBar.."Button"..i].action
-        local destinationButton = _G[destinationBar.."Button"..i].action
-
-        PickupAction(sourceButton)
-        if GetCursorInfo() ~= nil then
-            PlaceAction(destinationButton)
-            PlaceAction(sourceButton)
-        else
-            PickupAction(destinationButton)
-            PlaceAction(sourceButton)
-            PlaceAction(destinationButton)
-        end
-    end
-end
-
-function ScarletUI:ConvertBarToHorizontal(bar)
-    local children = { bar:GetChildren() }
-    local previousChild;
-    for _, child in ipairs(children) do
-        child:ClearAllPoints()
-
-        if previousChild then
-            child:SetPoint("LEFT", previousChild, "RIGHT", 6, 0)
-        else
-            child:SetPoint("LEFT", bar, "LEFT", 0, 0)
-        end
-
-        previousChild = child
-    end
-end
-
 function ScarletUI:OppositeFrameAnchor(index)
     local anchor = self.frameAnchors[index]
     if anchor == "BOTTOM" then

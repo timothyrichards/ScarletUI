@@ -480,7 +480,6 @@ function ScarletUI:InstallEditModeProfile(variant, replace)
     self.db.char.editMode.lastDisplayVariant = variant
     self.editModeLastError = nil
 
-    self:SetupActionBarPreferences()
     self:Print(profileName .. (exists and " updated and activated." or " installed and activated."))
     NotifyOptions()
 end
