@@ -55,14 +55,45 @@ for _, editMode in ipairs({ false, true }) do
     end
 end
 
+-- Era applies the same preset definitions as the other clients.
+CopyTable = function(source)
+    local copy = {}
+    for key, value in pairs(source) do
+        copy[key] = type(value) == "table" and CopyTable(value) or value
+    end
+    return copy
+end
+assert(ScarletUI.editModeStandardLayoutString == nil)
+assert(ScarletUI.ApplyImportedEditModeLayout == nil)
+local originalLibStub, originalClient = LibStub, ScarletUI.GetWoWVersion
+local originalFindFrame = ScarletUI.FindEditModeFrame
+local anchors = {}
+LibStub = function()
+    return {
+        ReanchorFrame = function(_, frame, _, _, _, x, y) anchors[frame] = { x, y } end,
+        SetFrameSetting = noop,
+    }
+end
+ScarletUI.GetWoWVersion = function() return "VANILLA", 11509 end
+ScarletUI.FindEditModeFrame = function(_, key) return key end
+for _, variant in ipairs({ "STANDARD", "COMPACT", "ULTRAWIDE" }) do
+    anchors = {}
+    assert(ScarletUI:ApplyEditModeLayout(variant))
+    assert(#ScarletUI.editModeSkippedSystems == 0)
+    assert(anchors.mainMenuBar[1] == 0 and anchors.mainMenuBar[2] == 16)
+    assert(anchors.playerFrame[1] == (variant == "COMPACT" and -50 or -65))
+    assert(anchors.chatFrame[1] == (variant == "ULTRAWIDE" and 24 or 0))
+end
+LibStub, ScarletUI.GetWoWVersion = originalLibStub, originalClient
+ScarletUI.FindEditModeFrame = originalFindFrame
+
 -- Profile installation must complete without calling the removed preference hook.
 ScarletUI.InCombat = function() return false end
 ScarletUI.Print = noop
 ScarletUI.LoadEditModeLayouts = function() return true end
 ScarletUI.DoesEditModeProfileExist = function() return false end
 ScarletUI.ApplyEditModeLayout = function() return true end
-ScarletUI.ApplyPendingImportedCompositeSettings = function() return true end
 ScarletUI:InstallEditModeProfile("STANDARD")
 assert(ScarletUI.editModeLastError == nil)
 assert(ScarletUI.db.global.editMode.installed["FOREVER:STANDARD"])
-print("PASS: remaining settings, movers, setup dispatcher, and Edit Mode installation")
+print("PASS: remaining settings, movers, setup dispatcher, shared Era presets, and Edit Mode installation")

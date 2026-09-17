@@ -16,67 +16,6 @@ local function ResolveEnum(value)
     return enumTable and enumTable[value.key]
 end
 
-local function GetImportedSettingValueForDisplay(system, setting, storedValue)
-    if Enum
-        and Enum.EditModeSystem
-        and Enum.EditModeActionBarSetting
-        and system == Enum.EditModeSystem.ActionBar
-        and setting == Enum.EditModeActionBarSetting.IconPadding then
-        return 3
-    end
-
-    local manager = EditModeSettingDisplayInfoManager
-    if not manager or not manager.GetSystemSettingDisplayInfoMap then
-        return storedValue
-    end
-
-    local displayInfoMap = manager:GetSystemSettingDisplayInfoMap(system)
-    local displayInfo = displayInfoMap and displayInfoMap[setting]
-    if displayInfo and displayInfo.ConvertValueForDisplay then
-        local ok, displayValue = pcall(displayInfo.ConvertValueForDisplay, displayInfo, storedValue)
-        if ok then
-            return displayValue
-        end
-    end
-
-    return storedValue
-end
-
-local function GetImportedCompositeSettings(systemInfo)
-    local manager = EditModeSettingDisplayInfoManager
-    local displayInfos = manager and manager.systemSettingDisplayInfo
-    displayInfos = displayInfos and displayInfos[systemInfo.system]
-    if not displayInfos then
-        return {}, {}
-    end
-
-    local storedValues = {}
-    for _, settingInfo in pairs(systemInfo.settings or {}) do
-        storedValues[settingInfo.setting] = settingInfo.value
-    end
-
-    local compositeSettings = {}
-    local componentSettings = {}
-    for _, displayInfo in ipairs(displayInfos) do
-        if displayInfo.isCompositeNumberSetting then
-            local hundredsSetting = displayInfo.compositeNumberHundredsSetting
-            local tensAndOnesSetting = displayInfo.compositeNumberTensAndOnesSetting
-            local hundreds = storedValues[hundredsSetting]
-            local tensAndOnes = storedValues[tensAndOnesSetting]
-            if hundreds ~= nil and tensAndOnes ~= nil then
-                componentSettings[hundredsSetting] = true
-                componentSettings[tensAndOnesSetting] = true
-                table.insert(compositeSettings, {
-                    setting = displayInfo.setting,
-                    value = (hundreds * 100) + tensAndOnes,
-                })
-            end
-        end
-    end
-
-    return compositeSettings, componentSettings
-end
-
 local function NotifyOptions()
     AceConfigRegistry:NotifyChange("ScarletUI")
 end
@@ -199,137 +138,6 @@ function ScarletUI:FindEditModeFrame(settingsKey)
     return nil
 end
 
-function ScarletUI:ApplyImportedEditModeLayout(layoutString)
-    if not C_EditMode or not C_EditMode.ConvertStringToLayoutInfo then
-        return false, "This client cannot decode Edit Mode layouts"
-    end
-
-    layoutString = layoutString:gsub("^%s+", ""):gsub("%s+$", "")
-    local ok, imported = pcall(C_EditMode.ConvertStringToLayoutInfo, layoutString)
-    if not ok or type(imported) ~= "table" or type(imported.systems) ~= "table" then
-        return false, ok and "The default Edit Mode layout is invalid" or tostring(imported)
-    end
-
-    local library = GetEditModeLibrary()
-    local appliedSystems = 0
-    self.pendingImportedCompositeSettings = {}
-
-    for _, systemInfo in pairs(imported.systems) do
-        local frame
-        if EditModeManagerFrame and EditModeManagerFrame.GetRegisteredSystemFrame then
-            local found, result = pcall(
-                EditModeManagerFrame.GetRegisteredSystemFrame,
-                EditModeManagerFrame,
-                systemInfo.system,
-                systemInfo.systemIndex
-            )
-            if found then
-                frame = result
-            end
-        end
-
-        if frame then
-            appliedSystems = appliedSystems + 1
-            local label = string.format("system %s:%s", tostring(systemInfo.system), tostring(systemInfo.systemIndex))
-            local compositeSettings, componentSettings = GetImportedCompositeSettings(systemInfo)
-            local anchor = systemInfo.anchorInfo
-            if anchor then
-                local relativeFrame = _G[anchor.relativeTo or ""] or UIParent
-                local anchored, reason = pcall(
-                    library.ReanchorFrame,
-                    library,
-                    frame,
-                    anchor.point,
-                    relativeFrame,
-                    anchor.relativePoint,
-                    anchor.offsetX or 0,
-                    anchor.offsetY or 0
-                )
-                if not anchored then
-                    table.insert(self.editModeSkippedSystems, label .. " anchor: " .. tostring(reason))
-                end
-            end
-
-            for _, settingInfo in pairs(systemInfo.settings or {}) do
-                -- Composite values (currently chat width and height) are stored
-                -- as hidden hundreds/remainder fields. LibEditModeOverride cannot
-                -- set those hidden fields, so apply their visible counterparts
-                -- through Blizzard after the target profile becomes active.
-                if not componentSettings[settingInfo.setting] then
-                    local value = GetImportedSettingValueForDisplay(
-                        systemInfo.system,
-                        settingInfo.setting,
-                        settingInfo.value
-                    )
-                    local applied, reason = pcall(
-                        library.SetFrameSetting,
-                        library,
-                        frame,
-                        settingInfo.setting,
-                        value
-                    )
-                    if not applied then
-                        table.insert(self.editModeSkippedSystems, label .. " setting: " .. tostring(reason))
-                    end
-                end
-            end
-
-            for _, settingInfo in ipairs(compositeSettings) do
-                table.insert(self.pendingImportedCompositeSettings, {
-                    frame = frame,
-                    label = label,
-                    setting = settingInfo.setting,
-                    value = settingInfo.value,
-                })
-            end
-        else
-            table.insert(
-                self.editModeSkippedSystems,
-                string.format("system %s:%s: unsupported by this client", tostring(systemInfo.system), tostring(systemInfo.systemIndex))
-            )
-        end
-    end
-
-    if appliedSystems == 0 then
-        return false, "No systems from the default Edit Mode layout are available"
-    end
-
-    return true
-end
-
-function ScarletUI:ApplyPendingImportedCompositeSettings()
-    local pending = self.pendingImportedCompositeSettings
-    self.pendingImportedCompositeSettings = nil
-    if not pending or #pending == 0 then
-        return true
-    end
-
-    local manager = EditModeManagerFrame
-    if not manager or not manager.OnSystemSettingChange or not manager.SaveLayouts then
-        return false, "Blizzard Edit Mode cannot apply composite settings"
-    end
-
-    for _, settingInfo in ipairs(pending) do
-        local applied, reason = pcall(
-            manager.OnSystemSettingChange,
-            manager,
-            settingInfo.frame,
-            settingInfo.setting,
-            settingInfo.value
-        )
-        if not applied then
-            return false, settingInfo.label .. " setting: " .. tostring(reason)
-        end
-    end
-
-    local saved, reason = pcall(manager.SaveLayouts, manager)
-    if not saved then
-        return false, "Unable to save composite settings: " .. tostring(reason)
-    end
-
-    return true
-end
-
 function ScarletUI:ApplyEditModeLayout(variant)
     local library = GetEditModeLibrary()
     if not library then
@@ -338,12 +146,6 @@ function ScarletUI:ApplyEditModeLayout(variant)
 
     local frames = self:GetEditModeLayoutDefinition(variant)
     self.editModeSkippedSystems = {}
-
-    if variant == "STANDARD"
-        and self:GetWoWVersion() == "VANILLA"
-        and self.editModeStandardLayoutString then
-        return self:ApplyImportedEditModeLayout(self.editModeStandardLayoutString)
-    end
 
     for settingsKey, definition in pairs(frames) do
         local frame = self:FindEditModeFrame(settingsKey)
@@ -455,11 +257,6 @@ function ScarletUI:InstallEditModeProfile(variant, replace)
         end
 
         library:ApplyChanges()
-
-        local compositesApplied, compositeReason = self:ApplyPendingImportedCompositeSettings()
-        if not compositesApplied then
-            error(compositeReason)
-        end
     end)
 
     if not ok then

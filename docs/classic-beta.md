@@ -6,7 +6,7 @@ build 69893. `ScarletUI-Camelot.toc` targets its interface version, 16001.
 The beta uses Mainline UI frames with Classic equipment rules. ScarletUI
 identifies it as `FOREVER` and reuses the existing modern UI mode, including
 Blizzard bags, bank, and Edit Mode. Legacy custom bags, nameplates, and frame
-movers are disabled as on Retail. The Classic Era layout import is not used.
+movers are disabled as on Retail.
 
 This matches the [UI source for build 1.60.1.69893](https://github.com/Gethe/wow-ui-source/tree/forever),
 particularly the ActionBar, UnitFrame, EditMode, and UIPanels_Game manifests.

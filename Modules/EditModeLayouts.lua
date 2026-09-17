@@ -1,10 +1,4 @@
-ScarletUI.editModeLayoutSchemaVersion = 10
-
--- Exported from Blizzard Edit Mode at 2560x1440. Native Edit Mode anchors
--- retain their edge/center relationships as the display resolution changes.
-ScarletUI.editModeStandardLayoutString = [====[
-2 31 0 0 0 7 7 UIParent -383.7 2.0 -1 ##$%%/&''%)$+#,$ 0 1 0 6 0 MainActionBar 0.0 4.0 -1 ##$%%/&''%(#,$ 0 2 0 6 0 MultiBarBottomLeft 0.0 4.0 -1 ##$%%/&''%(#,$ 0 3 1 5 5 UIParent -5.0 -77.0 -1 #$$$%/&('%(#,$ 0 4 1 5 5 UIParent -5.0 -77.0 -1 #$$$%/&('%(&,$ 0 5 1 1 4 UIParent 0.0 0.0 -1 ##$$%/&('%(#,$ 0 6 1 1 4 UIParent 0.0 -50.0 -1 ##$$%/&('%(#,$ 0 7 1 1 4 UIParent 0.0 -100.0 -1 ##$$%/&('%(#,$ 0 10 0 0 0 UIParent 653.2 -720.0 -1 ##$$&('% 0 11 0 6 0 ChatFrame1 -32.0 64.0 -1 ##$$&('%,# 0 12 0 0 0 UIParent 2.0 -667.0 -1 ##$$&('% 1 -1 0 7 7 UIParent 0.0 314.0 -1 ##$# 2 -1 0 1 1 UIParent 819.7 -2.0 -1 ##$#%( 3 0 0 7 7 UIParent -218.0 296.0 -1 3# 3 1 0 7 7 UIParent 218.0 296.0 -1 %$3# 3 2 0 7 7 UIParent -366.5 540.0 -1 %#&#3# 3 3 0 0 0 UIParent 653.2 -754.0 -1 '$(#)$-A.3/#1#3#5$6(7-7$ 3 4 0 0 0 UIParent 675.2 -754.0 -1 ,$-9.1/#0#1#2(5$6(7-7$ 3 7 0 8 6 PlayerFrame 20.0 12.0 -1 3# 5 -1 0 0 0 UIParent 138.2 -554.0 -1 # 6 0 0 2 0 MinimapCluster -4.0 0.0 -1 ##$#%#&.(()( 6 1 0 0 6 BuffFrame 0.0 -4.0 -1 ##$#%#'.(()( 8 -1 0 6 0 MicroMenuContainer 32.0 36.0 -1 #&$Z%$&Y 9 -1 0 0 0 UIParent 1135.2 -718.0 -1 # 13 -1 0 7 7 UIParent -815.7 2.0 -1 ##$#%) 14 -1 0 7 7 UIParent 794.2 2.0 -1 ##$#%(&( 15 0 0 1 1 UIParent 0.0 -2.0 -1 &- 15 1 0 0 6 MainStatusTrackingBarContainer 0.0 -4.0 -1 &- 16 -1 0 8 2 ChatFrame1 25.0 64.0 -1 #( 18 -1 0 6 8 ChatFrame1 29.0 -32.0 -1 #- 24 -1 1 6 7 UIParent -240.0 46.0 -1 #
-]====]
+ScarletUI.editModeLayoutSchemaVersion = 11
 
 ScarletUI.editModeFrameCandidates = {
     -- MainActionBar is the Edit Mode system. MainMenuBar is the 1024px
