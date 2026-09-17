@@ -25,12 +25,23 @@ assert(ScarletUI.defaults.global.bagModule == nil and ScarletUI.originalUIDefaul
 assert(ScarletUI.SetupBags == nil and ScarletUI.SetupBank == nil)
 assert(ScarletUI.CreateMover == nil and ScarletUI.SetupUnitFrames == nil)
 assert(ScarletUI.defaults.global.moversModule == nil and ScarletUI.defaults.global.unitFramesModule == nil)
+assert(ScarletUI.SetupNameplates == nil and ScarletUI.GetNameplatesModuleSettingsPage == nil)
+assert(ScarletUI.defaults.global.nameplatesModule == nil and ScarletUI.originalUIDefaults.global.nameplatesModule == nil)
+assert(ScarletUI.defaults.char.priorityDebuffs == nil)
+
+assert(ScarletUI.SetupRaidProfiles == nil and ScarletUI.UpdateProfileOptions == nil)
+assert(ScarletUI.defaults.global.raidFramesModule == nil and ScarletUI.originalUIDefaults.global.raidFramesModule == nil)
+assert(StaticPopupDialogs.SCARLET_UI_RAID_FRAME_DIALOG == nil)
+assert(StaticPopupDialogs.SCARLET_DELETE_RAID_PROFILE_DIALOG == nil)
 
 -- Both fresh settings and saved settings from before removal must load.
 for _, oldSettings in ipairs({ false, true }) do
     ScarletUI.db.global.actionbarsModule = oldSettings and { enabled = true } or nil
     ScarletUI.db.global.bagModule = oldSettings and { enabled = true } or nil
     ScarletUI.db.global.moversModule = oldSettings and { enabled = true } or nil
+    ScarletUI.db.global.nameplatesModule = oldSettings and { enabled = true } or nil
+    ScarletUI.db.char.priorityDebuffs = oldSettings and "Sunder Armor" or nil
+    ScarletUI.db.global.raidFramesModule = oldSettings and { enabled = true } or nil
     local options = ScarletUI:Options()
     assert(options.args.actionBarSettings == nil)
     assert(options.args.generalSettings.args.modules.args.actionbarsModuleEnabled == nil)
@@ -39,13 +50,17 @@ for _, oldSettings in ipairs({ false, true }) do
     assert(options.args.toggleMovers == nil and options.args.resetPositions == nil)
     assert(options.args.generalSettings.args.general.args.clampMovers == nil)
     assert(options.args.generalSettings.args.modules.args.unitFramesModuleEnabled == nil)
+    assert(options.args.raidFramesModuleSettings == nil)
+    assert(options.args.generalSettings.args.modules.args.raidFramesModuleEnabled == nil)
+    assert(options.args.nameplatesModuleSettings == nil)
+    assert(options.args.generalSettings.args.modules.args.nameplatesModuleEnabled == nil)
 end
 
 -- Exercise the real setup dispatcher with only the remaining module methods.
 local calls = {}
 local setupMethods = { "SetupDebugFrame", "SetupChat", "SetupCVars",
-    "SetupItemLevels", "SetupRaidProfiles",
-    "SetupTidyIcons", "SetupNameplates", "SetupExpandCharacterInfo" }
+    "SetupItemLevels",
+    "SetupTidyIcons", "SetupExpandCharacterInfo" }
 for _, name in ipairs(setupMethods) do
     ScarletUI[name] = function() calls[name] = true end
 end
@@ -57,6 +72,12 @@ for _, editMode in ipairs({ false, true }) do
         assert(calls[name], name)
     end
 end
+
+local resetCalled = false
+ScarletUI.db.ResetDB = function() resetCalled = true end
+ScarletUI.Print = noop
+ScarletUI:ResetDefaults()
+assert(resetCalled)
 
 -- Era applies the same preset definitions as the other clients.
 CopyTable = function(source)
@@ -83,6 +104,8 @@ for _, variant in ipairs({ "STANDARD", "COMPACT", "ULTRAWIDE" }) do
     anchors = {}
     assert(ScarletUI:ApplyEditModeLayout(variant))
     assert(#ScarletUI.editModeSkippedSystems == 0)
+    assert(anchors.raidFrame[1] == 165 and anchors.raidFrame[2] == 90)
+    assert(anchors.partyFrame)
     assert(anchors.mainMenuBar[1] == 0 and anchors.mainMenuBar[2] == 16)
     assert(anchors.playerFrame[1] == (variant == "COMPACT" and -50 or -65))
     assert(anchors.chatFrame[1] == (variant == "ULTRAWIDE" and 24 or 0))

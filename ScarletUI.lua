@@ -19,20 +19,6 @@ StaticPopupDialogs['SCARLET_UI_RELOAD_DIALOG'] = {
     preferredIndex = 3,
 }
 
--- Dialog to reload after raid frame settings are changed
-StaticPopupDialogs['SCARLET_UI_RAID_FRAME_DIALOG'] = {
-    text = '<Scarlet UI>\n\nYour raid frame settings have been updated.\n\n|cffff0900IF YOU DO NOT RELOAD YOU WILL NOT BE ABLE TO TARGET PARTY OR RAID MEMBERS.|r',
-    button1 = 'Reload',
-    button2 = 'Dead Friends',
-    OnAccept = function()
-        ReloadUI()
-    end,
-    timeout = 0,
-    whileDead = true,
-    hideOnEscape = false,
-    preferredIndex = 3,
-}
-
 -- Dialog to confirm restoration of default settings
 StaticPopupDialogs['SCARLET_RESTORE_DEFAULTS_DIALOG'] = {
     text = '<Scarlet UI>\n\nAre you sure you want to restore all settings to default settings?',
@@ -40,20 +26,6 @@ StaticPopupDialogs['SCARLET_RESTORE_DEFAULTS_DIALOG'] = {
     button2 = 'Cancel',
     OnAccept = function()
         ScarletUI:ResetDefaults()
-    end,
-    timeout = 0,
-    whileDead = true,
-    hideOnEscape = false,
-    preferredIndex = 3,
-}
-
--- Dialog to prompt if raid frame profile should be deleted
-StaticPopupDialogs['SCARLET_DELETE_RAID_PROFILE_DIALOG'] = {
-    text = '<Scarlet UI>\n\nWould you also like to delete the "Raid" raid frames profile?',
-    button1 = 'Yes',
-    button2 = 'No',
-    OnAccept = function()
-        ScarletUI:DeleteRaidProfile(ScarletUI.raidProfileToDelete)
     end,
     timeout = 0,
     whileDead = true,
@@ -120,9 +92,7 @@ function ScarletUI:Setup()
     self:SetupChat()
     self:SetupCVars()
     self:SetupItemLevels()
-    self:SetupRaidProfiles()
     self:SetupTidyIcons()
-    self:SetupNameplates()
     self:SetupExpandCharacterInfo()
 end
 
