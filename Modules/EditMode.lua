@@ -46,7 +46,10 @@ StaticPopupDialogs.SCARLET_EDIT_MODE_SWITCH = {
             ScarletUI:SwitchEditModeProfile(data.variant)
         end
     end,
-    OnCancel = function(_, data)
+    OnCancel = function(_, data, reason)
+        if reason == "clicked" then
+            ScarletUI.db.global.editMode.suppressPrompts = true
+        end
         if data then ScarletUI:MarkEditModeActivationPrompted(data.variant) end
     end,
     timeout = 0,
@@ -342,7 +345,7 @@ function ScarletUI:OpenEditMode()
 end
 
 function ScarletUI:EvaluateEditModeProfilePrompt()
-    if not self.editModeReady then
+    if self.db.global.editMode.suppressPrompts or not self.editModeReady then
         return
     end
 

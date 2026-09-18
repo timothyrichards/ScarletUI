@@ -12,6 +12,7 @@ ScarletUI.defaults = {
         expandCharacterInfo = true,
         editMode = {
             installed = {},
+            suppressPrompts = false,
         },
         chatModule = {
             enabled = true,
