@@ -341,7 +341,7 @@ function ScarletUI:OpenEditMode()
     end
 end
 
-function ScarletUI:EvaluateEditModeProfilePrompt(displayChanged)
+function ScarletUI:EvaluateEditModeProfilePrompt()
     if not self.editModeReady then
         return
     end
@@ -362,8 +362,7 @@ function ScarletUI:EvaluateEditModeProfilePrompt(displayChanged)
             )
         end
     elseif active ~= profileName
-        and (displayChanged
-            or self.db.char.editMode.activationPromptedVersions[key] ~= self.editModeLayoutSchemaVersion) then
+        and self.db.char.editMode.activationPromptedVersions[key] == nil then
         StaticPopup_Show(
             "SCARLET_EDIT_MODE_SWITCH",
             self:GetEditModeVariantLabel(variant),
@@ -382,9 +381,7 @@ function ScarletUI:HandleEditModeDisplayChanged()
             return
         end
 
-        local previous = ScarletUI.db.char.editMode.lastDisplayVariant
-        local current = ScarletUI:GetEditModeVariant()
-        ScarletUI:EvaluateEditModeProfilePrompt(previous ~= nil and previous ~= current)
+        ScarletUI:EvaluateEditModeProfilePrompt()
     end)
 end
 
@@ -393,7 +390,7 @@ function ScarletUI:TryInitializeEditModeProfile()
         return
     end
 
-    self:EvaluateEditModeProfilePrompt(false)
+    self:EvaluateEditModeProfilePrompt()
 end
 
 function ScarletUI:InitializeEditMode()

@@ -113,6 +113,53 @@ end
 LibStub, ScarletUI.GetWoWVersion = originalLibStub, originalClient
 ScarletUI.FindEditModeFrame = originalFindFrame
 
+-- Keep Current survives reloads, display events, and preset schema updates.
+do
+    local originalVariant = ScarletUI.GetEditModeVariant
+    local originalExists = ScarletUI.DoesEditModeProfileExist
+    local originalActive = ScarletUI.GetActiveEditModeProfile
+    local originalPopup, originalTimer = StaticPopup_Show, C_Timer
+    local originalState = ScarletUI.db.char.editMode
+    local originalSchema = ScarletUI.editModeLayoutSchemaVersion
+    local variant, prompts = "STANDARD", {}
+    ScarletUI.editModeReady = true
+    ScarletUI.GetEditModeVariant = function() return variant end
+    ScarletUI.DoesEditModeProfileExist = function() return true end
+    ScarletUI.GetActiveEditModeProfile = function() return "My Custom Profile" end
+    StaticPopup_Show = function(name, _, _, data)
+        prompts[#prompts + 1] = { name = name, data = data }
+    end
+    C_Timer = { After = function(_, callback) callback() end }
+    ScarletUI.db.char.editMode = { activationPromptedVersions = {} }
+
+    ScarletUI:EvaluateEditModeProfilePrompt()
+    assert(#prompts == 1 and prompts[1].name == "SCARLET_EDIT_MODE_SWITCH")
+    StaticPopupDialogs.SCARLET_EDIT_MODE_SWITCH.OnCancel(nil, prompts[1].data)
+    -- Reconstruct saved state as on reload, then emulate a startup display change.
+    ScarletUI.db.char.editMode = CopyTable(ScarletUI.db.char.editMode)
+    ScarletUI:EvaluateEditModeProfilePrompt()
+    ScarletUI.db.char.editMode.lastDisplayVariant = "COMPACT"
+    ScarletUI:HandleEditModeDisplayChanged()
+    assert(#prompts == 1, "Keep Current must suppress repeated display prompts")
+    ScarletUI.editModeLayoutSchemaVersion = originalSchema + 1
+    ScarletUI:EvaluateEditModeProfilePrompt()
+    assert(#prompts == 1, "Preset updates must preserve the saved activation choice")
+    variant = "ULTRAWIDE"
+    ScarletUI:HandleEditModeDisplayChanged()
+    assert(#prompts == 2 and prompts[2].data.variant == "ULTRAWIDE")
+    StaticPopupDialogs.SCARLET_EDIT_MODE_SWITCH.OnCancel(nil, prompts[2].data)
+    variant = "STANDARD"
+    ScarletUI:HandleEditModeDisplayChanged()
+    assert(#prompts == 2, "Returning to a declined preset must not prompt again")
+
+    ScarletUI.GetEditModeVariant = originalVariant
+    ScarletUI.DoesEditModeProfileExist = originalExists
+    ScarletUI.GetActiveEditModeProfile = originalActive
+    StaticPopup_Show, C_Timer = originalPopup, originalTimer
+    ScarletUI.db.char.editMode = originalState
+    ScarletUI.editModeLayoutSchemaVersion = originalSchema
+end
+
 -- Profile installation must complete without calling the removed preference hook.
 ScarletUI.InCombat = function() return false end
 ScarletUI.Print = noop

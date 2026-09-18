@@ -61,6 +61,9 @@ replaced when definitions change. `/sui` > Edit Mode Profile > Update Profile
 applies current defaults to the current display's ScarletUI profile and activates
 it. A reload alone does not update that saved layout. Bump the schema version
 when changing preset definitions so status and prompt metadata can track changes.
+Choosing Keep Current suppresses future switch prompts for that character, client,
+and display variant, including after reloads or schema updates. Manual switching
+remains available in the Edit Mode Profile settings page.
 
 `ScarletUIDB` stores addon settings through AceDB. `db.global` holds feature
 settings, CVar overrides, and Edit Mode installation metadata keyed by client and
