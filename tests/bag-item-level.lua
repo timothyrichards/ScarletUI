@@ -75,3 +75,39 @@ for _, modern in ipairs({ false, true }) do
     assert(second.itemLevel.shown and bank.itemLevel.shown)
 end
 print("PASS: native Classic and modern bag/bank item levels, events, empty slots, and toggle")
+
+-- Inspect must work when only the namespaced item-level API exists.
+local itemLink = "|cnIQ2:|Hitem:6214::::::::12:1487:::::::::|h[Heavy Copper Maul]|h|r"
+UnitClass = function() return "Warrior", "WARRIOR" end
+GetInventorySlotInfo = function(name) return name end
+GetInventoryItemLink = function(_, slot) if slot == "MainHandSlot" then return itemLink end end
+for _, api in ipairs({ "namespaced", "legacy", "baseOnly", "uncached", "baseFallback" }) do
+    local baseLevel = api ~= "uncached" and 24 or nil
+    C_Item.GetItemInfo = function()
+        return "Heavy Copper Maul", itemLink, 1, baseLevel, nil, "Weapon", nil, nil, "INVTYPE_2HWEAPON"
+    end
+    C_Item.GetDetailedItemLevelInfo = nil
+    GetDetailedItemLevelInfo = nil
+    if api == "namespaced" then
+        C_Item.GetDetailedItemLevelInfo = function(link) assert(link == itemLink); return 40 end
+    elseif api == "legacy" then
+        GetDetailedItemLevelInfo = function(link) assert(link == itemLink); return 40 end
+    elseif api == "uncached" or api == "baseFallback" then
+        C_Item.GetDetailedItemLevelInfo = function() return nil end
+    end
+    InspectFrame = button()
+    InspectFrame.unit = "party3"
+    InspectMainHandSlot = button()
+    ScarletUI = { db = { global = { itemLevelInspect = true } }, retail = true }
+    ScarletUI.GetWoWVersion = function() return "FOREVER", 16001 end
+    dofile("Modules/ItemLevel.lua")
+    ScarletUI:InspectFrameItemLevel()
+    local expected = (api == "namespaced" or api == "legacy") and 40 or baseLevel
+    assert(ScarletUI.inspectFrameItemLevelText.text == "Item Level: " .. math.floor((expected or 0) * 2 / 16), api)
+    if expected then
+        assert(InspectMainHandSlot.itemLevel.text == expected, api)
+    else
+        assert(InspectMainHandSlot.itemLevel == nil, "Uncached item must not create a bogus overlay")
+    end
+end
+print("PASS: inspect item levels with namespaced, legacy, and base APIs, uncached items, and two-handed weapons")

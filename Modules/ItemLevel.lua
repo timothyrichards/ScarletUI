@@ -1,6 +1,11 @@
 local GetContainerNumSlots = C_Container.GetContainerNumSlots or GetContainerNumSlots
 local GetContainerItemLink = C_Container.GetContainerItemLink or GetContainerItemLink
 local GetItemInfo = C_Item.GetItemInfo or GetItemInfo
+local GetDetailedItemLevelInfo = C_Item.GetDetailedItemLevelInfo or GetDetailedItemLevelInfo
+
+local function GetItemLevel(itemLink)
+    return (GetDetailedItemLevelInfo and GetDetailedItemLevelInfo(itemLink)) or select(4, GetItemInfo(itemLink))
+end
 
 local slots = {
     "Head",
@@ -45,8 +50,8 @@ local function ItemLevelText(itemLink, itemLocation, itemButton, hide)
 
         if itemLocation then
             itemLevel = C_Item.GetCurrentItemLevel(itemLocation)
-        elseif GetDetailedItemLevelInfo then
-            itemLevel = GetDetailedItemLevelInfo(itemLink)
+        else
+            itemLevel = GetItemLevel(itemLink)
         end
 
         if itemType == 'Armor' or itemType == 'Weapon' then
@@ -80,7 +85,7 @@ local function calculateUnitItemLevel(unit)
     local itemCount = 0
     local isHunter = (select(2, UnitClass(unit)) == "HUNTER")
     local mainHandItemLink = GetInventoryItemLink(unit, GetInventorySlotInfo("MainHandSlot"))
-    local mainHandItemLevel = mainHandItemLink and GetDetailedItemLevelInfo(mainHandItemLink) or 0
+    local mainHandItemLevel = mainHandItemLink and GetItemLevel(mainHandItemLink) or 0
     local versionText, interfaceVersion = ScarletUI:GetWoWVersion()
 
     for _, slotName in ipairs(slots) do
@@ -104,7 +109,7 @@ local function calculateUnitItemLevel(unit)
             local slotID = GetInventorySlotInfo(slotName .. "Slot")
             local itemLink = GetInventoryItemLink(unit, slotID)
             if itemLink then
-                local itemLevel = GetDetailedItemLevelInfo(itemLink)
+                local itemLevel = GetItemLevel(itemLink) or 0
                 totalItemLevel = totalItemLevel + itemLevel
             elseif slotName == "SecondaryHand" and mainHandItemLink then
                 -- Only 2H weapons count MH ilvl for both weapon slots
