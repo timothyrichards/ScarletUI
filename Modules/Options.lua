@@ -175,12 +175,9 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                         order = 3,
                         get = function(_) return database.CVarModule.enabled end,
                         set = function(_, val)
+                            if ScarletUI:InCombat() then return end
                             database.CVarModule.enabled = val
-                            if val then
-                                ScarletUI:SetupCVars()
-                            else
-                                ScarletUI:RestoreCVarsDefaults()
-                            end
+                            ScarletUI:SetupCVars()
                         end,
                     },
                 }
@@ -314,7 +311,7 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
 
     local options = {
         name = "CVars",
-        desc = "Set CVar overrides that sync across characters. Only CVars you explicitly set will be changed.",
+        desc = "Set CVar overrides that sync across characters. Disabling restores saved original values.",
         type = "group",
         order = order,
         args = {
@@ -325,7 +322,7 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
                 order = 0,
                 args = {
                     description = {
-                        name = "Browse available CVars below. Set a value to override it, or clear to restore the WoW default.\n\nYou can also add custom CVars by name using the field below.",
+                        name = "Browse available CVars below. Clear a value or remove a CVar to restore its saved original. Default applies the WoW default. Disabling restores originals and keeps your overrides for later.\n\nYou can also add custom CVars by name using the field below.",
                         type = "description",
                         width = "full",
                         fontSize = "medium",
@@ -342,6 +339,7 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
             },
             addCustom = {
                 name = "Add Custom CVar",
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
                 type = "group",
                 inline = true,
                 order = 1,
@@ -354,11 +352,18 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
                         width = 1.5,
                         get = function() return "" end,
                         set = function(_, val)
-                            if val == "" then return end
+                            if val == "" or not module.enabled or ScarletUI:InCombat() then return end
+
+                            if GetCVar(val) == nil then
+                                ScarletUI:Print("|cffff4444" .. val .. "|r is not a valid CVar.")
+                                return
+                            end
+                            ScarletUI:SnapshotCVar(val)
 
                             -- Un-hide if previously hidden
                             if module.hiddenCVars[val] then
                                 module.hiddenCVars[val] = nil
+                                module.overrides[val] = tostring(GetCVar(val))
                                 if not ScarletUI:ArrayHasValue(ScarletUI.knownCVars, val) then
                                     table.insert(ScarletUI.knownCVars, val)
                                     table.sort(ScarletUI.knownCVars, function(a, b)
@@ -376,26 +381,14 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
                                 return
                             end
 
-                            -- Check if it's a valid CVar
-                            if GetCVar(val) == nil then
-                                ScarletUI:Print("|cffff4444" .. val .. "|r is not a valid CVar.")
-                                return
-                            end
-
                             table.insert(ScarletUI.knownCVars, val)
                             table.sort(ScarletUI.knownCVars, function(a, b)
                                 return string.lower(a) < string.lower(b)
                             end)
 
-                            -- Auto-override if current value differs from default
-                            local currentVal = tostring(GetCVar(val))
-                            local defaultVal = tostring(GetCVarDefault(val))
-                            if currentVal ~= defaultVal then
-                                module.overrides[val] = currentVal
-                                ScarletUI:Print("Added CVar: |cff00ff00" .. val .. "|r (override set — current value differs from default)")
-                            else
-                                ScarletUI:Print("Added CVar: |cff00ff00" .. val .. "|r")
-                            end
+                            -- Persist custom names even when their current value is the default.
+                            module.overrides[val] = tostring(GetCVar(val))
+                            ScarletUI:Print("Added CVar: |cff00ff00" .. val .. "|r")
 
                             AceConfigRegistry:NotifyChange("ScarletUI")
                         end,
@@ -405,7 +398,7 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
             search = {
                 name = "CVars",
                 type = "group",
-                disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
                 inline = true,
                 order = 2,
                 args = {
@@ -459,7 +452,7 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
         local spacerKey = "spacer" .. orderCounter
 
         local isValid = GetCVar(cvarName) ~= nil
-        local hasOverride = module.overrides[cvarName] ~= nil
+        local hasOverride = module.overrides[cvarName] ~= nil and module.overrides[cvarName] ~= false
 
         -- CVar name label — red if invalid, green if overridden
         local labelText
@@ -496,9 +489,10 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
                 if module.overrides[cvarName] then
                     return module.overrides[cvarName]
                 end
-                return isValid and tostring(GetCVarDefault(cvarName)) or ""
+                return isValid and tostring(GetCVar(cvarName)) or ""
             end,
             set = function(_, val)
+                if not module.enabled or ScarletUI:InCombat() then return end
                 if val == "" then
                     ScarletUI:ClearCVarOverride(cvarName)
                 else
@@ -514,15 +508,15 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
         -- Clear button
         options.args.search.args[clearKey] = {
             name = "Default",
-            desc = "Clear override and restore WoW default",
+            desc = "Apply the WoW default; keep the original value available for restoration",
             type = "execute",
             width = 0.5,
             order = orderCounter * 5 - 2,
             func = function()
-                ScarletUI:ClearCVarOverride(cvarName)
+                ScarletUI:SetCVarDefault(cvarName)
                 AceConfigRegistry:NotifyChange("ScarletUI")
             end,
-            disabled = function() return not hasOverride end,
+            disabled = function() return not isValid end,
             hidden = function() return ShouldOptionBeHidden(cvarName) end,
         }
 
@@ -530,11 +524,12 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
         local removeKey = "remove" .. orderCounter
         options.args.search.args[removeKey] = {
             name = "Remove",
-            desc = "Remove this CVar from the list (re-add via the custom CVar field)",
+            desc = "Restore the saved original and remove this CVar from the list (re-add via the custom CVar field)",
             type = "execute",
             width = 0.5,
             order = orderCounter * 5 - 1,
             func = function()
+                if ScarletUI:InCombat() then return end
                 ScarletUI:ClearCVarOverride(cvarName)
                 module.hiddenCVars[cvarName] = true
                 AceConfigRegistry:NotifyChange("ScarletUI")

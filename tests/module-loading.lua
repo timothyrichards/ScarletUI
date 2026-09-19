@@ -75,6 +75,7 @@ for _, editMode in ipairs({ false, true }) do
 end
 
 local resetCalled = false
+InCombatLockdown = function() return false end
 ScarletUI.db.ResetDB = function() resetCalled = true end
 ScarletUI.Print = noop
 ScarletUI:ResetDefaults()

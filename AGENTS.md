@@ -79,6 +79,20 @@ the actual Edit Mode layouts. Old removed-module keys may remain in saved data;
 they must not be required or used by the current setup or options code.
 Chat font size is applied per chat window with `FCF_SetChatWindowFontSize`.
 
+CVar overrides are shared. Before applying an override or adding a custom CVar,
+original values are saved in `db.char.cvarOriginalValues` for character CVars and
+`db.global.CVarModule.originalValues` for shared CVars, using the storage flags
+from `GetCVarInfo`. Clients without that API use character backups.
+Disabling restores originals and retains overrides for re-enabling; other
+characters restore on their next login. Clearing an input or removing a CVar
+restores its original and saves a `false` override to prevent AceDB defaults or
+auto-discovery from enabling it again. Default applies the Blizzard default as
+an override, retaining the original backup. Successful restoration releases the
+backup; a later override captures a fresh baseline. Failed or unavailable restores
+keep the backup for retry. Resetting addon preferences preserves pending backups.
+Existing installs can only snapshot their current values, not pre-addon values
+that were never saved. CVar changes and restores are blocked during combat.
+
 ## Development and checks
 
 Run from the repository root with Lua 5.1:
