@@ -14,6 +14,7 @@ ScarletUI.knownCVars = {
     'countdownForCooldowns',
     'doNotFlashLowHealthWarning',
     'enableFloatingCombatText',
+    'enableMouseoverCast',
     'floatingCombatTextCombatHealing',
     'floatingCombatTextCombatState',
     'floatingCombatTextDodgeParryMiss',

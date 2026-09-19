@@ -79,6 +79,14 @@ function ScarletUI:OnInitialize()
         self.db.global.CVarModule.CVars = nil
     end
 
+    -- Seed the default mouseover casting override on clients that support it.
+    local CVarModule = self.db.global.CVarModule
+    if CVarModule.enabled and CVarModule.overrides.enableMouseoverCast == nil
+        and not CVarModule.hiddenCVars.enableMouseoverCast
+        and GetCVar('enableMouseoverCast') ~= nil then
+        CVarModule.overrides.enableMouseoverCast = '1'
+    end
+
     -- Register the chat commands
     self:RegisterChatCommand("sui", "SlashCommand")
 

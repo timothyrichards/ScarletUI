@@ -98,7 +98,9 @@ ScarletUI.defaults = {
         },
         CVarModule = {
             enabled = true,
-            overrides = {},
+            overrides = {
+                enableMouseoverCast = '1',
+            },
             hiddenCVars = {},
         }
     },
@@ -206,7 +208,9 @@ ScarletUI.originalUIDefaults = {
         },
         CVarModule = {
             enabled = true,
-            overrides = {},
+            overrides = {
+                enableMouseoverCast = '1',
+            },
             hiddenCVars = {},
         }
     },
