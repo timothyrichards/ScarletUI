@@ -189,7 +189,7 @@ StaticPopupDialogs.SCARLET_CVAR_ENABLE = {
 }
 
 StaticPopupDialogs.SCARLET_CVAR_REVIEW = {
-    text = "<Scarlet UI>\n\nCVar settings are now enabled.\n\nTo restore your original settings, open /sui, go to General Settings > Enabled Modules, and turn off CVars.\n\nYour saved snapshot is kept across reloads and logins until those values are restored.",
+    text = "<Scarlet UI>\n\nCVar settings are now enabled.\n\nTo restore your original settings, open /sui, go to General Settings > Enabled Modules, and turn off CVars.",
     button1 = "Got It",
     OnAccept = function() ScarletUI:AcknowledgeCVarSetup() end,
     timeout = 0,
