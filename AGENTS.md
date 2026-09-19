@@ -5,24 +5,19 @@ this checkout; the TOCs and source are authoritative when client versions change
 
 ## Clients and loading
 
-All six manifests load the same addon files in the same order:
+Both manifests load the same addon files in the same order:
 
 | Manifest | Client | Interface |
 | --- | --- | --- |
-| `ScarletUI-Vanilla.toc` | Classic Era | 11509 |
-| `ScarletUI-TBC.toc` | Burning Crusade Classic | 20505 |
-| `ScarletUI-Cata.toc` | Cataclysm Classic | 40402 |
-| `ScarletUI-Mists.toc` | Mists of Pandaria Classic | 50503 |
 | `ScarletUI-Mainline.toc` | Retail | 120005 |
 | `ScarletUI-Camelot.toc` | Classic Forever beta | 16001 |
 
-Update all six manifests when adding or removing a loaded module.
+Update both manifests when adding or removing a loaded module.
 Keep `LoadSavedVariablesFirst: 1` in each manifest so saved settings are restored
 before addon scripts initialize AceDB. Fully restart WoW after changing TOC metadata.
 `GetWoWVersion()` in `Modules/Helpers.lua` returns a client identifier and interface
-number. Identifiers for these targets are `VANILLA`, `TBC`, `CATA`, `MOP`, `RETAIL`,
-and `FOREVER`; older expansion identifiers also exist. Do not use `MISTS` as the
-Mists identifier. Forever uses Mainline UI frames despite its Classic version
+number. Identifiers for these targets are `RETAIL` and `FOREVER`. Legacy client
+detection remains in the code, including `MOP` for Mists; do not use `MISTS`. Forever uses Mainline UI frames despite its Classic version
 number, so `OnEnable()` sets both `retail` and `lightWeightMode` for it and Retail.
 ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details.
 
