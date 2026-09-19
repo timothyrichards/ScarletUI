@@ -189,13 +189,9 @@ StaticPopupDialogs.SCARLET_CVAR_ENABLE = {
 }
 
 StaticPopupDialogs.SCARLET_CVAR_REVIEW = {
-    text = "<Scarlet UI>\n\nScarletUI has applied its CVar settings. Keep them enabled?\n\nRevert restores your saved CVar snapshot and disables the module. You can change this later in /sui.",
-    button1 = "Keep Enabled",
-    button2 = "Revert",
-    OnAccept = function() ScarletUI:FinishCVarSetup(true) end,
-    OnCancel = function(_, _, reason)
-        if reason == "clicked" then ScarletUI:FinishCVarSetup(false) end
-    end,
+    text = "<Scarlet UI>\n\nCVar settings are now enabled.\n\nTo restore your original settings, open /sui, go to General Settings > Enabled Modules, and turn off CVars.\n\nYour saved snapshot is kept across reloads and logins until those values are restored.",
+    button1 = "Got It",
+    OnAccept = function() ScarletUI:AcknowledgeCVarSetup() end,
     timeout = 0,
     whileDead = true,
     hideOnEscape = false,
@@ -229,6 +225,14 @@ function ScarletUI:BeginCVarTrial()
     module.enabled, module.onboarding = true, "review"
     self:SetupCVars()
     LibStub("AceConfigRegistry-3.0"):NotifyChange("ScarletUI")
+end
+
+function ScarletUI:AcknowledgeCVarSetup()
+    self.db.global.CVarModule.onboarding = "done"
+    if self.cvarReloadRequired then
+        self.cvarReloadRequired = nil
+        self:ShowReloadDialog()
+    end
 end
 
 function ScarletUI:FinishCVarSetup(keep)

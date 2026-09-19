@@ -254,7 +254,7 @@ ScarletUI:SetupCVars()
 flush()
 assert(shown == nil and not ScarletUI.db.global.CVarModule.enabled)
 
--- Enabling later uses the same two dialogs; reverting restores the snapshot, not the WoW default.
+-- Enabling later shows restoration instructions; disabling restores the snapshot.
 ScarletUI:GetGeneralSettingsPage(ScarletUI.db.global, 1).args.modules.args.cVarModuleEnabled.set(nil, true)
 flush()
 assert(shown == "SCARLET_CVAR_ENABLE" and values.damageMeterEnabled == "6")
@@ -263,14 +263,25 @@ assert(values.damageMeterEnabled == "1" and shown == nil)
 assert(ScarletUI.db.char.cvarOriginalValues.damageMeterEnabled == "6")
 flush()
 assert(shown == "SCARLET_CVAR_REVIEW")
-StaticPopupDialogs[shown].OnCancel(nil, nil, "override")
-assert(ScarletUI.db.global.CVarModule.onboarding == "review", "Replacing a popup is not a choice")
+assert(StaticPopupDialogs[shown].button1 == "Got It" and StaticPopupDialogs[shown].button2 == nil)
+assert(StaticPopupDialogs[shown].OnCancel == nil, "Information dialog must not offer a revert action")
+assert(StaticPopupDialogs[shown].text:find("General Settings > Enabled Modules", 1, true))
 logout()
 login()
 ScarletUI:SetupCVars()
 flush()
-assert(shown == "SCARLET_CVAR_REVIEW", "Unanswered review must survive reload")
-click(false)
+assert(shown == "SCARLET_CVAR_REVIEW", "Unacknowledged instructions must survive reload")
+click(true)
+assert(ScarletUI.db.global.CVarModule.enabled and values.damageMeterEnabled == "1")
+-- Acknowledging and repeated sessions must never replace the saved original.
+for _ = 1, 3 do
+    logout()
+    login()
+    ScarletUI:SetupCVars()
+    flush()
+    assert(shown == nil and ScarletUI.db.char.cvarOriginalValues.damageMeterEnabled == "6")
+end
+toggle(false)
 assert(values.damageMeterEnabled == "6" and not ScarletUI.db.global.CVarModule.enabled)
 logout()
 login()
@@ -278,7 +289,7 @@ ScarletUI:SetupCVars()
 flush()
 assert(shown == nil)
 
--- Accepting both dialogs on a fresh install persists and does not repeat.
+-- Enabling and acknowledging on a fresh install persists and does not repeat.
 saved = {}
 login()
 ScarletUI:SetupCVars()
@@ -292,7 +303,7 @@ ScarletUI:SetupCVars()
 flush()
 assert(shown == nil and ScarletUI.db.global.CVarModule.enabled and values.damageMeterEnabled == "1")
 
--- Combat delays the offer/review and restoration until an out-of-combat choice.
+-- Combat delays enabling, but an informational acknowledgement is always safe.
 saved, values.damageMeterEnabled, combat = {}, "6", true
 login()
 ScarletUI:SetupCVars()
@@ -311,29 +322,29 @@ flush()
 click(true)
 flush()
 combat = true
-click(false)
-assert(ScarletUI.db.global.CVarModule.onboarding == "review" and values.damageMeterEnabled == "1")
+click(true)
+assert(ScarletUI.db.global.CVarModule.onboarding == "done" and values.damageMeterEnabled == "1")
 combat = false
 events.PLAYER_REGEN_ENABLED()
 flush()
-assert(shown == "SCARLET_CVAR_REVIEW")
-click(false)
+assert(shown == nil)
+toggle(false)
 assert(values.damageMeterEnabled == "6")
 
--- A reload-required CVar must not interrupt the Keep/Revert decision.
-for _, keep in ipairs({ true, false }) do
-    saved = { global = { CVarModule = { onboarding = "offer", enabled = false, overrides = { XpBarText = "1" } } } }
-    values.XpBarText, reloads = "0", 0
-    login()
-    ScarletUI:SetupCVars()
-    flush()
-    click(true)
-    assert(values.XpBarText == "1" and reloads == 0)
-    flush()
-    assert(shown == "SCARLET_CVAR_REVIEW")
-    click(keep)
-    assert(reloads == 1 and values.XpBarText == (keep and "1" or "0"))
-end
+-- Reload instructions wait until the restoration instructions are acknowledged.
+saved = { global = { CVarModule = { onboarding = "offer", enabled = false, overrides = { XpBarText = "1" } } } }
+values.XpBarText, reloads = "0", 0
+login()
+ScarletUI:SetupCVars()
+flush()
+click(true)
+assert(values.XpBarText == "1" and reloads == 0)
+flush()
+assert(shown == "SCARLET_CVAR_REVIEW")
+click(true)
+assert(reloads == 1 and values.XpBarText == "1")
+toggle(false)
+assert(reloads == 2 and values.XpBarText == "0")
 
 -- Old AceDB saves omitted enabled=true; preserve both old enabled and disabled installs.
 for _, enabled in ipairs({ true, false }) do
@@ -345,4 +356,4 @@ for _, enabled in ipairs({ true, false }) do
     flush()
     assert(shown == nil)
 end
-print("PASS: fresh CVar opt-in, persisted decline/keep/review, exact snapshot revert, combat guards, manual enable, and legacy migration")
+print("PASS: fresh CVar opt-in, restoration instructions, long-term snapshots, exact restoration, combat guards, manual enable, and legacy migration")

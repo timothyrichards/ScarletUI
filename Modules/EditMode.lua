@@ -21,8 +21,8 @@ local function NotifyOptions()
 end
 
 StaticPopupDialogs.SCARLET_EDIT_MODE_INSTALL = {
-    text = '<Scarlet UI>\n\nScarletUI detected a %s display. Install the optimized Edit Mode profile?',
-    button1 = "Install",
+    text = "<Scarlet UI - Edit Mode>\n\nSet up ScarletUI's %s preset in Blizzard Edit Mode?\n\nThis arranges your frame positions and layout for your display.",
+    button1 = "Set Up Preset",
     button2 = "Not Now",
     OnAccept = function(_, data)
         if data then ScarletUI:InstallEditModeProfile(data.variant) end
@@ -37,8 +37,8 @@ StaticPopupDialogs.SCARLET_EDIT_MODE_INSTALL = {
 }
 
 StaticPopupDialogs.SCARLET_EDIT_MODE_SWITCH = {
-    text = '<Scarlet UI>\n\nYour display now matches the %s layout. Switch to that ScarletUI profile?',
-    button1 = "Switch",
+    text = "<Scarlet UI - Edit Mode>\n\nSwitch your Blizzard Edit Mode layout to ScarletUI's %s preset?\n\nThis changes your frame positions and layout.",
+    button1 = "Use Preset",
     button2 = "Keep Current",
     OnAccept = function(_, data)
         if data then
