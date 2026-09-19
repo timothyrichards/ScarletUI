@@ -24,6 +24,7 @@ function ScarletUI:Options()
             generalSettings = self:GetGeneralSettingsPage(database, 2),
             editModeSettings = self:GetEditModeSettingsPage(3),
             chatModuleSettings = self:GetChatModuleSettingsPage(database, defaults.chatModule, 6),
+            raidFramesModuleSettings = self:GetRaidFramesModuleSettingsPage(database, 9),
             CVarModuleSettings = self:GetCVarModuleSettingsPage(database, 7),
         }
     }
@@ -164,6 +165,23 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                                 self:ShowReloadDialog()
                             else
                                 self:SetupChat()
+                            end
+                        end,
+                    },
+                    raidFramesModuleEnabled = {
+                        name = "Raid Frames",
+                        desc = "Manage the settings and position of your raid frames.",
+                        type = "toggle",
+                        hidden = function() return self.editMode or self.lightWeightMode end,
+                        width = 1,
+                        order = 5,
+                        get = function(_) return database.raidFramesModule.enabled end,
+                        set = function(_, val)
+                            database.raidFramesModule.enabled = val
+                            if not val then
+                                self:ShowReloadDialog()
+                            else
+                                self:SetupRaidProfiles()
                             end
                         end,
                     },
@@ -553,4 +571,100 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
     end
 
     return options
+end
+
+function ScarletUI:GetRaidFramesModuleSettingsPage(database, order)
+    local module = database.raidFramesModule;
+
+    return {
+        name = "Raid Frames",
+        desc = "Raid Frames Module settings.",
+        type = "group",
+        order = order,
+        hidden = function() return self.editMode or self.lightWeightMode end,
+        args = {
+            partyFrames = {
+                name = "Party Frames",
+                type = "group",
+                inline = true,
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
+                order = 1,
+                args = {
+                    createProfile = {
+                        name = "Create Party Frames Profile",
+                        desc = "Creates a raid frames profile for 5 man groups.",
+                        type = "toggle",
+                        width = 1.5,
+                        order = 0,
+                        get = function(_) return module.profiles.Party.createProfile end,
+                        set = function(_, val)
+                            module.profiles.Party.createProfile = val
+
+                            if val then
+                                self:UpdateProfileOptions()
+                            else
+                                self.raidProfileToDelete = "Party"
+                                StaticPopupDialogs['SCARLET_DELETE_RAID_PROFILE_DIALOG'].text = '<Scarlet UI>\n\nWould you also like to delete the "Party" raid frames profile?'
+                                StaticPopup_Show("SCARLET_DELETE_RAID_PROFILE_DIALOG")
+                            end
+                        end,
+                    },
+                    moveFrame = {
+                        name = "Synchronize Party Frames Profile",
+                        desc = "Allows you to synchronize the position of the party frames between characters.",
+                        type = "toggle",
+                        width = 1.5,
+                        disabled = function() return not module.profiles.Party.createProfile end,
+                        order = 1,
+                        get = function(_) return module.profiles.Party.move end,
+                        set = function(_, val)
+                            module.profiles.Party.move = val
+                            self:UpdateProfilePositions()
+                        end,
+                    },
+                }
+            },
+            raidFrames = {
+                name = "Raid Frames",
+                type = "group",
+                inline = true,
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled) end,
+                order = 1,
+                args = {
+                    createProfile = {
+                        name = "Create Raid Frames Profile",
+                        desc = "Creates a raid frames profile for 10+ man groups.",
+                        type = "toggle",
+                        width = 1.5,
+                        order = 0,
+                        get = function(_) return module.profiles.Raid.createProfile end,
+                        set = function(_, val)
+                            module.profiles.Raid.createProfile = val
+
+                            if val then
+                                self:UpdateProfileOptions()
+                            else
+                                self.raidProfileToDelete = "Raid"
+                                StaticPopupDialogs['SCARLET_DELETE_RAID_PROFILE_DIALOG'].text = '<Scarlet UI>\n\nWould you also like to delete the "Raid" raid frames profile?'
+                                StaticPopup_Show("SCARLET_DELETE_RAID_PROFILE_DIALOG")
+                            end
+                        end,
+                    },
+                    moveFrame = {
+                        name = "Synchronize Raid Frames Profile",
+                        desc = "Allows you to synchronize the position of the raid frames between characters.",
+                        type = "toggle",
+                        width = 1.5,
+                        disabled = function() return not module.profiles.Raid.createProfile end,
+                        order = 1,
+                        get = function(_) return module.profiles.Raid.move end,
+                        set = function(_, val)
+                            module.profiles.Raid.move = val
+                            self:UpdateProfilePositions()
+                        end,
+                    },
+                }
+            }
+        }
+    }
 end

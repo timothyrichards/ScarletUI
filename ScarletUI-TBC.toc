@@ -19,4 +19,5 @@ Modules\EditModeLayouts.lua
 Modules\EditMode.lua
 Modules\ItemLevel.lua
 Modules\Options.lua
+Modules\RaidFrames.lua
 Modules\TidyIcons.lua

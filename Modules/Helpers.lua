@@ -19,6 +19,10 @@ function ScarletUI:ShowReloadDialog()
     StaticPopup_Show('SCARLET_UI_RELOAD_DIALOG')
 end
 
+function ScarletUI:ShowRaidFrameDialog()
+    StaticPopup_Show('SCARLET_UI_RAID_FRAME_DIALOG')
+end
+
 local cachedVersionText, cachedInterfaceVersion
 
 function ScarletUI:GetWoWVersion()
