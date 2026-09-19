@@ -24,7 +24,7 @@ ScarletUI.defaults = {
             },
         },
         CVarModule = {
-            enabled = true,
+            enabled = false,
             overrides = {
                 raidOptionDisplayMainTankAndAssist = '0',
                 raidFramesHealthText = 'perc',
@@ -70,7 +70,7 @@ ScarletUI.originalUIDefaults = {
             },
         },
         CVarModule = {
-            enabled = true,
+            enabled = false,
             overrides = {
                 raidOptionDisplayMainTankAndAssist = '0',
                 raidFramesHealthText = 'perc',
@@ -90,6 +90,23 @@ ScarletUI.originalUIDefaults = {
     }
 }
 
+-- Run before AceDB fills defaults: older versions omitted enabled=true on logout.
+function ScarletUI:PrepareCVarSettings()
+    local saved = self.db and self.db.sv or ScarletUIDB
+    local existing = type(saved) == "table" and next(saved) ~= nil
+    if type(saved) ~= "table" then
+        saved = {}
+        ScarletUIDB = saved
+    end
+    saved.global = saved.global or {}
+    saved.global.CVarModule = saved.global.CVarModule or {}
+    local module = saved.global.CVarModule
+    if module.onboarding == nil then
+        module.onboarding = existing and "done" or "offer"
+        if module.enabled == nil then module.enabled = existing end
+    end
+end
+
 function ScarletUI:ResetDefaults()
     if self:InCombat() then return end
     -- Reset preferences without losing backups for this or other characters.
@@ -99,6 +116,7 @@ function ScarletUI:ResetDefaults()
         originals[key] = character.cvarOriginalValues
     end
     self.db:ResetDB()
+    self.db.global.CVarModule.onboarding = "done"
     self.db.global.CVarModule.originalValues = sharedOriginals
     for key, values in pairs(originals) do
         self.db.sv.char = self.db.sv.char or {}

@@ -79,6 +79,14 @@ the actual Edit Mode layouts. Old removed-module keys may remain in saved data;
 they must not be required or used by the current setup or options code.
 Chat font size is applied per chat window with `FCF_SetChatWindowFontSize`.
 
+Fresh installs start with CVars disabled and offer an Enable / Leave Disabled
+dialog. Enabling applies overrides, then opens Keep Enabled / Revert. Revert
+restores the saved snapshot and disables CVars. Choices persist across reloads;
+an unanswered review returns after login. Enabling from settings uses the same
+flow. Existing installations retain their previous enabled state, including old
+AceDB saves that omitted the former `true` default. `CVarModule.onboarding` tracks
+`offer`, `review`, or `done`; initialize it before AceDB applies defaults.
+
 CVar overrides are shared. Before applying an override or adding a custom CVar,
 original values are saved in `db.char.cvarOriginalValues` for character CVars and
 `db.global.CVarModule.originalValues` for shared CVars, using the storage flags

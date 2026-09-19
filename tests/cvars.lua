@@ -1,6 +1,20 @@
 -- Run from the addon root: lua tests/cvars.lua
 local function noop() end
-ScarletUI = {}
+local timers, shown, events = {}, nil, {}
+C_Timer = { After = function(_, fn) table.insert(timers, fn) end }
+StaticPopupDialogs = {}
+StaticPopup_Visible = function(name) return shown == name end
+StaticPopup_Show = function(name) shown = name end
+StaticPopup_Hide = function(name) if shown == name then shown = nil end end
+local function flush()
+    while #timers > 0 do table.remove(timers, 1)() end
+end
+local function click(accept)
+    local dialog = assert(StaticPopupDialogs[shown], "No dialog shown")
+    shown = nil
+    if accept then dialog.OnAccept() else dialog.OnCancel(nil, nil, "clicked") end
+end
+ScarletUI = { RegisterEventHandler = function(_, name, fn) events[name] = fn end }
 LibStub = function() return { NotifyChange = noop } end
 C_AddOns = { IsAddOnLoaded = function() return false end }
 dofile("Modules/Database.lua")
@@ -9,6 +23,9 @@ dofile("Modules/CVars.lua")
 ScarletUI.InCombat = function() return false end
 ScarletUI.ShowReloadDialog = function() error("Raid CVars should not request a reload") end
 ScarletUI.db = { global = ScarletUI.defaults.global, char = ScarletUI.defaults.char }
+assert(not ScarletUI.defaults.global.CVarModule.enabled)
+assert(not ScarletUI.originalUIDefaults.global.CVarModule.enabled)
+ScarletUI.db.global.CVarModule.enabled = true
 local expected = {
     damageMeterEnabled = "1",
     enableMouseoverCast = "1",
@@ -65,7 +82,7 @@ UnitFactionGroup = function() return "Alliance" end
 GetLocale = function() return "enUS" end
 GetCurrentRegion = function() return 1 end
 securecallfunction = function(fn, ...) return fn(...) end
-local saved, AceDB = {}, nil
+local saved, AceDB = { global = { CVarModule = { enabled = true, onboarding = "done" } } }, nil
 local function login()
     LibStub = nil
     dofile("Libs/LibStub/LibStub.lua")
@@ -75,7 +92,12 @@ local function login()
     dofile("Modules/Database.lua")
     dofile("Modules/Options.lua")
     AceDB = LibStub("AceDB-3.0")
+    ScarletUIDB, ScarletUI.db = saved, nil
+    ScarletUI:PrepareCVarSettings()
+    saved = ScarletUIDB
     ScarletUI.db = AceDB:New(saved, ScarletUI.defaults, true)
+    ScarletUI.cvarEventsRegistered, ScarletUI.cvarDialogScheduled, ScarletUI.cvarReloadRequired = nil, nil, nil
+    timers, shown, events = {}, nil, {}
 end
 local function clone(source)
     local result = {}
@@ -120,6 +142,9 @@ local function controls(name)
 end
 local function toggle(enabled)
     ScarletUI:GetGeneralSettingsPage(ScarletUI.db.global, 1).args.modules.args.cVarModuleEnabled.set(nil, enabled)
+    flush()
+    if shown == "SCARLET_CVAR_ENABLE" then click(true); flush() end
+    if shown == "SCARLET_CVAR_REVIEW" then click(true); flush() end
 end
 page().args.addCustom.args.addField.set(nil, "custom")
 page().args.addCustom.args.addField.set(nil, "customDefault")
@@ -209,7 +234,115 @@ ScarletUI.Setup = ScarletUI.SetupCVars
 ScarletUI:ResetDefaults()
 assert(values.custom == "8", "Reset must restore custom CVars removed from preferences")
 assert(saved.char["Offline - Test Realm"].cvarOriginalValues.custom == "30")
-assert(values.damageMeterEnabled == "1")
+assert(not ScarletUI.db.global.CVarModule.enabled and values.damageMeterEnabled == "0")
 toggle(false)
 assert(values.damageMeterEnabled == "0")
 print("PASS: CVar snapshots, settings actions, real AceDB reloads, disable/re-enable, failures, combat, OmniCC, character backups, and reset")
+
+-- Fresh installs stay disabled until consent; declining is remembered through AceDB reloads.
+saved, values.damageMeterEnabled = {}, "6"
+login()
+ScarletUI:SetupCVars()
+assert(not ScarletUI.db.global.CVarModule.enabled and values.damageMeterEnabled == "6")
+assert(shown == nil, "Offer should wait until setup finishes")
+flush()
+assert(shown == "SCARLET_CVAR_ENABLE")
+click(false)
+logout()
+login()
+ScarletUI:SetupCVars()
+flush()
+assert(shown == nil and not ScarletUI.db.global.CVarModule.enabled)
+
+-- Enabling later uses the same two dialogs; reverting restores the snapshot, not the WoW default.
+ScarletUI:GetGeneralSettingsPage(ScarletUI.db.global, 1).args.modules.args.cVarModuleEnabled.set(nil, true)
+flush()
+assert(shown == "SCARLET_CVAR_ENABLE" and values.damageMeterEnabled == "6")
+click(true)
+assert(values.damageMeterEnabled == "1" and shown == nil)
+assert(ScarletUI.db.char.cvarOriginalValues.damageMeterEnabled == "6")
+flush()
+assert(shown == "SCARLET_CVAR_REVIEW")
+StaticPopupDialogs[shown].OnCancel(nil, nil, "override")
+assert(ScarletUI.db.global.CVarModule.onboarding == "review", "Replacing a popup is not a choice")
+logout()
+login()
+ScarletUI:SetupCVars()
+flush()
+assert(shown == "SCARLET_CVAR_REVIEW", "Unanswered review must survive reload")
+click(false)
+assert(values.damageMeterEnabled == "6" and not ScarletUI.db.global.CVarModule.enabled)
+logout()
+login()
+ScarletUI:SetupCVars()
+flush()
+assert(shown == nil)
+
+-- Accepting both dialogs on a fresh install persists and does not repeat.
+saved = {}
+login()
+ScarletUI:SetupCVars()
+flush()
+click(true)
+flush()
+click(true)
+logout()
+login()
+ScarletUI:SetupCVars()
+flush()
+assert(shown == nil and ScarletUI.db.global.CVarModule.enabled and values.damageMeterEnabled == "1")
+
+-- Combat delays the offer/review and restoration until an out-of-combat choice.
+saved, values.damageMeterEnabled, combat = {}, "6", true
+login()
+ScarletUI:SetupCVars()
+flush()
+assert(shown == nil and values.damageMeterEnabled == "6")
+combat = false
+events.PLAYER_REGEN_ENABLED()
+flush()
+assert(shown == "SCARLET_CVAR_ENABLE")
+combat = true
+click(true)
+assert(not ScarletUI.db.global.CVarModule.enabled and values.damageMeterEnabled == "6")
+combat = false
+events.PLAYER_REGEN_ENABLED()
+flush()
+click(true)
+flush()
+combat = true
+click(false)
+assert(ScarletUI.db.global.CVarModule.onboarding == "review" and values.damageMeterEnabled == "1")
+combat = false
+events.PLAYER_REGEN_ENABLED()
+flush()
+assert(shown == "SCARLET_CVAR_REVIEW")
+click(false)
+assert(values.damageMeterEnabled == "6")
+
+-- A reload-required CVar must not interrupt the Keep/Revert decision.
+for _, keep in ipairs({ true, false }) do
+    saved = { global = { CVarModule = { onboarding = "offer", enabled = false, overrides = { XpBarText = "1" } } } }
+    values.XpBarText, reloads = "0", 0
+    login()
+    ScarletUI:SetupCVars()
+    flush()
+    click(true)
+    assert(values.XpBarText == "1" and reloads == 0)
+    flush()
+    assert(shown == "SCARLET_CVAR_REVIEW")
+    click(keep)
+    assert(reloads == 1 and values.XpBarText == (keep and "1" or "0"))
+end
+
+-- Old AceDB saves omitted enabled=true; preserve both old enabled and disabled installs.
+for _, enabled in ipairs({ true, false }) do
+    saved = { global = { CVarModule = {} } }
+    if not enabled then saved.global.CVarModule.enabled = false end
+    login()
+    assert(ScarletUI.db.global.CVarModule.enabled == enabled)
+    ScarletUI:SetupCVars()
+    flush()
+    assert(shown == nil)
+end
+print("PASS: fresh CVar opt-in, persisted decline/keep/review, exact snapshot revert, combat guards, manual enable, and legacy migration")

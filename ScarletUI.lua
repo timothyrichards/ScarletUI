@@ -35,6 +35,7 @@ StaticPopupDialogs['SCARLET_RESTORE_DEFAULTS_DIALOG'] = {
 
 function ScarletUI:OnInitialize()
     -- Set up the database
+    self:PrepareCVarSettings()
     self.db = self.db or AceDB:New("ScarletUIDB", self.defaults, true)
     self.db:SetProfile("Default")
 

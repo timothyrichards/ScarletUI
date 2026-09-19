@@ -176,8 +176,11 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                         get = function(_) return database.CVarModule.enabled end,
                         set = function(_, val)
                             if ScarletUI:InCombat() then return end
-                            database.CVarModule.enabled = val
-                            ScarletUI:SetupCVars()
+                            if val then
+                                ScarletUI:RequestCVarModuleEnable()
+                            else
+                                ScarletUI:FinishCVarSetup(false)
+                            end
                         end,
                     },
                 }
