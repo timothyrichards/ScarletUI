@@ -9,7 +9,7 @@ GetScreenWidth = function() return 1920 end
 GetScreenHeight = function() return 1080 end
 GetBuildInfo = function() return nil, nil, nil, 16001 end
 Enum = { EditModeLayoutType = { Account = 1 } }
-for _, name in ipairs({ "Database", "Helpers", "Options", "EditModeLayouts", "EditMode", "RaidFrames" }) do
+for _, name in ipairs({ "Database", "Helpers", "Options", "EditModeLayouts", "EditMode" }) do
     dofile("Modules/" .. name .. ".lua")
 end
 ScarletUI.db = {
@@ -18,6 +18,7 @@ ScarletUI.db = {
     defaults = ScarletUI.defaults,
 }
 ScarletUI.knownCVars = {}
+GetCVar = function() return nil end
 assert(ScarletUI.defaults.global.actionbarsModule == nil)
 assert(ScarletUI.originalUIDefaults.global.actionbarsModule == nil)
 assert(ScarletUI.SetupActionBars == nil and ScarletUI.SetupActionBarPreferences == nil)
@@ -29,19 +30,10 @@ assert(ScarletUI.SetupNameplates == nil and ScarletUI.GetNameplatesModuleSetting
 assert(ScarletUI.defaults.global.nameplatesModule == nil and ScarletUI.originalUIDefaults.global.nameplatesModule == nil)
 assert(ScarletUI.defaults.char.priorityDebuffs == nil)
 
-assert(type(ScarletUI.SetupRaidProfiles) == "function")
-assert(ScarletUI.defaults.global.raidFramesModule.profiles.Party)
-assert(ScarletUI.originalUIDefaults.global.raidFramesModule.profiles.Raid)
-assert(StaticPopupDialogs.SCARLET_UI_RAID_FRAME_DIALOG)
-assert(StaticPopupDialogs.SCARLET_DELETE_RAID_PROFILE_DIALOG)
--- Preserve the legacy module's Edit Mode/lightweight exclusions.
-for _, mode in ipairs({ "editMode", "lightWeightMode" }) do
-    ScarletUI.editMode, ScarletUI.lightWeightMode = false, false
-    ScarletUI[mode] = true
-    ScarletUI:SetupRaidProfiles()
-    assert(not ScarletUI.raidProfileEventRegistered)
-end
-ScarletUI.editMode, ScarletUI.lightWeightMode = false, false
+assert(ScarletUI.SetupRaidProfiles == nil and ScarletUI.UpdateProfileOptions == nil)
+assert(ScarletUI.defaults.global.raidFramesModule == nil and ScarletUI.originalUIDefaults.global.raidFramesModule == nil)
+assert(StaticPopupDialogs.SCARLET_UI_RAID_FRAME_DIALOG == nil)
+assert(StaticPopupDialogs.SCARLET_DELETE_RAID_PROFILE_DIALOG == nil)
 
 -- Both fresh settings and saved settings from before removal must load.
 for _, oldSettings in ipairs({ false, true }) do
@@ -50,6 +42,7 @@ for _, oldSettings in ipairs({ false, true }) do
     ScarletUI.db.global.moversModule = oldSettings and { enabled = true } or nil
     ScarletUI.db.global.nameplatesModule = oldSettings and { enabled = true } or nil
     ScarletUI.db.char.priorityDebuffs = oldSettings and "Sunder Armor" or nil
+    ScarletUI.db.global.raidFramesModule = oldSettings and { enabled = true } or nil
     local options = ScarletUI:Options()
     assert(options.args.actionBarSettings == nil)
     assert(options.args.generalSettings.args.modules.args.actionbarsModuleEnabled == nil)
@@ -58,8 +51,8 @@ for _, oldSettings in ipairs({ false, true }) do
     assert(options.args.toggleMovers == nil and options.args.resetPositions == nil)
     assert(options.args.generalSettings.args.general.args.clampMovers == nil)
     assert(options.args.generalSettings.args.modules.args.unitFramesModuleEnabled == nil)
-    assert(options.args.raidFramesModuleSettings)
-    assert(options.args.generalSettings.args.modules.args.raidFramesModuleEnabled)
+    assert(options.args.raidFramesModuleSettings == nil)
+    assert(options.args.generalSettings.args.modules.args.raidFramesModuleEnabled == nil)
     assert(options.args.nameplatesModuleSettings == nil)
     assert(options.args.generalSettings.args.modules.args.nameplatesModuleEnabled == nil)
 end
@@ -67,7 +60,7 @@ end
 -- Exercise the real setup dispatcher with only the remaining module methods.
 local calls = {}
 local setupMethods = { "SetupDebugFrame", "SetupChat", "SetupCVars",
-    "SetupItemLevels", "SetupRaidProfiles",
+    "SetupItemLevels",
     "SetupTidyIcons", "SetupExpandCharacterInfo" }
 for _, name in ipairs(setupMethods) do
     ScarletUI[name] = function() calls[name] = true end
@@ -81,14 +74,11 @@ for _, editMode in ipairs({ false, true }) do
     end
 end
 
-local resetCalled, raidOptionsUpdated = false, false
-local updateRaidOptions = ScarletUI.UpdateProfileOptions
-ScarletUI.UpdateProfileOptions = function() raidOptionsUpdated = true end
+local resetCalled = false
 ScarletUI.db.ResetDB = function() resetCalled = true end
 ScarletUI.Print = noop
 ScarletUI:ResetDefaults()
-assert(resetCalled and raidOptionsUpdated)
-ScarletUI.UpdateProfileOptions = updateRaidOptions
+assert(resetCalled)
 
 -- Era applies the same preset definitions as the other clients.
 CopyTable = function(source)
@@ -176,3 +166,5 @@ print("PASS: remaining settings, setup dispatcher, shared Era presets, and Edit 
 
 -- Run last: the prompt regression loads real AceDB in its own addon setup.
 dofile("tests/edit-mode-prompts.lua")
+
+dofile("tests/cvars.lua")

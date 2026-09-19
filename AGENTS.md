@@ -36,15 +36,19 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
 - `Modules/Chat.lua`: chat tabs and font size.
 - `Modules/CVars.lua`: native console variable discovery and overrides.
 - `Modules/ItemLevel.lua`: character, inspect, and Blizzard bag/bank item levels.
-- `Modules/RaidFrames.lua`: legacy party/raid profile settings and position sync;
-  setup is skipped when Edit Mode or lightweight mode is enabled.
 - `Modules/TidyIcons.lua`: icon adjustments.
 - `embeds.xml`: bundled library loading; `.pkgmeta`: CurseForge packaging and
   external Ace3, LibStub, serialization, and LibEditModeOverride dependencies.
 
-The actionbar, custom bag/bank, movers, unit-frame, and nameplate modules have
+The actionbar, custom bag/bank, movers, unit-frame, nameplate, and raid-frame modules have
 been removed. Blizzard handles those frames. Keep native bag/bank
 item-level overlays and the independent CVar controls when changing related code.
+
+Raid display CVars are managed by `Modules/CVars.lua` with defaults in
+`Modules/Database.lua`. Power bars, class colors, debuffs, dispellable-only
+debuffs, percentage health text, and disabled main-tank/assist frames retain the
+old shared preset values. Pet visibility keeps the current client setting because
+the old Party and Raid presets disagreed. `useCompactPartyFrames` remains available.
 
 ## Edit Mode and saved settings
 
