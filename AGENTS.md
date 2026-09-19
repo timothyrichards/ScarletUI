@@ -17,6 +17,8 @@ All six manifests load the same addon files in the same order:
 | `ScarletUI-Camelot.toc` | Classic Forever beta | 16001 |
 
 Update all six manifests when adding or removing a loaded module.
+Keep `LoadSavedVariablesFirst: 1` in each manifest so saved settings are restored
+before addon scripts initialize AceDB. Fully restart WoW after changing TOC metadata.
 `GetWoWVersion()` in `Modules/Helpers.lua` returns a client identifier and interface
 number. Identifiers for these targets are `VANILLA`, `TBC`, `CATA`, `MOP`, `RETAIL`,
 and `FOREVER`; older expansion identifiers also exist. Do not use `MISTS` as the

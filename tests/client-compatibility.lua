@@ -58,6 +58,13 @@ local function manifestFiles(path)
     end
     return table.concat(files, "\n")
 end
+-- Restore SavedVariables before addon scripts can initialize AceDB.
+for _, client in ipairs({ "Vanilla", "TBC", "Cata", "Mists", "Mainline", "Camelot" }) do
+    local file = assert(io.open("ScarletUI-" .. client .. ".toc", "r"))
+    local contents = file:read("*a")
+    file:close()
+    assert(contents:match("## LoadSavedVariablesFirst: 1[\r\n]"), client .. " must load saved settings first")
+end
 local manifest = assert(io.open("ScarletUI-Camelot.toc", "r"))
 assert(manifest:read("*l") == "## Interface: 16001")
 manifest:close()

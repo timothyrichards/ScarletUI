@@ -70,4 +70,18 @@ exists, variant = true, "STANDARD"
 ScarletUI:SwitchEditModeProfile()
 assert(activated == "ScarletUI - Standard")
 assert(ScarletUI.db.global.editMode.suppressPrompts)
+-- Exercise the actual addon initializer with a restored SavedVariables table.
+LibStub:NewLibrary("AceAddon-3.0", 1).NewAddon = function()
+    return { RegisterChatCommand = noop }
+end
+LibStub:NewLibrary("AceConfig-3.0", 1).RegisterOptionsTable = noop
+local dialog = LibStub:NewLibrary("AceConfigDialog-3.0", 1)
+dialog.SetDefaultSize, dialog.AddToBlizOptions = noop, noop
+C_AddOns = { IsAddOnLoaded = function() return false end }
+ScarletUIDB = saved
+dofile("ScarletUI.lua")
+dofile("Modules/Database.lua")
+ScarletUI:OnInitialize()
+assert(ScarletUI.db.sv == saved)
+assert(ScarletUI.db.global.editMode.suppressPrompts, "Startup must retain the restored opt-out")
 print("PASS: Keep Current persists through AceDB logout/reload, suppresses all automatic prompts, and allows manual switching")

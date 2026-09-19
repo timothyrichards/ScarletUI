@@ -4,6 +4,7 @@
 ## Notes: Misc UI features/modifications preferred by ScarletPaladin
 ## Version: 1.0
 ## SavedVariables: ScarletUIDB
+## LoadSavedVariablesFirst: 1
 ## X-Curse-Project-ID: 858380
 
 # Libs

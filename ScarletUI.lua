@@ -34,6 +34,13 @@ StaticPopupDialogs['SCARLET_RESTORE_DEFAULTS_DIALOG'] = {
 }
 
 function ScarletUI:OnInitialize()
+    -- Startup evidence for settings that appear to reset across reloads.
+    local saved = ScarletUIDB
+    self.savedVariablesAtInitialize = {
+        present = type(saved) == "table",
+        suppressPrompts = saved and saved.global and saved.global.editMode and saved.global.editMode.suppressPrompts,
+        databaseAlreadyCreated = self.db ~= nil,
+    }
     -- Set up the database
     self:PrepareCVarSettings()
     self.db = self.db or AceDB:New("ScarletUIDB", self.defaults, true)
