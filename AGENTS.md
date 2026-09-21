@@ -9,7 +9,7 @@ Both manifests load the same addon files in the same order:
 
 | Manifest | Client | Interface |
 | --- | --- | --- |
-| `ScarletUI-Mainline.toc` | Retail | 120005 |
+| `ScarletUI-Mainline.toc` | Retail | 120100 |
 | `ScarletUI-Camelot.toc` | Classic Forever beta | 16001 |
 
 Update both manifests when adding or removing a loaded module.
