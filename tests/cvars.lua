@@ -81,6 +81,9 @@ UnitRace = function() return "Human", "Human" end
 UnitFactionGroup = function() return "Alliance" end
 GetLocale = function() return "enUS" end
 GetCurrentRegion = function() return 1 end
+GetCurrentRegionName = function() return "US" end
+GetBuildInfo = function() return nil, nil, nil, 120100 end
+strlenutf8 = string.len -- The profile names in this test are ASCII.
 securecallfunction = function(fn, ...) return fn(...) end
 local saved, AceDB = { global = { CVarModule = { enabled = true, onboarding = "done" } } }, nil
 local function login()

@@ -10,11 +10,28 @@ UnitRace = function() return "Human", "Human" end
 UnitFactionGroup = function() return "Alliance" end
 GetLocale = function() return "enUS" end
 GetCurrentRegion = function() return 1 end
+GetCurrentRegionName = function() return "US" end
+strlenutf8 = string.len -- The profile names in this test are ASCII.
+Enum = Enum or {}
+Enum.GameRule = { HardcoreRuleset = 1, RPRuleset = 2, PvPRuleset = 3 }
 securecallfunction = function(fn, ...) return fn(...) end
-LibStub = nil
-dofile("Libs/LibStub/LibStub.lua")
-dofile("Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua")
-dofile("Libs/AceDB-3.0/AceDB-3.0.lua")
+-- Load the bundled AceDB for each client/ruleset, including Forever's realm keys.
+for _, case in ipairs({
+    { 120100, 0, "Test Realm" }, { 11509, 0, "Test Realm" },
+    { 16001, 1, "Hardcore" }, { 16001, 2, "RP" },
+    { 16001, 3, "PvP" }, { 16001, 0, "PvE" },
+}) do
+    GetBuildInfo = function() return nil, nil, nil, case[1] end
+    C_GameRules = { IsGameRuleActive = function(rule) return rule == case[2] end }
+    LibStub = nil
+    dofile("Libs/LibStub/LibStub.lua")
+    dofile("Libs/CallbackHandler-1.0/CallbackHandler-1.0.lua")
+    dofile("Libs/AceDB-3.0/AceDB-3.0.lua")
+    local db = LibStub("AceDB-3.0"):New({}, nil, true)
+    assert(db.keys.realm == case[3], "Incorrect AceDB realm key")
+    assert(db.keys.char == "Test Character - " .. case[3], "Incorrect AceDB character key")
+end
+print("PASS: bundled AceDB realm and character keys for Retail, Era, and all Forever rulesets")
 LibStub:NewLibrary("AceConfigRegistry-3.0", 1).NotifyChange = noop
 ScarletUI, StaticPopupDialogs = {}, {}
 dofile("Modules/Database.lua")
