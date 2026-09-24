@@ -84,7 +84,6 @@ function ScarletUI:SetupChatTabs()
                 elseif AddChatWindowChannel then
                     AddChatWindowChannel(id, 'Trade')
                 end
-                JoinChannelByName('Services', nil, id, 0)
                 if ChatFrame_AddChannel then
                     ChatFrame_AddChannel(frame, 'Services')
                 elseif AddChatWindowChannel then
@@ -94,7 +93,6 @@ function ScarletUI:SetupChatTabs()
         elseif frame.name == 'LFG' then
             ChatFrame_RemoveAllMessageGroups(frame)
             C_Timer.NewTimer(0.1, function()
-                JoinChannelByName('LookingForGroup', nil, id, 0)
                 if ChatFrame_AddChannel then
                     ChatFrame_AddChannel(frame, 'LookingForGroup')
                 elseif AddChatWindowChannel then

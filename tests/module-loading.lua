@@ -154,7 +154,7 @@ end
 GetChatWindowInfo = function(id) return _G[CHAT_FRAMES[id]].name end
 FCF_SetChatWindowFontSize = function(_, frame, size) frame.fontSize = size end
 ChatFrame_RemoveMessageGroup, ChatFrame_RemoveAllMessageGroups = noop, noop
-ChatFrame_AddMessageGroup, ChatFrame_AddChannel, JoinChannelByName = noop, noop, noop
+ChatFrame_AddMessageGroup, ChatFrame_AddChannel = noop, noop
 FCFDock_SelectWindow = noop
 C_Timer = { NewTimer = function(_, callback) callback() end }
 ScarletUI.lightWeightMode, ScarletUI.editMode = false, false
