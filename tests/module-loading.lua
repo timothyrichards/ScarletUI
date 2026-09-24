@@ -96,7 +96,7 @@ local originalFindFrame = ScarletUI.FindEditModeFrame
 local anchors = {}
 LibStub = function()
     return {
-        ReanchorFrame = function(_, frame, _, _, _, x, y) anchors[frame] = { x, y } end,
+        ReanchorFrame = function(_, frame, point, relativeTo, _, x, y) anchors[frame] = { x, y, point, relativeTo } end,
         SetFrameSetting = noop,
     }
 end
@@ -106,12 +106,26 @@ for _, variant in ipairs({ "STANDARD", "COMPACT", "ULTRAWIDE" }) do
     anchors = {}
     assert(ScarletUI:ApplyEditModeLayout(variant))
     assert(#ScarletUI.editModeSkippedSystems == 0)
-    assert(anchors.raidFrame[1] == 165 and anchors.raidFrame[2] == 90)
-    assert(anchors.partyFrame)
-    assert(anchors.mainMenuBar[1] == 0 and anchors.mainMenuBar[2] == 16)
+    assert(anchors.raidFrame[1] == 154.6 and anchors.raidFrame[2] == -210)
+    assert(anchors.partyFrame[3] == (variant == "COMPACT" and "BOTTOMLEFT" or "TOPLEFT"))
+    assert(anchors.mainMenuBar[1] == 0 and anchors.mainMenuBar[2] == 41.9)
+    assert(anchors.multiBarBottomLeft[4] == "mainMenuBar")
+    assert(anchors.stanceBar[4] == "multiBarBottomRight")
+    if variant == "COMPACT" then
+        assert(anchors.focusFrame[4] == UIParent)
+    else
+        assert(anchors.focusFrame[4] == "playerFrame")
+    end
     assert(anchors.playerFrame[1] == (variant == "COMPACT" and -50 or -65))
-    assert(anchors.chatFrame[1] == (variant == "ULTRAWIDE" and 24 or 0))
+    assert(anchors.chatFrame[1] == (variant == "ULTRAWIDE" and 24 or 33))
 end
+
+-- A snapped frame whose anchor frame is missing is skipped, not moved to UIParent.
+anchors = {}
+ScarletUI.FindEditModeFrame = function(_, key) return key ~= "mainMenuBar" and key or nil end
+assert(ScarletUI:ApplyEditModeLayout("STANDARD"))
+assert(anchors.multiBarBottomLeft == nil)
+assert(anchors.multiBarBottomRight)
 LibStub, ScarletUI.GetWoWVersion = originalLibStub, originalClient
 ScarletUI.FindEditModeFrame = originalFindFrame
 

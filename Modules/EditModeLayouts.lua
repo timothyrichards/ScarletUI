@@ -1,4 +1,4 @@
-ScarletUI.editModeLayoutSchemaVersion = 11
+ScarletUI.editModeLayoutSchemaVersion = 12
 
 ScarletUI.editModeFrameCandidates = {
     -- MainActionBar is the Edit Mode system. MainMenuBar is the 1024px
@@ -34,12 +34,12 @@ local horizontal = EnumValue("ActionBarOrientation", "Horizontal")
 local vertical = EnumValue("ActionBarOrientation", "Vertical")
 local alwaysVisible = EnumValue("ActionBarVisibleSetting", "Always")
 
-local function ActionBarSettings(orientation, includeVisibility)
+local function ActionBarSettings(orientation, includeVisibility, iconSize)
     local settings = {
         { setting = EnumValue("EditModeActionBarSetting", "Orientation"), value = orientation },
         { setting = EnumValue("EditModeActionBarSetting", "NumRows"), value = 1 },
         { setting = EnumValue("EditModeActionBarSetting", "NumIcons"), value = 12 },
-        { setting = EnumValue("EditModeActionBarSetting", "IconSize"), value = 100 },
+        { setting = EnumValue("EditModeActionBarSetting", "IconSize"), value = iconSize or 100 },
         { setting = EnumValue("EditModeActionBarSetting", "IconPadding"), value = 3 },
         { setting = EnumValue("EditModeActionBarSetting", "AlwaysShowButtons"), value = 1 },
     }
@@ -54,14 +54,17 @@ local function ActionBarSettings(orientation, includeVisibility)
     return settings
 end
 
+-- Frames with relativeTo snap to another layout key, matching Blizzard's
+-- stacked-bar anchors. Screen anchors use the nearest screen edge so they
+-- hold across UI scales.
 local standardFrames = {
     mainMenuBar = {
-        point = "BOTTOM", relativePoint = "BOTTOM", x = 0, y = 16,
+        point = "CENTER", relativePoint = "BOTTOM", x = 0, y = 41.9,
         settings = {
             { setting = EnumValue("EditModeActionBarSetting", "Orientation"), value = horizontal },
             { setting = EnumValue("EditModeActionBarSetting", "NumRows"), value = 1 },
             { setting = EnumValue("EditModeActionBarSetting", "NumIcons"), value = 12 },
-            { setting = EnumValue("EditModeActionBarSetting", "IconSize"), value = 100 },
+            { setting = EnumValue("EditModeActionBarSetting", "IconSize"), value = 90 },
             { setting = EnumValue("EditModeActionBarSetting", "IconPadding"), value = 3 },
             -- Keep the centered button row independent from Classic's much
             -- wider MainMenuBar artwork container.
@@ -71,12 +74,12 @@ local standardFrames = {
         },
     },
     multiBarBottomLeft = {
-        point = "BOTTOM", relativePoint = "BOTTOM", x = 0, y = 58,
-        settings = ActionBarSettings(horizontal, true),
+        point = "BOTTOMRIGHT", relativeTo = "mainMenuBar", relativePoint = "TOPRIGHT", x = 0, y = 4,
+        settings = ActionBarSettings(horizontal, true, 90),
     },
     multiBarBottomRight = {
-        point = "BOTTOM", relativePoint = "BOTTOM", x = 0, y = 100,
-        settings = ActionBarSettings(horizontal, true),
+        point = "BOTTOMRIGHT", relativeTo = "multiBarBottomLeft", relativePoint = "TOPRIGHT", x = 0, y = 4,
+        settings = ActionBarSettings(horizontal, true, 90),
     },
     multiBarLeft = {
         point = "RIGHT", relativePoint = "RIGHT", x = -44, y = 0,
@@ -87,11 +90,11 @@ local standardFrames = {
         settings = ActionBarSettings(vertical, true),
     },
     stanceBar = {
-        point = "BOTTOMLEFT", relativePoint = "BOTTOM", x = -245, y = 145,
+        point = "BOTTOMLEFT", relativeTo = "multiBarBottomRight", relativePoint = "TOPLEFT", x = 0, y = 4,
         settings = ActionBarSettings(horizontal, false),
     },
     petBar = {
-        point = "BOTTOMLEFT", relativePoint = "BOTTOM", x = -240, y = 145,
+        point = "BOTTOMLEFT", relativeTo = "multiBarBottomRight", relativePoint = "TOPLEFT", x = 0, y = 4,
         settings = ActionBarSettings(horizontal, false),
     },
     playerFrame = {
@@ -108,30 +111,30 @@ local standardFrames = {
         },
     },
     focusFrame = {
-        point = "TOPRIGHT", relativePoint = "CENTER", x = -220, y = -255,
+        point = "BOTTOMLEFT", relativeTo = "playerFrame", relativePoint = "TOPLEFT", x = 4.5, y = -26,
         settings = {
             { setting = EnumValue("EditModeUnitFrameSetting", "BuffsOnTop"), value = 1 },
             { setting = EnumValue("EditModeUnitFrameSetting", "FrameSize"), value = 100 },
         },
     },
     castBar = {
-        point = "BOTTOM", relativePoint = "BOTTOM", x = 0, y = 192,
+        point = "TOP", relativePoint = "BOTTOM", x = 0, y = 210,
         settings = {
             { setting = EnumValue("EditModeCastBarSetting", "BarSize"), value = 100 },
             { setting = EnumValue("EditModeCastBarSetting", "LockToPlayerFrame"), value = 0 },
         },
     },
     chatFrame = {
-        point = "BOTTOMLEFT", relativePoint = "BOTTOMLEFT", x = 0, y = 75,
+        point = "BOTTOMLEFT", relativePoint = "BOTTOMLEFT", x = 33, y = 86,
         settings = {
             { setting = EnumValue("EditModeChatFrameSetting", "WidthHundreds"), value = 4 },
-            { setting = EnumValue("EditModeChatFrameSetting", "WidthTensAndOnes"), value = 0 },
+            { setting = EnumValue("EditModeChatFrameSetting", "WidthTensAndOnes"), value = 30 },
             { setting = EnumValue("EditModeChatFrameSetting", "HeightHundreds"), value = 1 },
-            { setting = EnumValue("EditModeChatFrameSetting", "HeightTensAndOnes"), value = 50 },
+            { setting = EnumValue("EditModeChatFrameSetting", "HeightTensAndOnes"), value = 70 },
         },
     },
     vehicleLeaveButton = {
-        point = "BOTTOM", relativePoint = "BOTTOM", x = 234, y = 145,
+        point = "BOTTOMRIGHT", relativeTo = "multiBarBottomRight", relativePoint = "TOPRIGHT", x = 0, y = 4,
     },
     extraActionBar = {
         point = "BOTTOM", relativePoint = "BOTTOM", x = 0, y = 245,
@@ -167,7 +170,7 @@ local standardFrames = {
         },
     },
     partyFrame = {
-        point = "BOTTOMLEFT", relativePoint = "BOTTOMLEFT", x = 535, y = 225,
+        point = "TOPLEFT", relativePoint = "TOPLEFT", x = 534.2, y = -444,
         settings = {
             { setting = EnumValue("EditModeUnitFrameSetting", "UseRaidStylePartyFrames"), value = 1 },
             { setting = EnumValue("EditModeUnitFrameSetting", "UseHorizontalGroups"), value = 0 },
@@ -177,7 +180,7 @@ local standardFrames = {
         },
     },
     raidFrame = {
-        point = "BOTTOMLEFT", relativePoint = "BOTTOMLEFT", x = 165, y = 90,
+        point = "TOPLEFT", relativePoint = "TOPLEFT", x = 154.6, y = -210,
         settings = {
             { setting = EnumValue("EditModeUnitFrameSetting", "RaidGroupDisplayType"), value = EnumValue("RaidGroupDisplayType", "SeparateGroupsHorizontal") },
             { setting = EnumValue("EditModeUnitFrameSetting", "SortPlayersBy"), value = EnumValue("SortPlayersBy", "Group") },
@@ -199,7 +202,7 @@ ScarletUI.editModeLayouts = {
         overrides = {
             playerFrame = { x = -50, y = -170 },
             targetFrame = { x = 50, y = -170 },
-            focusFrame = { x = -170, y = -230 },
+            focusFrame = { point = "TOPRIGHT", relativeTo = "UIParent", relativePoint = "CENTER", x = -170, y = -230 },
             chatFrame = {
                 settings = {
                     { setting = EnumValue("EditModeChatFrameSetting", "WidthHundreds"), value = 3 },
@@ -208,7 +211,7 @@ ScarletUI.editModeLayouts = {
                     { setting = EnumValue("EditModeChatFrameSetting", "HeightTensAndOnes"), value = 30 },
                 },
             },
-            partyFrame = { x = 40, y = 225 },
+            partyFrame = { point = "BOTTOMLEFT", relativePoint = "BOTTOMLEFT", x = 40, y = 225 },
         },
     },
     ULTRAWIDE = {

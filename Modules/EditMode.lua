@@ -153,13 +153,23 @@ function ScarletUI:ApplyEditModeLayout(variant)
     for settingsKey, definition in pairs(frames) do
         local frame = self:FindEditModeFrame(settingsKey)
         if frame then
-            if definition.point then
+            -- relativeTo names another layout key so snapped frames follow it;
+            -- nil or "UIParent" anchors to the screen.
+            local relativeTo = UIParent
+            local snapped = definition.relativeTo and definition.relativeTo ~= "UIParent"
+            if snapped then
+                relativeTo = self:FindEditModeFrame(definition.relativeTo)
+            end
+
+            if definition.point and snapped and not relativeTo then
+                table.insert(self.editModeSkippedSystems, settingsKey .. " anchor: " .. definition.relativeTo .. " is unavailable")
+            elseif definition.point then
                 local ok, reason = pcall(
                     library.ReanchorFrame,
                     library,
                     frame,
                     definition.point,
-                    UIParent,
+                    relativeTo,
                     definition.relativePoint or definition.point,
                     definition.x or 0,
                     definition.y or 0
