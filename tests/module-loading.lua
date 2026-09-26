@@ -61,7 +61,7 @@ end
 local calls = {}
 local setupMethods = { "SetupDebugFrame", "SetupActionBarToggles", "SetupTracking", "SetupChat", "SetupCVars",
     "SetupItemLevels",
-    "SetupTidyIcons", "SetupExpandCharacterInfo" }
+    "SetupTidyIcons", "SetupSpellCostPercent", "SetupExpandCharacterInfo" }
 for _, name in ipairs(setupMethods) do
     ScarletUI[name] = function() calls[name] = true end
 end
@@ -231,6 +231,23 @@ Fire("PLAYER_LOGOUT")
 assert(states["Find Herbs"] == true and states["Stable Master"] == false)
 assert(#shutdown == 0 and shutdown["ScarletUI-ActionBars"] and shutdown["ScarletUI-Tracking"])
 ScarletUI.eventHandlers, ScarletUI.frame = originalHandlers, originalFrame
+
+-- Spell tooltip mana percent: appended once to the cost line only.
+local function Line(text) return { GetText = function() return text end, SetText = function(_, t) text = t end } end
+GameTooltipTextLeft1, GameTooltipTextLeft2, GameTooltipTextLeft3 = Line("Renew"), Line("105 Mana"), Line("Heals 206 Mana")
+local shown, postCall = 0, nil
+GameTooltip = { NumLines = function() return 3 end, IsForbidden = function() return false end,
+    Show = function() shown = shown + 1 end }
+Enum.TooltipDataType = { Spell = 1 }
+TooltipDataProcessor = { AddTooltipPostCall = function(_, fn) postCall = fn end }
+C_Spell = { GetSpellPowerCost = function() return { { type = 0, cost = 105 } } end }
+UnitPowerMax, MANA = function() return 1300 end, "Mana"
+dofile("Modules/Tooltips.lua")
+ScarletUI:SetupSpellCostPercent()
+postCall(GameTooltip, { id = 139 })
+postCall(GameTooltip, { id = 139 })
+assert(GameTooltipTextLeft2:GetText() == "105 Mana (8%)" and shown == 1)
+assert(GameTooltipTextLeft3:GetText() == "Heals 206 Mana")
 print("PASS: remaining settings, setup dispatcher, shared Era presets, and Edit Mode installation")
 
 -- Run last: the prompt regression loads real AceDB in its own addon setup.

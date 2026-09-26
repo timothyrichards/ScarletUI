@@ -118,6 +118,7 @@ function ScarletUI:Setup()
     self:SetupCVars()
     self:SetupItemLevels()
     self:SetupTidyIcons()
+    self:SetupSpellCostPercent()
     self:SetupExpandCharacterInfo()
 end
 

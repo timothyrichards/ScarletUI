@@ -44,6 +44,8 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
 - `Modules/CVars.lua`: native console variable discovery and overrides.
 - `Modules/ItemLevel.lua`: character, inspect, and Blizzard bag/bank item levels.
 - `Modules/TidyIcons.lua`: icon adjustments.
+- `Modules/Tooltips.lua`: appends percent of max mana to GameTooltip spell cost
+  lines via post-hooks only (`TooltipDataProcessor` or `OnTooltipSetSpell`).
 - `embeds.xml`: bundled library loading; `.pkgmeta`: CurseForge packaging and
   external Ace3, LibStub, serialization, and LibEditModeOverride dependencies.
 

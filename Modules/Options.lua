@@ -144,6 +144,22 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                     },
                 },
             },
+            tooltips = {
+                name = "Tooltips",
+                type = "group",
+                inline = true,
+                order = 1.5,
+                args = {
+                    spellCostPercent = {
+                        name = "Mana Cost Percent",
+                        desc = "Show a spell's mana cost as a percent of your maximum mana, e.g. \"105 Mana (8%)\".",
+                        type = "toggle",
+                        width = 1.5,
+                        get = function(_) return database.spellCostPercent end,
+                        set = function(_, val) database.spellCostPercent = val end,
+                    },
+                },
+            },
             modules = {
                 name = "Enabled Modules",
                 type = "group",
