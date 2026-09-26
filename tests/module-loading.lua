@@ -235,13 +235,15 @@ ScarletUI.eventHandlers, ScarletUI.frame = originalHandlers, originalFrame
 -- Spell tooltip mana percent: appended once to the cost line only.
 local function Line(text) return { GetText = function() return text end, SetText = function(_, t) text = t end } end
 GameTooltipTextLeft1, GameTooltipTextLeft2, GameTooltipTextLeft3 = Line("Renew"), Line("105 Mana"), Line("Heals 206 Mana")
-local shown, postCalls = 0, {}
+local shown, postCalls, added = 0, {}, nil
+local description = "Heals the target of 206 damage over 15 sec."
 GameTooltip = { NumLines = function() return 3 end, IsForbidden = function() return false end,
-    Show = function() shown = shown + 1 end }
+    Show = function() shown = shown + 1 end, AddLine = function(_, text) added = text end }
 Enum.TooltipDataType = { Spell = 1, Macro = 2 }
 TooltipDataProcessor = { AddTooltipPostCall = function(kind, fn) postCalls[kind] = fn end }
-C_Spell = { GetSpellPowerCost = function() return { { type = 0, cost = 105 } } end }
-UnitPowerMax, MANA = function() return 1300 end, "Mana"
+C_Spell = { GetSpellPowerCost = function() return { { type = 0, cost = 105 } } end,
+    GetSpellDescription = function() return description end }
+UnitPowerMax, MANA, GetLocale = function() return 1300 end, "Mana", function() return "enUS" end
 dofile("Modules/Tooltips.lua")
 ScarletUI:SetupSpellCostPercent()
 local costText = "105 |cff40a0ffMana|r (8%)"
@@ -249,9 +251,20 @@ postCalls[1](GameTooltip, { id = 139 })
 postCalls[1](GameTooltip, { id = 139 })
 assert(GameTooltipTextLeft2:GetText() == costText and shown == 1)
 assert(GameTooltipTextLeft3:GetText() == "Heals 206 Mana")
+assert(added == "1.96 healing per mana")
 GameTooltipTextLeft2 = Line("105 Mana")
 postCalls[2](GameTooltip, { lines = { { tooltipID = 139 } } })
 assert(GameTooltipTextLeft2:GetText() == costText)
+-- Healing per mana: range average plus heal over time; damage adds nothing.
+for text, expected in pairs({
+    ["Heals a friendly target for 93 to 107 and another 98 over 21 sec."] = "1.89 healing per mana",
+    ["Heals a friendly target for 1,193 to 1,237."] = "11.57 healing per mana",
+    ["Blasts the target for 50 to 60 Shadow damage."] = false,
+}) do
+    description, added, GameTooltipTextLeft2 = text, false, Line("105 Mana")
+    postCalls[1](GameTooltip, { id = 139 })
+    assert(added == expected, text)
+end
 print("PASS: remaining settings, setup dispatcher, shared Era presets, and Edit Mode installation")
 
 -- Run last: the prompt regression loads real AceDB in its own addon setup.

@@ -1,11 +1,28 @@
 -- Appends the percent of maximum mana to a spell tooltip's cost line, e.g.
--- "105 Mana (8%)", and colors the word Mana. A post-hook that only edits
--- existing GameTooltip text; no Blizzard function or secure frame is replaced,
--- so it adds no action taint.
+-- "105 Mana (8%)", colors the word Mana, and adds healing per mana. Post-hooks
+-- only edit GameTooltip text; no Blizzard function or secure frame is replaced,
+-- so they add no action taint.
 local GetSpellPowerCost = C_Spell and C_Spell.GetSpellPowerCost or GetSpellPowerCost
 local IsSecret = issecretvalue or function() return false end
 local MANA_TYPE = Enum and Enum.PowerType and Enum.PowerType.Mana or 0
 local MANA_COLOR = "|cff40a0ff" -- lighter than PowerBarColor's pure blue, readable on tooltips
+local GetSpellDescription = C_Spell and C_Spell.GetSpellDescription or GetSpellDescription
+
+-- Heal amount parsed from an English description: the average of the first
+-- "X to Y" plus a "N ... over T" heal over time. ponytail: English only and
+-- misses fixed single-value heals; no API exposes heal amounts.
+local function HealAmount(description)
+    local text = description and not IsSecret(description) and description:gsub("(%d),(%d%d%d)", "%1%2")
+    text = text and text:match("[Hh]eal.*")
+    if not text then
+        return
+    end
+    local low, high = text:match("(%d+) to (%d+)")
+    local overTime = text:match("(%d+)%D-over %d")
+    if low or overTime then
+        return (low and (low + high) / 2 or 0) + (overTime or 0)
+    end
+end
 
 local function AddManaPercent(tooltip, spellID)
     if tooltip ~= GameTooltip or not spellID or not ScarletUI.db.global.spellCostPercent
@@ -31,6 +48,11 @@ local function AddManaPercent(tooltip, spellID)
                 if manaStart then
                     line:SetText(text:sub(1, manaStart - 1) .. MANA_COLOR .. MANA .. "|r" .. text:sub(manaEnd + 1)
                         .. " (" .. math.floor(cost.cost / maxMana * 100 + 0.5) .. "%)")
+                    local heal = GetLocale():sub(1, 2) == "en" and GetSpellDescription
+                        and HealAmount(GetSpellDescription(spellID))
+                    if heal then
+                        tooltip:AddLine(string.format("%.2f healing per mana", heal / cost.cost), 0.25, 0.63, 1)
+                    end
                     tooltip:Show() -- resize for the longer line
                     return
                 end

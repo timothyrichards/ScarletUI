@@ -151,8 +151,8 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                 order = 1.5,
                 args = {
                     spellCostPercent = {
-                        name = "Mana Cost Percent",
-                        desc = "Show a spell's mana cost as a percent of your maximum mana, e.g. \"105 Mana (8%)\".",
+                        name = "Mana Cost Details",
+                        desc = "Show a spell's mana cost as a percent of your maximum mana, e.g. \"105 Mana (8%)\", and healing per mana for heals (English clients).",
                         type = "toggle",
                         width = 1.5,
                         get = function(_) return database.spellCostPercent end,
