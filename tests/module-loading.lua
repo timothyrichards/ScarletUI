@@ -240,27 +240,34 @@ end
 GameTooltipTextLeft1, GameTooltipTextLeft2, GameTooltipTextLeft3 = Line("Renew"), Line("105 Mana"),
     Line("Heals the target of 206 damage over 15 sec.")
 GameTooltipTextRight2 = Line("40 yd range")
-local shown, postCalls = 0, {}
+local postCalls, SECRET = {}, {}
 local description = "Heals the target of 206 damage over 15 sec."
-GameTooltip = { NumLines = function() return 3 end, IsForbidden = function() return false end,
-    Show = function() shown = shown + 1 end }
+GameTooltip = { NumLines = function() return 3 end, IsForbidden = function() return false end }
 Enum.TooltipDataType = { Spell = 1, Macro = 2 }
 TooltipDataProcessor = { AddTooltipPostCall = function(kind, fn) postCalls[kind] = fn end }
 C_Spell = { GetSpellPowerCost = function() return { { type = 0, cost = 105 } } end,
     GetSpellDescription = function() return description end }
 UnitPowerMax, MANA, GetLocale = function() return 1300 end, "Mana", function() return "enUS" end
+issecretvalue = function(v) return v == SECRET end
 dofile("Modules/Tooltips.lua")
+issecretvalue = nil
 ScarletUI:SetupSpellCostPercent()
 local function PerMana() return GameTooltipTextLeft2:GetText():match("\n|cff40a0ff(.-)|r$") or false end
 local costText = "105 |cff40a0ffMana|r (8%)\n|cff40a0ff1.96 healing per mana|r"
 postCalls[1](GameTooltip, { id = 139 })
 postCalls[1](GameTooltip, { id = 139 })
-assert(GameTooltipTextLeft2:GetText() == costText and shown == 1)
+assert(GameTooltipTextLeft2:GetText() == costText)
 assert(GameTooltipTextRight2:GetText() == "40 yd range\n ")
 assert(GameTooltipTextLeft3:GetText() == "Heals the target of 206 damage over 15 sec.")
 GameTooltipTextLeft2 = Line("105 Mana")
 postCalls[2](GameTooltip, { lines = { { tooltipID = 139 } } })
 assert(GameTooltipTextLeft2:GetText() == costText)
+-- Secret tooltip (spell on cooldown): rebuilt from the last readable layout.
+GameTooltipTextLeft2, GameTooltipTextRight2 = Line("105 Mana"), Line("40 yd range")
+postCalls[1](GameTooltip, { id = 139 })
+GameTooltipTextLeft2, GameTooltipTextRight2 = Line(SECRET), Line(SECRET)
+postCalls[1](GameTooltip, { id = 139 })
+assert(GameTooltipTextLeft2:GetText() == costText and GameTooltipTextRight2:GetText() == "40 yd range\n ")
 -- Per mana: range average plus heal over time, or absorb; damage adds nothing.
 for text, expected in pairs({
     ["Heals a friendly target for 93 to 107 and another 98 over 21 sec."] = "1.89 healing per mana",

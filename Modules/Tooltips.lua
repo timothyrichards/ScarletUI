@@ -29,8 +29,35 @@ local function HealAmount(description)
     end
 end
 
+-- spellID -> last readable cost line. While a spell is on cooldown the whole
+-- tooltip holds secret values that addons cannot read, so reuse this layout.
+local costLines = {}
+
+local function FindCostLine(tooltip, spellID, amount)
+    for i = 2, tooltip:NumLines() do
+        local text = _G["GameTooltipTextLeft" .. i]:GetText()
+        if not IsSecret(text) and text and text:find(amount, 1, true) and text:find(MANA, 1, true) then
+            if text:find(MANA_COLOR, 1, true) then
+                return -- already decorated
+            end
+            local right = _G["GameTooltipTextRight" .. i]
+            local rightText = right:IsShown() and right:GetText()
+            if IsSecret(rightText) or rightText == "" then
+                rightText = nil
+            end
+            costLines[spellID] = { index = i, text = text, right = rightText }
+            return i, text, rightText
+        end
+    end
+    local cached = costLines[spellID]
+    if cached and cached.index <= tooltip:NumLines() and cached.text:find(amount, 1, true)
+        and IsSecret(_G["GameTooltipTextLeft" .. cached.index]:GetText()) then
+        return cached.index, cached.text, cached.right
+    end
+end
+
 local function AddManaPercent(tooltip, spellID)
-    if tooltip ~= GameTooltip or not spellID or not ScarletUI.db.global.spellCostPercent
+    if tooltip ~= GameTooltip or IsSecret(spellID) or not spellID or not ScarletUI.db.global.spellCostPercent
         or tooltip:IsForbidden() then
         return
     end
@@ -43,38 +70,30 @@ local function AddManaPercent(tooltip, spellID)
     for _, cost in ipairs(costs) do
         if cost.type == MANA_TYPE and not IsSecret(cost.cost) and cost.cost > 0 then
             local amount = BreakUpLargeNumbers and BreakUpLargeNumbers(cost.cost) or tostring(cost.cost)
-            for i = 2, tooltip:NumLines() do
-                local line = _G["GameTooltipTextLeft" .. i]
-                local text = line and line:GetText()
-                local manaStart, manaEnd
-                if text and not IsSecret(text) and text:find(amount, 1, true)
-                    and not text:find(MANA_COLOR, 1, true) then
-                    manaStart, manaEnd = text:find(MANA, 1, true)
-                end
-                if manaStart then
-                    text = text:sub(1, manaStart - 1) .. MANA_COLOR .. MANA .. "|r" .. text:sub(manaEnd + 1)
-                        .. " (" .. math.floor(cost.cost / maxMana * 100 + 0.5) .. "%)"
-                    -- The description includes spell power scaling, matching the tooltip.
-                    local heal, kind
-                    if GetLocale():sub(1, 2) == "en" and GetSpellDescription then
-                        heal, kind = HealAmount(GetSpellDescription(spellID))
-                    end
-                    if heal then
-                        -- Tooltips only append lines, so add a second row to the cost line.
-                        text = text .. "\n" .. MANA_COLOR
-                            .. string.format("%.2f %s per mana", heal / cost.cost, kind) .. "|r"
-                        -- Pad the range text to two rows so it stays level with the cost.
-                        local right = _G["GameTooltipTextRight" .. i]
-                        local rightText = right and right:IsShown() and right:GetText()
-                        if rightText and rightText ~= "" and not IsSecret(rightText) then
-                            right:SetText(rightText .. "\n ")
-                        end
-                    end
-                    line:SetText(text)
-                    tooltip:Show() -- resize for the longer line
-                    return
+            local i, text, rightText = FindCostLine(tooltip, spellID, amount)
+            if not i then
+                return
+            end
+            local manaStart, manaEnd = text:find(MANA, 1, true)
+            text = text:sub(1, manaStart - 1) .. MANA_COLOR .. MANA .. "|r" .. text:sub(manaEnd + 1)
+                .. " (" .. math.floor(cost.cost / maxMana * 100 + 0.5) .. "%)"
+            -- The description includes spell power scaling, matching the tooltip.
+            local heal, kind
+            if GetLocale():sub(1, 2) == "en" and GetSpellDescription then
+                heal, kind = HealAmount(GetSpellDescription(spellID))
+            end
+            if heal then
+                -- Tooltips only append lines, so add a second row to the cost line.
+                text = text .. "\n" .. MANA_COLOR
+                    .. string.format("%.2f %s per mana", heal / cost.cost, kind) .. "|r"
+                -- Pad the range text to two rows so it stays level with the cost.
+                if rightText then
+                    _G["GameTooltipTextRight" .. i]:SetText(rightText .. "\n ")
                 end
             end
+            -- Blizzard shows (and resizes) the tooltip after post-calls run.
+            _G["GameTooltipTextLeft" .. i]:SetText(text)
+            return
         end
     end
 end
@@ -96,6 +115,7 @@ function ScarletUI:SetupSpellCostPercent()
     else
         GameTooltip:HookScript("OnTooltipSetSpell", function(tooltip)
             AddManaPercent(tooltip, select(2, tooltip:GetSpell()))
+            tooltip:Show() -- resize; this older path has no Show after hooks
         end)
     end
 end
