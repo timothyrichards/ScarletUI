@@ -241,11 +241,13 @@ GameTooltipTextLeft1, GameTooltipTextLeft2, GameTooltipTextLeft3 = Line("Renew")
     Line("Heals the target of 206 damage over 15 sec.")
 GameTooltipTextRight2 = Line("40 yd range")
 local shown, postCalls = 0, {}
+local description = "Heals the target of 206 damage over 15 sec."
 GameTooltip = { NumLines = function() return 3 end, IsForbidden = function() return false end,
     Show = function() shown = shown + 1 end }
 Enum.TooltipDataType = { Spell = 1, Macro = 2 }
 TooltipDataProcessor = { AddTooltipPostCall = function(kind, fn) postCalls[kind] = fn end }
-C_Spell = { GetSpellPowerCost = function() return { { type = 0, cost = 105 } } end }
+C_Spell = { GetSpellPowerCost = function() return { { type = 0, cost = 105 } } end,
+    GetSpellDescription = function() return description end }
 UnitPowerMax, MANA, GetLocale = function() return 1300 end, "Mana", function() return "enUS" end
 dofile("Modules/Tooltips.lua")
 ScarletUI:SetupSpellCostPercent()
@@ -268,7 +270,7 @@ for text, expected in pairs({
         = "0.46 absorb per mana",
     ["Shields an ally for 15 sec, absorbing 12,345 damage."] = "117.57 absorb per mana",
 }) do
-    GameTooltipTextLeft2, GameTooltipTextLeft3 = Line("105 Mana"), Line(text)
+    description, GameTooltipTextLeft2 = text, Line("105 Mana")
     postCalls[1](GameTooltip, { id = 139 })
     assert(PerMana() == expected, text)
 end
