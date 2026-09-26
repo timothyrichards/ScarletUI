@@ -235,19 +235,23 @@ ScarletUI.eventHandlers, ScarletUI.frame = originalHandlers, originalFrame
 -- Spell tooltip mana percent: appended once to the cost line only.
 local function Line(text) return { GetText = function() return text end, SetText = function(_, t) text = t end } end
 GameTooltipTextLeft1, GameTooltipTextLeft2, GameTooltipTextLeft3 = Line("Renew"), Line("105 Mana"), Line("Heals 206 Mana")
-local shown, postCall = 0, nil
+local shown, postCalls = 0, {}
 GameTooltip = { NumLines = function() return 3 end, IsForbidden = function() return false end,
     Show = function() shown = shown + 1 end }
-Enum.TooltipDataType = { Spell = 1 }
-TooltipDataProcessor = { AddTooltipPostCall = function(_, fn) postCall = fn end }
+Enum.TooltipDataType = { Spell = 1, Macro = 2 }
+TooltipDataProcessor = { AddTooltipPostCall = function(kind, fn) postCalls[kind] = fn end }
 C_Spell = { GetSpellPowerCost = function() return { { type = 0, cost = 105 } } end }
 UnitPowerMax, MANA = function() return 1300 end, "Mana"
 dofile("Modules/Tooltips.lua")
 ScarletUI:SetupSpellCostPercent()
-postCall(GameTooltip, { id = 139 })
-postCall(GameTooltip, { id = 139 })
-assert(GameTooltipTextLeft2:GetText() == "105 Mana (8%)" and shown == 1)
+local costText = "105 |cff40a0ffMana|r (8%)"
+postCalls[1](GameTooltip, { id = 139 })
+postCalls[1](GameTooltip, { id = 139 })
+assert(GameTooltipTextLeft2:GetText() == costText and shown == 1)
 assert(GameTooltipTextLeft3:GetText() == "Heals 206 Mana")
+GameTooltipTextLeft2 = Line("105 Mana")
+postCalls[2](GameTooltip, { lines = { { tooltipID = 139 } } })
+assert(GameTooltipTextLeft2:GetText() == costText)
 print("PASS: remaining settings, setup dispatcher, shared Era presets, and Edit Mode installation")
 
 -- Run last: the prompt regression loads real AceDB in its own addon setup.
