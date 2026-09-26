@@ -46,12 +46,13 @@ local function AddManaPercent(tooltip, spellID)
                 local line = _G["GameTooltipTextLeft" .. i]
                 local text = line and line:GetText()
                 local manaStart, manaEnd
-                if text and not IsSecret(text) and text:find(amount, 1, true) and not text:find("%)$") then
+                if text and not IsSecret(text) and text:find(amount, 1, true)
+                    and not text:find(MANA_COLOR, 1, true) then
                     manaStart, manaEnd = text:find(MANA, 1, true)
                 end
                 if manaStart then
-                    line:SetText(text:sub(1, manaStart - 1) .. MANA_COLOR .. MANA .. "|r" .. text:sub(manaEnd + 1)
-                        .. " (" .. math.floor(cost.cost / maxMana * 100 + 0.5) .. "%)")
+                    text = text:sub(1, manaStart - 1) .. MANA_COLOR .. MANA .. "|r" .. text:sub(manaEnd + 1)
+                        .. " (" .. math.floor(cost.cost / maxMana * 100 + 0.5) .. "%)"
                     -- Parse the displayed lines so the amount includes spell power scaling.
                     local heal, kind
                     if GetLocale():sub(1, 2) == "en" then
@@ -66,8 +67,17 @@ local function AddManaPercent(tooltip, spellID)
                         heal, kind = HealAmount(table.concat(shown, " "))
                     end
                     if heal then
-                        tooltip:AddLine(string.format("%.2f %s per mana", heal / cost.cost, kind), 0.25, 0.63, 1)
+                        -- Tooltips only append lines, so add a second row to the cost line.
+                        text = text .. "\n" .. MANA_COLOR
+                            .. string.format("%.2f %s per mana", heal / cost.cost, kind) .. "|r"
+                        -- Pad the range text to two rows so it stays level with the cost.
+                        local right = _G["GameTooltipTextRight" .. i]
+                        local rightText = right and right:IsShown() and right:GetText()
+                        if rightText and rightText ~= "" and not IsSecret(rightText) then
+                            right:SetText(rightText .. "\n ")
+                        end
                     end
+                    line:SetText(text)
                     tooltip:Show() -- resize for the longer line
                     return
                 end
