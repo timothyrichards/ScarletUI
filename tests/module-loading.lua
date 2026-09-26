@@ -188,7 +188,12 @@ MultiActionBar_Update = function() updated = true end
 local originalHandlers, originalFrame = ScarletUI.eventHandlers, ScarletUI.frame
 ScarletUI.eventHandlers = {}
 ScarletUI.frame = { RegisterEvent = noop }
+local shutdown
+ScarletUI.db.RegisterCallback = function(_, event, handler)
+    if event == "OnDatabaseShutdown" then shutdown = handler end
+end
 local function Fire(event)
+    if event == "PLAYER_LOGOUT" then shutdown() end
     for _, handler in ipairs(ScarletUI.eventHandlers[event] or {}) do handler(event) end
 end
 ScarletUI:SetupActionBarToggles()
