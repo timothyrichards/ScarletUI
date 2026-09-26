@@ -8,19 +8,24 @@ local MANA_TYPE = Enum and Enum.PowerType and Enum.PowerType.Mana or 0
 local MANA_COLOR = "|cff40a0ff" -- lighter than PowerBarColor's pure blue, readable on tooltips
 local GetSpellDescription = C_Spell and C_Spell.GetSpellDescription or GetSpellDescription
 
--- Heal amount parsed from an English description: the average of the first
--- "X to Y" plus a "N ... over T" heal over time. ponytail: English only and
--- misses fixed single-value heals; no API exposes heal amounts.
+-- Heal or absorb amount parsed from an English description: the average of the
+-- first "X to Y" plus a "N ... over T" heal over time, else "absorbing N".
+-- ponytail: English only and misses fixed single-value heals; no API exposes
+-- heal amounts.
 local function HealAmount(description)
     local text = description and not IsSecret(description) and description:gsub("(%d),(%d%d%d)", "%1%2")
-    text = text and text:match("[Hh]eal.*")
     if not text then
         return
     end
-    local low, high = text:match("(%d+) to (%d+)")
-    local overTime = text:match("(%d+)%D-over %d")
+    local healText = text:match("[Hh]eal.*") or ""
+    local low, high = healText:match("(%d+) to (%d+)")
+    local overTime = healText:match("(%d+)%D-over %d")
     if low or overTime then
-        return (low and (low + high) / 2 or 0) + (overTime or 0)
+        return (low and (low + high) / 2 or 0) + (overTime or 0), "healing"
+    end
+    local absorb = text:match("[Aa]bsorb%a* (%d+)") or text:match("[Aa]bsorb%a* up to (%d+)")
+    if absorb then
+        return tonumber(absorb), "absorb"
     end
 end
 
@@ -48,10 +53,12 @@ local function AddManaPercent(tooltip, spellID)
                 if manaStart then
                     line:SetText(text:sub(1, manaStart - 1) .. MANA_COLOR .. MANA .. "|r" .. text:sub(manaEnd + 1)
                         .. " (" .. math.floor(cost.cost / maxMana * 100 + 0.5) .. "%)")
-                    local heal = GetLocale():sub(1, 2) == "en" and GetSpellDescription
-                        and HealAmount(GetSpellDescription(spellID))
+                    local heal, kind
+                    if GetLocale():sub(1, 2) == "en" and GetSpellDescription then
+                        heal, kind = HealAmount(GetSpellDescription(spellID))
+                    end
                     if heal then
-                        tooltip:AddLine(string.format("%.2f healing per mana", heal / cost.cost), 0.25, 0.63, 1)
+                        tooltip:AddLine(string.format("%.2f %s per mana", heal / cost.cost, kind), 0.25, 0.63, 1)
                     end
                     tooltip:Show() -- resize for the longer line
                     return

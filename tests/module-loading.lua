@@ -260,6 +260,9 @@ for text, expected in pairs({
     ["Heals a friendly target for 93 to 107 and another 98 over 21 sec."] = "1.89 healing per mana",
     ["Heals a friendly target for 1,193 to 1,237."] = "11.57 healing per mana",
     ["Blasts the target for 50 to 60 Shadow damage."] = false,
+    ["Draws on the soul of the party member to shield them, absorbing 48 damage. Lasts 30 sec."]
+        = "0.46 absorb per mana",
+    ["Shields an ally for 15 sec, absorbing 12,345 damage."] = "117.57 absorb per mana",
 }) do
     description, added, GameTooltipTextLeft2 = text, false, Line("105 Mana")
     postCalls[1](GameTooltip, { id = 139 })
