@@ -59,7 +59,7 @@ end
 
 -- Exercise the real setup dispatcher with only the remaining module methods.
 local calls = {}
-local setupMethods = { "SetupDebugFrame", "SetupActionBarToggles", "SetupChat", "SetupCVars",
+local setupMethods = { "SetupDebugFrame", "SetupActionBarToggles", "SetupTracking", "SetupChat", "SetupCVars",
     "SetupItemLevels",
     "SetupTidyIcons", "SetupExpandCharacterInfo" }
 for _, name in ipairs(setupMethods) do
@@ -188,12 +188,14 @@ MultiActionBar_Update = function() updated = true end
 local originalHandlers, originalFrame = ScarletUI.eventHandlers, ScarletUI.frame
 ScarletUI.eventHandlers = {}
 ScarletUI.frame = { RegisterEvent = noop }
-local shutdown
-ScarletUI.db.RegisterCallback = function(_, event, handler)
-    if event == "OnDatabaseShutdown" then shutdown = handler end
+local shutdown = {}
+ScarletUI.db.RegisterCallback = function(target, event, handler)
+    if event == "OnDatabaseShutdown" then shutdown[target] = handler end
 end
 local function Fire(event)
-    if event == "PLAYER_LOGOUT" then shutdown() end
+    if event == "PLAYER_LOGOUT" then
+        for _, handler in pairs(shutdown) do handler() end
+    end
     for _, handler in ipairs(ScarletUI.eventHandlers[event] or {}) do handler(event) end
 end
 ScarletUI:SetupActionBarToggles()
@@ -208,6 +210,26 @@ assert(not bars[2] and not updated)
 ScarletUI.InCombat = function() return false end
 Fire("PLAYER_REGEN_ENABLED")
 assert(bars[1] and bars[2] and bars[3] and not bars[4] and updated)
+
+-- Minimap tracking: merged by name; alts only receive entries they have.
+local tracking = { { name = "Mailbox", active = true }, { name = "Find Herbs", active = true } }
+C_Minimap = {
+    GetNumTrackingTypes = function() return #tracking end,
+    GetTrackingInfo = function(i) return tracking[i] end,
+    SetTracking = function(i, on) tracking[i].active = on end,
+}
+dofile("Modules/Tracking.lua")
+ScarletUI:SetupTracking()
+tracking[1].active = false
+Fire("PLAYER_LOGOUT")
+local states = ScarletUI.db.global.trackingModule.states
+assert(states.Mailbox == false and states["Find Herbs"] == true)
+tracking, ScarletUI.trackingApplied = { { name = "Mailbox", active = true }, { name = "Stable Master", active = false } }, nil
+ScarletUI:SetupTracking()
+assert(tracking[1].active == false and tracking[2].active == false)
+Fire("PLAYER_LOGOUT")
+assert(states["Find Herbs"] == true and states["Stable Master"] == false)
+assert(#shutdown == 0 and shutdown["ScarletUI-ActionBars"] and shutdown["ScarletUI-Tracking"])
 ScarletUI.eventHandlers, ScarletUI.frame = originalHandlers, originalFrame
 print("PASS: remaining settings, setup dispatcher, shared Era presets, and Edit Mode installation")
 

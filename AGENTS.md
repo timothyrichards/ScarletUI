@@ -35,6 +35,11 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   game settings (`GetActionBarToggles`), not CVars. Saved on logout only after
   the shared set was applied; applied on login, deferred until combat ends.
   Uses a new key; the removed module's `actionbarsModule` stays unused.
+- `Modules/Tracking.lua`: shares minimap tracking menu checkboxes across
+  characters via `db.global.trackingModule.states`, keyed by entry name and
+  merged on logout so entries a character lacks keep their shared state.
+  Both sync modules save from AceDB `OnDatabaseShutdown` (before defaults are
+  stripped), each with its own callback target so neither replaces the other.
 - `Modules/Chat.lua`: chat tabs and font size.
 - `Modules/CVars.lua`: native console variable discovery and overrides.
 - `Modules/ItemLevel.lua`: character, inspect, and Blizzard bag/bank item levels.

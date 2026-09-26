@@ -17,6 +17,9 @@ ScarletUI.defaults = {
         actionBarToggles = {
             enabled = true,
         },
+        trackingModule = {
+            enabled = true,
+        },
         chatModule = {
             enabled = true,
             fontSize = 14,

@@ -163,6 +163,18 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                             self:SetupActionBarToggles()
                         end,
                     },
+                    trackingModuleEnabled = {
+                        name = "Minimap Tracking",
+                        desc = "Share the minimap tracking menu checkboxes across characters. Saved on logout and applied on login; characters only receive entries they have.",
+                        type = "toggle",
+                        width = 1,
+                        order = 1.5,
+                        get = function(_) return database.trackingModule.enabled end,
+                        set = function(_, val)
+                            database.trackingModule.enabled = val
+                            self:SetupTracking()
+                        end,
+                    },
                     chatModuleEnabled = {
                         name = "Chat",
                         desc = "Configure chat tabs and font size.",

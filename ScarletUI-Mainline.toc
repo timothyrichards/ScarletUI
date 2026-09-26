@@ -21,4 +21,5 @@ Modules\EditModeLayouts.lua
 Modules\EditMode.lua
 Modules\ItemLevel.lua
 Modules\Options.lua
+Modules\Tracking.lua
 Modules\TidyIcons.lua

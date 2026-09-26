@@ -42,7 +42,7 @@ function ScarletUI:SetupActionBarToggles()
         -- Only save after this character received the shared toggles, so a
         -- skipped apply cannot overwrite them with this character's old state.
         -- AceDB strips default-only tables on PLAYER_LOGOUT; this fires first.
-        self.db.RegisterCallback(self, "OnDatabaseShutdown", function()
+        self.db.RegisterCallback("ScarletUI-ActionBars", "OnDatabaseShutdown", function()
             local current = ScarletUI.db.global.actionBarToggles
             if current.enabled and ScarletUI.actionBarTogglesApplied then
                 current.bars = GetToggles()
