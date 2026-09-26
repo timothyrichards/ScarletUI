@@ -116,8 +116,14 @@ function ScarletUI:Setup()
     self:SetupTracking()
     self:SetupChat()
     self:SetupCVars()
+    -- Bag and Nameplates only load on Era, TBC, and Mists.
+    if self.SetupBags then
+        self:SetupBags()
+        self:SetupBank()
+    end
     self:SetupItemLevels()
     self:SetupTidyIcons()
+    if self.SetupNameplates then self:SetupNameplates() end
     self:SetupSpellCostPercent()
     self:SetupExpandCharacterInfo()
 end

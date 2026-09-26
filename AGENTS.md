@@ -5,7 +5,8 @@ this checkout; the TOCs and source are authoritative when client versions change
 
 ## Clients and loading
 
-All manifests load the same addon files in the same order:
+All manifests load the same addon files in the same order, except that Vanilla,
+TBC, and Mists append `Modules\Bag.lua` and `Modules\Nameplates.lua`:
 
 | Manifest | Client | Interface |
 | --- | --- | --- |
@@ -13,15 +14,17 @@ All manifests load the same addon files in the same order:
 | `ScarletUI-Camelot.toc` | Classic Forever beta | 16001 |
 | `ScarletUI-Vanilla.toc` | Classic Era | 11509 |
 | `ScarletUI-TBC.toc` | TBC Anniversary | 20506 |
+| `ScarletUI-Mists.toc` | Mists Classic | 50504 |
 
 Update every manifest when adding or removing a loaded module.
 Keep `LoadSavedVariablesFirst: 1` in each manifest so saved settings are restored
 before addon scripts initialize AceDB. Fully restart WoW after changing TOC metadata.
 `GetWoWVersion()` in `Modules/Helpers.lua` returns a client identifier and interface
-number. Identifiers for these targets are `RETAIL`, `FOREVER`, `VANILLA`, and `TBC`.
-Era and Anniversary keep the Classic UI (`retail` and `lightWeightMode` stay false)
-while still using Edit Mode when `IsEditModeSupported()` passes. Legacy client
-detection remains in the code, including `MOP` for Mists; do not use `MISTS`. Forever uses Mainline UI frames despite its Classic version
+number. Identifiers for these targets are `RETAIL`, `FOREVER`, `VANILLA`, `TBC`, and `MOP`.
+Era, Anniversary, and Mists keep the Classic UI (`retail` and `lightWeightMode` stay false)
+while still using Edit Mode when `IsEditModeSupported()` passes. Use `MOP` for
+Mists, not `MISTS`. Detection for other legacy clients (WOTLK, CATA) remains in
+the code without manifests. Forever uses Mainline UI frames despite its Classic version
 number, so `OnEnable()` sets both `retail` and `lightWeightMode` for it and Retail.
 ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details.
 
@@ -50,11 +53,17 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
 - `Modules/TidyIcons.lua`: icon adjustments.
 - `Modules/Tooltips.lua`: appends percent of max mana to GameTooltip spell cost
   lines via post-hooks only (`TooltipDataProcessor` or `OnTooltipSetSpell`).
+- `Modules/Bag.lua`, `Modules/Nameplates.lua`: custom bag/bank frames and
+  nameplate threat colors, auras, and text. Classic UI clients only: listed in
+  just those three manifests so Retail and Forever never load them. Each file adds its
+  own AceDB defaults (`bagModule`, `nameplatesModule`, `char.priorityDebuffs`)
+  and settings page; the parent checks `self.SetupBags`, `self.SetupNameplates`,
+  and the `Get*SettingsPage` methods before using them.
 - `embeds.xml`: bundled library loading; `.pkgmeta`: CurseForge packaging and
   external Ace3, LibStub, serialization, and LibEditModeOverride dependencies.
 
-The actionbar, custom bag/bank, movers, unit-frame, nameplate, and raid-frame modules have
-been removed. Blizzard handles those frames. Keep native bag/bank
+The actionbar, movers, unit-frame, and raid-frame modules have been removed.
+Blizzard handles those frames, and bags and nameplates on Retail and Forever. Keep native bag/bank
 item-level overlays and the independent CVar controls when changing related code.
 
 Raid display CVars are managed by `Modules/CVars.lua` with defaults in

@@ -1,4 +1,4 @@
-## Interface: 20506
+## Interface: 50504
 ## Title: Scarlet UI
 ## Author: ScarletPaladin
 ## Notes: Misc UI features/modifications preferred by ScarletPaladin

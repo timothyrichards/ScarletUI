@@ -23,8 +23,11 @@ function ScarletUI:Options()
             },
             generalSettings = self:GetGeneralSettingsPage(database, 2),
             editModeSettings = self:GetEditModeSettingsPage(3),
+            -- Bag and Nameplates only load on Era, TBC, and Mists.
+            bagModuleSettings = self.GetBagModuleSettingsPage and self:GetBagModuleSettingsPage(database, defaults.bagModule, 5),
             chatModuleSettings = self:GetChatModuleSettingsPage(database, defaults.chatModule, 6),
             CVarModuleSettings = self:GetCVarModuleSettingsPage(database, 7),
+            nameplatesModuleSettings = self.GetNameplatesModuleSettingsPage and self:GetNameplatesModuleSettingsPage(database, defaults.nameplatesModule, 8),
         }
     }
 end
@@ -191,6 +194,24 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                             self:SetupTracking()
                         end,
                     },
+                    bagModuleEnabled = {
+                        name = "Bags",
+                        desc = "Manage the settings and position of your bags.",
+                        type = "toggle",
+                        hidden = function() return not self.SetupBags or self.lightWeightMode end,
+                        width = 1,
+                        order = 1.75,
+                        get = function(_) return database.bagModule.enabled end,
+                        set = function(_, val)
+                            database.bagModule.enabled = val
+                            if not val then
+                                self:ShowReloadDialog()
+                            else
+                                self:SetupBags()
+                                self:SetupBank()
+                            end
+                        end,
+                    },
                     chatModuleEnabled = {
                         name = "Chat",
                         desc = "Configure chat tabs and font size.",
@@ -220,6 +241,23 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                                 ScarletUI:RequestCVarModuleEnable()
                             else
                                 ScarletUI:FinishCVarSetup(false)
+                            end
+                        end,
+                    },
+                    nameplatesModuleEnabled = {
+                        name = "Nameplates",
+                        desc = "Manage your Nameplates and threat colors.",
+                        type = "toggle",
+                        hidden = function() return not self.SetupNameplates or self.lightWeightMode end,
+                        width = 1,
+                        order = 4,
+                        get = function(_) return database.nameplatesModule.enabled end,
+                        set = function(_, val)
+                            database.nameplatesModule.enabled = val
+                            if not val then
+                                self:ShowReloadDialog()
+                            else
+                                self:SetupNameplates()
                             end
                         end,
                     },

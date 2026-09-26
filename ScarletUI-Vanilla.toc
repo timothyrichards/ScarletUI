@@ -24,3 +24,7 @@ Modules\Options.lua
 Modules\Tracking.lua
 Modules\TidyIcons.lua
 Modules\Tooltips.lua
+
+# Era and TBC only
+Modules\Bag.lua
+Modules\Nameplates.lua

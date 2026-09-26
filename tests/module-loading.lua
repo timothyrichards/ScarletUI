@@ -47,14 +47,15 @@ for _, oldSettings in ipairs({ false, true }) do
     assert(options.args.actionBarSettings == nil)
     assert(options.args.generalSettings.args.modules.args.actionbarsModuleEnabled == nil)
     assert(options.args.bagModuleSettings == nil and options.args.editModeSettings)
-    assert(options.args.generalSettings.args.modules.args.bagModuleEnabled == nil)
+    -- Retail and Forever never load Bag.lua or Nameplates.lua, so their toggles stay hidden.
+    assert(options.args.generalSettings.args.modules.args.bagModuleEnabled.hidden())
     assert(options.args.toggleMovers == nil and options.args.resetPositions == nil)
     assert(options.args.generalSettings.args.general.args.clampMovers == nil)
     assert(options.args.generalSettings.args.modules.args.unitFramesModuleEnabled == nil)
     assert(options.args.raidFramesModuleSettings == nil)
     assert(options.args.generalSettings.args.modules.args.raidFramesModuleEnabled == nil)
     assert(options.args.nameplatesModuleSettings == nil)
-    assert(options.args.generalSettings.args.modules.args.nameplatesModuleEnabled == nil)
+    assert(options.args.generalSettings.args.modules.args.nameplatesModuleEnabled.hidden())
 end
 
 -- Exercise the real setup dispatcher with only the remaining module methods.
@@ -279,7 +280,29 @@ for text, expected in pairs({
     postCalls[1](GameTooltip, { id = 139 })
     assert(PerMana() == expected, text)
 end
-print("PASS: remaining settings, setup dispatcher, shared Era presets, and Edit Mode installation")
+-- Era, TBC, and Mists also load the Classic-UI-only modules and their old settings keys.
+C_Container = {}
+dofile("Modules/Bag.lua")
+dofile("Modules/Nameplates.lua")
+assert(ScarletUI.defaults.global.bagModule.enabled and ScarletUI.originalUIDefaults.global.bagModule)
+assert(ScarletUI.defaults.global.nameplatesModule.enabled and ScarletUI.originalUIDefaults.global.nameplatesModule)
+assert(ScarletUI.defaults.char.priorityDebuffs == "" and StaticPopupDialogs.SCARLET_PURCHASE_BANK_SLOT)
+ScarletUI.db.global.bagModule = ScarletUI.defaults.global.bagModule
+ScarletUI.db.global.nameplatesModule = ScarletUI.defaults.global.nameplatesModule
+ScarletUI.lightWeightMode = false
+local legacyOptions = ScarletUI:Options()
+local moduleToggles = legacyOptions.args.generalSettings.args.modules.args
+assert(legacyOptions.args.bagModuleSettings and legacyOptions.args.nameplatesModuleSettings)
+assert(not moduleToggles.bagModuleEnabled.hidden() and not moduleToggles.nameplatesModuleEnabled.hidden())
+calls = {}
+local legacyMethods = { "SetupBags", "SetupBank", "SetupNameplates" }
+for _, name in ipairs(setupMethods) do ScarletUI[name] = noop end
+for _, name in ipairs(legacyMethods) do
+    ScarletUI[name] = function() calls[name] = true end
+end
+ScarletUI:Setup()
+for _, name in ipairs(legacyMethods) do assert(calls[name], name) end
+print("PASS: remaining settings, setup dispatcher, Era/TBC/Mists legacy modules, shared Era presets, and Edit Mode installation")
 
 -- Run last: the prompt regression loads real AceDB in its own addon setup.
 dofile("tests/edit-mode-prompts.lua")
