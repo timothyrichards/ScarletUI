@@ -262,12 +262,10 @@ assert(GameTooltipTextLeft3:GetText() == "Heals the target of 206 damage over 15
 GameTooltipTextLeft2 = Line("105 Mana")
 postCalls[2](GameTooltip, { lines = { { tooltipID = 139 } } })
 assert(GameTooltipTextLeft2:GetText() == costText)
--- Secret tooltip (spell on cooldown): rebuilt from the last readable layout.
-GameTooltipTextLeft2, GameTooltipTextRight2 = Line("105 Mana"), Line("40 yd range")
-postCalls[1](GameTooltip, { id = 139 })
+-- Secret tooltip (spell on cooldown): left untouched.
 GameTooltipTextLeft2, GameTooltipTextRight2 = Line(SECRET), Line(SECRET)
 postCalls[1](GameTooltip, { id = 139 })
-assert(GameTooltipTextLeft2:GetText() == costText and GameTooltipTextRight2:GetText() == "40 yd range\n ")
+assert(GameTooltipTextLeft2:GetText() == SECRET and GameTooltipTextRight2:GetText() == SECRET)
 -- Per mana: range average plus heal over time, or absorb; damage adds nothing.
 for text, expected in pairs({
     ["Heals a friendly target for 93 to 107 and another 98 over 21 sec."] = "1.89 healing per mana",

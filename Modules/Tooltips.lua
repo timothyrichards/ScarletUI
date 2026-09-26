@@ -29,11 +29,9 @@ local function HealAmount(description)
     end
 end
 
--- spellID -> last readable cost line. While a spell is on cooldown the whole
--- tooltip holds secret values that addons cannot read, so reuse this layout.
-local costLines = {}
-
-local function FindCostLine(tooltip, spellID, amount)
+-- While a spell is on cooldown every line is a secret value that addons
+-- cannot read; those tooltips are left untouched.
+local function FindCostLine(tooltip, amount)
     for i = 2, tooltip:NumLines() do
         local text = _G["GameTooltipTextLeft" .. i]:GetText()
         if not IsSecret(text) and text and text:find(amount, 1, true) and text:find(MANA, 1, true) then
@@ -45,14 +43,8 @@ local function FindCostLine(tooltip, spellID, amount)
             if IsSecret(rightText) or rightText == "" then
                 rightText = nil
             end
-            costLines[spellID] = { index = i, text = text, right = rightText }
             return i, text, rightText
         end
-    end
-    local cached = costLines[spellID]
-    if cached and cached.index <= tooltip:NumLines() and cached.text:find(amount, 1, true)
-        and IsSecret(_G["GameTooltipTextLeft" .. cached.index]:GetText()) then
-        return cached.index, cached.text, cached.right
     end
 end
 
@@ -70,7 +62,7 @@ local function AddManaPercent(tooltip, spellID)
     for _, cost in ipairs(costs) do
         if cost.type == MANA_TYPE and not IsSecret(cost.cost) and cost.cost > 0 then
             local amount = BreakUpLargeNumbers and BreakUpLargeNumbers(cost.cost) or tostring(cost.cost)
-            local i, text, rightText = FindCostLine(tooltip, spellID, amount)
+            local i, text, rightText = FindCostLine(tooltip, amount)
             if not i then
                 return
             end
