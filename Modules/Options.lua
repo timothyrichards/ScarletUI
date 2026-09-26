@@ -151,6 +151,18 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                 inline = true,
                 order = 2,
                 args = {
+                    actionBarTogglesEnabled = {
+                        name = "Action Bars",
+                        desc = "Share the Action Bars 2-8 checkboxes from Blizzard's settings across characters. Saved on logout and applied on login.",
+                        type = "toggle",
+                        width = 1,
+                        order = 1,
+                        get = function(_) return database.actionBarToggles.enabled end,
+                        set = function(_, val)
+                            database.actionBarToggles.enabled = val
+                            self:SetupActionBarToggles()
+                        end,
+                    },
                     chatModuleEnabled = {
                         name = "Chat",
                         desc = "Configure chat tabs and font size.",

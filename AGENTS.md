@@ -30,6 +30,11 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
 - `Modules/EditModeLayouts.lua`: shared frame definitions and display presets.
 - `Modules/EditMode.lua`: Edit Mode detection, profile installation, activation,
   update prompts, and settings page through LibEditModeOverride.
+- `Modules/ActionBars.lua`: shares the Settings > Action Bars 2-8 toggles
+  across characters via `db.global.actionBarToggles`. These are per-character
+  game settings (`GetActionBarToggles`), not CVars. Saved on logout only after
+  the shared set was applied; applied on login, deferred until combat ends.
+  Uses a new key; the removed module's `actionbarsModule` stays unused.
 - `Modules/Chat.lua`: chat tabs and font size.
 - `Modules/CVars.lua`: native console variable discovery and overrides.
 - `Modules/ItemLevel.lua`: character, inspect, and Blizzard bag/bank item levels.

@@ -12,6 +12,7 @@ embeds.xml
 
 # Load the addon
 ScarletUI.lua
+Modules\ActionBars.lua
 Modules\Chat.lua
 Modules\CVars.lua
 Modules\Database.lua

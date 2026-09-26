@@ -59,7 +59,7 @@ end
 
 -- Exercise the real setup dispatcher with only the remaining module methods.
 local calls = {}
-local setupMethods = { "SetupDebugFrame", "SetupChat", "SetupCVars",
+local setupMethods = { "SetupDebugFrame", "SetupActionBarToggles", "SetupChat", "SetupCVars",
     "SetupItemLevels",
     "SetupTidyIcons", "SetupExpandCharacterInfo" }
 for _, name in ipairs(setupMethods) do
@@ -177,6 +177,33 @@ assert(#CHAT_FRAMES == 4)
 for _, key in ipairs(CHAT_FRAMES) do
     assert(_G[key].fontSize == ScarletUI.db.global.chatModule.fontSize)
 end
+
+-- Action bar toggles: a first character seeds them on logout, an alt receives them on login.
+dofile("Modules/ActionBars.lua")
+local bars = { true, false, false, false, false, false, false }
+local updated = false
+GetActionBarToggles = function() return unpack(bars) end
+SetActionBarToggles = function(...) bars = { ... } end
+MultiActionBar_Update = function() updated = true end
+local originalHandlers, originalFrame = ScarletUI.eventHandlers, ScarletUI.frame
+ScarletUI.eventHandlers = {}
+ScarletUI.frame = { RegisterEvent = noop }
+local function Fire(event)
+    for _, handler in ipairs(ScarletUI.eventHandlers[event] or {}) do handler(event) end
+end
+ScarletUI:SetupActionBarToggles()
+assert(not updated)
+bars[2], bars[3] = true, true
+Fire("PLAYER_LOGOUT")
+assert(ScarletUI.db.global.actionBarToggles.bars[3] == true)
+bars, ScarletUI.actionBarTogglesApplied = { false, false, false, false, false, false, false }, nil
+ScarletUI.InCombat = function() return true end
+ScarletUI:SetupActionBarToggles()
+assert(not bars[2] and not updated)
+ScarletUI.InCombat = function() return false end
+Fire("PLAYER_REGEN_ENABLED")
+assert(bars[1] and bars[2] and bars[3] and not bars[4] and updated)
+ScarletUI.eventHandlers, ScarletUI.frame = originalHandlers, originalFrame
 print("PASS: remaining settings, setup dispatcher, shared Era presets, and Edit Mode installation")
 
 -- Run last: the prompt regression loads real AceDB in its own addon setup.

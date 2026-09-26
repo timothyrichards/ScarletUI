@@ -112,6 +112,7 @@ function ScarletUI:Setup()
     self:SetupDebugFrame()
 
     -- Setup frames
+    self:SetupActionBarToggles()
     self:SetupChat()
     self:SetupCVars()
     self:SetupItemLevels()

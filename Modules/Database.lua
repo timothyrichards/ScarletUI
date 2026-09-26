@@ -14,6 +14,9 @@ ScarletUI.defaults = {
             installed = {},
             suppressPrompts = false,
         },
+        actionBarToggles = {
+            enabled = true,
+        },
         chatModule = {
             enabled = true,
             fontSize = 14,
