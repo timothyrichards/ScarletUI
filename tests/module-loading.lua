@@ -308,3 +308,6 @@ print("PASS: remaining settings, setup dispatcher, Era/TBC/Mists legacy modules,
 dofile("tests/edit-mode-prompts.lua")
 
 dofile("tests/cvars.lua")
+
+-- Replaces the ScarletUI global, so it runs after everything else.
+dofile("tests/nameplates.lua")

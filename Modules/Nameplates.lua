@@ -184,11 +184,21 @@ local function IterateGroupMembers()
     local max = groupInfoCache.max
     local prefix = groupInfoCache.prefix
 
+    -- Raid units include the player; party units do not.
+    if prefix == "raid" then
+        return function()
+            i = i + 1
+            if i <= max then
+                return prefix .. i
+            end
+        end
+    end
+
     return function()
         i = i + 1
         if i == 1 then
             return "player"
-        elseif i <= max + 1 then
+        elseif i < max + 1 then
             return prefix .. (i - 1)
         end
     end
@@ -248,6 +258,14 @@ local function IsPet(unitId)
         end
     end
 
+    if IsInRaid() then
+        for i = 1, GetNumGroupMembers() do
+            if UnitIsUnit(unitId, "raidpet" .. i) then
+                return true
+            end
+        end
+    end
+
     return false
 end
 
@@ -259,16 +277,18 @@ local PARTY_ASSIGNMENT_CACHE_DURATION = 1 -- Cache for 1 second
 local function IsTank(playerName)
     local currentTime = GetTime()
 
-    -- Only check party assignments once per second to prevent spam
+    -- Only check each player's party assignments once per second to prevent spam
     if currentTime - lastPartyAssignmentCheck > PARTY_ASSIGNMENT_CACHE_DURATION then
         partyAssignmentCache = {}
         lastPartyAssignmentCheck = currentTime
+    end
 
+    if partyAssignmentCache[playerName] == nil then
         -- Only make the API calls if we're actually in a group
         if IsInGroup() then
             local mainTank = GetPartyAssignment("MAINTANK", playerName)
             local mainAssist = GetPartyAssignment("MAINASSIST", playerName)
-            partyAssignmentCache[playerName] = mainTank or mainAssist
+            partyAssignmentCache[playerName] = (mainTank or mainAssist) and true or false
         else
             partyAssignmentCache[playerName] = false
         end
@@ -320,14 +340,14 @@ local function SetupNameplate(nameplate)
                 healthBar.healthBarTextHooked = true
             end
         end
-    elseif healthBar.healthBarText then
+    elseif healthBar and healthBar.healthBarText then
         healthBar.healthBarText:Hide()
     end
 
-    if module.threatAmountText.show then
+    if module.threatAmountText.show and healthBar then
         if not nameplate.threatAmountText then
             nameplate.threatAmountText = nameplate:CreateFontString(nil, "OVERLAY", "GameFontWhite")
-            nameplate.threatAmountText:SetPoint("RIGHT", nameplate.UnitFrame.healthBar, "LEFT", -30, 0)
+            nameplate.threatAmountText:SetPoint("RIGHT", healthBar, "LEFT", -30, 0)
             nameplate.threatAmountText:SetFont("Fonts\\FRIZQT__.TTF", module.threatAmountText.fontSize, "OUTLINE")
         else
             nameplate.threatAmountText:SetFont("Fonts\\FRIZQT__.TTF", module.threatAmountText.fontSize, "OUTLINE")
@@ -357,7 +377,7 @@ local function SetupNameplate(nameplate)
                 castBar.castBarTextHooked = true
             end
         end
-    elseif castBar.castBarText then
+    elseif castBar and castBar.castBarText then
         castBar.castBarText:Hide()
     end
 
@@ -392,7 +412,13 @@ function ScarletUI:UpdateHealthText(healthBar)
     local unitID = (unitFrame and unitFrame.unit)
         or (nameplate and (nameplate.namePlateUnitToken or nameplate.unit or nameplate.displayedUnit))
 
-    local healthPercent = (UnitHealth(unitID) / UnitHealthMax(unitID)) * 100;
+    local maxHealth = unitID and UnitHealthMax(unitID) or 0
+    if maxHealth <= 0 then
+        if healthBar.healthBarText then healthBar.healthBarText:Hide() end
+        return
+    end
+
+    local healthPercent = (UnitHealth(unitID) / maxHealth) * 100;
     if healthBar.healthBarText then
         healthBar.healthBarText:SetText(string.format("%.0f%%", healthPercent))
         healthBar.healthBarText:Show()
@@ -414,6 +440,9 @@ function ScarletUI:UpdateNameplate(unitId)
     end
 
     local nameplate = C_NamePlate.GetNamePlateForUnit(unitId)
+    if not nameplate then
+        return
+    end
     local unitName, _ = UnitName(unitId)
 
     if nameplatesModule.specialUnitsColored and self.specialUnits[unitName] and nameplate.UnitFrame then
@@ -429,10 +458,6 @@ function ScarletUI:UpdateNameplate(unitId)
     local firstUnit, firstThreat, _, secondThreat = ThreatFunc(unitId)
 
     local displayValue
-
-    if not nameplate then
-        return
-    end
 
     local threatColorGroup = nameplatesModule.nonTankThreatColors
     if IsTank(UnitName("Player")) then
@@ -708,6 +733,13 @@ function ScarletUI:SetupNameplates()
     end
 end
 
+local function HideAuraIcons(nameplate, key)
+    for name, data in pairs(nameplate and nameplate[key] or {}) do
+        data.icon:Hide()
+        nameplate[key][name] = nil
+    end
+end
+
 function ScarletUI:CheckUnitAuras(unitId)
     self:CheckUnitDebuffs(unitId)
     self:CheckUnitBuffs(unitId)
@@ -715,12 +747,11 @@ end
 
 function ScarletUI:CheckUnitDebuffs(unitId)
     local settings = self.db.global.nameplatesModule.debuffTracker
-    if not settings.track or not unitId then
-        return
-    end
-
-    local nameplate = C_NamePlate.GetNamePlateForUnit(unitId)
+    local nameplate = unitId and C_NamePlate.GetNamePlateForUnit(unitId)
     if not nameplate then
+        return
+    elseif not settings.track then
+        HideAuraIcons(nameplate, "myDebuffIcons")
         return
     end
 
@@ -781,12 +812,11 @@ end
 
 function ScarletUI:CheckUnitBuffs(unitId)
     local settings = self.db.global.nameplatesModule.buffTracker
-    if not settings.track or not unitId then
-        return
-    end
-
-    local nameplate = C_NamePlate.GetNamePlateForUnit(unitId)
+    local nameplate = unitId and C_NamePlate.GetNamePlateForUnit(unitId)
     if not nameplate then
+        return
+    elseif not settings.track then
+        HideAuraIcons(nameplate, "myBuffIcons")
         return
     end
 
@@ -843,7 +873,7 @@ function ScarletUI:ReapplySettingsToAuraIcons()
     local activeNameplates = C_NamePlate.GetNamePlates()
 
     for _, nameplate in ipairs(activeNameplates) do
-        self:CheckUnitAuras(nameplate.UnitFrame.unit)
+        self:CheckUnitAuras(nameplate.UnitFrame and nameplate.UnitFrame.unit)
     end
 end
 
