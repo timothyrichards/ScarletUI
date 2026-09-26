@@ -1,4 +1,4 @@
-ScarletUI.editModeLayoutSchemaVersion = 12
+ScarletUI.editModeLayoutSchemaVersion = 13
 
 ScarletUI.editModeFrameCandidates = {
     -- MainActionBar is the Edit Mode system. MainMenuBar is the 1024px
@@ -24,6 +24,7 @@ ScarletUI.editModeFrameCandidates = {
     reputationBar = { "SecondaryStatusTrackingBarContainer", "ReputationWatchBar" },
     partyFrame = { "PartyFrame", "CompactPartyFrame" },
     raidFrame = { "CompactRaidFrameContainer", "CompactRaidFrameManager" },
+    damageMeter = { "DamageMeter" },
 }
 
 local function EnumValue(enumTable, key)
@@ -168,6 +169,10 @@ local standardFrames = {
             { setting = EnumValue("EditModeBagsSetting", "Direction"), value = EnumValue("BagsDirection", "Left") },
             { setting = EnumValue("EditModeBagsSetting", "Size"), value = 100 },
         },
+    },
+    -- Blizzard's default is the screen's top-left corner.
+    damageMeter = {
+        point = "BOTTOMRIGHT", relativeTo = "bagBar", relativePoint = "TOPRIGHT", x = 0, y = 4,
     },
     partyFrame = {
         point = "TOPLEFT", relativePoint = "TOPLEFT", x = 534.2, y = -444,
