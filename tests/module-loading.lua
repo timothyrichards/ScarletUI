@@ -234,15 +234,14 @@ ScarletUI.eventHandlers, ScarletUI.frame = originalHandlers, originalFrame
 
 -- Spell tooltip mana percent: appended once to the cost line only.
 local function Line(text) return { GetText = function() return text end, SetText = function(_, t) text = t end } end
-GameTooltipTextLeft1, GameTooltipTextLeft2, GameTooltipTextLeft3 = Line("Renew"), Line("105 Mana"), Line("Heals 206 Mana")
+GameTooltipTextLeft1, GameTooltipTextLeft2, GameTooltipTextLeft3 = Line("Renew"), Line("105 Mana"),
+    Line("Heals the target of 206 damage over 15 sec.")
 local shown, postCalls, added = 0, {}, nil
-local description = "Heals the target of 206 damage over 15 sec."
 GameTooltip = { NumLines = function() return 3 end, IsForbidden = function() return false end,
     Show = function() shown = shown + 1 end, AddLine = function(_, text) added = text end }
 Enum.TooltipDataType = { Spell = 1, Macro = 2 }
 TooltipDataProcessor = { AddTooltipPostCall = function(kind, fn) postCalls[kind] = fn end }
-C_Spell = { GetSpellPowerCost = function() return { { type = 0, cost = 105 } } end,
-    GetSpellDescription = function() return description end }
+C_Spell = { GetSpellPowerCost = function() return { { type = 0, cost = 105 } } end }
 UnitPowerMax, MANA, GetLocale = function() return 1300 end, "Mana", function() return "enUS" end
 dofile("Modules/Tooltips.lua")
 ScarletUI:SetupSpellCostPercent()
@@ -250,7 +249,7 @@ local costText = "105 |cff40a0ffMana|r (8%)"
 postCalls[1](GameTooltip, { id = 139 })
 postCalls[1](GameTooltip, { id = 139 })
 assert(GameTooltipTextLeft2:GetText() == costText and shown == 1)
-assert(GameTooltipTextLeft3:GetText() == "Heals 206 Mana")
+assert(GameTooltipTextLeft3:GetText() == "Heals the target of 206 damage over 15 sec.")
 assert(added == "1.96 healing per mana")
 GameTooltipTextLeft2 = Line("105 Mana")
 postCalls[2](GameTooltip, { lines = { { tooltipID = 139 } } })
@@ -264,7 +263,7 @@ for text, expected in pairs({
         = "0.46 absorb per mana",
     ["Shields an ally for 15 sec, absorbing 12,345 damage."] = "117.57 absorb per mana",
 }) do
-    description, added, GameTooltipTextLeft2 = text, false, Line("105 Mana")
+    added, GameTooltipTextLeft2, GameTooltipTextLeft3 = false, Line("105 Mana"), Line(text)
     postCalls[1](GameTooltip, { id = 139 })
     assert(added == expected, text)
 end

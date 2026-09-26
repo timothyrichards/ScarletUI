@@ -6,7 +6,6 @@ local GetSpellPowerCost = C_Spell and C_Spell.GetSpellPowerCost or GetSpellPower
 local IsSecret = issecretvalue or function() return false end
 local MANA_TYPE = Enum and Enum.PowerType and Enum.PowerType.Mana or 0
 local MANA_COLOR = "|cff40a0ff" -- lighter than PowerBarColor's pure blue, readable on tooltips
-local GetSpellDescription = C_Spell and C_Spell.GetSpellDescription or GetSpellDescription
 
 -- Heal or absorb amount parsed from an English description: the average of the
 -- first "X to Y" plus a "N ... over T" heal over time, else "absorbing N".
@@ -53,9 +52,18 @@ local function AddManaPercent(tooltip, spellID)
                 if manaStart then
                     line:SetText(text:sub(1, manaStart - 1) .. MANA_COLOR .. MANA .. "|r" .. text:sub(manaEnd + 1)
                         .. " (" .. math.floor(cost.cost / maxMana * 100 + 0.5) .. "%)")
+                    -- Parse the displayed lines so the amount includes spell power scaling.
                     local heal, kind
-                    if GetLocale():sub(1, 2) == "en" and GetSpellDescription then
-                        heal, kind = HealAmount(GetSpellDescription(spellID))
+                    if GetLocale():sub(1, 2) == "en" then
+                        local shown = {}
+                        for j = i + 1, tooltip:NumLines() do
+                            local rest = _G["GameTooltipTextLeft" .. j]
+                            local restText = rest and rest:GetText()
+                            if restText and not IsSecret(restText) then
+                                shown[#shown + 1] = restText
+                            end
+                        end
+                        heal, kind = HealAmount(table.concat(shown, " "))
                     end
                     if heal then
                         tooltip:AddLine(string.format("%.2f %s per mana", heal / cost.cost, kind), 0.25, 0.63, 1)
