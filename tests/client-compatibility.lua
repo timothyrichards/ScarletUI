@@ -59,15 +59,18 @@ local function manifestFiles(path)
     return table.concat(files, "\n")
 end
 -- Restore SavedVariables before addon scripts can initialize AceDB.
-for _, client in ipairs({ "Mainline", "Camelot" }) do
+for _, client in ipairs({ "Mainline", "Camelot", "Vanilla", "TBC" }) do
     local file = assert(io.open("ScarletUI-" .. client .. ".toc", "r"))
     local contents = file:read("*a")
     file:close()
     assert(contents:match("## LoadSavedVariablesFirst: 1[\r\n]"), client .. " must load saved settings first")
 end
-local manifest = assert(io.open("ScarletUI-Camelot.toc", "r"))
-assert(manifest:read("*l") == "## Interface: 16001")
-manifest:close()
-assert(manifestFiles("ScarletUI-Camelot.toc") == manifestFiles("ScarletUI-Mainline.toc"),
-    "Beta must load the same modules in the same order")
-print("PASS: client detection, modern UI selection, ElvUI compatibility, and beta manifest")
+for client, interface in pairs({ Camelot = 16001, Vanilla = 11509, TBC = 20506 }) do
+    local path = "ScarletUI-" .. client .. ".toc"
+    local manifest = assert(io.open(path, "r"))
+    assert(manifest:read("*l") == "## Interface: " .. interface, path .. " has the wrong interface")
+    manifest:close()
+    assert(manifestFiles(path) == manifestFiles("ScarletUI-Mainline.toc"),
+        client .. " must load the same modules in the same order")
+end
+print("PASS: client detection, modern UI selection, ElvUI compatibility, and client manifests")
