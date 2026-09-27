@@ -1,4 +1,4 @@
-ScarletUI.editModeLayoutSchemaVersion = 13
+ScarletUI.editModeLayoutSchemaVersion = 14
 
 ScarletUI.editModeFrameCandidates = {
     -- MainActionBar is the Edit Mode system. MainMenuBar is the 1024px
@@ -25,6 +25,14 @@ ScarletUI.editModeFrameCandidates = {
     partyFrame = { "PartyFrame", "CompactPartyFrame" },
     raidFrame = { "CompactRaidFrameContainer", "CompactRaidFrameManager" },
     damageMeter = { "DamageMeter" },
+    possessBar = { "PossessActionBar", "PossessBarFrame" },
+    petFrame = { "PetFrame" },
+    bossFrame = { "BossTargetFrameContainer" },
+    hudTooltip = { "GameTooltipDefaultContainer" },
+    durabilityFrame = { "DurabilityFrame" },
+    essentialCooldowns = { "EssentialCooldownViewer" },
+    buffIconCooldowns = { "BuffIconCooldownViewer" },
+    buffBarCooldowns = { "BuffBarCooldownViewer" },
 }
 
 local function EnumValue(enumTable, key)
@@ -54,6 +62,41 @@ local function ActionBarSettings(orientation, includeVisibility, iconSize)
 
     return settings
 end
+
+local function UnitFrameSetting(key, value)
+    return { setting = EnumValue("EditModeUnitFrameSetting", key), value = value }
+end
+
+-- Aura options shared by the party and raid frames.
+local function GroupAuraSettings(settings)
+    table.insert(settings, UnitFrameSetting("AuraOrganizationType", EnumValue("RaidAuraOrganizationType", "Legacy")))
+    table.insert(settings, UnitFrameSetting("DebuffIconSize", 100))
+    table.insert(settings, UnitFrameSetting("BigDefensiveIconSize", 75))
+    table.insert(settings, UnitFrameSetting("BuffIconSize", 100))
+    return settings
+end
+
+local function CooldownViewerSetting(key, value)
+    return { setting = EnumValue("EditModeCooldownViewerSetting", key), value = value }
+end
+
+local function CooldownViewerSettings(orientation, iconLimit, iconDirection, iconPadding)
+    return {
+        CooldownViewerSetting("Orientation", EnumValue("CooldownViewerOrientation", orientation)),
+        CooldownViewerSetting("IconLimit", iconLimit),
+        CooldownViewerSetting("IconDirection", EnumValue("CooldownViewerIconDirection", iconDirection)),
+        CooldownViewerSetting("IconSize", 100),
+        CooldownViewerSetting("IconPadding", iconPadding),
+        CooldownViewerSetting("VisibleSetting", EnumValue("CooldownViewerVisibleSetting", "Always")),
+        CooldownViewerSetting("HideWhenInactive", 1),
+        CooldownViewerSetting("ShowTimer", 1),
+        CooldownViewerSetting("ShowTooltips", 1),
+    }
+end
+
+local buffBarSettings = CooldownViewerSettings("Vertical", 1, "Left", 5)
+table.insert(buffBarSettings, CooldownViewerSetting("BarContent", EnumValue("CooldownViewerBarContent", "IconAndName")))
+table.insert(buffBarSettings, CooldownViewerSetting("BarWidthScale", 150))
 
 -- Frames with relativeTo snap to another layout key, matching Blizzard's
 -- stacked-bar anchors. Screen anchors use the nearest screen edge so they
@@ -98,31 +141,57 @@ local standardFrames = {
         point = "BOTTOMLEFT", relativeTo = "multiBarBottomRight", relativePoint = "TOPLEFT", x = 0, y = 4,
         settings = ActionBarSettings(horizontal, false),
     },
-    playerFrame = {
-        point = "TOPRIGHT", relativePoint = "CENTER", x = -65, y = -190,
+    possessBar = {
+        point = "BOTTOMRIGHT", relativeTo = "vehicleLeaveButton", relativePoint = "BOTTOMLEFT", x = -4, y = 0,
         settings = {
-            { setting = EnumValue("EditModeUnitFrameSetting", "FrameSize"), value = 100 },
+            { setting = EnumValue("EditModeActionBarSetting", "Orientation"), value = horizontal },
+            { setting = EnumValue("EditModeActionBarSetting", "NumRows"), value = 1 },
+            { setting = EnumValue("EditModeActionBarSetting", "IconSize"), value = 100 },
+            { setting = EnumValue("EditModeActionBarSetting", "IconPadding"), value = 2 },
+        },
+    },
+    playerFrame = {
+        point = "BOTTOM", relativePoint = "BOTTOM", x = -258, y = 236,
+        settings = {
+            UnitFrameSetting("CastBarUnderneath", 0),
+            UnitFrameSetting("FrameSize", 100),
         },
     },
     targetFrame = {
-        point = "TOPLEFT", relativePoint = "CENTER", x = 65, y = -190,
+        point = "BOTTOM", relativePoint = "BOTTOM", x = 258, y = 236,
         settings = {
-            { setting = EnumValue("EditModeUnitFrameSetting", "BuffsOnTop"), value = 1 },
-            { setting = EnumValue("EditModeUnitFrameSetting", "FrameSize"), value = 100 },
+            UnitFrameSetting("BuffsOnTop", 1),
+            UnitFrameSetting("FrameSize", 100),
         },
     },
     focusFrame = {
-        point = "BOTTOMLEFT", relativeTo = "playerFrame", relativePoint = "TOPLEFT", x = 4.5, y = -26,
+        point = "TOPRIGHT", relativeTo = "multiBarBottomRight", relativePoint = "TOPLEFT", x = 11.5, y = 12.5,
         settings = {
-            { setting = EnumValue("EditModeUnitFrameSetting", "BuffsOnTop"), value = 1 },
-            { setting = EnumValue("EditModeUnitFrameSetting", "FrameSize"), value = 100 },
+            UnitFrameSetting("BuffsOnTop", 1),
+            UnitFrameSetting("UseLargerFrame", 0),
+            UnitFrameSetting("FrameSize", 100),
+        },
+    },
+    petFrame = {
+        point = "TOPLEFT", relativeTo = "playerFrame", relativePoint = "BOTTOMLEFT", x = 16, y = 17,
+        settings = {
+            UnitFrameSetting("FrameSize", 100),
+        },
+    },
+    bossFrame = {
+        point = "TOPRIGHT", relativePoint = "TOPRIGHT", x = -412.2, y = -334,
+        settings = {
+            UnitFrameSetting("UseLargerFrame", 0),
+            UnitFrameSetting("CastBarOnSide", 1),
+            UnitFrameSetting("FrameSize", 100),
         },
     },
     castBar = {
-        point = "TOP", relativePoint = "BOTTOM", x = 0, y = 210,
+        point = "CENTER", relativePoint = "BOTTOM", x = 0, y = 218,
         settings = {
             { setting = EnumValue("EditModeCastBarSetting", "BarSize"), value = 100 },
             { setting = EnumValue("EditModeCastBarSetting", "LockToPlayerFrame"), value = 0 },
+            { setting = EnumValue("EditModeCastBarSetting", "ShowCastTime"), value = 0 },
         },
     },
     chatFrame = {
@@ -173,27 +242,66 @@ local standardFrames = {
     -- Blizzard's default is the screen's top-left corner.
     damageMeter = {
         point = "BOTTOMRIGHT", relativeTo = "bagBar", relativePoint = "TOPRIGHT", x = 0, y = 4,
+        settings = {
+            { setting = EnumValue("EditModeDamageMeterSetting", "Visibility"), value = EnumValue("DamageMeterVisibility", "Always") },
+            { setting = EnumValue("EditModeDamageMeterSetting", "Style"), value = EnumValue("DamageMeterStyle", "Thin") },
+            { setting = EnumValue("EditModeDamageMeterSetting", "Numbers"), value = EnumValue("DamageMeterNumbers", "Compact") },
+            { setting = EnumValue("EditModeDamageMeterSetting", "FrameWidth"), value = 287 },
+            { setting = EnumValue("EditModeDamageMeterSetting", "FrameHeight"), value = 213 },
+            { setting = EnumValue("EditModeDamageMeterSetting", "BarHeight"), value = 16 },
+            { setting = EnumValue("EditModeDamageMeterSetting", "Padding"), value = 4 },
+            { setting = EnumValue("EditModeDamageMeterSetting", "Transparency"), value = 100 },
+            { setting = EnumValue("EditModeDamageMeterSetting", "BackgroundTransparency"), value = 50 },
+            { setting = EnumValue("EditModeDamageMeterSetting", "TextSize"), value = 100 },
+            { setting = EnumValue("EditModeDamageMeterSetting", "ShowSpecIcon"), value = 1 },
+            { setting = EnumValue("EditModeDamageMeterSetting", "ShowClassColor"), value = 1 },
+        },
+    },
+    hudTooltip = {
+        point = "BOTTOMRIGHT", relativeTo = "damageMeter", relativePoint = "TOPRIGHT", x = 0, y = 4,
+    },
+    durabilityFrame = {
+        point = "TOPLEFT", relativePoint = "TOPRIGHT", x = -356.6, y = -286,
+        settings = {
+            { setting = EnumValue("EditModeDurabilityFrameSetting", "Size"), value = 100 },
+        },
+    },
+    essentialCooldowns = {
+        point = "TOPLEFT", relativePoint = "BOTTOM", x = -120.8, y = 309,
+        settings = CooldownViewerSettings("Horizontal", 12, "Right", 2),
+    },
+    buffIconCooldowns = {
+        point = "BOTTOMRIGHT", relativeTo = "playerFrame", relativePoint = "TOPRIGHT", x = -20, y = -12,
+        settings = CooldownViewerSettings("Horizontal", 1, "Right", 5),
+    },
+    buffBarCooldowns = {
+        point = "TOP", relativePoint = "TOP", x = 0, y = -34,
+        settings = buffBarSettings,
     },
     partyFrame = {
-        point = "TOPLEFT", relativePoint = "TOPLEFT", x = 534.2, y = -444,
-        settings = {
-            { setting = EnumValue("EditModeUnitFrameSetting", "UseRaidStylePartyFrames"), value = 1 },
-            { setting = EnumValue("EditModeUnitFrameSetting", "UseHorizontalGroups"), value = 0 },
-            { setting = EnumValue("EditModeUnitFrameSetting", "DisplayBorder"), value = 0 },
-            { setting = EnumValue("EditModeUnitFrameSetting", "FrameHeight"), value = 46 },
-            { setting = EnumValue("EditModeUnitFrameSetting", "FrameWidth"), value = 90 },
-        },
+        point = "TOPLEFT", relativePoint = "TOPLEFT", x = 554.2, y = -404,
+        settings = GroupAuraSettings({
+            UnitFrameSetting("UseRaidStylePartyFrames", 1),
+            UnitFrameSetting("ShowPartyFrameBackground", 0),
+            UnitFrameSetting("UseHorizontalGroups", 0),
+            UnitFrameSetting("SortPlayersBy", EnumValue("SortPlayersBy", "Group")),
+            UnitFrameSetting("DisplayBorder", 0),
+            UnitFrameSetting("FrameHeight", 46),
+            UnitFrameSetting("FrameWidth", 90),
+            UnitFrameSetting("FrameSize", 100),
+        }),
     },
     raidFrame = {
-        point = "TOPLEFT", relativePoint = "TOPLEFT", x = 154.6, y = -210,
-        settings = {
-            { setting = EnumValue("EditModeUnitFrameSetting", "RaidGroupDisplayType"), value = EnumValue("RaidGroupDisplayType", "SeparateGroupsHorizontal") },
-            { setting = EnumValue("EditModeUnitFrameSetting", "SortPlayersBy"), value = EnumValue("SortPlayersBy", "Group") },
-            { setting = EnumValue("EditModeUnitFrameSetting", "DisplayBorder"), value = 0 },
-            { setting = EnumValue("EditModeUnitFrameSetting", "FrameHeight"), value = 46 },
-            { setting = EnumValue("EditModeUnitFrameSetting", "FrameWidth"), value = 90 },
-            { setting = EnumValue("EditModeUnitFrameSetting", "RowSize"), value = 5 },
-        },
+        point = "TOPLEFT", relativePoint = "TOPLEFT", x = 196.6, y = -174,
+        settings = GroupAuraSettings({
+            UnitFrameSetting("RaidGroupDisplayType", EnumValue("RaidGroupDisplayType", "SeparateGroupsHorizontal")),
+            UnitFrameSetting("SortPlayersBy", EnumValue("SortPlayersBy", "Group")),
+            UnitFrameSetting("DisplayBorder", 0),
+            UnitFrameSetting("FrameHeight", 46),
+            UnitFrameSetting("FrameWidth", 90),
+            UnitFrameSetting("RowSize", 5),
+            UnitFrameSetting("FrameSize", 100),
+        }),
     },
 }
 
@@ -205,8 +313,9 @@ ScarletUI.editModeLayouts = {
     COMPACT = {
         label = "Compact",
         overrides = {
-            playerFrame = { x = -50, y = -170 },
-            targetFrame = { x = 50, y = -170 },
+            -- Compact keeps its previous center-anchored unit frames.
+            playerFrame = { point = "TOPRIGHT", relativePoint = "CENTER", x = -50, y = -170 },
+            targetFrame = { point = "TOPLEFT", relativePoint = "CENTER", x = 50, y = -170 },
             focusFrame = { point = "TOPRIGHT", relativeTo = "UIParent", relativePoint = "CENTER", x = -170, y = -230 },
             chatFrame = {
                 settings = {
