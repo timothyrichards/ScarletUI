@@ -149,6 +149,10 @@ function ScarletUI:CharacterFrameItemLevel()
             end
         end
     end
+
+    if self.itemLevelStatAdded and CharacterFrame:IsShown() then
+        PaperDollFrame_UpdateStats()
+    end
 end
 
 function ScarletUI:InspectFrameItemLevel()
@@ -456,6 +460,22 @@ function ScarletUI:SetupItemLevels()
         CharacterFrame:HookScript("OnShow", function()
             ScarletUI:CharacterFrameItemLevel()
         end)
+
+        -- Forever's stats pane has no item level row, so add one to General above Health
+        if PAPERDOLL_STATCATEGORIES and self:GetWoWVersion() == "FOREVER" then
+            PAPERDOLL_STATINFO.SCARLETUI_ITEMLEVEL = {
+                updateFunc = function(statFrame, unit)
+                    local itemLevel = math.floor(calculateUnitItemLevel(unit))
+                    PaperDollFrame_SetLabelAndText(statFrame, STAT_AVERAGE_ITEM_LEVEL, itemLevel, false, itemLevel)
+                    return itemLevel
+                end,
+            }
+            table.insert(PAPERDOLL_STATCATEGORIES[1].stats, 1, {
+                stat = "SCARLETUI_ITEMLEVEL",
+                showFunc = function() return ScarletUI.db.global.itemLevelCharacter end,
+            })
+            self.itemLevelStatAdded = true
+        end
 
         if self.retail then
             EventRegistry:RegisterCallback("ContainerFrame.OpenBag", function()

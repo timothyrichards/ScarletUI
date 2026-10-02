@@ -111,3 +111,18 @@ for _, api in ipairs({ "namespaced", "legacy", "baseOnly", "uncached", "baseFall
     end
 end
 print("PASS: inspect item levels with namespaced, legacy, and base APIs, uncached items, and two-handed weapons")
+
+-- Forever has no native item level row, so one is added to General above Health.
+local generalStats = { { stat = "HEALTH" } }
+PAPERDOLL_STATCATEGORIES, PAPERDOLL_STATINFO = { { stats = generalStats } }, {}
+PaperDollFrame_SetLabelAndText = function(statFrame, _, text) statFrame.text = text end
+ScarletUI.RegisterEventHandler = noop
+ScarletUI.db.global.itemLevelCharacter = true
+ScarletUI:SetupItemLevels()
+local row, itemLevelStat = {}, generalStats[1]
+assert(itemLevelStat.stat == "SCARLETUI_ITEMLEVEL" and generalStats[2].stat == "HEALTH", "Item level row is not above Health")
+assert(PAPERDOLL_STATINFO.SCARLETUI_ITEMLEVEL.updateFunc(row, "player") == 3 and row.text == 3)
+assert(itemLevelStat.showFunc())
+ScarletUI.db.global.itemLevelCharacter = false
+assert(not itemLevelStat.showFunc(), "Character window toggle did not hide the item level row")
+print("PASS: Forever stats pane item level row and toggle")
