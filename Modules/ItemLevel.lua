@@ -154,12 +154,19 @@ function ScarletUI:CharacterFrameItemLevel()
     -- Adding a row to PAPERDOLL_STATCATEGORIES taints CharacterFrame:OnShow and breaks secret health values.
     if versionText == "FOREVER" and CharacterLevelText then
         if not self.characterFrameItemLevelText then
-            self.characterFrameItemLevelText = CharacterLevelText:GetParent():CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-            self.characterFrameItemLevelText:SetPoint("TOP", CharacterLevelText, "BOTTOM", 0, -2)
+            local parent = CharacterLevelText:GetParent()
+            -- Same band Blizzard draws behind the level text
+            self.characterFrameItemLevelBackground = parent:CreateTexture(nil, "BACKGROUND")
+            self.characterFrameItemLevelBackground:SetAtlas("UI-Character-Info-ItemLevel-Bounce", true)
+            self.characterFrameItemLevelBackground:SetHeight(18)
+            self.characterFrameItemLevelBackground:SetPoint("TOP", CharacterLevelText, "BOTTOM", 0, -2)
+            self.characterFrameItemLevelText = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+            self.characterFrameItemLevelText:SetPoint("CENTER", self.characterFrameItemLevelBackground)
         end
 
-        self.characterFrameItemLevelText:SetText("Item Level: " .. math.floor(calculateUnitItemLevel("player")))
+        self.characterFrameItemLevelText:SetText("Item Level: " .. math.floor(select(2, GetAverageItemLevel())))
         self.characterFrameItemLevelText:SetShown(not hide)
+        self.characterFrameItemLevelBackground:SetShown(not hide)
     end
 end
 

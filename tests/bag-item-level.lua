@@ -30,7 +30,7 @@ local function button(bag, slot)
         CreateFontString = function()
             return {
                 shown = true,
-                SetFontObject = noop, SetTextColor = noop, SetPoint = noop,
+                SetFontObject = noop, SetTextColor = noop, SetPoint = noop, SetAtlas = noop, SetHeight = noop,
                 SetShadowColor = noop, SetShadowOffset = noop, SetFont = noop,
                 GetFont = function() return "Font", 12 end,
                 SetText = function(self, value) self.text = value end,
@@ -114,12 +114,15 @@ end
 print("PASS: inspect item levels with namespaced, legacy, and base APIs, uncached items, and two-handed weapons")
 
 -- Forever shows the average under the level text without touching Blizzard's stat list.
-CharacterLevelText = { GetParent = function() return button() end }
+local levelInfo = button()
+levelInfo.CreateTexture = levelInfo.CreateFontString
+CharacterLevelText = { GetParent = function() return levelInfo end }
+GetAverageItemLevel = function() return 9, 3.6875, 7 end
 ScarletUI.db.global.itemLevelCharacter = true
 ScarletUI:CharacterFrameItemLevel()
-local average = ScarletUI.characterFrameItemLevelText
-assert(average.text == "Item Level: 3" and average.shown, "Forever average item level missing")
+local average, background = ScarletUI.characterFrameItemLevelText, ScarletUI.characterFrameItemLevelBackground
+assert(average.text == "Item Level: 3" and average.shown and background.shown, "Forever average item level missing")
 ScarletUI.db.global.itemLevelCharacter = false
 ScarletUI:CharacterFrameItemLevel()
-assert(not average.shown, "Character window toggle did not hide the average")
+assert(not average.shown and not background.shown, "Character window toggle did not hide the average")
 print("PASS: Forever character window average item level and toggle")
