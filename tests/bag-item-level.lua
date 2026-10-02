@@ -36,6 +36,7 @@ local function button(bag, slot)
                 SetText = function(self, value) self.text = value end,
                 Show = function(self) self.shown = true end,
                 Hide = function(self) self.shown = false end,
+                SetShown = function(self, shown) self.shown = shown end,
             }
         end,
     }
@@ -112,17 +113,13 @@ for _, api in ipairs({ "namespaced", "legacy", "baseOnly", "uncached", "baseFall
 end
 print("PASS: inspect item levels with namespaced, legacy, and base APIs, uncached items, and two-handed weapons")
 
--- Forever has no native item level row, so one is added to General above Health.
-local generalStats = { { stat = "HEALTH" } }
-PAPERDOLL_STATCATEGORIES, PAPERDOLL_STATINFO = { { stats = generalStats } }, {}
-PaperDollFrame_SetLabelAndText = function(statFrame, _, text) statFrame.text = text end
-ScarletUI.RegisterEventHandler = noop
+-- Forever shows the average under the level text without touching Blizzard's stat list.
+CharacterLevelText = { GetParent = function() return button() end }
 ScarletUI.db.global.itemLevelCharacter = true
-ScarletUI:SetupItemLevels()
-local row, itemLevelStat = {}, generalStats[1]
-assert(itemLevelStat.stat == "SCARLETUI_ITEMLEVEL" and generalStats[2].stat == "HEALTH", "Item level row is not above Health")
-assert(PAPERDOLL_STATINFO.SCARLETUI_ITEMLEVEL.updateFunc(row, "player") == 3 and row.text == 3)
-assert(itemLevelStat.showFunc())
+ScarletUI:CharacterFrameItemLevel()
+local average = ScarletUI.characterFrameItemLevelText
+assert(average.text == "Item Level: 3" and average.shown, "Forever average item level missing")
 ScarletUI.db.global.itemLevelCharacter = false
-assert(not itemLevelStat.showFunc(), "Character window toggle did not hide the item level row")
-print("PASS: Forever stats pane item level row and toggle")
+ScarletUI:CharacterFrameItemLevel()
+assert(not average.shown, "Character window toggle did not hide the average")
+print("PASS: Forever character window average item level and toggle")

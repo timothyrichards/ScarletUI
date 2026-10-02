@@ -150,8 +150,16 @@ function ScarletUI:CharacterFrameItemLevel()
         end
     end
 
-    if self.itemLevelStatAdded and CharacterFrame:IsShown() then
-        PaperDollFrame_UpdateStats()
+    -- Forever's stats pane has no item level, so show the average under the level text.
+    -- Adding a row to PAPERDOLL_STATCATEGORIES taints CharacterFrame:OnShow and breaks secret health values.
+    if versionText == "FOREVER" and CharacterLevelText then
+        if not self.characterFrameItemLevelText then
+            self.characterFrameItemLevelText = CharacterLevelText:GetParent():CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+            self.characterFrameItemLevelText:SetPoint("TOP", CharacterLevelText, "BOTTOM", 0, -2)
+        end
+
+        self.characterFrameItemLevelText:SetText("Item Level: " .. math.floor(calculateUnitItemLevel("player")))
+        self.characterFrameItemLevelText:SetShown(not hide)
     end
 end
 
@@ -460,22 +468,6 @@ function ScarletUI:SetupItemLevels()
         CharacterFrame:HookScript("OnShow", function()
             ScarletUI:CharacterFrameItemLevel()
         end)
-
-        -- Forever's stats pane has no item level row, so add one to General above Health
-        if PAPERDOLL_STATCATEGORIES and self:GetWoWVersion() == "FOREVER" then
-            PAPERDOLL_STATINFO.SCARLETUI_ITEMLEVEL = {
-                updateFunc = function(statFrame, unit)
-                    local itemLevel = math.floor(calculateUnitItemLevel(unit))
-                    PaperDollFrame_SetLabelAndText(statFrame, STAT_AVERAGE_ITEM_LEVEL, itemLevel, false, itemLevel)
-                    return itemLevel
-                end,
-            }
-            table.insert(PAPERDOLL_STATCATEGORIES[1].stats, 1, {
-                stat = "SCARLETUI_ITEMLEVEL",
-                showFunc = function() return ScarletUI.db.global.itemLevelCharacter end,
-            })
-            self.itemLevelStatAdded = true
-        end
 
         if self.retail then
             EventRegistry:RegisterCallback("ContainerFrame.OpenBag", function()
