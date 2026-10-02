@@ -125,6 +125,7 @@ function ScarletUI:Setup()
     self:SetupTidyIcons()
     if self.SetupNameplates then self:SetupNameplates() end
     self:SetupSpellCostPercent()
+    self:SetupZoneLevels()
     self:SetupExpandCharacterInfo()
     self:SetupMinimapIcon()
 end

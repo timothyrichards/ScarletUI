@@ -62,7 +62,7 @@ end
 local calls = {}
 local setupMethods = { "SetupDebugFrame", "SetupActionBarToggles", "SetupTracking", "SetupChat", "SetupCVars",
     "SetupItemLevels",
-    "SetupTidyIcons", "SetupSpellCostPercent", "SetupExpandCharacterInfo", "SetupMinimapIcon" }
+    "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupExpandCharacterInfo", "SetupMinimapIcon" }
 for _, name in ipairs(setupMethods) do
     ScarletUI[name] = function() calls[name] = true end
 end
@@ -282,6 +282,44 @@ for text, expected in pairs({
     postCalls[1](GameTooltip, { id = 139 })
     assert(PerMana() == expected, text)
 end
+-- World map zone levels: appended once, difficulty-colored, only for known zones.
+local hovered, difficultyLevel = 1429, nil
+local areaLabel = { labelInfoByType = { [3] = {} } }
+areaLabel.SetLabel = function(label, kind, name) label.labelInfoByType[kind].name = name end
+areaLabel.dataProvider = { GetMap = function() return {
+    GetMapID = function() return 1415 end,
+    GetNormalizedCursorPosition = function() return 0.5, 0.5 end,
+} end }
+MAP_AREA_LABEL_TYPE = { AREA_NAME = 3 }
+WorldMapFrame = { dataProviders = { [{}] = true, [{ Label = areaLabel }] = true } }
+C_Map = { GetMapInfoAtPosition = function() return { mapID = hovered } end }
+hooksecurefunc = function(target, key, hook)
+    local original = target[key]
+    target[key] = function(...) original(...); hook(...) end
+end
+local playerLevel = 5
+UnitLevel = function() return playerLevel end
+QuestDifficultyColors = { difficult = { r = 1, g = 1, b = 0 } }
+GetQuestDifficultyColor = function(level) difficultyLevel = level; return { r = 0.5, g = 0.5, b = 0.5 } end
+dofile("Modules/ZoneLevels.lua")
+ScarletUI:SetupZoneLevels() -- this harness is the Forever client
+local function ZoneLabel(name) areaLabel:SetLabel(3, name); return areaLabel.labelInfoByType[3].name end
+assert(ZoneLabel("Elwynn Forest") == "Elwynn Forest|cffffff00 (1-10)|r")
+assert(ZoneLabel(nil) == nil)
+playerLevel = 30
+assert(ZoneLabel("Elwynn Forest") == "Elwynn Forest|cff7f7f7f (1-10)|r" and difficultyLevel == 8)
+hovered = 1957
+assert(ZoneLabel("Isle of Quel'Danas") == "Isle of Quel'Danas|cff7f7f7f (70)|r" and difficultyLevel == 70)
+assert(ZoneLabel("Isle|cffff0000 (70)|r") == "Isle|cffff0000 (70)|r")
+hovered = 1453
+assert(ZoneLabel("Stormwind City") == "Stormwind City")
+hovered = 1429
+ScarletUI.db.global.zoneLevels = false
+assert(ZoneLabel("Elwynn Forest") == "Elwynn Forest")
+ScarletUI.db.global.zoneLevels = true
+assert(ScarletUI.zoneLevelsHooked)
+assert(not ScarletUI:Options().args.generalSettings.args.tooltips.args.zoneLevels.hidden())
+
 -- Era, TBC, and Mists also load the Classic-UI-only modules and their old settings keys.
 C_Container = {}
 dofile("Modules/Bag.lua")

@@ -161,6 +161,15 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                         get = function(_) return database.spellCostPercent end,
                         set = function(_, val) database.spellCostPercent = val end,
                     },
+                    zoneLevels = {
+                        name = "Zone Level Ranges",
+                        desc = "Show a zone's level range, colored by difficulty, when hovering it on the world map, as Retail does.",
+                        type = "toggle",
+                        width = 1.5,
+                        hidden = function() return not self.zoneLevelsHooked end,
+                        get = function(_) return database.zoneLevels end,
+                        set = function(_, val) database.zoneLevels = val end,
+                    },
                 },
             },
             modules = {

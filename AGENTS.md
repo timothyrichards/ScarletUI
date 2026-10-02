@@ -53,6 +53,11 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
 - `Modules/TidyIcons.lua`: icon adjustments.
 - `Modules/Tooltips.lua`: appends percent of max mana to GameTooltip spell cost
   lines via post-hooks only (`TooltipDataProcessor` or `OnTooltipSetSpell`).
+- `Modules/ZoneLevels.lua`: appends difficulty-colored level ranges to the world
+  map zone hover label on Era, TBC, and Forever, whose `C_Map.GetMapLevels` has
+  no data. Uses a table of Classic UIMapIDs and post-hooks the area label's
+  `SetLabel`; labels that already contain a color code (native or Leatrix Maps)
+  are left alone. Retail and Mists show levels natively and skip setup.
 - `Modules/Bag.lua`, `Modules/Nameplates.lua`: custom bag/bank frames and
   nameplate threat colors, auras, and text. Classic UI clients only: listed in
   just those three manifests so Retail and Forever never load them. Each file adds its

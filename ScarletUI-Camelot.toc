@@ -24,3 +24,4 @@ Modules\Options.lua
 Modules\Tracking.lua
 Modules\TidyIcons.lua
 Modules\Tooltips.lua
+Modules\ZoneLevels.lua
