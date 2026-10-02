@@ -170,6 +170,18 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                 inline = true,
                 order = 2,
                 args = {
+                    minimapIcon = {
+                        name = "Minimap Icon",
+                        desc = "Show the ScarletUI button on the minimap. Left-click opens settings; right-click opens Edit Mode.",
+                        type = "toggle",
+                        width = 1,
+                        order = 0,
+                        get = function(_) return not database.minimapIcon.hide end,
+                        set = function(_, val)
+                            database.minimapIcon.hide = not val
+                            self:SetupMinimapIcon()
+                        end,
+                    },
                     actionBarTogglesEnabled = {
                         name = "Action Bars",
                         desc = "Share the Action Bars 2-8 checkboxes from Blizzard's settings across characters. Saved on logout and applied on login.",

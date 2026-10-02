@@ -126,6 +126,35 @@ function ScarletUI:Setup()
     if self.SetupNameplates then self:SetupNameplates() end
     self:SetupSpellCostPercent()
     self:SetupExpandCharacterInfo()
+    self:SetupMinimapIcon()
+end
+
+function ScarletUI:SetupMinimapIcon()
+    local icon = LibStub("LibDBIcon-1.0")
+    -- Setup reruns after a reset, which replaces the saved table.
+    if icon:GetMinimapButton("ScarletUI") then
+        icon:Refresh("ScarletUI", self.db.global.minimapIcon)
+        return
+    end
+    local launcher = LibStub("LibDataBroker-1.1"):NewDataObject("ScarletUI", {
+        type = "launcher",
+        icon = "Interface\\Icons\\INV_Misc_Gear_01",
+        OnClick = function(_, button)
+            if button == "RightButton" then
+                self:OpenEditMode()
+            elseif AceConfigDialog.OpenFrames.ScarletUI then
+                AceConfigDialog:Close("ScarletUI")
+            else
+                AceConfigDialog:Open("ScarletUI")
+            end
+        end,
+        OnTooltipShow = function(tooltip)
+            tooltip:AddLine("Scarlet UI")
+            tooltip:AddLine("|cffffd100Left-click|r to toggle settings.", 1, 1, 1)
+            tooltip:AddLine("|cffffd100Right-click|r to open Edit Mode.", 1, 1, 1)
+        end,
+    })
+    icon:Register("ScarletUI", launcher, self.db.global.minimapIcon)
 end
 
 function ScarletUI:SetupDebugFrame()
