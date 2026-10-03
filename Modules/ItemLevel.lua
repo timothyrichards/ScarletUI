@@ -2,6 +2,7 @@ local GetContainerNumSlots = C_Container.GetContainerNumSlots or GetContainerNum
 local GetContainerItemLink = C_Container.GetContainerItemLink or GetContainerItemLink
 local GetItemInfo = C_Item.GetItemInfo or GetItemInfo
 local GetDetailedItemLevelInfo = C_Item.GetDetailedItemLevelInfo or GetDetailedItemLevelInfo
+local GetInspectItemLevel = C_PaperDollInfo and C_PaperDollInfo.GetInspectItemLevel
 
 local function GetItemLevel(itemLink)
     return (GetDetailedItemLevelInfo and GetDetailedItemLevelInfo(itemLink)) or select(4, GetItemInfo(itemLink))
@@ -182,7 +183,11 @@ function ScarletUI:InspectFrameItemLevel()
     end
 
 
-    local averageItemLevel = calculateUnitItemLevel(unit)
+    -- Prefer the native average; 0 means inspect data has not loaded, so use the formula
+    local averageItemLevel = GetInspectItemLevel and GetInspectItemLevel(unit)
+    if not averageItemLevel or averageItemLevel == 0 then
+        averageItemLevel = calculateUnitItemLevel(unit)
+    end
 
     if not self.inspectFrameItemLevelText then
         self.inspectFrameItemLevelText = InspectFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")

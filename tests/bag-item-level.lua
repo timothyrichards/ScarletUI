@@ -113,6 +113,17 @@ for _, api in ipairs({ "namespaced", "legacy", "baseOnly", "uncached", "baseFall
 end
 print("PASS: inspect item levels with namespaced, legacy, and base APIs, uncached items, and two-handed weapons")
 
+-- The native inspect average wins when it exists; 0 (data not loaded) falls back to the formula.
+for native, expected in pairs({ [41.5] = 41, [0] = 3 }) do
+    C_PaperDollInfo = { GetInspectItemLevel = function(unit) assert(unit == "party3"); return native end }
+    dofile("Modules/ItemLevel.lua")
+    ScarletUI:InspectFrameItemLevel()
+    assert(ScarletUI.inspectFrameItemLevelText.text == "Item Level: " .. expected, native)
+end
+C_PaperDollInfo = nil
+dofile("Modules/ItemLevel.lua")
+print("PASS: native inspect item level with formula fallback")
+
 -- Forever shows the average under the level text without touching Blizzard's stat list.
 local levelInfo = button()
 levelInfo.CreateTexture = levelInfo.CreateFontString
