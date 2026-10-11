@@ -21,6 +21,10 @@ ScarletUI.defaults = {
         },
         actionBarToggles = {
             enabled = true,
+            ignored = {},
+        },
+        bagSortModule = {
+            enabled = true,
         },
         trackingModule = {
             enabled = true,

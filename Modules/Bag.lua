@@ -2218,12 +2218,12 @@ function ScarletUI:GetBagModuleSettingsPage(database, defaults, order)
         desc = "Bag Module settings.",
         type = "group",
         order = order,
-        hidden = function() return self.lightWeightMode end,
         args = {
             generalSettings = {
                 name = "General Settings",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
+                hidden = function() return self.lightWeightMode end,
                 inline = true,
                 order = 0,
                 args = {
@@ -2278,6 +2278,7 @@ function ScarletUI:GetBagModuleSettingsPage(database, defaults, order)
                 name = "Player Bags",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
+                hidden = function() return self.lightWeightMode end,
                 inline = true,
                 order = 1,
                 args = {
@@ -2328,6 +2329,7 @@ function ScarletUI:GetBagModuleSettingsPage(database, defaults, order)
                 name = "Bank",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
+                hidden = function() return self.lightWeightMode end,
                 inline = true,
                 order = 2,
                 args = {

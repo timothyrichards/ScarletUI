@@ -42,11 +42,19 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   game settings (`GetActionBarToggles`), not CVars. Saved on logout only after
   the shared set was applied; applied on login, deferred until combat ends.
   Uses a new key; the removed module's `actionbarsModule` stays unused.
+  Its Action Bars settings page picks which bars are shared; unchecked bars are
+  stored in `ignored` and keep each character's own state.
+- `Modules/BagSort.lua`: shares the `C_Container` Sort Bags Right to Left and
+  Insert Items Left to Right settings via `db.global.bagSortModule`, saved on
+  logout and applied on login. These are per-character game settings, not CVars.
+  Era, TBC, and Mists only have the insert setting. Its toggles go on the Bags
+  page: a standalone page on Retail and Forever, and a Sorting group on the
+  `Bag.lua` page elsewhere.
 - `Modules/Tracking.lua`: shares minimap tracking menu checkboxes across
   characters via `db.global.trackingModule.states`, keyed by entry name and
   merged on logout so entries a character lacks keep their shared state.
-  Both sync modules save from AceDB `OnDatabaseShutdown` (before defaults are
-  stripped), each with its own callback target so neither replaces the other.
+  The sync modules save from AceDB `OnDatabaseShutdown` (before defaults are
+  stripped), each with its own callback target so none replaces another.
 - `Modules/Chat.lua`: chat tabs and font size.
 - `Modules/CVars.lua`: native console variable discovery and overrides.
 - `Modules/ItemLevel.lua`: character, inspect, and Blizzard bag/bank item levels.

@@ -23,8 +23,9 @@ function ScarletUI:Options()
             },
             generalSettings = self:GetGeneralSettingsPage(database, 2),
             editModeSettings = self:GetEditModeSettingsPage(3),
-            -- Bag and Nameplates only load on Era, TBC, and Mists.
-            bagModuleSettings = self.GetBagModuleSettingsPage and self:GetBagModuleSettingsPage(database, defaults.bagModule, 5),
+            actionBarTogglesSettings = self:GetActionBarTogglesSettingsPage(database, 4),
+            bagModuleSettings = self:GetBagSettingsPage(database, defaults, 5),
+            -- Nameplates only load on Era, TBC, and Mists.
             chatModuleSettings = self:GetChatModuleSettingsPage(database, defaults.chatModule, 6),
             CVarModuleSettings = self:GetCVarModuleSettingsPage(database, 7),
             nameplatesModuleSettings = self.GetNameplatesModuleSettingsPage and self:GetNameplatesModuleSettingsPage(database, defaults.nameplatesModule, 8),
@@ -193,7 +194,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                     },
                     actionBarTogglesEnabled = {
                         name = "Action Bars",
-                        desc = "Share the Action Bars 2-8 checkboxes from Blizzard's settings across characters. Saved on logout and applied on login.",
+                        desc = "Share the Action Bars 2-8 checkboxes from Blizzard's settings across characters. Saved on logout and applied on login; choose which bars on the Action Bars page.",
                         type = "toggle",
                         width = 1,
                         order = 1,
@@ -201,6 +202,18 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                         set = function(_, val)
                             database.actionBarToggles.enabled = val
                             self:SetupActionBarToggles()
+                        end,
+                    },
+                    bagSortModuleEnabled = {
+                        name = "Bag Sorting",
+                        desc = "Share the bag sorting settings on the Bags page across characters. Saved on logout and applied on login.",
+                        type = "toggle",
+                        width = 1,
+                        order = 1.25,
+                        get = function(_) return database.bagSortModule.enabled end,
+                        set = function(_, val)
+                            database.bagSortModule.enabled = val
+                            self:SetupBagSort()
                         end,
                     },
                     trackingModuleEnabled = {
@@ -314,6 +327,81 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
             }
         }
     }
+end
+
+function ScarletUI:GetActionBarTogglesSettingsPage(database, order)
+    local module = database.actionBarToggles
+    local bars = {
+        description = {
+            name = "Checked bars share their Blizzard Settings > Action Bars checkbox across characters. Unchecked bars keep each character's own setting.\n",
+            type = "description",
+            width = "full",
+            fontSize = "medium",
+            order = 0,
+        },
+    }
+    -- Retail and Forever report bars 2-8; Era, TBC, and Mists report bars 2-5.
+    for i = 1, GetActionBarToggles and select("#", GetActionBarToggles()) or 0 do
+        bars["bar" .. i] = {
+            name = "Action Bar " .. (i + 1),
+            desc = "Share whether Action Bar " .. (i + 1) .. " is shown.",
+            type = "toggle",
+            width = 1,
+            order = i,
+            get = function(_) return not module.ignored[i] end,
+            set = function(_, val) module.ignored[i] = not val or nil end,
+        }
+    end
+
+    return {
+        name = "Action Bars",
+        desc = "Action bar sharing settings.",
+        type = "group",
+        order = order,
+        args = {
+            bars = {
+                name = "Shared Bars",
+                type = "group",
+                disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
+                inline = true,
+                order = 0,
+                args = bars,
+            },
+        },
+    }
+end
+
+function ScarletUI:GetBagSettingsPage(database, defaults, order)
+    -- Bag.lua (Era, TBC, and Mists) owns the page there; Retail and Forever only sort.
+    local page = self.GetBagModuleSettingsPage and self:GetBagModuleSettingsPage(database, defaults.bagModule, order)
+        or { name = "Bags", desc = "Bag settings.", type = "group", order = order, args = {} }
+
+    local function SortToggle(key, name, desc, toggleOrder)
+        return {
+            name = name,
+            desc = desc,
+            type = "toggle",
+            width = 1.5,
+            order = toggleOrder,
+            hidden = function() return not self:IsBagSortSupported(key) end,
+            get = function(_) return self:GetBagSort(key) end,
+            set = function(_, val) self:SetBagSort(key, val) end,
+        }
+    end
+
+    page.args.sortSettings = {
+        name = "Sorting",
+        type = "group",
+        inline = true,
+        order = 10,
+        args = {
+            sortBagsRightToLeft = SortToggle("sortBagsRightToLeft", "Sort Bags Right to Left",
+                "Clean Up fills your bags starting from the rightmost bag instead of the backpack.", 0),
+            insertItemsLeftToRight = SortToggle("insertItemsLeftToRight", "Insert Items Left to Right",
+                "New items go into your leftmost bag first instead of the backpack.", 1),
+        },
+    }
+    return page
 end
 
 function ScarletUI:GetChatModuleSettingsPage(database, defaults, order)

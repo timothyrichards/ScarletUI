@@ -46,7 +46,10 @@ for _, oldSettings in ipairs({ false, true }) do
     local options = ScarletUI:Options()
     assert(options.args.actionBarSettings == nil)
     assert(options.args.generalSettings.args.modules.args.actionbarsModuleEnabled == nil)
-    assert(options.args.bagModuleSettings == nil and options.args.editModeSettings)
+    -- Retail and Forever get a Bags page with only the sorting settings.
+    local bagPage = options.args.bagModuleSettings
+    assert(bagPage.name == "Bags" and bagPage.args.sortSettings and next(bagPage.args, next(bagPage.args)) == nil)
+    assert(options.args.editModeSettings and options.args.actionBarTogglesSettings)
     -- Retail and Forever never load Bag.lua or Nameplates.lua, so their toggles stay hidden.
     assert(options.args.generalSettings.args.modules.args.bagModuleEnabled.hidden())
     assert(options.args.toggleMovers == nil and options.args.resetPositions == nil)
@@ -60,7 +63,7 @@ end
 
 -- Exercise the real setup dispatcher with only the remaining module methods.
 local calls = {}
-local setupMethods = { "SetupDebugFrame", "SetupActionBarToggles", "SetupTracking", "SetupChat", "SetupCVars",
+local setupMethods = { "SetupDebugFrame", "SetupActionBarToggles", "SetupBagSort", "SetupTracking", "SetupChat", "SetupCVars",
     "SetupItemLevels",
     "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupExpandCharacterInfo", "SetupMinimapIcon" }
 for _, name in ipairs(setupMethods) do
@@ -213,6 +216,20 @@ assert(not bars[2] and not updated)
 ScarletUI.InCombat = function() return false end
 Fire("PLAYER_REGEN_ENABLED")
 assert(bars[1] and bars[2] and bars[3] and not bars[4] and updated)
+-- Unchecked bars keep each character's own state and leave the shared state alone.
+local barModule = ScarletUI.db.global.actionBarToggles
+local barOptions = ScarletUI:Options().args.actionBarTogglesSettings.args.bars.args
+assert(barOptions.bar1.name == "Action Bar 2" and barOptions.bar7 and not barOptions.bar8)
+barOptions.bar2.set(nil, false)
+assert(barModule.ignored[2] == true and not barOptions.bar2.get())
+bars, ScarletUI.actionBarTogglesApplied = { false, false, false, false, false, false, false }, nil
+ScarletUI:SetupActionBarToggles()
+assert(bars[1] and not bars[2] and bars[3])
+bars[4] = true
+Fire("PLAYER_LOGOUT")
+assert(barModule.bars[2] == true and barModule.bars[4] == true)
+barOptions.bar2.set(nil, true)
+assert(barModule.ignored[2] == nil)
 
 -- Minimap tracking: merged by name; alts only receive entries they have.
 local tracking = { { name = "Mailbox", active = true }, { name = "Find Herbs", active = true } }
@@ -232,7 +249,32 @@ ScarletUI:SetupTracking()
 assert(tracking[1].active == false and tracking[2].active == false)
 Fire("PLAYER_LOGOUT")
 assert(states["Find Herbs"] == true and states["Stable Master"] == false)
-assert(#shutdown == 0 and shutdown["ScarletUI-ActionBars"] and shutdown["ScarletUI-Tracking"])
+
+-- Bag sorting: shared on logout; Era, TBC, and Mists lack the sort direction.
+local sort = { SortBagsRightToLeft = false, InsertItemsLeftToRight = false }
+C_Container = {
+    GetSortBagsRightToLeft = function() return sort.SortBagsRightToLeft end,
+    SetSortBagsRightToLeft = function(on) sort.SortBagsRightToLeft = on end,
+    GetInsertItemsLeftToRight = function() return sort.InsertItemsLeftToRight end,
+    SetInsertItemsLeftToRight = function(on) sort.InsertItemsLeftToRight = on end,
+}
+dofile("Modules/BagSort.lua")
+ScarletUI:SetupBagSort()
+local sorting = ScarletUI:Options().args.bagModuleSettings.args.sortSettings.args
+sorting.sortBagsRightToLeft.set(nil, true)
+assert(sort.SortBagsRightToLeft and sorting.sortBagsRightToLeft.get())
+Fire("PLAYER_LOGOUT")
+local bagSort = ScarletUI.db.global.bagSortModule
+assert(bagSort.sortBagsRightToLeft == true and bagSort.insertItemsLeftToRight == false)
+bagSort.insertItemsLeftToRight = true
+sort, ScarletUI.bagSortApplied = { InsertItemsLeftToRight = false }, nil
+C_Container.GetSortBagsRightToLeft, C_Container.SetSortBagsRightToLeft = nil, nil
+ScarletUI:SetupBagSort()
+assert(sort.InsertItemsLeftToRight == true and sorting.sortBagsRightToLeft.hidden())
+assert(not sorting.insertItemsLeftToRight.hidden())
+C_Container = nil
+assert(#shutdown == 0 and shutdown["ScarletUI-ActionBars"] and shutdown["ScarletUI-Tracking"]
+    and shutdown["ScarletUI-BagSort"])
 ScarletUI.eventHandlers, ScarletUI.frame = originalHandlers, originalFrame
 
 -- Spell tooltip mana percent: once, on the cost line only, with per-mana beneath it.
@@ -333,6 +375,12 @@ ScarletUI.lightWeightMode = false
 local legacyOptions = ScarletUI:Options()
 local moduleToggles = legacyOptions.args.generalSettings.args.modules.args
 assert(legacyOptions.args.bagModuleSettings and legacyOptions.args.nameplatesModuleSettings)
+-- Sorting joins the Classic Bag page and stays visible when ElvUI hides the custom bag groups.
+local legacyBagPage = legacyOptions.args.bagModuleSettings
+assert(legacyBagPage.name == "Bag" and legacyBagPage.args.sortSettings and legacyBagPage.hidden == nil)
+ScarletUI.lightWeightMode = true
+assert(legacyBagPage.args.generalSettings.hidden() and legacyBagPage.args.bankSettings.hidden())
+ScarletUI.lightWeightMode = false
 assert(not moduleToggles.bagModuleEnabled.hidden() and not moduleToggles.nameplatesModuleEnabled.hidden())
 calls = {}
 local legacyMethods = { "SetupBags", "SetupBank", "SetupNameplates" }

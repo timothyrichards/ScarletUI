@@ -1,5 +1,6 @@
 -- Shares the Settings > Action Bars toggles (bars 2-8) across characters.
--- They are per-character game settings, not CVars.
+-- They are per-character game settings, not CVars. Bars in module.ignored
+-- keep each character's own state.
 local function GetToggles()
     local toggles = {}
     for i = 1, select("#", GetActionBarToggles()) do
@@ -30,7 +31,7 @@ function ScarletUI:SetupActionBarToggles()
         local toggles = {}
         for i = 1, #current do
             toggles[i] = module.bars[i]
-            if toggles[i] == nil then toggles[i] = current[i] end
+            if toggles[i] == nil or module.ignored[i] then toggles[i] = current[i] end
         end
         SetActionBarToggles(unpack(toggles))
         if MultiActionBar_Update then MultiActionBar_Update() end
@@ -45,7 +46,11 @@ function ScarletUI:SetupActionBarToggles()
         self.db.RegisterCallback("ScarletUI-ActionBars", "OnDatabaseShutdown", function()
             local current = ScarletUI.db.global.actionBarToggles
             if current.enabled and ScarletUI.actionBarTogglesApplied then
-                current.bars = GetToggles()
+                -- Merge so ignored bars keep their last shared state.
+                current.bars = current.bars or {}
+                for i, shown in ipairs(GetToggles()) do
+                    if not current.ignored[i] then current.bars[i] = shown end
+                end
             end
         end)
     end
