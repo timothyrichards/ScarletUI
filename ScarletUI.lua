@@ -128,6 +128,7 @@ function ScarletUI:Setup()
     self:SetupSpellCostPercent()
     self:SetupZoneLevels()
     self:SetupExpandCharacterInfo()
+    self:SetupGameMenuButtons()
     self:SetupMinimapIcon()
 end
 

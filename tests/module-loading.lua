@@ -65,7 +65,8 @@ end
 local calls = {}
 local setupMethods = { "SetupDebugFrame", "SetupActionBarToggles", "SetupBagSort", "SetupTracking", "SetupChat", "SetupCVars",
     "SetupItemLevels",
-    "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupExpandCharacterInfo", "SetupMinimapIcon" }
+    "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupExpandCharacterInfo", "SetupGameMenuButtons",
+    "SetupMinimapIcon" }
 for _, name in ipairs(setupMethods) do
     ScarletUI[name] = function() calls[name] = true end
 end
@@ -283,6 +284,54 @@ C_Container = nil
 assert(#shutdown == 0 and shutdown["ScarletUI-ActionBars"] and shutdown["ScarletUI-Tracking"]
     and shutdown["ScarletUI-BagSort"])
 ScarletUI.eventHandlers, ScarletUI.frame = originalHandlers, originalFrame
+
+-- Escape menu buttons: separate frames under the menu, never children of its layout.
+local menuHooks, created, panelCalls = {}, {}, {}
+local originalCreateFrame, originalShowPanel, originalHidePanel = CreateFrame, ShowUIPanel, HideUIPanel
+CreateFrame = function(_, _, parent, template)
+    local widget = { parent = parent, template = template, enabled = true }
+    function widget:SetFrameStrata() end
+    function widget:SetText(text) self.text = text end
+    function widget:SetScript(_, handler) self.onClick = handler end
+    function widget:ClearAllPoints() self.anchor = nil end
+    function widget:SetPoint(_, relativeTo) self.anchor = relativeTo end
+    function widget:SetEnabled(on) self.enabled = on end
+    function widget:SetShown(on) self.shown = on end
+    function widget:Hide() self.shown = false end
+    table.insert(created, widget)
+    return widget
+end
+GameMenuFrame = { buttonTemplate = "MainMenuFrameButtonTemplate", GetFrameStrata = function() return "DIALOG" end,
+    HookScript = function(_, script, handler) menuHooks[script] = handler end }
+CooldownViewerSettings = {}
+ShowUIPanel = function(frame) panelCalls.shown = frame end
+HideUIPanel = function(frame) panelCalls.hidden = frame end
+PlaySound, SOUNDKIT = noop, SOUNDKIT or { IG_MAINMENU_OPTION = 1 }
+dofile("Modules/GameMenu.lua")
+ScarletUI:SetupGameMenuButtons()
+menuHooks.OnShow()
+local suiButton, cooldownButton = created[1], created[2]
+assert(#created == 2 and suiButton.parent ~= GameMenuFrame and suiButton.template == "MainMenuFrameButtonTemplate")
+assert(suiButton.anchor == GameMenuFrame and cooldownButton.anchor == suiButton and cooldownButton.shown)
+cooldownButton.onClick()
+assert(panelCalls.hidden == GameMenuFrame and panelCalls.shown == CooldownViewerSettings)
+-- Turned-off entries hide and the rest move up; combat disables the buttons.
+local menuSettings = ScarletUI.db.global.gameMenuButtons
+menuSettings.sui = false
+InCombatLockdown = function() return true end
+menuHooks.OnShow()
+assert(not suiButton.shown and cooldownButton.anchor == GameMenuFrame and not cooldownButton.enabled)
+panelCalls = {}
+cooldownButton.onClick()
+assert(panelCalls.shown == nil)
+-- Clients without the Cooldown Manager hide its option and button.
+InCombatLockdown = function() return false end
+CooldownViewerSettings = nil
+assert(ScarletUI:Options().args.generalSettings.args.gameMenuButtons.args.cooldownManager.hidden())
+menuHooks.OnShow()
+assert(not cooldownButton.shown and #created == 2)
+menuSettings.sui = true
+CreateFrame, ShowUIPanel, HideUIPanel, GameMenuFrame = originalCreateFrame, originalShowPanel, originalHidePanel, nil
 
 -- Spell tooltip mana percent: once, on the cost line only, with per-mana beneath it.
 local function Line(text)

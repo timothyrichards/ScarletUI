@@ -173,6 +173,33 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                     },
                 },
             },
+            gameMenuButtons = {
+                name = "Escape Menu Buttons",
+                type = "group",
+                inline = true,
+                order = 1.75,
+                args = {
+                    sui = {
+                        name = "Scarlet UI",
+                        desc = "Show a button below the escape menu that opens these settings.",
+                        type = "toggle",
+                        width = 1,
+                        order = 0,
+                        get = function(_) return database.gameMenuButtons.sui end,
+                        set = function(_, val) database.gameMenuButtons.sui = val end,
+                    },
+                    cooldownManager = {
+                        name = "Cooldown Manager",
+                        desc = "Show a button below the escape menu that opens Blizzard's Advanced Cooldown Settings.",
+                        type = "toggle",
+                        width = 1,
+                        order = 1,
+                        hidden = function() return not CooldownViewerSettings end,
+                        get = function(_) return database.gameMenuButtons.cooldownManager end,
+                        set = function(_, val) database.gameMenuButtons.cooldownManager = val end,
+                    },
+                },
+            },
             modules = {
                 name = "Enabled Modules",
                 type = "group",

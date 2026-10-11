@@ -26,6 +26,10 @@ ScarletUI.defaults = {
         bagSortModule = {
             enabled = true,
         },
+        gameMenuButtons = {
+            sui = true,
+            cooldownManager = true,
+        },
         trackingModule = {
             enabled = true,
         },

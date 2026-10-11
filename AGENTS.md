@@ -55,6 +55,12 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   merged on logout so entries a character lacks keep their shared state.
   The sync modules save from AceDB `OnDatabaseShutdown` (before defaults are
   stripped), each with its own callback target so none replaces another.
+- `Modules/GameMenu.lua`: optional Scarlet UI and Cooldown Manager buttons
+  below the escape menu (`db.global.gameMenuButtons`). They are `UIParent`
+  frames shown through `GameMenuFrame:HookScript`; never call `AddButton` or
+  parent frames into the menu's layout, which taints its Edit Mode, Log Out,
+  and Exit Game buttons. Cooldown settings open with `ShowUIPanel`, which goes
+  through Blizzard's secure panel code; buttons are disabled in combat.
 - `Modules/Chat.lua`: chat tabs and font size.
 - `Modules/CVars.lua`: native console variable discovery and overrides.
 - `Modules/ItemLevel.lua`: character, inspect, and Blizzard bag/bank item levels.
