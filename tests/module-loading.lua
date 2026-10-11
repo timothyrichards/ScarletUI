@@ -251,18 +251,25 @@ Fire("PLAYER_LOGOUT")
 assert(states["Find Herbs"] == true and states["Stable Master"] == false)
 
 -- Bag sorting: shared on logout; Era, TBC, and Mists lack the sort direction.
-local sort = { SortBagsRightToLeft = false, InsertItemsLeftToRight = false }
+local sort, unconfirmed = { SortBagsRightToLeft = false, InsertItemsLeftToRight = false }, {}
 C_Container = {
     GetSortBagsRightToLeft = function() return sort.SortBagsRightToLeft end,
-    SetSortBagsRightToLeft = function(on) sort.SortBagsRightToLeft = on end,
+    SetSortBagsRightToLeft = function(on) unconfirmed.SortBagsRightToLeft = on end,
     GetInsertItemsLeftToRight = function() return sort.InsertItemsLeftToRight end,
     SetInsertItemsLeftToRight = function(on) sort.InsertItemsLeftToRight = on end,
 }
 dofile("Modules/BagSort.lua")
 ScarletUI:SetupBagSort()
 local sorting = ScarletUI:Options().args.bagModuleSettings.args.sortSettings.args
+-- The client confirms a change later; the toggle shows the request until then.
 sorting.sortBagsRightToLeft.set(nil, true)
-assert(sort.SortBagsRightToLeft and sorting.sortBagsRightToLeft.get())
+assert(not sort.SortBagsRightToLeft and sorting.sortBagsRightToLeft.get())
+sort.SortBagsRightToLeft = unconfirmed.SortBagsRightToLeft
+assert(sorting.sortBagsRightToLeft.get())
+-- Once confirmed, changes made elsewhere show again.
+sort.SortBagsRightToLeft = false
+assert(not sorting.sortBagsRightToLeft.get())
+sort.SortBagsRightToLeft = true
 Fire("PLAYER_LOGOUT")
 local bagSort = ScarletUI.db.global.bagSortModule
 assert(bagSort.sortBagsRightToLeft == true and bagSort.insertItemsLeftToRight == false)

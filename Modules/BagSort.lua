@@ -9,11 +9,19 @@ function ScarletUI:IsBagSortSupported(key)
     return C_Container and C_Container["Set" .. settings[key]] ~= nil
 end
 
+-- Get keeps returning the old value for a moment after Set, which made the
+-- toggles snap back; report the requested value until the client catches up.
+local requested = {}
+
 function ScarletUI:GetBagSort(key)
-    return C_Container["Get" .. settings[key]]() and true or false
+    local value = C_Container["Get" .. settings[key]]() and true or false
+    if requested[key] == value then requested[key] = nil end
+    if requested[key] == nil then return value end
+    return requested[key]
 end
 
 function ScarletUI:SetBagSort(key, value)
+    requested[key] = value
     C_Container["Set" .. settings[key]](value)
 end
 
