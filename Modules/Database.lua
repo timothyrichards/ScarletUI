@@ -12,6 +12,7 @@ ScarletUI.defaults = {
         itemLevelColorOverride = false,
         itemLevelColor = { r = 1, g = 1, b = 1 },
         expandCharacterInfo = true,
+        hideMicroMenuArt = false,
         minimapIcon = {
             hide = false,
         },

@@ -66,7 +66,7 @@ local calls = {}
 local setupMethods = { "SetupDebugFrame", "SetupActionBarToggles", "SetupBagSort", "SetupTracking", "SetupChat", "SetupCVars",
     "SetupItemLevels",
     "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupExpandCharacterInfo", "SetupGameMenuButtons",
-    "SetupMinimapIcon" }
+    "SetupFrameTweaks", "SetupMinimapIcon" }
 for _, name in ipairs(setupMethods) do
     ScarletUI[name] = function() calls[name] = true end
 end
@@ -332,6 +332,27 @@ menuHooks.OnShow()
 assert(not cooldownButton.shown and #created == 2)
 menuSettings.sui = true
 CreateFrame, ShowUIPanel, HideUIPanel, GameMenuFrame = originalCreateFrame, originalShowPanel, originalHidePanel, nil
+
+-- Micro menu art follows its setting; the gamepad bag bar shows only with Gamepad UI on.
+local function Shown() return { shown = true, SetShown = function(t, on) t.shown = on end } end
+MicroMenu = { BackgroundArt = Shown(), BorderArt = Shown() }
+local bagHooks, gamepadUI = {}, false
+GamepadBagBar = Shown()
+InputUtil = { IsGamepadUIEnabled = function() return gamepadUI end }
+ContainerFrameCombinedBags = { HookScript = function(_, script, handler) bagHooks[script] = handler end }
+dofile("Modules/FrameTweaks.lua")
+ScarletUI:SetupFrameTweaks()
+assert(MicroMenu.BackgroundArt.shown and MicroMenu.BorderArt.shown and not GamepadBagBar.shown)
+local microOption = ScarletUI:Options().args.generalSettings.args.microMenu
+assert(not microOption.hidden())
+microOption.args.hideMicroMenuArt.set(nil, true)
+assert(not MicroMenu.BackgroundArt.shown and not MicroMenu.BorderArt.shown)
+gamepadUI = true
+bagHooks.OnShow()
+assert(GamepadBagBar.shown)
+ScarletUI.db.global.hideMicroMenuArt = false
+MicroMenu, GamepadBagBar, InputUtil, ContainerFrameCombinedBags = nil, nil, nil, nil
+assert(ScarletUI:Options().args.generalSettings.args.microMenu.hidden())
 
 -- Spell tooltip mana percent: once, on the cost line only, with per-mana beneath it.
 local function Line(text)

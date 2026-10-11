@@ -21,6 +21,7 @@ Modules\Helpers.lua
 Modules\EditModeLayouts.lua
 Modules\EditMode.lua
 Modules\GameMenu.lua
+Modules\FrameTweaks.lua
 Modules\ItemLevel.lua
 Modules\Options.lua
 Modules\Tracking.lua

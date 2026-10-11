@@ -61,6 +61,12 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   parent frames into the menu's layout, which taints its Edit Mode, Log Out,
   and Exit Game buttons. Cooldown settings open with `ShowUIPanel`, which goes
   through Blizzard's secure panel code; buttons are disabled in combat.
+- `Modules/FrameTweaks.lua`: optional hiding of `MicroMenu.BackgroundArt` and
+  `BorderArt` (`db.global.hideMicroMenuArt`, Forever only), plus a temporary
+  Forever hotfix that hides `GamepadBagBar` on the combined backpack while
+  Gamepad UI is off. Blizzard's `GamepadBagBarMixin:OnLoad` skips hiding the bag
+  buttons then; no event fires on toggle, so it rechecks on bag `OnShow`.
+  Remove the hotfix once Blizzard fixes it.
 - `Modules/Chat.lua`: chat tabs and font size.
 - `Modules/CVars.lua`: native console variable discovery and overrides.
 - `Modules/ItemLevel.lua`: character, inspect, and Blizzard bag/bank item levels.

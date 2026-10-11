@@ -200,6 +200,26 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                     },
                 },
             },
+            microMenu = {
+                name = "Micro Menu",
+                type = "group",
+                inline = true,
+                order = 1.8,
+                hidden = function() return not (MicroMenu and MicroMenu.BackgroundArt) end,
+                args = {
+                    hideMicroMenuArt = {
+                        name = "Hide Background",
+                        desc = "Hide the frame and background art behind the micro menu buttons.",
+                        type = "toggle",
+                        width = 1,
+                        get = function(_) return database.hideMicroMenuArt end,
+                        set = function(_, val)
+                            database.hideMicroMenuArt = val
+                            self:SetupMicroMenuArt()
+                        end,
+                    },
+                },
+            },
             modules = {
                 name = "Enabled Modules",
                 type = "group",

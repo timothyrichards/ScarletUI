@@ -129,6 +129,7 @@ function ScarletUI:Setup()
     self:SetupZoneLevels()
     self:SetupExpandCharacterInfo()
     self:SetupGameMenuButtons()
+    self:SetupFrameTweaks()
     self:SetupMinimapIcon()
 end
 
