@@ -342,15 +342,15 @@ InputUtil = { IsGamepadUIEnabled = function() return gamepadUI end }
 ContainerFrameCombinedBags = { HookScript = function(_, script, handler) bagHooks[script] = handler end }
 dofile("Modules/FrameTweaks.lua")
 ScarletUI:SetupFrameTweaks()
-assert(MicroMenu.BackgroundArt.shown and MicroMenu.BorderArt.shown and not GamepadBagBar.shown)
+assert(not MicroMenu.BackgroundArt.shown and not MicroMenu.BorderArt.shown and not GamepadBagBar.shown)
 local microOption = ScarletUI:Options().args.generalSettings.args.microMenu
 assert(not microOption.hidden())
-microOption.args.hideMicroMenuArt.set(nil, true)
-assert(not MicroMenu.BackgroundArt.shown and not MicroMenu.BorderArt.shown)
+microOption.args.hideMicroMenuArt.set(nil, false)
+assert(MicroMenu.BackgroundArt.shown and MicroMenu.BorderArt.shown)
 gamepadUI = true
 bagHooks.OnShow()
 assert(GamepadBagBar.shown)
-ScarletUI.db.global.hideMicroMenuArt = false
+ScarletUI.db.global.hideMicroMenuArt = true
 MicroMenu, GamepadBagBar, InputUtil, ContainerFrameCombinedBags = nil, nil, nil, nil
 assert(ScarletUI:Options().args.generalSettings.args.microMenu.hidden())
 
