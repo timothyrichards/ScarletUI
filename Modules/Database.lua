@@ -26,6 +26,7 @@ ScarletUI.defaults = {
         },
         bagSortModule = {
             enabled = true,
+            sortBagsRightToLeft = true,
         },
         gameMenuButtons = {
             sui = true,

@@ -261,6 +261,8 @@ C_Container = {
 }
 dofile("Modules/BagSort.lua")
 ScarletUI:SetupBagSort()
+-- Right to left is on by default; the insert setting keeps the client's value.
+assert(unconfirmed.SortBagsRightToLeft == true and sort.InsertItemsLeftToRight == false)
 local sorting = ScarletUI:Options().args.bagModuleSettings.args.sortSettings.args
 -- The client confirms a change later; the toggle shows the request until then.
 sorting.sortBagsRightToLeft.set(nil, true)
