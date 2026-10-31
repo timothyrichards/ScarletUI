@@ -176,12 +176,13 @@ Commands: `/sui` opens settings, `/sui move` opens Blizzard Edit Mode,
 ## Local installations
 
 The development checkout is `G:\World of Warcraft Addons\ScarletUI`.
-Under `G:\World of Warcraft`, the `_classic_`, `_classic_era_`, `_retail_`, and
-`_classic_beta_` clients have `Interface\AddOns\ScarletUI` junctions to it.
+Under `G:\World of Warcraft`, the `_retail_`, `_classic_` (Mists), `_classic_era_`,
+`_anniversary_` (TBC), `_forever_`, and `_classic_beta_` (Forever beta) clients have
+`Interface\AddOns\ScarletUI` junctions to it.
 Edits reach those linked installs immediately; `/reload` loads changed Lua and
 clears previously registered hooks. Restart after a fresh addon installation.
-The `_anniversary_` addon directory is a separate copy. Verify link targets before
-changing installation paths; do not assume every installation shares this checkout.
+Verify link targets before changing installation paths; a client added later
+may not have a junction yet.
 
 Keep changes scoped to the task, preserve unrelated work, and commit completed
 changes. This Windows checkout can report unrelated executable-bit differences;
