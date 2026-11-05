@@ -91,9 +91,14 @@ function ScarletUI:SettingDisabled(moduleEnabled, ignoreCombat)
 end
 
 function ScarletUI:FixChatBug()
+    -- Classic FCF code errors on a nil oldAlpha; Mainline code defaults it.
+    -- Writing it from addon code taints the chat frame, so only fill a gap.
+    if self.retail then return end
     for i = 1, NUM_CHAT_WINDOWS do
         local cf = _G['ChatFrame'..i]
-        cf.oldAlpha = cf.oldAlpha or 0 -- Fix 'max-bug' in FCF.lua
+        if not cf.oldAlpha then
+            cf.oldAlpha = 0 -- Fix 'max-bug' in FCF.lua
+        end
     end
 end
 

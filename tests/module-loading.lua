@@ -176,7 +176,8 @@ GetChatWindowInfo = function(id) return _G[CHAT_FRAMES[id]].name end
 FCF_SetChatWindowFontSize = function(_, frame, size) frame.fontSize = size end
 ChatFrame_RemoveMessageGroup, ChatFrame_RemoveAllMessageGroups = noop, noop
 ChatFrame_AddMessageGroup, ChatFrame_AddChannel = noop, noop
-FCFDock_SelectWindow = noop
+local dockSelections = 0
+FCFDock_SelectWindow = function() dockSelections = dockSelections + 1 end
 C_Timer = { NewTimer = function(_, callback) callback() end }
 ScarletUI.lightWeightMode, ScarletUI.editMode = false, false
 ScarletUI:SetupChat()
@@ -184,6 +185,10 @@ assert(#CHAT_FRAMES == 4)
 for _, key in ipairs(CHAT_FRAMES) do
     assert(_G[key].fontSize == ScarletUI.db.global.chatModule.fontSize)
 end
+-- Reruns with every tab present leave the dock selection alone (it taints chat).
+assert(dockSelections == 1)
+ScarletUI:SetupChat()
+assert(dockSelections == 1)
 
 -- Action bar toggles: a first character seeds them on logout, an alt receives them on login.
 dofile("Modules/ActionBars.lua")

@@ -67,7 +67,11 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   Gamepad UI is off. Blizzard's `GamepadBagBarMixin:OnLoad` skips hiding the bag
   buttons then; no event fires on toggle, so it rechecks on bag `OnShow`.
   Remove the hotfix once Blizzard fixes it.
-- `Modules/Chat.lua`: chat tabs and font size.
+- `Modules/Chat.lua`: chat tabs and font size. It reruns on every
+  `UPDATE_FLOATING_CHAT_WINDOWS`, so don't call dock, tab, or edit-box functions
+  (`FCFDock_SelectWindow`, voice transcription updates) there unless something
+  changed: the taint spreads to the chat edit box, which `ChatFrameUtil.InsertLink`
+  reads before Shift-clicking a map pin calls the protected `CopyToClipboard`.
 - `Modules/CVars.lua`: native console variable discovery and overrides.
 - `Modules/ItemLevel.lua`: character, inspect, and Blizzard bag/bank item levels.
   On Forever it also shows the average under the stats pane level text, since
