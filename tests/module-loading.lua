@@ -471,9 +471,7 @@ dofile("Modules/FiveSecondRule.lua")
 ScarletUI:SetupFiveSecondRule() -- this harness is the Forever client
 CreateFrame = savedCreateFrame
 local function Mana(value) mana = value; ruleScripts.OnEvent(nil, "UNIT_POWER_FREQUENT", "player", "MANA") end
-Mana(500)
-assert(not ruleShown) -- the first reading only records mana
-Mana(400)
+Mana(400) -- setup recorded 500, so the first cast counts
 assert(ruleShown)
 now = 102; ruleScripts.OnUpdate()
 assert(sparkShown and sparkX == 40)
