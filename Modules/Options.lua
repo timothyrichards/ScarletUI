@@ -448,6 +448,26 @@ function ScarletUI:GetBagSettingsPage(database, defaults, order)
                 "New items go into your leftmost bag first instead of the backpack.", 1),
         },
     }
+    page.args.highlightSettings = {
+        name = "Highlights",
+        type = "group",
+        inline = true,
+        order = 11,
+        args = {
+            highlightCheapestItem = {
+                name = "Highlight Cheapest Item",
+                desc = "Outline the item or stack in your bags with the lowest total vendor value, so you know what to sell or destroy when your bags are full. Items that cannot be sold are ignored.",
+                type = "toggle",
+                width = 1.5,
+                order = 0,
+                get = function(_) return database.highlightCheapestItem end,
+                set = function(_, val)
+                    database.highlightCheapestItem = val
+                    self:UpdateCheapestItem()
+                end,
+            },
+        },
+    }
     return page
 end
 

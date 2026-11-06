@@ -14,7 +14,7 @@ ItemLocation = { CreateFromBagAndSlot = function(_, bag, slot)
     return { bag = bag, slot = slot, IsValid = function() return contents[bag][slot] ~= nil end }
 end }
 ITEM_QUALITY_COLORS = { [1] = { r = 1, g = 1, b = 1 } }
-NUM_CONTAINER_FRAMES, BANK_CONTAINER = 1, -1
+NUM_CONTAINER_FRAMES, BANK_CONTAINER, BACKPACK_CONTAINER, NUM_BAG_SLOTS = 1, -1, 0, 0
 C_Timer = { After = function(_, callback) callback() end }
 CharacterFrame = { HookScript = noop }
 EventRegistry = { RegisterCallback = noop }
@@ -27,11 +27,14 @@ local function button(bag, slot)
         GetItemLocation = function() return ItemLocation:CreateFromBagAndSlot(bag, slot) end,
         GetChildren = function() end,
         IsShown = function() return true end,
+        GetWidth = function() return 37 end,
+        GetHeight = function() return 37 end,
         CreateFontString = function()
             return {
                 shown = true,
                 SetFontObject = noop, SetTextColor = noop, SetPoint = noop, SetAtlas = noop, SetHeight = noop,
                 SetShadowColor = noop, SetShadowOffset = noop, SetFont = noop,
+                SetTexture = noop, SetBlendMode = noop, SetVertexColor = noop, SetSize = noop,
                 GetFont = function() return "Font", 12 end,
                 SetText = function(self, value) self.text = value end,
                 Show = function(self) self.shown = true end,
@@ -39,6 +42,7 @@ local function button(bag, slot)
                 SetShown = function(self, shown) self.shown = shown end,
             }
         end,
+        CreateTexture = function(self) return self:CreateFontString() end,
     }
 end
 
@@ -47,6 +51,7 @@ for _, modern in ipairs({ false, true }) do
     contents[0][1] = 101
     ContainerFrame1 = {
         GetID = function() return 0 end, IsShown = function() return true end, HookScript = noop,
+        GetName = function() return "ContainerFrame1" end,
     }
     -- Legacy Blizzard bag buttons are numbered in reverse slot order.
     ContainerFrame1Item1, ContainerFrame1Item2 = second, first
@@ -56,6 +61,7 @@ for _, modern in ipairs({ false, true }) do
     ScarletUI = { retail = modern, db = { global = { itemLevelBag = true } }, events = {} }
     ScarletUI.RegisterEventHandler = function(self, event, callback) self.events[event] = callback end
     dofile("Modules/ItemLevel.lua")
+    dofile("Modules/CheapestItem.lua")
     ScarletUI:SetupItemLevels()
     assert(first.itemLevel.text == 101 and second.itemLevel.text == 202)
     assert(bank.itemLevel.text == 303, "Native bank item level missing")
@@ -76,6 +82,27 @@ for _, modern in ipairs({ false, true }) do
     assert(second.itemLevel.shown and bank.itemLevel.shown)
 end
 print("PASS: native Classic and modern bag/bank item levels, events, empty slots, and toggle")
+
+-- The cheapest stack by sell price x count is outlined; unsellable items are ignored.
+local prices = { [1] = 3, [2] = 10, [3] = 0 }
+local stacks = { { itemID = 1, stackCount = 5 }, { itemID = 2, stackCount = 1 } }
+C_Container.GetContainerItemInfo = function(bag, slot) return stacks[slot] end
+C_Item.GetItemInfo = function(id) return "Item", nil, 1, 1, nil, "Junk", nil, nil, nil, nil, prices[id] end
+local pricey, cheap, custom = button(0, 1), button(0, 2), button(0, 2)
+ContainerFrameCombinedBags = { EnumerateValidItems = function() return ipairs({ pricey, cheap }) end }
+ContainerFrame1Item1, ContainerFrame1Item2 = cheap, pricey
+ScarletUI = { db = { global = { highlightCheapestItem = true } }, bagSlots = { [2] = custom } }
+dofile("Modules/CheapestItem.lua")
+ScarletUI:UpdateCheapestItem()
+assert(cheap.cheapestGlow.shown and custom.cheapestGlow.shown, "Cheapest stack not highlighted")
+assert(not pricey.cheapestGlow, "Stack worth more in total was highlighted")
+stacks[2] = { itemID = 3, stackCount = 1 }
+ScarletUI:UpdateCheapestItem()
+assert(pricey.cheapestGlow.shown and not cheap.cheapestGlow.shown, "Unsellable item was highlighted")
+ScarletUI.db.global.highlightCheapestItem = false
+ScarletUI:UpdateCheapestItem()
+assert(not pricey.cheapestGlow.shown and not custom.cheapestGlow.shown, "Highlight toggle failed")
+print("PASS: cheapest bag item highlight, stack value, unsellable items, and toggle")
 
 -- Inspect must work when only the namespaced item-level API exists.
 local itemLink = "|cnIQ2:|Hitem:6214::::::::12:1487:::::::::|h[Heavy Copper Maul]|h|r"
@@ -126,7 +153,6 @@ print("PASS: native inspect item level with formula fallback")
 
 -- Forever shows the average under the level text without touching Blizzard's stat list.
 local levelInfo = button()
-levelInfo.CreateTexture = levelInfo.CreateFontString
 CharacterLevelText = { GetParent = function() return levelInfo end }
 GetAverageItemLevel = function() return 9, 3.6875, 7 end
 ScarletUI.db.global.itemLevelCharacter = true

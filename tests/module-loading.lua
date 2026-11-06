@@ -46,9 +46,11 @@ for _, oldSettings in ipairs({ false, true }) do
     local options = ScarletUI:Options()
     assert(options.args.actionBarSettings == nil)
     assert(options.args.generalSettings.args.modules.args.actionbarsModuleEnabled == nil)
-    -- Retail and Forever get a Bags page with only the sorting settings.
+    -- Retail and Forever get a Bags page with only the sorting and highlight settings.
     local bagPage = options.args.bagModuleSettings
-    assert(bagPage.name == "Bags" and bagPage.args.sortSettings and next(bagPage.args, next(bagPage.args)) == nil)
+    local bagGroups = 0
+    for _ in pairs(bagPage.args) do bagGroups = bagGroups + 1 end
+    assert(bagPage.name == "Bags" and bagPage.args.sortSettings and bagPage.args.highlightSettings and bagGroups == 2)
     assert(options.args.editModeSettings and options.args.actionBarTogglesSettings)
     -- Retail and Forever never load Bag.lua or Nameplates.lua, so their toggles stay hidden.
     assert(options.args.generalSettings.args.modules.args.bagModuleEnabled.hidden())

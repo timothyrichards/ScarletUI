@@ -11,6 +11,7 @@ ScarletUI.defaults = {
         itemLevelBag = true,
         itemLevelColorOverride = false,
         itemLevelColor = { r = 1, g = 1, b = 1 },
+        highlightCheapestItem = true,
         expandCharacterInfo = true,
         hideMicroMenuArt = true,
         minimapIcon = {
@@ -82,6 +83,7 @@ ScarletUI.originalUIDefaults = {
         itemLevelBag = true,
         itemLevelColorOverride = false,
         itemLevelColor = { r = 1, g = 1, b = 1 },
+        highlightCheapestItem = false,
         expandCharacterInfo = false,
         chatModule = {
             enabled = true,

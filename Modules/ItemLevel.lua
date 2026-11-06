@@ -401,6 +401,8 @@ function ScarletUI:BagItemLevel()
             end
         end
     end
+
+    self:UpdateCheapestItem()
 end
 
 function ScarletUI:SetupItemLevels()

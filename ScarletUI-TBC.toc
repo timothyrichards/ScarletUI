@@ -15,6 +15,7 @@ ScarletUI.lua
 Modules\ActionBars.lua
 Modules\BagSort.lua
 Modules\Chat.lua
+Modules\CheapestItem.lua
 Modules\CVars.lua
 Modules\Database.lua
 Modules\Helpers.lua
