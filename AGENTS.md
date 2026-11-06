@@ -78,10 +78,13 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   that client has none. Do not add rows to `PAPERDOLL_STATCATEGORIES`: it taints
   `CharacterFrame:OnShow`, which then fails on secret player health values.
 - `Modules/CheapestItem.lua`: outlines the bag stack with the lowest total
-  vendor value (sell price x count; unsellable items skipped) on the Blizzard
+  vendor value (sell price x count) on the Blizzard
   combined/individual bag frames and the `Bag.lua` frame
   (`db.global.highlightCheapestItem`, toggle on the Bags page). It reruns from
   the end of `BagItemLevel`, which already fires on every bag change and open.
+  Unsellable items, consumables, and quest items (by class or quest info) are
+  skipped, as are profession tools: Retail's Profession class, fishing poles,
+  and a hand-kept item ID list for Classic tools that have no class to match.
 - `Modules/TidyIcons.lua`: icon adjustments.
 - `Modules/Tooltips.lua`: appends percent of max mana to GameTooltip spell cost
   lines via post-hooks only (`TooltipDataProcessor` or `OnTooltipSetSpell`).
