@@ -1,15 +1,25 @@
 -- Five second rule: spending mana pauses spirit-based mana regeneration for
--- 5 seconds. A line crosses the player frame's mana bar over that time and
--- disappears when regeneration resumes. Only Classic Era and Forever set this
--- up. The line is our own texture on the bar; no Blizzard function or script
--- is replaced.
+-- 5 seconds. After the player casts a spell that costs mana, a line crosses
+-- the player frame's mana bar over that time and disappears when regeneration
+-- resumes. Only Classic Era and Forever set this up. Forever gives addons mana
+-- values as secrets, so casts come from the player's own
+-- UNIT_SPELLCAST_SUCCEEDED (not secret for the player) and the spell's cost.
+-- The line is our own texture on the bar; no Blizzard function or script is
+-- replaced.
 local MANA = Enum and Enum.PowerType and Enum.PowerType.Mana or 0
 local IsSecret = issecretvalue or function() return false end
+local GetSpellPowerCost = C_Spell and C_Spell.GetSpellPowerCost or GetSpellPowerCost
 local DURATION = 5
 
-local function ReadMana()
-    local mana = UnitPower("player", MANA)
-    if not IsSecret(mana) then return mana end
+-- ponytail: a free cast (Clearcasting) still starts the line; no readable
+-- signal says the cost was waived.
+local function CostsMana(spellID)
+    local costs = spellID and not IsSecret(spellID) and GetSpellPowerCost(spellID)
+    for _, cost in ipairs(costs or {}) do
+        if cost.type == MANA and not IsSecret(cost.cost) and cost.cost > 0 then
+            return true
+        end
+    end
 end
 
 function ScarletUI:SetupFiveSecondRule()
@@ -28,8 +38,7 @@ function ScarletUI:SetupFiveSecondRule()
 
     local frame = CreateFrame("Frame")
     self.fiveSecondRuleFrame = frame
-    -- Seed now: the first cast after login or reload may be the first mana change.
-    local lastMana, endTime = ReadMana(), 0
+    local endTime = 0
     -- OnUpdate only runs while the frame is shown, i.e. during the 5 seconds.
     frame:SetScript("OnUpdate", function()
         local remaining = endTime - GetTime()
@@ -46,17 +55,11 @@ function ScarletUI:SetupFiveSecondRule()
     end)
     frame:Hide()
     -- Hidden frames still receive events.
-    frame:RegisterUnitEvent("UNIT_POWER_FREQUENT", "player")
-    frame:SetScript("OnEvent", function(_, _, _, powerType)
-        if powerType ~= "MANA" then return end
-        -- Unreadable (secret) mana clears the baseline so a stale value never starts the line.
-        local mana = ReadMana()
-        -- ponytail: any mana drop counts, including enemy drains; match player
-        -- casts (UNIT_SPELLCAST_SUCCEEDED) if false starts become a problem.
-        if mana and lastMana and mana < lastMana then
+    frame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
+    frame:SetScript("OnEvent", function(_, _, _, _, spellID)
+        if CostsMana(spellID) then
             endTime = GetTime() + DURATION
             frame:Show()
         end
-        lastMana = mana
     end)
 end

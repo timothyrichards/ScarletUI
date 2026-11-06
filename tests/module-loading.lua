@@ -447,7 +447,7 @@ assert(ZoneLabel("Elwynn Forest") == "Elwynn Forest")
 ScarletUI.db.global.zoneLevels = true
 assert(ScarletUI.zoneLevelsHooked)
 assert(not ScarletUI:Options().args.generalSettings.args.tooltips.args.zoneLevels.hidden())
--- Five second rule: a mana drop starts a 5 second line across the mana bar.
+-- Five second rule: a cast that costs mana starts a 5 second line across the mana bar.
 local sparkShown, sparkX = false, nil
 local manaBar = { GetWidth = function() return 100 end, CreateTexture = function() return {
     SetColorTexture = noop, SetWidth = noop,
@@ -463,15 +463,20 @@ CreateFrame = function() return {
     Show = function() ruleShown = true end,
     Hide = function() ruleShown = false end,
 } end
-local now, mana, powerType = 100, 500, 0
+local now, powerType = 100, 0
 GetTime = function() return now end
-UnitPower = function() return mana end
 UnitPowerType = function() return powerType end
+-- Spell 1 costs mana, 2 costs energy, 3 is free, and 4 costs mana but arrives secret.
+local manaCost = { { type = 0, cost = 50 } }
+C_Spell.GetSpellPowerCost = function(id) return ({ manaCost, { { type = 3, cost = 40 } }, nil, manaCost })[id] end
+issecretvalue = function(v) return v == 4 end
 dofile("Modules/FiveSecondRule.lua")
 ScarletUI:SetupFiveSecondRule() -- this harness is the Forever client
-CreateFrame = savedCreateFrame
-local function Mana(value) mana = value; ruleScripts.OnEvent(nil, "UNIT_POWER_FREQUENT", "player", "MANA") end
-Mana(400) -- setup recorded 500, so the first cast counts
+CreateFrame, issecretvalue = savedCreateFrame, nil
+local function Cast(spellID) ruleScripts.OnEvent(nil, "UNIT_SPELLCAST_SUCCEEDED", "player", "guid", spellID) end
+Cast(2); Cast(3); Cast(4)
+assert(not ruleShown)
+Cast(1)
 assert(ruleShown)
 now = 102; ruleScripts.OnUpdate()
 assert(sparkShown and sparkX == 40)
@@ -481,7 +486,7 @@ powerType = 0
 ScarletUI.db.global.fiveSecondRule = false; ruleScripts.OnUpdate()
 assert(not sparkShown)
 ScarletUI.db.global.fiveSecondRule = true
-Mana(450) -- regeneration does not restart the timer
+Cast(3) -- a free spell does not restart the timer
 now = 105; ruleScripts.OnUpdate()
 assert(not sparkShown and not ruleShown)
 assert(not ScarletUI:Options().args.generalSettings.args.playerFrame.hidden())

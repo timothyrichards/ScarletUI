@@ -96,10 +96,13 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   no data. Uses a table of Classic UIMapIDs and post-hooks the area label's
   `SetLabel`; labels that already contain a color code (native or Leatrix Maps)
   are left alone. Retail and Mists show levels natively and skip setup.
-- `Modules/FiveSecondRule.lua`: after a mana drop, a line crosses the player frame
-  mana bar for 5 seconds until spirit regeneration resumes (`db.global.fiveSecondRule`,
-  Player Frame group on General Settings). Classic Era and Forever only. Any mana
-  drop starts it, including drains; hidden while the bar shows rage or energy.
+- `Modules/FiveSecondRule.lua`: after the player casts a spell that costs mana, a
+  line crosses the player frame mana bar for 5 seconds until spirit regeneration
+  resumes (`db.global.fiveSecondRule`, Player Frame group on General Settings).
+  Classic Era and Forever only. Forever returns `UnitPower` mana as a secret value,
+  so casts come from the player's `UNIT_SPELLCAST_SUCCEEDED` (not secret for the
+  player) and `GetSpellPowerCost`, never from mana changes. Hidden while the bar
+  shows rage or energy.
 - `Modules/Bag.lua`, `Modules/Nameplates.lua`: custom bag/bank frames and
   nameplate threat colors, auras, and text. Classic UI clients only: listed in
   just those three manifests so Retail and Forever never load them. Each file adds its
