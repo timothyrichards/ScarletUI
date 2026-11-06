@@ -89,7 +89,11 @@ local stacks = { { itemID = 1, stackCount = 5 }, { itemID = 2, stackCount = 1 } 
 C_Container.GetContainerItemInfo = function(bag, slot) return stacks[slot] end
 C_Item.GetItemInfo = function(id) return "Item", nil, 1, 1, nil, "Junk", nil, nil, nil, nil, prices[id] end
 local pricey, cheap, custom = button(0, 1), button(0, 2), button(0, 2)
-ContainerFrameCombinedBags = { EnumerateValidItems = function() return ipairs({ pricey, cheap }) end }
+-- Unopened Blizzard frames enumerate empty entries up to their bag size.
+local enumerated = { pricey, nil, cheap }
+ContainerFrameCombinedBags = { EnumerateValidItems = function()
+    return function(_, i) if i < 3 then return i + 1, enumerated[i + 1] end end, nil, 0
+end }
 ContainerFrame1Item1, ContainerFrame1Item2 = cheap, pricey
 ScarletUI = { db = { global = { highlightCheapestItem = true } }, bagSlots = { [2] = custom } }
 dofile("Modules/CheapestItem.lua")

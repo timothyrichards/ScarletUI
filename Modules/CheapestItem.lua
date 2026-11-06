@@ -48,8 +48,11 @@ function ScarletUI:UpdateCheapestItem()
     for i = 0, NUM_CONTAINER_FRAMES or 0 do
         local frame = i == 0 and ContainerFrameCombinedBags or _G["ContainerFrame" .. i]
         if frame and frame.EnumerateValidItems then
+            -- Frames not opened yet enumerate empty entries up to their bag size.
             for _, button in frame:EnumerateValidItems() do
-                SetGlow(button, button:GetBagID() == bag and button:GetID() == slot)
+                if button then
+                    SetGlow(button, button:GetBagID() == bag and button:GetID() == slot)
+                end
             end
         elseif frame then
             -- Classic frames reuse named buttons whose IDs are their slots.
