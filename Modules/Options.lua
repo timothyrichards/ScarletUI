@@ -456,7 +456,7 @@ function ScarletUI:GetBagSettingsPage(database, defaults, order)
         args = {
             highlightCheapestItem = {
                 name = "Highlight Cheapest Item",
-                desc = "Outline the item or stack in your bags with the lowest total vendor value, so you know what to sell or destroy when your bags are full. Unsellable items, consumables, quest items, and profession tools are ignored.",
+                desc = "Outline the item or stack in your bags with the lowest total vendor value, so you know what to sell or destroy when your bags are full. Unsellable items, consumables, quest items, profession tools, and items in equipment sets are ignored.",
                 type = "toggle",
                 width = 1.5,
                 order = 0,

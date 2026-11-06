@@ -431,6 +431,14 @@ function ScarletUI:SetupItemLevels()
             end)
         end)
 
+        -- Saving or deleting a set changes which items the cheapest-item highlight skips.
+        -- Era and TBC have no Equipment Manager, and unknown events error on register.
+        if C_EquipmentSet and C_EquipmentSet.GetEquipmentSetIDs then
+            self:RegisterEventHandler("EQUIPMENT_SETS_CHANGED", function()
+                ScarletUI:UpdateCheapestItem()
+            end)
+        end
+
         self:RegisterEventHandler("BANKFRAME_OPENED", function()
             C_Timer.After(0.05, function()
                 ScarletUI:BagItemLevel()

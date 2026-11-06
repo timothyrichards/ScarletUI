@@ -45,15 +45,31 @@ local function IsIgnored(bag, slot, itemID, classID, subclassID)
     return quest and (quest.isQuestItem or quest.questID)
 end
 
+-- Item IDs saved in any Equipment Manager set. Era and TBC have no Equipment Manager.
+-- ponytail: matches by item ID, so spare copies of a set item are skipped too;
+-- C_EquipmentSet.GetItemLocations gives exact bag slots if that matters.
+local function GetEquipmentSetItems()
+    local items = {}
+    if C_EquipmentSet and C_EquipmentSet.GetEquipmentSetIDs then
+        for _, setID in ipairs(C_EquipmentSet.GetEquipmentSetIDs()) do
+            for _, itemID in pairs(C_EquipmentSet.GetItemIDs(setID) or {}) do
+                items[itemID] = true
+            end
+        end
+    end
+    return items
+end
+
 -- Bag and slot of the stack with the lowest vendor value (sell price x count).
--- Unsellable items, consumables, quest items, and profession tools are ignored.
+-- Unsellable items, consumables, quest items, profession tools, and equipment set items are ignored.
 -- ponytail: uncached items are skipped until the next bag update; listen to GET_ITEM_INFO_RECEIVED if that shows up.
 function ScarletUI:FindCheapestBagItem()
     local cheapestBag, cheapestSlot, cheapestValue
+    local setItems = GetEquipmentSetItems()
     for bag = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
         for slot = 1, C_Container.GetContainerNumSlots(bag) do
             local info = C_Container.GetContainerItemInfo(bag, slot)
-            if info then
+            if info and not setItems[info.itemID] then
                 local sellPrice, classID, subclassID = select(11, GetItemInfo(info.itemID))
                 if sellPrice and sellPrice > 0 and not IsIgnored(bag, slot, info.itemID, classID, subclassID) then
                     local value = sellPrice * info.stackCount

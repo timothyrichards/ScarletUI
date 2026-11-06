@@ -84,9 +84,9 @@ end
 print("PASS: native Classic and modern bag/bank item levels, events, empty slots, and toggle")
 
 -- The cheapest stack by sell price x count is outlined; unsellable items, consumables,
--- quest items, and tools are ignored. Items are { sell price, class, subclass }.
+-- quest items, tools, and equipment set items are ignored. Items are { sell price, class, subclass }.
 local items = { [1] = { 3, 15 }, [2] = { 10, 15 }, [3] = { 0, 15 }, [4] = { 1, 0 }, [5] = { 1, 12 },
-    [6] = { 1, 15 }, [7] = { 1, 2, 20 }, [8] = { 1, 19 }, [2901] = { 1, 7 } }
+    [6] = { 1, 15 }, [7] = { 1, 2, 20 }, [8] = { 1, 19 }, [9] = { 1, 4 }, [2901] = { 1, 7 } }
 local stacks = { { itemID = 1, stackCount = 5 }, { itemID = 2, stackCount = 1 } }
 C_Container.GetContainerItemInfo = function(bag, slot) return stacks[slot] end
 C_Container.GetContainerItemQuestInfo = function(bag, slot)
@@ -105,11 +105,17 @@ end }
 ContainerFrame1Item1, ContainerFrame1Item2 = cheap, pricey
 ScarletUI = { db = { global = { highlightCheapestItem = true } }, bagSlots = { [2] = custom } }
 dofile("Modules/CheapestItem.lua")
+-- No C_EquipmentSet yet: Era and TBC have no Equipment Manager.
 ScarletUI:UpdateCheapestItem()
 assert(cheap.cheapestGlow.shown and custom.cheapestGlow.shown, "Cheapest stack not highlighted")
 assert(not pricey.cheapestGlow, "Stack worth more in total was highlighted")
+-- Set item lists are keyed by equipment slot and can have holes.
+C_EquipmentSet = {
+    GetEquipmentSetIDs = function() return { 0 } end,
+    GetItemIDs = function(setID) assert(setID == 0); return { [1] = 50, [16] = 9 } end,
+}
 for id, kind in pairs({ [3] = "Unsellable item", [4] = "Consumable", [5] = "Quest item", [6] = "Quest starter",
-    [7] = "Fishing pole", [8] = "Retail profession tool", [2901] = "Mining Pick" }) do
+    [7] = "Fishing pole", [8] = "Retail profession tool", [9] = "Equipment set item", [2901] = "Mining Pick" }) do
     stacks[2] = { itemID = id, stackCount = 1 }
     ScarletUI:UpdateCheapestItem()
     assert(pricey.cheapestGlow.shown and not cheap.cheapestGlow.shown, kind .. " was highlighted")
@@ -117,7 +123,8 @@ end
 ScarletUI.db.global.highlightCheapestItem = false
 ScarletUI:UpdateCheapestItem()
 assert(not pricey.cheapestGlow.shown and not custom.cheapestGlow.shown, "Highlight toggle failed")
-print("PASS: cheapest bag item highlight, stack value, ignored item kinds, and toggle")
+C_EquipmentSet = nil
+print("PASS: cheapest bag item highlight, stack value, ignored item kinds, equipment sets, and toggle")
 
 -- Inspect must work when only the namespaced item-level API exists.
 local itemLink = "|cnIQ2:|Hitem:6214::::::::12:1487:::::::::|h[Heavy Copper Maul]|h|r"
