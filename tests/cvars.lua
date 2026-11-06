@@ -43,9 +43,9 @@ for name, value in pairs(expected) do
     assert(ScarletUI.originalUIDefaults.global.CVarModule.overrides[name] == value, name)
     values[name] = value == "0" and "1" or "0"
 end
--- Preserve native pet/party settings instead of choosing between old raid profiles.
+-- Preserve the native pet setting instead of choosing between old raid profiles.
 assert(ScarletUI.defaults.global.CVarModule.overrides.raidOptionDisplayPets == nil)
-values.raidOptionDisplayPets, values.useCompactPartyFrames = "1", "1"
+values.raidOptionDisplayPets = "1"
 GetCVar = function(name) return values[name] end
 GetCVarDefault = function() return "0" end
 SetCVar = function(name, value)
@@ -55,7 +55,6 @@ end
 ScarletUI:SetupCVars()
 for name, value in pairs(expected) do assert(values[name] == value, name) end
 assert(ScarletUI.db.global.CVarModule.overrides.raidOptionDisplayPets == "1")
-assert(ScarletUI.db.global.CVarModule.overrides.useCompactPartyFrames == "1")
 
 -- Explicit overrides still win; clients without these CVars are skipped.
 ScarletUI.db.global.CVarModule.overrides.raidFramesDisplayPowerBars = "0"
@@ -67,7 +66,7 @@ assert(next(writes) == nil)
 ScarletUI.db.global.CVarModule.enabled = false
 GetCVar = function() return nil end
 ScarletUI:SetupCVars()
-print("PASS: raid display CVars, new CVar defaults, native pet/party settings, explicit overrides, and unsupported clients")
+print("PASS: raid display CVars, new CVar defaults, native pet setting, explicit overrides, and unsupported clients")
 
 -- Exercise real AceDB persistence and the settings callbacks.
 CreateFrame = function()

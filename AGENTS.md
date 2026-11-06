@@ -110,7 +110,10 @@ Raid display CVars are managed by `Modules/CVars.lua` with defaults in
 `Modules/Database.lua`. Power bars, class colors, debuffs, dispellable-only
 debuffs, percentage health text, and disabled main-tank/assist frames retain the
 old shared preset values. Pet visibility keeps the current client setting because
-the old Party and Raid presets disagreed. `useCompactPartyFrames` remains available.
+the old Party and Raid presets disagreed. `knownCVars` lists only CVars that exist
+on at least one active client. Removed ones include `useCompactPartyFrames`, the old
+nameplate scale and motion CVars, and the unsuffixed floating combat text CVars
+(now `_v2`).
 
 ## Edit Mode and saved settings
 
