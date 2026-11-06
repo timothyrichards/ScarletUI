@@ -67,7 +67,7 @@ end
 local calls = {}
 local setupMethods = { "SetupDebugFrame", "SetupActionBarToggles", "SetupBagSort", "SetupTracking", "SetupChat", "SetupCVars",
     "SetupItemLevels",
-    "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupExpandCharacterInfo", "SetupGameMenuButtons",
+    "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupFiveSecondRule", "SetupExpandCharacterInfo", "SetupGameMenuButtons",
     "SetupFrameTweaks", "SetupMinimapIcon" }
 for _, name in ipairs(setupMethods) do
     ScarletUI[name] = function() calls[name] = true end
@@ -447,6 +447,46 @@ assert(ZoneLabel("Elwynn Forest") == "Elwynn Forest")
 ScarletUI.db.global.zoneLevels = true
 assert(ScarletUI.zoneLevelsHooked)
 assert(not ScarletUI:Options().args.generalSettings.args.tooltips.args.zoneLevels.hidden())
+-- Five second rule: a mana drop starts a 5 second line across the mana bar.
+local sparkShown, sparkX = false, nil
+local manaBar = { GetWidth = function() return 100 end, CreateTexture = function() return {
+    SetColorTexture = noop, SetWidth = noop,
+    Hide = function() sparkShown = false end,
+    SetShown = function(_, shown) sparkShown = shown end,
+    SetPoint = function(_, _, _, _, x) sparkX = x end,
+} end }
+PlayerFrame_GetManaBar = function() return manaBar end
+local ruleScripts, ruleShown, savedCreateFrame = {}, false, CreateFrame
+CreateFrame = function() return {
+    SetScript = function(_, name, fn) ruleScripts[name] = fn end,
+    RegisterUnitEvent = noop,
+    Show = function() ruleShown = true end,
+    Hide = function() ruleShown = false end,
+} end
+local now, mana, powerType = 100, 500, 0
+GetTime = function() return now end
+UnitPower = function() return mana end
+UnitPowerType = function() return powerType end
+dofile("Modules/FiveSecondRule.lua")
+ScarletUI:SetupFiveSecondRule() -- this harness is the Forever client
+CreateFrame = savedCreateFrame
+local function Mana(value) mana = value; ruleScripts.OnEvent(nil, "UNIT_POWER_FREQUENT", "player", "MANA") end
+Mana(500)
+assert(not ruleShown) -- the first reading only records mana
+Mana(400)
+assert(ruleShown)
+now = 102; ruleScripts.OnUpdate()
+assert(sparkShown and sparkX == 40)
+powerType = 3; ruleScripts.OnUpdate() -- druid form: bar shows energy
+assert(not sparkShown)
+powerType = 0
+ScarletUI.db.global.fiveSecondRule = false; ruleScripts.OnUpdate()
+assert(not sparkShown)
+ScarletUI.db.global.fiveSecondRule = true
+Mana(450) -- regeneration does not restart the timer
+now = 105; ruleScripts.OnUpdate()
+assert(not sparkShown and not ruleShown)
+assert(not ScarletUI:Options().args.generalSettings.args.playerFrame.hidden())
 
 -- Era, TBC, and Mists also load the Classic-UI-only modules and their old settings keys.
 C_Container = {}

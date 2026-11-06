@@ -127,6 +127,7 @@ function ScarletUI:Setup()
     if self.SetupNameplates then self:SetupNameplates() end
     self:SetupSpellCostPercent()
     self:SetupZoneLevels()
+    self:SetupFiveSecondRule()
     self:SetupExpandCharacterInfo()
     self:SetupGameMenuButtons()
     self:SetupFrameTweaks()

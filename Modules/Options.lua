@@ -200,6 +200,23 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                     },
                 },
             },
+            playerFrame = {
+                name = "Player Frame",
+                type = "group",
+                inline = true,
+                order = 1.77,
+                hidden = function() return not self.fiveSecondRuleFrame end,
+                args = {
+                    fiveSecondRule = {
+                        name = "Five Second Rule",
+                        desc = "After you spend mana, a line crosses your mana bar over the 5 seconds until spirit-based mana regeneration resumes.",
+                        type = "toggle",
+                        width = 1,
+                        get = function(_) return database.fiveSecondRule end,
+                        set = function(_, val) database.fiveSecondRule = val end,
+                    },
+                },
+            },
             microMenu = {
                 name = "Micro Menu",
                 type = "group",

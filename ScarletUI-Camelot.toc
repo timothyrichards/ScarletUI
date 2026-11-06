@@ -21,6 +21,7 @@ Modules\Database.lua
 Modules\Helpers.lua
 Modules\EditModeLayouts.lua
 Modules\EditMode.lua
+Modules\FiveSecondRule.lua
 Modules\GameMenu.lua
 Modules\FrameTweaks.lua
 Modules\ItemLevel.lua
