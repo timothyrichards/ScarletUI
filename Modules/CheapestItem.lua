@@ -1,7 +1,7 @@
 local GetItemInfo = C_Item.GetItemInfo or GetItemInfo
 
 -- Enum.ItemClass values (Profession is Retail only) and Enum.ItemWeaponSubclass.Fishingpole
-local CONSUMABLE, WEAPON, QUEST, PROFESSION, FISHING_POLE = 0, 2, 12, 19, 20
+local CONSUMABLE, WEAPON, TRADESKILL, QUEST, PROFESSION, FISHING_POLE = 0, 2, 7, 12, 19, 20
 
 -- Classic profession tools kept in bags; nothing in the item API marks them as tools.
 -- ponytail: hand-kept list; add IDs here when a tool still gets highlighted.
@@ -35,9 +35,10 @@ local tools = {
     [40893] = true, -- Bladed Pickaxe
 }
 
-local function IsIgnored(bag, slot, itemID, classID, subclassID)
-    if classID == CONSUMABLE or classID == QUEST or classID == PROFESSION or tools[itemID]
-        or (classID == WEAPON and subclassID == FISHING_POLE) then
+local function IsIgnored(bag, slot, itemID, classID, subclassID, isCraftingReagent)
+    -- Crafting reagents: the Trade Goods class, plus reagents of other classes such as gems.
+    if classID == CONSUMABLE or classID == QUEST or classID == PROFESSION or classID == TRADESKILL
+        or isCraftingReagent or tools[itemID] or (classID == WEAPON and subclassID == FISHING_POLE) then
         return true
     end
     -- Catches quest starters filed under other item classes.
@@ -61,7 +62,7 @@ local function GetEquipmentSetItems()
 end
 
 -- Bag and slot of the stack with the lowest vendor value (sell price x count).
--- Unsellable items, consumables, quest items, profession tools, and equipment set items are ignored.
+-- Unsellable items, consumables, crafting reagents, quest items, profession tools, and equipment set items are ignored.
 -- ponytail: uncached items are skipped until the next bag update; listen to GET_ITEM_INFO_RECEIVED if that shows up.
 function ScarletUI:FindCheapestBagItem()
     local cheapestBag, cheapestSlot, cheapestValue
@@ -70,8 +71,9 @@ function ScarletUI:FindCheapestBagItem()
         for slot = 1, C_Container.GetContainerNumSlots(bag) do
             local info = C_Container.GetContainerItemInfo(bag, slot)
             if info and not setItems[info.itemID] then
-                local sellPrice, classID, subclassID = select(11, GetItemInfo(info.itemID))
-                if sellPrice and sellPrice > 0 and not IsIgnored(bag, slot, info.itemID, classID, subclassID) then
+                local sellPrice, classID, subclassID, _, _, _, isCraftingReagent = select(11, GetItemInfo(info.itemID))
+                if sellPrice and sellPrice > 0
+                    and not IsIgnored(bag, slot, info.itemID, classID, subclassID, isCraftingReagent) then
                     local value = sellPrice * info.stackCount
                     if not cheapestValue or value < cheapestValue then
                         cheapestBag, cheapestSlot, cheapestValue = bag, slot, value

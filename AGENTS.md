@@ -83,7 +83,8 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   (`db.global.highlightCheapestItem`, toggle on the Bags page). It reruns from
   the end of `BagItemLevel`, which already fires on every bag change and open.
   Unsellable items, consumables, and quest items (by class or quest info) are
-  skipped, as are profession tools: Retail's Profession class, fishing poles,
+  skipped, as are crafting reagents (Trade Goods class or the `GetItemInfo`
+  `isCraftingReagent` flag) and profession tools: Retail's Profession class, fishing poles,
   and a hand-kept item ID list for Classic tools that have no class to match.
   Items saved in an Equipment Manager set are skipped by item ID; Era and TBC
   have no Equipment Manager, so `EQUIPMENT_SETS_CHANGED` is registered only
