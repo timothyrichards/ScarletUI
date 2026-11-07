@@ -84,11 +84,11 @@ end
 print("PASS: native Classic and modern bag/bank item levels, events, empty slots, and toggle")
 
 -- The cheapest stack by sell price x count is outlined; unsellable items, consumables,
--- crafting reagents, quest items, tools, and equipment set items are ignored.
+-- spell and crafting reagents, quest items, tools, and equipment set items are ignored.
 -- Items are { sell price, class, subclass, is crafting reagent }.
 local items = { [1] = { 3, 15 }, [2] = { 10, 15 }, [3] = { 0, 15 }, [4] = { 1, 0 }, [5] = { 1, 12 },
     [6] = { 1, 15 }, [7] = { 1, 2, 20 }, [8] = { 1, 19 }, [9] = { 1, 4 }, [10] = { 1, 7 },
-    [11] = { 1, 3, nil, true }, [2901] = { 1, 15 } }
+    [11] = { 1, 3, nil, true }, [12] = { 1, 5 }, [2901] = { 1, 15 } }
 local stacks = { { itemID = 1, stackCount = 5 }, { itemID = 2, stackCount = 1 } }
 C_Container.GetContainerItemInfo = function(bag, slot) return stacks[slot] end
 C_Container.GetContainerItemQuestInfo = function(bag, slot)
@@ -118,7 +118,7 @@ C_EquipmentSet = {
 }
 for id, kind in pairs({ [3] = "Unsellable item", [4] = "Consumable", [5] = "Quest item", [6] = "Quest starter",
     [7] = "Fishing pole", [8] = "Retail profession tool", [9] = "Equipment set item", [10] = "Trade good",
-    [11] = "Crafting reagent", [2901] = "Mining Pick" }) do
+    [11] = "Crafting reagent", [12] = "Spell reagent", [2901] = "Mining Pick" }) do
     stacks[2] = { itemID = id, stackCount = 1 }
     ScarletUI:UpdateCheapestItem()
     assert(pricey.cheapestGlow.shown and not cheap.cheapestGlow.shown, kind .. " was highlighted")

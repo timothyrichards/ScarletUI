@@ -1,7 +1,7 @@
 local GetItemInfo = C_Item.GetItemInfo or GetItemInfo
 
 -- Enum.ItemClass values (Profession is Retail only) and Enum.ItemWeaponSubclass.Fishingpole
-local CONSUMABLE, WEAPON, TRADESKILL, QUEST, PROFESSION, FISHING_POLE = 0, 2, 7, 12, 19, 20
+local CONSUMABLE, WEAPON, REAGENT, TRADESKILL, QUEST, PROFESSION, FISHING_POLE = 0, 2, 5, 7, 12, 19, 20
 
 -- Classic profession tools kept in bags; nothing in the item API marks them as tools.
 -- ponytail: hand-kept list; add IDs here when a tool still gets highlighted.
@@ -36,9 +36,9 @@ local tools = {
 }
 
 local function IsIgnored(bag, slot, itemID, classID, subclassID, isCraftingReagent)
-    -- Crafting reagents: the Trade Goods class, plus reagents of other classes such as gems.
+    -- Reagents: spell reagents (Reagent class), Trade Goods, and crafting reagents of other classes such as gems.
     if classID == CONSUMABLE or classID == QUEST or classID == PROFESSION or classID == TRADESKILL
-        or isCraftingReagent or tools[itemID] or (classID == WEAPON and subclassID == FISHING_POLE) then
+        or classID == REAGENT or isCraftingReagent or tools[itemID] or (classID == WEAPON and subclassID == FISHING_POLE) then
         return true
     end
     -- Catches quest starters filed under other item classes.
@@ -62,7 +62,7 @@ local function GetEquipmentSetItems()
 end
 
 -- Bag and slot of the stack with the lowest vendor value (sell price x count).
--- Unsellable items, consumables, crafting reagents, quest items, profession tools, and equipment set items are ignored.
+-- Unsellable items, consumables, spell and crafting reagents, quest items, profession tools, and equipment set items are ignored.
 -- ponytail: uncached items are skipped until the next bag update; listen to GET_ITEM_INFO_RECEIVED if that shows up.
 function ScarletUI:FindCheapestBagItem()
     local cheapestBag, cheapestSlot, cheapestValue
