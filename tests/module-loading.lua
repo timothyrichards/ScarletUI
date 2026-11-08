@@ -241,6 +241,8 @@ assert(barModule.ignored[2] == nil)
 
 -- Minimap tracking: merged by name; alts only receive entries they have.
 local tracking = { { name = "Mailbox", active = true }, { name = "Find Herbs", active = true } }
+local dead = false
+UnitIsDeadOrGhost = function() return dead end
 C_Minimap = {
     GetNumTrackingTypes = function() return #tracking end,
     GetTrackingInfo = function(i) return tracking[i] end,
@@ -257,6 +259,19 @@ ScarletUI:SetupTracking()
 assert(tracking[1].active == false and tracking[2].active == false)
 Fire("PLAYER_LOGOUT")
 assert(states["Find Herbs"] == true and states["Stable Master"] == false)
+
+-- Always-on tracking: re-enabled at login and resurrection, skipped while dead.
+dead = true
+GetSpellInfo = function(id) return ({ [2580] = "Find Minerals", [2383] = "Find Herbs" })[id] end
+tracking = { { name = "Find Minerals", active = false }, { name = "Find Herbs", active = false } }
+ScarletUI.db.global.trackingModule.alwaysOn[2580] = true
+Fire("PLAYER_ALIVE")
+assert(tracking[1].active == false, "tracking was enabled while dead")
+dead = false
+Fire("PLAYER_UNGHOST")
+assert(tracking[1].active == true and tracking[2].active == false)
+ScarletUI.db.global.trackingModule.alwaysOn[2580] = false
+GetSpellInfo = nil
 
 -- Bag sorting: shared on logout; Era, TBC, and Mists lack the sort direction.
 local sort, unconfirmed = { SortBagsRightToLeft = false, InsertItemsLeftToRight = false }, {}

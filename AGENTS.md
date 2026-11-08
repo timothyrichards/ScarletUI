@@ -53,6 +53,9 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
 - `Modules/Tracking.lua`: shares minimap tracking menu checkboxes across
   characters via `db.global.trackingModule.states`, keyed by entry name and
   merged on logout so entries a character lacks keep their shared state.
+  `alwaysOn` (keyed by spell ID, Tracking group on General Settings) turns Find
+  Minerals and Find Herbs back on at login and on `PLAYER_ALIVE`/`PLAYER_UNGHOST`,
+  since Classic rules drop tracking on death; it runs even with sharing off.
   The sync modules save from AceDB `OnDatabaseShutdown` (before defaults are
   stripped), each with its own callback target so none replaces another.
 - `Modules/GameMenu.lua`: optional Scarlet UI and Cooldown Manager buttons

@@ -217,6 +217,36 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                     },
                 },
             },
+            tracking = {
+                name = "Tracking",
+                type = "group",
+                inline = true,
+                order = 1.78,
+                args = {
+                    findMinerals = {
+                        name = "Always Find Minerals",
+                        desc = "Turn on Find Minerals at login and after you resurrect, on characters that know it.",
+                        type = "toggle",
+                        width = 1,
+                        get = function(_) return database.trackingModule.alwaysOn[2580] end,
+                        set = function(_, val)
+                            database.trackingModule.alwaysOn[2580] = val
+                            self:ApplyAlwaysOnTracking()
+                        end,
+                    },
+                    findHerbs = {
+                        name = "Always Find Herbs",
+                        desc = "Turn on Find Herbs at login and after you resurrect, on characters that know it.",
+                        type = "toggle",
+                        width = 1,
+                        get = function(_) return database.trackingModule.alwaysOn[2383] end,
+                        set = function(_, val)
+                            database.trackingModule.alwaysOn[2383] = val
+                            self:ApplyAlwaysOnTracking()
+                        end,
+                    },
+                },
+            },
             microMenu = {
                 name = "Micro Menu",
                 type = "group",

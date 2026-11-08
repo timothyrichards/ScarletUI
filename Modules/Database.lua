@@ -36,6 +36,8 @@ ScarletUI.defaults = {
         },
         trackingModule = {
             enabled = true,
+            -- Spell IDs: Find Minerals, Find Herbs.
+            alwaysOn = { [2580] = false, [2383] = false },
         },
         chatModule = {
             enabled = true,

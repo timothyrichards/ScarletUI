@@ -23,7 +23,39 @@ local function SetTracking(index, active)
     end
 end
 
+-- Find Minerals and Find Herbs, kept on when enabled in settings. Classic rules
+-- drop tracking on death, so they are turned back on at login and resurrection.
+local ALWAYS_ON = { 2580, 2383 }
+
+local function GetSpellName(spellID)
+    if C_Spell and C_Spell.GetSpellName then return C_Spell.GetSpellName(spellID) end
+    return GetSpellInfo and (GetSpellInfo(spellID))
+end
+
+function ScarletUI:ApplyAlwaysOnTracking()
+    if not GetNumTypes or UnitIsDeadOrGhost("player") then return end
+    local alwaysOn = self.db.global.trackingModule.alwaysOn
+    for _, spellID in ipairs(ALWAYS_ON) do
+        local spellName = alwaysOn[spellID] and GetSpellName(spellID)
+        for index = 1, spellName and GetNumTypes() or 0 do
+            local name, active = GetTracking(index)
+            if name == spellName then
+                if not active then SetTracking(index, true) end
+                break
+            end
+        end
+    end
+end
+
 function ScarletUI:SetupTracking()
+    if not self.alwaysOnTrackingRegistered then
+        self.alwaysOnTrackingRegistered = true
+        -- PLAYER_ALIVE: resurrected before releasing; PLAYER_UNGHOST: as a ghost.
+        for _, event in ipairs({ "PLAYER_ENTERING_WORLD", "PLAYER_ALIVE", "PLAYER_UNGHOST" }) do
+            self:RegisterEventHandler(event, function() ScarletUI:ApplyAlwaysOnTracking() end)
+        end
+    end
+
     local module = self.db.global.trackingModule
     if not module.enabled or not GetNumTypes or self.trackingApplied then
         return
@@ -49,6 +81,8 @@ function ScarletUI:SetupTracking()
         end
     end
     self.trackingApplied = true
+    -- The shared states may have just turned an always-on entry off.
+    self:ApplyAlwaysOnTracking()
 
     if not self.trackingShutdownRegistered then
         self.trackingShutdownRegistered = true
