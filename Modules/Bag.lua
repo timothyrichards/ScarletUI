@@ -2214,22 +2214,41 @@ function ScarletUI:GetBagModuleSettingsPage(database, defaults, order)
     local module = database.bagModule;
 
     return {
-        name = "Bag",
-        desc = "Bag Module settings.",
+        name = "Bags",
+        desc = "Custom bag and bank frames, sorting, and highlights.",
         type = "group",
         order = order,
         args = {
+            enabled = {
+                name = "Custom Bag Frames",
+                desc = "Replace Blizzard's bags and bank with one ScarletUI frame each. Turning this off reloads the UI.",
+                type = "toggle",
+                disabled = function() return self:InCombat() end,
+                hidden = function() return self.lightWeightMode end,
+                width = "full",
+                order = 0,
+                get = function(_) return module.enabled end,
+                set = function(_, val)
+                    module.enabled = val
+                    if not val then
+                        self:ShowReloadDialog()
+                    else
+                        self:SetupBags()
+                        self:SetupBank()
+                    end
+                end,
+            },
             generalSettings = {
-                name = "General Settings",
+                name = "Layout",
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
                 hidden = function() return self.lightWeightMode end,
                 inline = true,
-                order = 0,
+                order = 1,
                 args = {
                     slotsPerRow = {
-                        name = "Bag Slots Per Row",
-                        desc = "Must be a number, this is the number of bag slots per row.\n(Default " .. defaults.slotsPerRow .. ")",
+                        name = "Slots Per Row",
+                        desc = "Number of bag slots per row. Changing this reloads the UI.\n(Default " .. defaults.slotsPerRow .. ")",
                         type = "range",
                         min = 1,
                         max = 20,
@@ -2243,8 +2262,8 @@ function ScarletUI:GetBagModuleSettingsPage(database, defaults, order)
                         end,
                     },
                     slotSize = {
-                        name = "Bag Slot Size",
-                        desc = "Must be a number, this is the size of the bag slots.\n(Default " .. defaults.slotSize .. ")",
+                        name = "Slot Size",
+                        desc = "Size of each bag slot. Changing this reloads the UI.\n(Default " .. defaults.slotSize .. ")",
                         type = "range",
                         min = 16,
                         max = 64,
@@ -2258,8 +2277,8 @@ function ScarletUI:GetBagModuleSettingsPage(database, defaults, order)
                         end,
                     },
                     slotSpacing = {
-                        name = "Bag Slot Spacing",
-                        desc = "Must be a number, this is the space between the bag slots.\n(Default " .. defaults.slotSpacing .. ")",
+                        name = "Slot Spacing",
+                        desc = "Space between bag slots. Changing this reloads the UI.\n(Default " .. defaults.slotSpacing .. ")",
                         type = "range",
                         min = 0,
                         max = 20,
@@ -2280,7 +2299,7 @@ function ScarletUI:GetBagModuleSettingsPage(database, defaults, order)
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
                 hidden = function() return self.lightWeightMode end,
                 inline = true,
-                order = 1,
+                order = 2,
                 args = {
                     bagLocked = {
                         name = "Lock Position",
@@ -2331,7 +2350,7 @@ function ScarletUI:GetBagModuleSettingsPage(database, defaults, order)
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
                 hidden = function() return self.lightWeightMode end,
                 inline = true,
-                order = 2,
+                order = 3,
                 args = {
                     bankLocked = {
                         name = "Lock Position",

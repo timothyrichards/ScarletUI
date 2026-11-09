@@ -45,22 +45,22 @@ for _, oldSettings in ipairs({ false, true }) do
     ScarletUI.db.global.raidFramesModule = oldSettings and { enabled = true } or nil
     local options = ScarletUI:Options()
     assert(options.args.actionBarSettings == nil)
-    assert(options.args.generalSettings.args.modules.args.actionbarsModuleEnabled == nil)
+    assert(options.args.generalSettings.args.modules == nil and options.args.defaultSettings == nil)
     -- Retail and Forever get a Bags page with only the sorting and highlight settings.
     local bagPage = options.args.bagModuleSettings
     local bagGroups = 0
     for _ in pairs(bagPage.args) do bagGroups = bagGroups + 1 end
     assert(bagPage.name == "Bags" and bagPage.args.sortSettings and bagPage.args.highlightSettings and bagGroups == 2)
     assert(options.args.editModeSettings and options.args.actionBarTogglesSettings)
-    -- Retail and Forever never load Bag.lua or Nameplates.lua, so their toggles stay hidden.
-    assert(options.args.generalSettings.args.modules.args.bagModuleEnabled.hidden())
+    -- Retail and Forever never load Bag.lua or Nameplates.lua, so their toggles do not exist.
+    assert(bagPage.args.enabled == nil and bagPage.args.sortSettings.args.enabled)
     assert(options.args.toggleMovers == nil and options.args.resetPositions == nil)
-    assert(options.args.generalSettings.args.general.args.clampMovers == nil)
-    assert(options.args.generalSettings.args.modules.args.unitFramesModuleEnabled == nil)
+    assert(options.args.generalSettings.args.interface.args.clampMovers == nil)
     assert(options.args.raidFramesModuleSettings == nil)
-    assert(options.args.generalSettings.args.modules.args.raidFramesModuleEnabled == nil)
     assert(options.args.nameplatesModuleSettings == nil)
-    assert(options.args.generalSettings.args.modules.args.nameplatesModuleEnabled.hidden())
+    -- Each feature is switched on its own page.
+    assert(options.args.actionBarTogglesSettings.args.enabled and options.args.chatModuleSettings.args.enabled)
+    assert(options.args.CVarModuleSettings.args.enabled and options.args.generalSettings.args.tracking.args.enabled)
 end
 
 -- Exercise the real setup dispatcher with only the remaining module methods.
@@ -351,7 +351,7 @@ assert(panelCalls.shown == nil)
 -- Clients without the Cooldown Manager hide its option and button.
 InCombatLockdown = function() return false end
 CooldownViewerSettings = nil
-assert(ScarletUI:Options().args.generalSettings.args.gameMenuButtons.args.cooldownManager.hidden())
+assert(ScarletUI:Options().args.generalSettings.args.shortcuts.args.cooldownManager.hidden())
 menuHooks.OnShow()
 assert(not cooldownButton.shown and #created == 2)
 menuSettings.sui = true
@@ -367,16 +367,16 @@ ContainerFrameCombinedBags = { HookScript = function(_, script, handler) bagHook
 dofile("Modules/FrameTweaks.lua")
 ScarletUI:SetupFrameTweaks()
 assert(not MicroMenu.BackgroundArt.shown and not MicroMenu.BorderArt.shown and not GamepadBagBar.shown)
-local microOption = ScarletUI:Options().args.generalSettings.args.microMenu
+local microOption = ScarletUI:Options().args.generalSettings.args.interface.args.hideMicroMenuArt
 assert(not microOption.hidden())
-microOption.args.hideMicroMenuArt.set(nil, false)
+microOption.set(nil, false)
 assert(MicroMenu.BackgroundArt.shown and MicroMenu.BorderArt.shown)
 gamepadUI = true
 bagHooks.OnShow()
 assert(GamepadBagBar.shown)
 ScarletUI.db.global.hideMicroMenuArt = true
 MicroMenu, GamepadBagBar, InputUtil, ContainerFrameCombinedBags = nil, nil, nil, nil
-assert(ScarletUI:Options().args.generalSettings.args.microMenu.hidden())
+assert(ScarletUI:Options().args.generalSettings.args.interface.args.hideMicroMenuArt.hidden())
 
 -- Spell tooltip mana percent: once, on the cost line only, with per-mana beneath it.
 local function Line(text)
@@ -461,7 +461,7 @@ ScarletUI.db.global.zoneLevels = false
 assert(ZoneLabel("Elwynn Forest") == "Elwynn Forest")
 ScarletUI.db.global.zoneLevels = true
 assert(ScarletUI.zoneLevelsHooked)
-assert(not ScarletUI:Options().args.generalSettings.args.tooltips.args.zoneLevels.hidden())
+assert(not ScarletUI:Options().args.generalSettings.args.interface.args.zoneLevels.hidden())
 -- Five second rule: a cast that costs mana starts a 5 second line across the mana bar.
 local sparkShown, sparkX = false, nil
 local manaBar = { GetWidth = function() return 100 end, CreateTexture = function() return {
@@ -504,7 +504,7 @@ ScarletUI.db.global.fiveSecondRule = true
 Cast(3) -- a free spell does not restart the timer
 now = 105; ruleScripts.OnUpdate()
 assert(not sparkShown and not ruleShown)
-assert(not ScarletUI:Options().args.generalSettings.args.playerFrame.hidden())
+assert(not ScarletUI:Options().args.generalSettings.args.interface.args.fiveSecondRule.hidden())
 
 -- Era, TBC, and Mists also load the Classic-UI-only modules and their old settings keys.
 C_Container = {}
@@ -517,15 +517,20 @@ ScarletUI.db.global.bagModule = ScarletUI.defaults.global.bagModule
 ScarletUI.db.global.nameplatesModule = ScarletUI.defaults.global.nameplatesModule
 ScarletUI.lightWeightMode = false
 local legacyOptions = ScarletUI:Options()
-local moduleToggles = legacyOptions.args.generalSettings.args.modules.args
 assert(legacyOptions.args.bagModuleSettings and legacyOptions.args.nameplatesModuleSettings)
 -- Sorting joins the Classic Bag page and stays visible when ElvUI hides the custom bag groups.
 local legacyBagPage = legacyOptions.args.bagModuleSettings
-assert(legacyBagPage.name == "Bag" and legacyBagPage.args.sortSettings and legacyBagPage.hidden == nil)
+assert(legacyBagPage.name == "Bags" and legacyBagPage.args.sortSettings and legacyBagPage.hidden == nil)
 ScarletUI.lightWeightMode = true
-assert(legacyBagPage.args.generalSettings.hidden() and legacyBagPage.args.bankSettings.hidden())
+assert(legacyBagPage.args.generalSettings.hidden() and legacyBagPage.args.bankSettings.hidden() and legacyBagPage.args.enabled.hidden())
 ScarletUI.lightWeightMode = false
-assert(not moduleToggles.bagModuleEnabled.hidden() and not moduleToggles.nameplatesModuleEnabled.hidden())
+assert(not legacyBagPage.args.enabled.hidden() and legacyOptions.args.nameplatesModuleSettings.args.enabled)
+-- The debuff toggle once wrote the buff setting.
+local auraOptions = legacyOptions.args.nameplatesModuleSettings.args.auras.args
+ScarletUI.ReapplySettingsToAuraIcons = noop
+auraOptions.debuffs.args.track.set(nil, false)
+assert(not ScarletUI.db.global.nameplatesModule.debuffTracker.track and ScarletUI.db.global.nameplatesModule.buffTracker.track)
+auraOptions.debuffs.args.track.set(nil, true)
 calls = {}
 local legacyMethods = { "SetupBags", "SetupBank", "SetupNameplates" }
 for _, name in ipairs(setupMethods) do ScarletUI[name] = noop end

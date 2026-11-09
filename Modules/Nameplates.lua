@@ -997,572 +997,207 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
     local module = database.nameplatesModule;
     local characterDatabase = self.db.char;
 
+    local function ModuleOff() return ScarletUI:SettingDisabled(module.enabled, true) end
+
+    local function Toggle(name, desc, toggleOrder, settings, key, apply, width)
+        return {
+            name = name,
+            desc = desc,
+            type = "toggle",
+            width = width or "full",
+            order = toggleOrder,
+            get = function(_) return module[settings][key] end,
+            set = function(_, val)
+                module[settings][key] = val
+                apply()
+            end,
+        }
+    end
+
+    local function Slider(name, desc, min, max, sliderOrder, settings, key, apply)
+        return {
+            name = name,
+            desc = desc .. "\n(Default " .. defaults[settings][key] .. ")",
+            type = "range",
+            min = min,
+            max = max,
+            step = 1,
+            width = 1,
+            order = sliderOrder,
+            get = function(_) return module[settings][key] end,
+            set = function(_, val)
+                module[settings][key] = val
+                apply()
+            end,
+        }
+    end
+
+    local function Color(name, colorOrder, settings, key)
+        return {
+            name = name,
+            desc = "Choose a color",
+            type = "color",
+            width = 0.75,
+            hasAlpha = true,
+            order = colorOrder,
+            get = function(_) return unpack(module[settings][key]) end,
+            set = function(_, r, g, b, a) module[settings][key] = { r, g, b, a } end,
+        }
+    end
+
+    local function ReapplyAuras() self:ReapplySettingsToAuraIcons() end
+    local function AuraGroup(name, what, groupOrder, settings)
+        return {
+            name = name,
+            type = "group",
+            inline = true,
+            order = groupOrder,
+            args = {
+                track = Toggle("Show", "Show " .. what .. " and their durations on the nameplates.", 0, settings, "track", ReapplyAuras),
+                iconSize = Slider("Icon Size", "Size of the icons.", 1, 100, 1, settings, "iconSize", ReapplyAuras),
+                spacing = Slider("Icon Spacing", "Space between the icons.", 0, 100, 2, settings, "spacing", ReapplyAuras),
+                verticalOffset = Slider("Vertical Offset", "Vertical offset of the icon row from the nameplate.", -100, 100, 3, settings, "verticalOffset", ReapplyAuras),
+            },
+        }
+    end
+
+    local function ReapplyText() self:ReapplyTextSettingsToNameplates() end
+    local function TextGroup(name, what, groupOrder, settings)
+        return {
+            name = name,
+            type = "group",
+            inline = true,
+            order = groupOrder,
+            args = {
+                show = Toggle("Show", "Show " .. what .. " on nameplates.", 0, settings, "show", ReapplyText, 0.5),
+                fontSize = Slider("Font Size", "Font size for " .. what .. ".", 6, 20, 1, settings, "fontSize", ReapplyText),
+            },
+        }
+    end
+
+    local function ThreatGroup(name, groupOrder, settings)
+        return {
+            name = name,
+            type = "group",
+            inline = true,
+            order = groupOrder,
+            args = {
+                noThreat = Color("No Threat", 0, settings, "noThreat"),
+                lowThreat = Color("Low Threat", 1, settings, "lowThreat"),
+                threat = Color("Have Threat", 2, settings, "threat"),
+                pet = Color("Pet Threat", 3, settings, "pet"),
+                tank = Color("Tank Threat", 4, settings, "tank"),
+            },
+        }
+    end
+
+    local function UpdateArrows() ScarletUI:UpdateTargetArrows() end
+
+    local auras = {
+        buffs = AuraGroup("Purgeable Buffs", "purgeable buffs", 0, "buffTracker"),
+        debuffs = AuraGroup("Debuffs", "debuffs", 1, "debuffTracker"),
+    }
+    auras.debuffs.args.priorityDebuffs = {
+        name = "Priority Debuffs",
+        type = "input",
+        desc = "Add a comma seperated list of debuff spell names you wish to always track even if they're applied by another player, for example: Sunder Armor,Expose Armor,Hammer of Justice\n(This setting is saved per character)",
+        width = "full",
+        order = 4,
+        get = function(_) return characterDatabase.priorityDebuffs end,
+        set = function(_, value)
+            characterDatabase.priorityDebuffs = value
+            self:SetupPriorityDebuffs()
+        end,
+    }
+
     return {
         name = "Nameplates",
-        desc = "Nameplates Module settings.",
+        desc = "Nameplate threat colors, auras, and text.",
         type = "group",
         childGroups = "tab",
         order = order,
         hidden = function() return self.lightWeightMode end,
         args = {
-            generalSettings = {
-                name = "Nameplate Settings",
-                type = "group",
-                disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
-                inline = true,
+            enabled = {
+                name = "Enable Nameplates",
+                desc = "Add threat colors, auras, and text to Blizzard's nameplates. Turning this off reloads the UI.",
+                type = "toggle",
+                disabled = function() return self:InCombat() end,
+                width = 1,
                 order = 0,
-                args = {
-                    classColored = {
-                        name = "Class Colors",
-                        desc = "Change player nameplates to match their class color.",
-                        type = "toggle",
-                        width = 1,
-                        order = 0,
-                        get = function(_) return module.classColored end,
-                        set = function(_, val) module.classColored = val end,
-                    },
-                    threatColored = {
-                        name = "Threat Colors",
-                        desc = "Change enemy npc nameplates to reflect their threat status as a color (colors and tank names adjusted below).",
-                        type = "toggle",
-                        width = 1,
-                        order = 1,
-                        get = function(_) return module.threatColored end,
-                        set = function(_, val) module.threatColored = val end,
-                    },
-                    specialUnitsColored = {
-                        name = "Special Unit Colors",
-                        desc = "Change nameplates the special unit coloring based on name if defined (colors and unit names adjusted below).",
-                        type = "toggle",
-                        width = 1,
-                        order = 2,
-                        get = function(_) return module.specialUnitsColored end,
-                        set = function(_, val) module.specialUnitsColored = val end,
-                    },
-                }
+                get = function(_) return module.enabled end,
+                set = function(_, val)
+                    module.enabled = val
+                    if not val then
+                        self:ShowReloadDialog()
+                    else
+                        self:SetupNameplates()
+                    end
+                end,
             },
-            debuffTracker = {
-                name = "Buff/Debuff Tracker",
-                type = "group",
-                disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
+            classColored = {
+                name = "Class Colors",
+                desc = "Change player nameplates to match their class color.",
+                type = "toggle",
+                disabled = ModuleOff,
+                width = 1,
                 order = 1,
-                args = {
-                    trackBuffs = {
-                        name = "Track Purgable Buffs",
-                        desc = "Show purgable buffs and their durations on the nameplates.",
-                        type = "toggle",
-                        width = "full",
-                        order = 0,
-                        get = function(_) return module.buffTracker.track end,
-                        set = function(_, val)
-                            module.buffTracker.track = val
-                            self:ReapplySettingsToAuraIcons()
-                        end,
-                    },
-                    iconSizeBuffs = {
-                        name = "Icon Size",
-                        desc = "Must be a number, this is the size of the debuff icons.\n(Default " .. defaults.debuffTracker.iconSize .. ")",
-                        type = "range",
-                        min = 1,
-                        max = 100,
-                        step = 1,
-                        width = 1,
-                        order = 1,
-                        get = function(_) return module.buffTracker.iconSize end,
-                        set = function(_, val)
-                            module.buffTracker.iconSize = val
-                            self:ReapplySettingsToAuraIcons()
-                        end,
-                    },
-                    spacingBuffs = {
-                        name = "Icon Spacing",
-                        desc = "Must be a number, this is the space between the debuff icons.\n(Default " .. defaults.debuffTracker.spacing .. ")",
-                        type = "range",
-                        min = 0,
-                        max = 100,
-                        step = 1,
-                        width = 1,
-                        order = 2,
-                        get = function(_) return module.buffTracker.spacing end,
-                        set = function(_, val)
-                            module.buffTracker.spacing = val
-                            self:ReapplySettingsToAuraIcons()
-                        end,
-                    },
-                    verticalOffsetBuffs = {
-                        name = "Vertical Offset",
-                        desc = "Must be a number, this is the vertical offset of the debuff row from the nameplate.\n(Default " .. defaults.debuffTracker.verticalOffset .. ")",
-                        type = "range",
-                        min = -100,
-                        max = 100,
-                        step = 1,
-                        width = 1,
-                        order = 3,
-                        get = function(_) return module.buffTracker.verticalOffset end,
-                        set = function(_, val)
-                            module.buffTracker.verticalOffset = val
-                            self:ReapplySettingsToAuraIcons()
-                        end,
-                    },
-                    trackDebuffs = {
-                        name = "Track Debuffs",
-                        desc = "Show debuffs and their durations on the nameplates.",
-                        type = "toggle",
-                        width = "full",
-                        order = 4,
-                        get = function(_) return module.debuffTracker.track end,
-                        set = function(_, val)
-                            module.buffTracker.track = val
-                            self:ReapplySettingsToAuraIcons()
-                        end,
-                    },
-                    iconSizeDebuffs = {
-                        name = "Icon Size",
-                        desc = "Must be a number, this is the size of the debuff icons.\n(Default " .. defaults.debuffTracker.iconSize .. ")",
-                        type = "range",
-                        min = 1,
-                        max = 100,
-                        step = 1,
-                        width = 1,
-                        order = 5,
-                        get = function(_) return module.debuffTracker.iconSize end,
-                        set = function(_, val)
-                            module.debuffTracker.iconSize = val
-                            self:ReapplySettingsToAuraIcons()
-                        end,
-                    },
-                    spacingDebuffs = {
-                        name = "Icon Spacing",
-                        desc = "Must be a number, this is the space between the debuff icons.\n(Default " .. defaults.debuffTracker.spacing .. ")",
-                        type = "range",
-                        min = 0,
-                        max = 100,
-                        step = 1,
-                        width = 1,
-                        order = 6,
-                        get = function(_) return module.debuffTracker.spacing end,
-                        set = function(_, val)
-                            module.debuffTracker.spacing = val
-                            self:ReapplySettingsToAuraIcons()
-                        end,
-                    },
-                    verticalOffsetDebuffs = {
-                        name = "Vertical Offset",
-                        desc = "Must be a number, this is the vertical offset of the debuff row from the nameplate.\n(Default " .. defaults.debuffTracker.verticalOffset .. ")",
-                        type = "range",
-                        min = -100,
-                        max = 100,
-                        step = 1,
-                        width = 1,
-                        order = 7,
-                        get = function(_) return module.debuffTracker.verticalOffset end,
-                        set = function(_, val)
-                            module.debuffTracker.verticalOffset = val
-                            self:ReapplySettingsToAuraIcons()
-                        end,
-                    },
-                    priorityDebuffs = {
-                        name = "Priority Debuffs",
-                        type = "input",
-                        desc = "Add a comma seperated list of debuff spell names you wish to always track even if they're applied by another player, for example: Sunder Armor,Expose Armor,Hammer of Justice\n(This setting is saved per character)",
-                        width = "full",
-                        order = 8,
-                        get = function(_) return characterDatabase.priorityDebuffs end,
-                        set = function(_, value)
-                            characterDatabase.priorityDebuffs = value
-                            self:SetupPriorityDebuffs()
-                        end,
-                    },
-                }
+                get = function(_) return module.classColored end,
+                set = function(_, val) module.classColored = val end,
+            },
+            auras = {
+                name = "Auras",
+                type = "group",
+                disabled = ModuleOff,
+                order = 2,
+                args = auras,
             },
             targetIndicator = {
                 name = "Target Indicator",
                 type = "group",
-                disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
-                order = 2,
+                disabled = ModuleOff,
+                order = 3,
                 args = {
-                    show = {
-                        name = "Show",
-                        desc = "Add target indicator to nameplates.",
-                        type = "toggle",
-                        width = "full",
-                        order = 1,
-                        get = function(_) return module.targetIndicator.show end,
-                        set = function(_, val)
-                            module.targetIndicator.show = val
-                            ScarletUI:UpdateTargetArrows()
-                        end,
-                    },
-                    indicatorSize = {
-                        name = "Indicator Size",
-                        desc = "Must be a number, this is the size of the target arrows around the nameplate.\n(Default " .. defaults.targetIndicator.indicatorSize .. ")",
-                        type = "range",
-                        min = -100,
-                        max = 100,
-                        step = 1,
-                        width = 1,
-                        order = 2,
-                        get = function(_) return module.targetIndicator.indicatorSize end,
-                        set = function(_, val)
-                            module.targetIndicator.indicatorSize = val
-                            ScarletUI:UpdateTargetArrows()
-                        end,
-                    },
-                    indicatorDistance = {
-                        name = "Indicator Distance",
-                        desc = "Must be a number, this is the space of the target arrows around the nameplate.\n(Default " .. defaults.targetIndicator.indicatorDistance .. ")",
-                        type = "range",
-                        min = -100,
-                        max = 100,
-                        step = 1,
-                        width = 1,
-                        order = 3,
-                        get = function(_) return module.targetIndicator.indicatorDistance end,
-                        set = function(_, val)
-                            module.targetIndicator.indicatorDistance = val
-                            ScarletUI:UpdateTargetArrows()
-                        end,
-                    },
-                    indicatorHeight = {
-                        name = "Indicator Height",
-                        desc = "Must be a number, this is the height of the target arrows on the nameplate.\n(Default " .. defaults.targetIndicator.indicatorHeight .. ")",
-                        type = "range",
-                        min = -100,
-                        max = 100,
-                        step = 1,
-                        width = 1,
-                        order = 4,
-                        get = function(_) return module.targetIndicator.indicatorHeight end,
-                        set = function(_, val)
-                            module.targetIndicator.indicatorHeight = val
-                            ScarletUI:UpdateTargetArrows()
-                        end,
-                    }
+                    show = Toggle("Show", "Add arrows around your target's nameplate.", 0, "targetIndicator", "show", UpdateArrows),
+                    indicatorSize = Slider("Size", "Size of the target arrows.", -100, 100, 1, "targetIndicator", "indicatorSize", UpdateArrows),
+                    indicatorDistance = Slider("Distance", "Space between the target arrows and the nameplate.", -100, 100, 2, "targetIndicator", "indicatorDistance", UpdateArrows),
+                    indicatorHeight = Slider("Height", "Height of the target arrows on the nameplate.", -100, 100, 3, "targetIndicator", "indicatorHeight", UpdateArrows),
                 },
             },
             text = {
                 name = "Text",
                 type = "group",
-                disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
-                order = 3,
+                disabled = ModuleOff,
+                order = 4,
                 args = {
-                    healthBarText = {
-                        name = "Health Bar Text",
-                        type = "group",
-                        inline = true,
-                        order = 0,
-                        args = {
-                            show = {
-                                name = "Show",
-                                desc = "Add health text to health bar on nameplates.",
-                                type = "toggle",
-                                width = 0.5,
-                                order = 1,
-                                get = function(_) return module.healthBarText.show end,
-                                set = function(_, val)
-                                    module.healthBarText.show = val
-                                    self:ReapplyTextSettingsToNameplates()
-                                end,
-                            },
-                            fontSize = {
-                                name = "Font Size",
-                                desc = "Desired font size for health bar text.\n(Default " .. defaults.healthBarText.fontSize .. ")",
-                                type = "range",
-                                min = 6,
-                                max = 20,
-                                step = 1,
-                                width = 1,
-                                order = 4,
-                                get = function(_) return module.healthBarText.fontSize end,
-                                set = function(_, val)
-                                    module.healthBarText.fontSize = val
-                                    self:ReapplyTextSettingsToNameplates()
-                                end,
-                            }
-                        },
-                    },
-                    threatAmountText = {
-                        name = "Threat Text",
-                        type = "group",
-                        inline = true,
-                        order = 1,
-                        args = {
-                            show = {
-                                name = "Show",
-                                desc = "Add threat text next to nameplates.",
-                                type = "toggle",
-                                width = 0.5,
-                                order = 1,
-                                get = function(_) return module.threatAmountText.show end,
-                                set = function(_, val)
-                                    module.threatAmountText.show = val
-                                    self:ReapplyTextSettingsToNameplates()
-                                end,
-                            },
-                            fontSize = {
-                                name = "Font Size",
-                                desc = "Desired font size for cast threat text.\n(Default " .. defaults.threatAmountText.fontSize .. ")",
-                                type = "range",
-                                min = 6,
-                                max = 20,
-                                step = 1,
-                                width = 1,
-                                order = 4,
-                                get = function(_) return module.threatAmountText.fontSize end,
-                                set = function(_, val)
-                                    module.threatAmountText.fontSize = val
-                                    self:ReapplyTextSettingsToNameplates()
-                                end,
-                            },
-                            --anchor = {
-                            --    name = "Text Anchor",
-                            --    desc = "Anchor point of the frame.\n(Default " .. defaults.threatAmountText.anchor .. ")",
-                            --    type = "select",
-                            --    width = 1,
-                            --    order = 4,
-                            --    values = function() return { "LEFT", "RIGHT" } end,
-                            --    get = function(_) return module.threatAmountText.anchor end,
-                            --    set = function(_, val)
-                            --        module.threatAmountText.anchor = val
-                            --    end,
-                            --},
-                        },
-                    },
-                    castBarText = {
-                        name = "Cast Bar Text",
-                        type = "group",
-                        inline = true,
-                        order = 2,
-                        args = {
-                            show = {
-                                name = "Show",
-                                desc = "Add cast text to cast bar on nameplates.",
-                                type = "toggle",
-                                width = 0.5,
-                                order = 1,
-                                get = function(_) return module.castBarText.show end,
-                                set = function(_, val)
-                                    module.castBarText.show = val
-                                    self:ReapplyTextSettingsToNameplates()
-                                end,
-                            },
-                            fontSize = {
-                                name = "Font Size",
-                                desc = "Desired font size for cast bar text.\n(Default " .. defaults.castBarText.fontSize .. ")",
-                                type = "range",
-                                min = 6,
-                                max = 20,
-                                step = 1,
-                                width = 1,
-                                order = 4,
-                                get = function(_) return module.castBarText.fontSize end,
-                                set = function(_, val)
-                                    module.castBarText.fontSize = val
-                                    self:ReapplyTextSettingsToNameplates()
-                                end,
-                            }
-                        },
-                    },
-                }
+                    healthBarText = TextGroup("Health Bar Text", "health text", 0, "healthBarText"),
+                    threatAmountText = TextGroup("Threat Text", "threat text", 1, "threatAmountText"),
+                    castBarText = TextGroup("Cast Bar Text", "cast bar text", 2, "castBarText"),
+                },
             },
             threatColors = {
                 name = "Threat Colors",
                 type = "group",
-                disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
+                disabled = ModuleOff,
                 order = 5,
                 args = {
-                    dropdownMenuButton = {
-                        name = "Dropdown Menu Button",
-                        desc = "Adds a button to the right click dropdown to add or remove tanks from the tank names list. NOTE",
+                    threatColored = {
+                        name = "Color by Threat",
+                        desc = "Change enemy npc nameplates to reflect their threat status as a color.",
                         type = "toggle",
                         width = "full",
-                        disabled = true,
                         order = 0,
-                        get = function(_) return module.dropdownMenuButton end,
-                        set = function(_, val) module.dropdownMenuButton = val end,
+                        get = function(_) return module.threatColored end,
+                        set = function(_, val) module.threatColored = val end,
                     },
-                    spacer1 = {
-                        name = "",
-                        type = "description",
-                        width = "full",
-                        order = 0.1,
-                    },
-                    description1 = {
-                        name = "|cffffd100These are the colors you see as a |cffff0900DPS|r or |cff15fb00Healer|r.|r",
-                        type = "description",
-                        width = "full",
-                        fontSize = "medium",
-                        order = 1,
-                    },
-                    otherNoThreat = {
-                        name = "No Threat",
-                        type = "color",
-                        desc = "Choose a color",
-                        width = 0.75,
-                        hasAlpha = true,
-                        order = 2,
-                        get = function(_)
-                            local r, g, b, a = unpack(module.nonTankThreatColors.noThreat)
-                            return r, g, b, a
-                        end,
-                        set = function(_, r, g, b, a)
-                            module.nonTankThreatColors.noThreat = {r, g, b, a}
-                        end,
-                    },
-                    otherLowThreat = {
-                        name = "Low Threat",
-                        type = "color",
-                        desc = "Choose a color",
-                        width = 0.75,
-                        hasAlpha = true,
-                        order = 3,
-                        get = function(_)
-                            local r, g, b, a = unpack(module.nonTankThreatColors.lowThreat)
-                            return r, g, b, a
-                        end,
-                        set = function(_, r, g, b, a)
-                            module.nonTankThreatColors.lowThreat = {r, g, b, a}
-                        end,
-                    },
-                    otherThreat = {
-                        name = "Have Threat",
-                        type = "color",
-                        desc = "Choose a color",
-                        width = 0.75,
-                        hasAlpha = true,
-                        order = 4,
-                        get = function(_)
-                            local r, g, b, a = unpack(module.nonTankThreatColors.threat)
-                            return r, g, b, a
-                        end,
-                        set = function(_, r, g, b, a)
-                            module.nonTankThreatColors.threat = {r, g, b, a}
-                        end,
-                    },
-                    otherPetThreat = {
-                        name = "Pet Threat",
-                        type = "color",
-                        desc = "Choose a color",
-                        width = 0.75,
-                        hasAlpha = true,
-                        order = 5,
-                        get = function(_)
-                            local r, g, b, a = unpack(module.nonTankThreatColors.pet)
-                            return r, g, b, a
-                        end,
-                        set = function(_, r, g, b, a)
-                            module.nonTankThreatColors.pet = {r, g, b, a}
-                        end,
-                    },
-                    otherTankThreat = {
-                        name = "Tank Threat",
-                        type = "color",
-                        desc = "Choose a color",
-                        width = 0.75,
-                        hasAlpha = true,
-                        order = 6,
-                        get = function(_)
-                            local r, g, b, a = unpack(module.nonTankThreatColors.tank)
-                            return r, g, b, a
-                        end,
-                        set = function(_, r, g, b, a)
-                            module.nonTankThreatColors.tank = {r, g, b, a}
-                        end,
-                    },
-                    spacer2 = {
-                        name = "",
-                        type = "description",
-                        width = "full",
-                        order = 6.1,
-                    },
-                    description2 = {
-                        name = "|cffffd100These are the colors you see as a |cff00b3ffTank|r.|r",
-                        type = "description",
-                        width = "full",
-                        fontSize = "medium",
-                        order = 7,
-                    },
-                    noThreat = {
-                        name = "No Threat",
-                        type = "color",
-                        desc = "Choose a color",
-                        width = 0.75,
-                        hasAlpha = true,
-                        order = 8,
-                        get = function(_)
-                            local r, g, b, a = unpack(module.tankThreatColors.noThreat)
-                            return r, g, b, a
-                        end,
-                        set = function(_, r, g, b, a)
-                            module.tankThreatColors.noThreat = {r, g, b, a}
-                        end,
-                    },
-                    lowThreat = {
-                        name = "Low Threat",
-                        type = "color",
-                        desc = "Choose a color",
-                        width = 0.75,
-                        hasAlpha = true,
-                        order = 9,
-                        get = function(_)
-                            local r, g, b, a = unpack(module.tankThreatColors.lowThreat)
-                            return r, g, b, a
-                        end,
-                        set = function(_, r, g, b, a)
-                            module.tankThreatColors.lowThreat = {r, g, b, a}
-                        end,
-                    },
-                    threat = {
-                        name = "Have Threat",
-                        type = "color",
-                        desc = "Choose a color",
-                        width = 0.75,
-                        hasAlpha = true,
-                        order = 10,
-                        get = function(_)
-                            local r, g, b, a = unpack(module.tankThreatColors.threat)
-                            return r, g, b, a
-                        end,
-                        set = function(_, r, g, b, a)
-                            module.tankThreatColors.threat = {r, g, b, a}
-                        end,
-                    },
-                    petThreat = {
-                        name = "Pet Threat",
-                        type = "color",
-                        desc = "Choose a color",
-                        width = 0.75,
-                        hasAlpha = true,
-                        order = 11,
-                        get = function(_)
-                            local r, g, b, a = unpack(module.tankThreatColors.pet)
-                            return r, g, b, a
-                        end,
-                        set = function(_, r, g, b, a)
-                            module.tankThreatColors.pet = {r, g, b, a}
-                        end,
-                    },
-                    tankThreat = {
-                        name = "Tank Threat",
-                        type = "color",
-                        desc = "Choose a color",
-                        width = 0.75,
-                        hasAlpha = true,
-                        order = 12,
-                        get = function(_)
-                            local r, g, b, a = unpack(module.tankThreatColors.tank)
-                            return r, g, b, a
-                        end,
-                        set = function(_, r, g, b, a)
-                            module.tankThreatColors.tank = {r, g, b, a}
-                        end,
-                    },
+                    nonTank = ThreatGroup("As |cffff0900DPS|r or |cff15fb00Healer|r", 1, "nonTankThreatColors"),
+                    tank = ThreatGroup("As |cff00b3ffTank|r", 2, "tankThreatColors"),
                     tankNames = {
                         name = "Tank Names",
                         type = "input",
                         desc = "Add a comma seperated list of player names you wish to manually designate as tanks, for example: Tank1,Tank2,Tank3\n\nPlayers with the role of tank (in versions of WoW that have roles) and players marked Main Tank or Main Assist in raids, will automatically be designated as tanks by the nameplate colors.",
                         width = "full",
-                        order = 13,
+                        order = 3,
                         get = function(_) return module.tankNames end,
                         set = function(_, value)
                             module.tankNames = value
@@ -1574,30 +1209,34 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
             specialUnits = {
                 name = "Special Units",
                 type = "group",
-                disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
-                order = 8,
+                disabled = ModuleOff,
+                order = 6,
                 args = {
+                    specialUnitsColored = {
+                        name = "Color Special Units",
+                        desc = "Color the nameplates of the enemy units named below.",
+                        type = "toggle",
+                        width = 1,
+                        order = 0,
+                        get = function(_) return module.specialUnitsColored end,
+                        set = function(_, val) module.specialUnitsColored = val end,
+                    },
                     specialUnitColor = {
-                        name = "Special Unit Color",
+                        name = "Color",
                         type = "color",
                         desc = "Choose a color",
                         width = 1,
                         hasAlpha = true,
-                        order = 0,
-                        get = function(_)
-                            local r, g, b, a = unpack(module.specialUnitColor)
-                            return r, g, b, a
-                        end,
-                        set = function(_, r, g, b, a)
-                            module.specialUnitColor = {r, g, b, a}
-                        end,
+                        order = 1,
+                        get = function(_) return unpack(module.specialUnitColor) end,
+                        set = function(_, r, g, b, a) module.specialUnitColor = { r, g, b, a } end,
                     },
                     specialUnitNames = {
                         name = "Special Unit Names",
                         type = "input",
                         desc = "Add a comma seperated list of enemy unit names you wish to manually designate as special units, for example: Unit1,Unit2,Unit3",
                         width = "full",
-                        order = 1,
+                        order = 2,
                         get = function(_) return module.specialUnitNames end,
                         set = function(_, value)
                             module.specialUnitNames = value

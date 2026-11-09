@@ -497,7 +497,7 @@ function ScarletUI:GetEditModeSettingsPage(order)
                 end,
                 desc = function()
                     if self:DoesEditModeProfileExist(self:GetEditModeVariant()) then
-                        return "Replace the installed ScarletUI profile with the current defaults and activate it."
+                        return "Replace the installed ScarletUI profile with the current defaults and activate it. Changes you made to that profile are lost."
                     end
                     return "Install and activate the ScarletUI profile optimized for the current display."
                 end,
@@ -505,7 +505,14 @@ function ScarletUI:GetEditModeSettingsPage(order)
                 disabled = function()
                     return self:InCombat() or not self.editModeReady
                 end,
-                func = function() self:InstallEditModeProfile(self:GetEditModeVariant()) end,
+                func = function()
+                    -- Updating replaces the player's changes, so it asks first.
+                    if self:DoesEditModeProfileExist(self:GetEditModeVariant()) then
+                        self:RestoreEditModeProfile()
+                    else
+                        self:InstallEditModeProfile(self:GetEditModeVariant())
+                    end
+                end,
                 order = 2,
             },
             switch = {
@@ -522,23 +529,13 @@ function ScarletUI:GetEditModeSettingsPage(order)
                 func = function() self:SwitchEditModeProfile(self:GetEditModeVariant()) end,
                 order = 3,
             },
-            restore = {
-                name = "Restore Profile",
-                desc = "Replace the current display's ScarletUI profile with its defaults.",
-                type = "execute",
-                disabled = function()
-                    return self:InCombat() or not self.editModeReady or not self:DoesEditModeProfileExist(self:GetEditModeVariant())
-                end,
-                func = function() self:RestoreEditModeProfile() end,
-                order = 4,
-            },
             open = {
                 name = "Open Edit Mode",
                 desc = "Open Blizzard Edit Mode to customize the active profile.",
                 type = "execute",
                 disabled = function() return self:InCombat() end,
                 func = function() self:OpenEditMode() end,
-                order = 5,
+                order = 4,
             },
         },
     }

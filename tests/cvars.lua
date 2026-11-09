@@ -143,7 +143,7 @@ local function controls(name)
     error("Missing CVar control: " .. name)
 end
 local function toggle(enabled)
-    ScarletUI:GetGeneralSettingsPage(ScarletUI.db.global, 1).args.modules.args.cVarModuleEnabled.set(nil, enabled)
+    page().args.enabled.set(nil, enabled)
     flush()
     if shown == "SCARLET_CVAR_ENABLE" then click(true); flush() end
     if shown == "SCARLET_CVAR_REVIEW" then click(true); flush() end
@@ -257,7 +257,7 @@ flush()
 assert(shown == nil and not ScarletUI.db.global.CVarModule.enabled)
 
 -- Enabling later shows restoration instructions; disabling restores the snapshot.
-ScarletUI:GetGeneralSettingsPage(ScarletUI.db.global, 1).args.modules.args.cVarModuleEnabled.set(nil, true)
+page().args.enabled.set(nil, true)
 flush()
 assert(shown == "SCARLET_CVAR_ENABLE" and values.damageMeterEnabled == "6")
 click(true)
@@ -267,7 +267,7 @@ flush()
 assert(shown == "SCARLET_CVAR_REVIEW")
 assert(StaticPopupDialogs[shown].button1 == "Got It" and StaticPopupDialogs[shown].button2 == nil)
 assert(StaticPopupDialogs[shown].OnCancel == nil, "Information dialog must not offer a revert action")
-assert(StaticPopupDialogs[shown].text:find("General Settings > Enabled Modules", 1, true))
+assert(StaticPopupDialogs[shown].text:find("go to CVars, and turn off Enable CVar Overrides", 1, true))
 logout()
 login()
 ScarletUI:SetupCVars()

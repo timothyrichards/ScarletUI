@@ -32,7 +32,10 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
 
 - `ScarletUI.lua`: addon initialization, setup dispatcher, events, popups, commands.
 - `Modules/Database.lua`: AceDB defaults and reset behavior.
-- `Modules/Options.lua`: AceConfig settings pages.
+- `Modules/Options.lua`: AceConfig settings pages. There is no central module
+  list: each feature's enable toggle sits on its own page (Bags, Chat,
+  Nameplates, CVars, Action Bars, the Sorting group, and the Minimap Tracking
+  group on General). AceConfig sorts negative `order` values last.
 - `Modules/Helpers.lua`: client detection and shared helpers.
 - `Modules/EditModeLayouts.lua`: shared frame definitions and display presets.
 - `Modules/EditMode.lua`: Edit Mode detection, profile installation, activation,
@@ -53,7 +56,7 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
 - `Modules/Tracking.lua`: shares minimap tracking menu checkboxes across
   characters via `db.global.trackingModule.states`, keyed by entry name and
   merged on logout so entries a character lacks keep their shared state.
-  `alwaysOn` (keyed by spell ID, Tracking group on General Settings) turns Find
+  `alwaysOn` (keyed by spell ID, Minimap Tracking group on the General page) turns Find
   Minerals and Find Herbs back on at login and on `PLAYER_ALIVE`/`PLAYER_UNGHOST`,
   since Classic rules drop tracking on death; it runs even with sharing off.
   The sync modules save from AceDB `OnDatabaseShutdown` (before defaults are
@@ -102,7 +105,7 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   are left alone. Retail and Mists show levels natively and skip setup.
 - `Modules/FiveSecondRule.lua`: after the player casts a spell that costs mana, a
   line crosses the player frame mana bar for 5 seconds until spirit regeneration
-  resumes (`db.global.fiveSecondRule`, Player Frame group on General Settings).
+  resumes (`db.global.fiveSecondRule`, Interface group on the General page).
   Classic Era and Forever only. Forever returns `UnitPower` mana as a secret value,
   so casts come from the player's `UNIT_SPELLCAST_SUCCEEDED` (not secret for the
   player) and `GetSpellPowerCost`, never from mana changes. Hidden while the bar
@@ -160,7 +163,7 @@ Chat font size is applied per chat window with `FCF_SetChatWindowFontSize`.
 
 Fresh installs start with CVars disabled and offer an Enable / Leave Disabled
 dialog. Enabling applies overrides, then shows a Got It notice explaining how
-to restore originals: `/sui` > General Settings > Enabled Modules > turn off CVars.
+to restore originals: `/sui` > CVars > turn off Enable CVar Overrides.
 Acknowledging the notice keeps CVars enabled and retains the saved snapshot.
 Choices persist across reloads; an unacknowledged notice returns after login.
 Enabling from settings uses the same flow. Existing installations retain their
