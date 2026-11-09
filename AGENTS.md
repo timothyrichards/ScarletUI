@@ -34,8 +34,9 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
 - `Modules/Database.lua`: AceDB defaults and reset behavior.
 - `Modules/Options.lua`: AceConfig settings pages. There is no central module
   list: each feature's enable toggle sits on its own page (Bags, Chat,
-  Nameplates, CVars, Action Bars, the Sorting group, and the Minimap Tracking
-  group on General). AceConfig sorts negative `order` values last.
+  Nameplates, CVars, Action Bars, and the Minimap Tracking group on General)
+  and is the first setting on that page; Bags leads with Custom Bag Frames,
+  then Share Sorting Across Characters. AceConfig sorts negative `order` values last.
 - `Modules/Helpers.lua`: client detection and shared helpers.
 - `Modules/EditModeLayouts.lua`: shared frame definitions and display presets.
 - `Modules/EditMode.lua`: Edit Mode detection, profile installation, activation,

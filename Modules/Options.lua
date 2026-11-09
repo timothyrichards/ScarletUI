@@ -35,7 +35,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                 name = "Interface",
                 type = "group",
                 inline = true,
-                order = 0,
+                order = 1,
                 args = {
                     tidyIcons = {
                         name = "Bigger Icons",
@@ -111,7 +111,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                 name = "Item Level",
                 type = "group",
                 inline = true,
-                order = 1,
+                order = 2,
                 args = {
                     itemLevelCharacter = {
                         name = "Character Window",
@@ -185,7 +185,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                 name = "Minimap Tracking",
                 type = "group",
                 inline = true,
-                order = 2,
+                order = 0,
                 args = {
                     enabled = {
                         name = "Share Across Characters",
@@ -382,20 +382,21 @@ function ScarletUI:GetBagSettingsPage(database, defaults, order)
                 "Clean Up fills your bags starting from the rightmost bag instead of the backpack.", 0),
             insertItemsLeftToRight = SortToggle("insertItemsLeftToRight", "Insert Items Left to Right",
                 "New items go into your leftmost bag first instead of the backpack.", 1),
-            enabled = {
-                name = "Share Across Characters",
-                desc = "Share the sorting settings above across characters. Saved on logout and applied on login.",
-                type = "toggle",
-                disabled = function() return self:InCombat() end,
-                width = "full",
-                order = 2,
-                get = function(_) return database.bagSortModule.enabled end,
-                set = function(_, val)
-                    database.bagSortModule.enabled = val
-                    self:SetupBagSort()
-                end,
-            },
         },
+    }
+    -- Module switches lead each page; this one follows Bag.lua's Custom Bag Frames.
+    page.args.shareSorting = {
+        name = "Share Sorting Across Characters",
+        desc = "Share the Sorting settings below across characters. Saved on logout and applied on login.",
+        type = "toggle",
+        disabled = function() return self:InCombat() end,
+        width = "full",
+        order = 0.5,
+        get = function(_) return database.bagSortModule.enabled end,
+        set = function(_, val)
+            database.bagSortModule.enabled = val
+            self:SetupBagSort()
+        end,
     }
     page.args.highlightSettings = {
         name = "Highlights",
