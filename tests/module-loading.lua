@@ -378,6 +378,67 @@ ScarletUI.db.global.hideMicroMenuArt = true
 MicroMenu, GamepadBagBar, InputUtil, ContainerFrameCombinedBags = nil, nil, nil, nil
 assert(ScarletUI:Options().args.generalSettings.args.interface.args.hideMicroMenuArt.hidden())
 
+-- Collapsing inactive tracked buffs: shown items take the slots at one end.
+local collapseOption = ScarletUI:Options().args.generalSettings.args.interface.args.collapseInactiveBuffs
+assert(collapseOption.hidden() and ScarletUI.db.global.collapseInactiveBuffs == "OFF")
+local buffItems, buffViewer, layouts = {}, {}, 0
+for index, shown in ipairs({ false, true, false, true }) do
+    local item = { layoutIndex = index, shown = shown, scripts = {} }
+    item.IsShown = function() return item.shown end
+    item.GetPoint = function() return unpack(item.point, 1, 5) end
+    item.ClearAllPoints = noop
+    item.SetPoint = function(_, ...) item.point = { ... } end
+    item.HookScript = function(_, script, handler) item.scripts[script] = handler end
+    buffItems[index] = item
+end
+local slotDirection = 1
+buffViewer.itemFramePool = { EnumerateActive = function()
+    local i = 0
+    return function() i = i + 1 return buffItems[i] end
+end }
+buffViewer.Layout = function()
+    layouts = layouts + 1
+    for i, item in ipairs(buffItems) do item.point = { "TOPLEFT", buffViewer, "TOPLEFT", (i - 1) * 40 * slotDirection, 0 } end
+end
+buffViewer:Layout()
+local function BuffX() return buffItems[2].point[4], buffItems[4].point[4] end
+local savedHook = hooksecurefunc
+hooksecurefunc = function(target, key, hook)
+    local original = target[key]
+    target[key] = function(...) original(...) hook(...) end
+end
+BuffIconCooldownViewer = buffViewer
+assert(not collapseOption.hidden())
+-- Off leaves the viewer unhooked.
+ScarletUI:SetupBuffCollapse()
+assert(buffItems[2].scripts.OnShow == nil)
+collapseOption.set(nil, "START")
+local x2, x4 = BuffX()
+assert(x2 == 0 and x4 == 40 and buffItems[1].point[4] == 0)
+collapseOption.set(nil, "END")
+x2, x4 = BuffX()
+assert(x2 == 80 and x4 == 120)
+-- A buff starting repacks without a Blizzard layout; a layout repacks too.
+buffItems[3].shown = true
+buffItems[3].scripts.OnShow()
+x2, x4 = BuffX()
+assert(x2 == 40 and buffItems[3].point[4] == 80 and x4 == 120 and layouts == 1)
+buffItems[3].shown = false
+buffViewer:Layout()
+x2, x4 = BuffX()
+assert(x2 == 80 and x4 == 120 and layouts == 2)
+-- A reversed icon direction puts slot 1 on the right, so Left uses the last slots.
+slotDirection = -1
+collapseOption.set(nil, "START")
+buffViewer:Layout()
+x2, x4 = BuffX()
+assert(x2 == -80 and x4 == -120)
+-- Off returns every item to its own slot.
+collapseOption.set(nil, "OFF")
+x2, x4 = BuffX()
+assert(x2 == -40 and x4 == -120)
+BuffIconCooldownViewer, hooksecurefunc = nil, savedHook
+
 -- Spell tooltip mana percent: once, on the cost line only, with per-mana beneath it.
 local function Line(text)
     return { GetText = function() return text end, SetText = function(_, t) text = t end,

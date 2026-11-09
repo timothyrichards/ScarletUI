@@ -15,6 +15,7 @@ ScarletUI.defaults = {
         highlightCheapestItem = true,
         expandCharacterInfo = true,
         hideMicroMenuArt = true,
+        collapseInactiveBuffs = "OFF",
         minimapIcon = {
             hide = false,
         },

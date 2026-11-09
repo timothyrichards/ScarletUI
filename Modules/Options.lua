@@ -92,6 +92,21 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                         get = function(_) return database.zoneLevels end,
                         set = function(_, val) database.zoneLevels = val end,
                     },
+                    collapseInactiveBuffs = {
+                        name = "Collapse Inactive Buffs",
+                        desc = "The Cooldown Manager keeps an empty slot for every tracked buff that is not active. Slide the active buff icons and bars together toward one end instead.\n\nOnly matters with Hide When Inactive checked for Tracked Buffs in Edit Mode.",
+                        type = "select",
+                        hidden = function() return not self:IsBuffCollapseSupported() end,
+                        width = 1.5,
+                        order = 6,
+                        values = { OFF = "Off", START = "Left or Top", END = "Right or Bottom" },
+                        sorting = { "OFF", "START", "END" },
+                        get = function(_) return database.collapseInactiveBuffs end,
+                        set = function(_, val)
+                            database.collapseInactiveBuffs = val
+                            self:SetupBuffCollapse()
+                        end,
+                    },
                     expandCharacterInfo = {
                         name = "Auto Expand Character Info",
                         desc = "Automatically opens the side panel in the character window showing your stats, titles, and equipment manager.",
