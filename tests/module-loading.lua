@@ -113,9 +113,16 @@ for _, variant in ipairs({ "STANDARD", "COMPACT", "ULTRAWIDE" }) do
     anchors = {}
     assert(ScarletUI:ApplyEditModeLayout(variant))
     assert(#ScarletUI.editModeSkippedSystems == 0)
-    assert(anchors.raidFrame[1] == 196.6 and anchors.raidFrame[2] == -174)
+    if variant == "COMPACT" then
+        assert(anchors.raidFrame[1] == 196.6 and anchors.raidFrame[2] == -174)
+    else
+        assert(anchors.raidFrame[1] == -722 and anchors.raidFrame[2] == 898)
+        assert(anchors.partyFrame[1] == -372 and anchors.partyFrame[2] == 698)
+    end
+    assert(anchors.swingTimerOffHand[4] == "swingTimerMainHand" and anchors.totemBar[4] == "multiBarBottomRight")
+    assert(anchors.utilityCooldowns[2] == 331.7 and anchors.swingTimerRanged[2] == 400)
     assert(anchors.partyFrame[3] == (variant == "COMPACT" and "BOTTOMLEFT" or "TOPLEFT"))
-    assert(anchors.mainMenuBar[1] == 0 and anchors.mainMenuBar[2] == 41.9)
+    assert(anchors.mainMenuBar[1] == 0 and anchors.mainMenuBar[2] == 22)
     assert(anchors.multiBarBottomLeft[4] == "mainMenuBar")
     assert(anchors.stanceBar[4] == "multiBarBottomRight")
     if variant == "COMPACT" then

@@ -1,4 +1,4 @@
-ScarletUI.editModeLayoutSchemaVersion = 14
+ScarletUI.editModeLayoutSchemaVersion = 15
 
 ScarletUI.editModeFrameCandidates = {
     -- MainActionBar is the Edit Mode system. MainMenuBar is the 1024px
@@ -33,6 +33,11 @@ ScarletUI.editModeFrameCandidates = {
     essentialCooldowns = { "EssentialCooldownViewer" },
     buffIconCooldowns = { "BuffIconCooldownViewer" },
     buffBarCooldowns = { "BuffBarCooldownViewer" },
+    utilityCooldowns = { "UtilityCooldownViewer" },
+    totemBar = { "MultiCastActionBarFrame" },
+    swingTimerMainHand = { "SwingTimerMainHandFrame" },
+    swingTimerOffHand = { "SwingTimerOffHandFrame" },
+    swingTimerRanged = { "SwingTimerRangedFrame" },
 }
 
 local function EnumValue(enumTable, key)
@@ -98,12 +103,29 @@ local buffBarSettings = CooldownViewerSettings("Vertical", 1, "Left", 5)
 table.insert(buffBarSettings, CooldownViewerSetting("BarContent", EnumValue("CooldownViewerBarContent", "IconAndName")))
 table.insert(buffBarSettings, CooldownViewerSetting("BarWidthScale", 150))
 
+local function SwingTimerSetting(key, value)
+    return { setting = EnumValue("EditModeSwingTimerSetting", key), value = value }
+end
+
+-- Width and Height are stored as the distance above the slider minimum.
+local swingTimerSettings = {
+    SwingTimerSetting("Scale", 80),
+    SwingTimerSetting("Opacity", 100),
+    SwingTimerSetting("Visibility", EnumValue("EditModeSwingTimerVisibility", "Always")),
+    SwingTimerSetting("Width", 426),
+    SwingTimerSetting("Height", 30),
+    SwingTimerSetting("ShowBarTitle", 1),
+    SwingTimerSetting("ShowTime", 1),
+}
+
 -- Frames with relativeTo snap to another layout key, matching Blizzard's
 -- stacked-bar anchors. Screen anchors use the nearest screen edge so they
--- hold across UI scales.
+-- hold across UI scales. The group frames, Utility cooldowns, and swing timers
+-- line up with the bottom-center unit frames, so they anchor to the bottom
+-- center too; offsets were captured on a 2133x1200 UIParent (1440p).
 local standardFrames = {
     mainMenuBar = {
-        point = "CENTER", relativePoint = "BOTTOM", x = 0, y = 41.9,
+        point = "BOTTOM", relativePoint = "BOTTOM", x = 0, y = 22,
         settings = {
             { setting = EnumValue("EditModeActionBarSetting", "Orientation"), value = horizontal },
             { setting = EnumValue("EditModeActionBarSetting", "NumRows"), value = 1 },
@@ -140,6 +162,9 @@ local standardFrames = {
     petBar = {
         point = "BOTTOMLEFT", relativeTo = "multiBarBottomRight", relativePoint = "TOPLEFT", x = 0, y = 4,
         settings = ActionBarSettings(horizontal, false),
+    },
+    totemBar = {
+        point = "BOTTOMLEFT", relativeTo = "multiBarBottomRight", relativePoint = "TOPLEFT", x = 0, y = 4,
     },
     possessBar = {
         point = "BOTTOMRIGHT", relativeTo = "vehicleLeaveButton", relativePoint = "BOTTOMLEFT", x = -4, y = 0,
@@ -215,13 +240,13 @@ local standardFrames = {
     experienceBar = {
         point = "BOTTOM", relativePoint = "BOTTOM", x = 0, y = 0,
         settings = {
-            { setting = EnumValue("EditModeStatusTrackingBarSetting", "Size"), value = 100 },
+            { setting = EnumValue("EditModeStatusTrackingBarSetting", "Size"), value = 50 },
         },
     },
     reputationBar = {
         point = "BOTTOM", relativePoint = "BOTTOM", x = 0, y = 0,
         settings = {
-            { setting = EnumValue("EditModeStatusTrackingBarSetting", "Size"), value = 100 },
+            { setting = EnumValue("EditModeStatusTrackingBarSetting", "Size"), value = 50 },
         },
     },
     microBar = {
@@ -244,7 +269,7 @@ local standardFrames = {
         point = "BOTTOMRIGHT", relativeTo = "bagBar", relativePoint = "TOPRIGHT", x = 0, y = 4,
         settings = {
             { setting = EnumValue("EditModeDamageMeterSetting", "Visibility"), value = EnumValue("DamageMeterVisibility", "Always") },
-            { setting = EnumValue("EditModeDamageMeterSetting", "Style"), value = EnumValue("DamageMeterStyle", "Thin") },
+            { setting = EnumValue("EditModeDamageMeterSetting", "Style"), value = EnumValue("DamageMeterStyle", "Default") },
             { setting = EnumValue("EditModeDamageMeterSetting", "Numbers"), value = EnumValue("DamageMeterNumbers", "Compact") },
             { setting = EnumValue("EditModeDamageMeterSetting", "FrameWidth"), value = 287 },
             { setting = EnumValue("EditModeDamageMeterSetting", "FrameHeight"), value = 213 },
@@ -270,6 +295,22 @@ local standardFrames = {
         point = "TOPLEFT", relativePoint = "BOTTOM", x = -120.8, y = 309,
         settings = CooldownViewerSettings("Horizontal", 12, "Right", 2),
     },
+    utilityCooldowns = {
+        point = "CENTER", relativePoint = "BOTTOM", x = 0, y = 331.7,
+        settings = CooldownViewerSettings("Horizontal", 7, "Right", 2),
+    },
+    swingTimerMainHand = {
+        point = "CENTER", relativePoint = "BOTTOM", x = 0, y = 400,
+        settings = swingTimerSettings,
+    },
+    swingTimerOffHand = {
+        point = "BOTTOMLEFT", relativeTo = "swingTimerMainHand", relativePoint = "TOPLEFT", x = 0, y = 3.2,
+        settings = swingTimerSettings,
+    },
+    swingTimerRanged = {
+        point = "CENTER", relativePoint = "BOTTOM", x = 0, y = 400,
+        settings = swingTimerSettings,
+    },
     buffIconCooldowns = {
         point = "BOTTOMRIGHT", relativeTo = "playerFrame", relativePoint = "TOPRIGHT", x = -20, y = -12,
         settings = CooldownViewerSettings("Horizontal", 1, "Right", 5),
@@ -279,20 +320,20 @@ local standardFrames = {
         settings = buffBarSettings,
     },
     partyFrame = {
-        point = "TOPLEFT", relativePoint = "TOPLEFT", x = 554.2, y = -404,
+        point = "TOPLEFT", relativePoint = "BOTTOM", x = -372, y = 698,
         settings = GroupAuraSettings({
             UnitFrameSetting("UseRaidStylePartyFrames", 1),
             UnitFrameSetting("ShowPartyFrameBackground", 0),
             UnitFrameSetting("UseHorizontalGroups", 0),
             UnitFrameSetting("SortPlayersBy", EnumValue("SortPlayersBy", "Group")),
             UnitFrameSetting("DisplayBorder", 0),
-            UnitFrameSetting("FrameHeight", 46),
-            UnitFrameSetting("FrameWidth", 90),
+            UnitFrameSetting("FrameHeight", 52),
+            UnitFrameSetting("FrameWidth", 96),
             UnitFrameSetting("FrameSize", 100),
         }),
     },
     raidFrame = {
-        point = "TOPLEFT", relativePoint = "TOPLEFT", x = 196.6, y = -174,
+        point = "TOPLEFT", relativePoint = "BOTTOM", x = -722, y = 898,
         settings = GroupAuraSettings({
             UnitFrameSetting("RaidGroupDisplayType", EnumValue("RaidGroupDisplayType", "SeparateGroupsHorizontal")),
             UnitFrameSetting("SortPlayersBy", EnumValue("SortPlayersBy", "Group")),
@@ -326,6 +367,8 @@ ScarletUI.editModeLayouts = {
                 },
             },
             partyFrame = { point = "BOTTOMLEFT", relativePoint = "BOTTOMLEFT", x = 40, y = 225 },
+            -- The Standard raid offsets reach past a compact screen's left and top edges.
+            raidFrame = { point = "TOPLEFT", relativePoint = "TOPLEFT", x = 196.6, y = -174 },
         },
     },
     ULTRAWIDE = {
