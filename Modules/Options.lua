@@ -245,7 +245,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                         end,
                     },
                     sui = {
-                        name = "Escape Menu Button",
+                        name = "Esc Menu: Settings",
                         desc = "Show a button below the escape menu that opens these settings.",
                         type = "toggle",
                         width = 1,
@@ -254,7 +254,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                         set = function(_, val) database.gameMenuButtons.sui = val end,
                     },
                     cooldownManager = {
-                        name = "Cooldown Manager Button",
+                        name = "Esc Menu: Cooldowns",
                         desc = "Show a button below the escape menu that opens Blizzard's Advanced Cooldown Settings.",
                         type = "toggle",
                         width = 1,
