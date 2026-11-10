@@ -255,6 +255,7 @@ C_Minimap = {
     GetTrackingInfo = function(i) return tracking[i] end,
     SetTracking = function(i, on) tracking[i].active = on end,
 }
+C_Timer.NewTicker = function() end
 dofile("Modules/Tracking.lua")
 ScarletUI:SetupTracking()
 tracking[1].active = false
@@ -269,6 +270,9 @@ assert(states["Find Herbs"] == true and states["Stable Master"] == false)
 
 -- Always-on tracking: re-enabled at login and resurrection, skipped while dead.
 dead = true
+local now, resting, cooldown = 100, false, 0
+GetTime = function() return now end
+GetSpellCooldown = function() return 0, cooldown end
 GetSpellInfo = function(id) return ({ [2580] = "Find Minerals", [2383] = "Find Herbs" })[id] end
 tracking = { { name = "Find Minerals", active = false }, { name = "Find Herbs", active = false } }
 ScarletUI.db.global.trackingModule.alwaysOn[2580] = true
@@ -277,7 +281,38 @@ assert(tracking[1].active == false, "tracking was enabled while dead")
 dead = false
 Fire("PLAYER_UNGHOST")
 assert(tracking[1].active == true and tracking[2].active == false)
-ScarletUI.db.global.trackingModule.alwaysOn[2580] = false
+-- Knowing both: the timer swaps to the inactive one, as Classic tracks one at a time.
+now = now + 3
+IsInInstance = function() return false end
+IsResting = function() return resting end
+UnitOnTaxi = function() return false end
+SpellIsTargeting = function() return false end
+GetCursorInfo = function() end
+GetNumLootItems = function() return 0 end
+Minimap = { IsMouseOver = function() return false end }
+C_Minimap.SetTracking = function(i, on)
+    for _, entry in ipairs(tracking) do entry.active = false end
+    tracking[i].active = on
+end
+ScarletUI.db.global.trackingModule.alwaysOn[2383] = true
+ScarletUI:SwitchTracking()
+assert(tracking[2].active and not tracking[1].active, "did not swap to herbs")
+ScarletUI:SwitchTracking()
+assert(tracking[2].active, "swapped again before the interval passed")
+now, resting = now + 3, true
+ScarletUI:SwitchTracking()
+assert(tracking[2].active, "swapped while resting")
+resting, cooldown = false, 1.5
+ScarletUI:SwitchTracking()
+assert(tracking[2].active, "swapped during the global cooldown")
+cooldown = 0
+ScarletUI:SwitchTracking()
+assert(tracking[1].active and not tracking[2].active, "did not swap back to minerals")
+-- With only one known, the timer leaves a hand-picked tracking type alone.
+now = now + 3
+tracking = { { name = "Find Minerals", active = false }, { name = "Track Beasts", active = true } }
+ScarletUI:SwitchTracking()
+assert(tracking[2].active and not tracking[1].active, "timer overrode a single tracker")
 GetSpellInfo = nil
 
 -- Bag sorting: shared on logout; Era, TBC, and Mists lack the sort direction.

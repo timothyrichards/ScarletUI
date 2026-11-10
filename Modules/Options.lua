@@ -239,6 +239,18 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                             self:ApplyAlwaysOnTracking()
                         end,
                     },
+                    switchInterval = {
+                        name = "Switch Interval",
+                        desc = "Seconds between swaps when both are on and a character knows both but can only track one at a time. Paused in combat, cities, and instances, and while casting, looting, or hovering the minimap. Turn one off to stop switching.",
+                        type = "range",
+                        min = 2,
+                        max = 20,
+                        step = 1,
+                        width = 1,
+                        order = 3,
+                        get = function(_) return database.trackingModule.switchInterval end,
+                        set = function(_, val) database.trackingModule.switchInterval = val end,
+                    },
                 },
             },
             shortcuts = {

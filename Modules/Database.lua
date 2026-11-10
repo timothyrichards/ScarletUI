@@ -38,7 +38,9 @@ ScarletUI.defaults = {
         trackingModule = {
             enabled = true,
             -- Spell IDs: Find Minerals, Find Herbs.
-            alwaysOn = { [2580] = false, [2383] = false },
+            alwaysOn = { [2580] = true, [2383] = true },
+            -- Seconds between swaps when a character knows both.
+            switchInterval = 3,
         },
         chatModule = {
             enabled = true,

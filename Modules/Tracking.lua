@@ -26,25 +26,65 @@ end
 -- Find Minerals and Find Herbs, kept on when enabled in settings. Classic rules
 -- drop tracking on death, so they are turned back on at login and resurrection.
 local ALWAYS_ON = { 2580, 2383 }
+-- uchatscrollbutton.ogg, played on every tracking change; muted while auto-switching.
+local SWITCH_SOUND = 567407
+local lastSwitch = 0
 
 local function GetSpellName(spellID)
     if C_Spell and C_Spell.GetSpellName then return C_Spell.GetSpellName(spellID) end
     return GetSpellInfo and (GetSpellInfo(spellID))
 end
 
-function ScarletUI:ApplyAlwaysOnTracking()
+-- Classic tracking is a spell cast on the global cooldown; a blocked cast errors.
+local function OnCooldown(spellID)
+    if C_Spell and C_Spell.GetSpellCooldown then
+        local info = C_Spell.GetSpellCooldown(spellID)
+        return info and info.duration > 0
+    end
+    local _, duration = GetSpellCooldown(spellID)
+    return (duration or 0) > 0
+end
+
+-- Turns on one inactive always-on entry per call. Classic clients track one
+-- spell at a time, so with both known every call swaps to the other; clients
+-- that track several end up with both on and nothing left to do.
+-- `switching` (the timer) only acts when two entries are known, so a character
+-- with one can still pick another tracking type by hand.
+function ScarletUI:ApplyAlwaysOnTracking(switching)
     if not GetNumTypes or UnitIsDeadOrGhost("player") then return end
     local alwaysOn = self.db.global.trackingModule.alwaysOn
+    local known, target = 0, nil
     for _, spellID in ipairs(ALWAYS_ON) do
         local spellName = alwaysOn[spellID] and GetSpellName(spellID)
         for index = 1, spellName and GetNumTypes() or 0 do
             local name, active = GetTracking(index)
             if name == spellName then
-                if not active then SetTracking(index, true) end
+                known = known + 1
+                if not active and not target and not OnCooldown(spellID) then target = index end
                 break
             end
         end
     end
+    if not target or (switching and known < 2) then return end
+    local mute = switching and MuteSoundFile
+    if mute then MuteSoundFile(SWITCH_SOUND) end
+    SetTracking(target, true)
+    if mute then UnmuteSoundFile(SWITCH_SOUND) end
+    lastSwitch = GetTime()
+end
+
+-- Timer tick: alternate Find Minerals and Find Herbs. Skipped where the cast
+-- would get in the way (it costs a global cooldown) or nodes don't matter.
+function ScarletUI:SwitchTracking()
+    if GetTime() - lastSwitch < self.db.global.trackingModule.switchInterval
+        or InCombatLockdown() or IsInInstance() or IsResting() or UnitOnTaxi("player")
+        or (UnitCastingInfo and UnitCastingInfo("player"))
+        or (UnitChannelInfo and UnitChannelInfo("player"))
+        or SpellIsTargeting() or GetCursorInfo() or GetNumLootItems() > 0
+        or Minimap:IsMouseOver() then
+        return
+    end
+    self:ApplyAlwaysOnTracking(true)
 end
 
 function ScarletUI:SetupTracking()
@@ -54,6 +94,7 @@ function ScarletUI:SetupTracking()
         for _, event in ipairs({ "PLAYER_ENTERING_WORLD", "PLAYER_ALIVE", "PLAYER_UNGHOST" }) do
             self:RegisterEventHandler(event, function() ScarletUI:ApplyAlwaysOnTracking() end)
         end
+        C_Timer.NewTicker(1, function() ScarletUI:SwitchTracking() end)
     end
 
     local module = self.db.global.trackingModule

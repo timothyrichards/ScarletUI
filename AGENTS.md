@@ -60,6 +60,11 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   `alwaysOn` (keyed by spell ID, Minimap Tracking group on the General page) turns Find
   Minerals and Find Herbs back on at login and on `PLAYER_ALIVE`/`PLAYER_UNGHOST`,
   since Classic rules drop tracking on death; it runs even with sharing off.
+  Both default on. Each apply turns on one inactive entry, so on clients that
+  track one spell at a time a 1s ticker (`SwitchTracking`) alternates the two
+  every `switchInterval` seconds when a character knows both. The ticker skips
+  combat, instances, resting, taxis, casts, loot, and minimap hover, and checks
+  the spell cooldown, because a Classic tracking change is a cast on the GCD.
   The sync modules save from AceDB `OnDatabaseShutdown` (before defaults are
   stripped), each with its own callback target so none replaces another.
 - `Modules/GameMenu.lua`: optional Scarlet UI and Cooldown Manager buttons
