@@ -610,21 +610,54 @@ assert(not sparkShown and not ruleShown)
 assert(not ScarletUI:Options().args.generalSettings.args.interface.args.fiveSecondRule.hidden())
 -- Fishing mode: with a pole equipped the key clicks our button, and during the
 -- Fishing cast it is Interact With Target with soft targeting widened.
-local fishScripts, fishButton, fishBinding, fishCVars = {}, { attributes = {} }, nil, { SoftTargetInteract = "0", SoftTargetInteractArc = "1" }
-savedCreateFrame = CreateFrame
-CreateFrame = function(frameType)
-    if frameType == "Button" then
-        return { RegisterForClicks = noop, SetScript = function(_, name, fn) fishButton[name] = fn end,
-            SetAttribute = function(_, name, value) fishButton.attributes[name] = value end }
-    end
-    return { SetScript = function(_, name, fn) fishScripts[name] = fn end, RegisterEvent = noop, RegisterUnitEvent = noop }
+do
+local fishWidgets, fishBinding, fishCVars = {}, nil, { SoftTargetInteract = "0", SoftTargetInteractArc = "1" }
+local function FishWidget(kind, name)
+    local widget = { kind = kind, name = name, scripts = {}, attributes = {}, shown = true }
+    widget.SetScript = function(self, script, fn) self.scripts[script] = fn end
+    widget.SetAttribute = function(self, attribute, value) self.attributes[attribute] = value end
+    widget.Show = function(self) self.shown = true end
+    widget.Hide = function(self) self.shown = false end
+    widget.SetShown = function(self, shown) self.shown = shown and true or false end
+    widget.SetText = function(self, text) self.text = text end
+    widget.SetPoint = function(self, ...) self.point = { ... } end
+    widget.GetPoint = function() return "TOPLEFT", nil, "TOPLEFT", 40, -50 end
+    widget.CreateTexture = function() return FishWidget("Texture") end
+    widget.CreateFontString = function() return FishWidget("FontString") end
+    fishWidgets[#fishWidgets + 1] = widget
+    return setmetatable(widget, { __index = function() return noop end })
 end
+local function FishNamed(name)
+    for _, widget in ipairs(fishWidgets) do
+        if widget.name == name then return widget end
+    end
+end
+-- Item IDs of the lure buttons showing on the bar, in order, and the highlighted one.
+local function BarLures()
+    local shown, applied = {}, nil
+    for _, widget in ipairs(fishWidgets) do
+        if rawget(widget, "itemID") and widget.shown then
+            shown[#shown + 1] = widget.itemID
+            if widget.applied.shown then applied = widget.itemID end
+        end
+    end
+    return table.concat(shown, ","), applied
+end
+local function ClickLure(itemID)
+    for _, widget in ipairs(fishWidgets) do
+        if widget.itemID == itemID and widget.shown then return widget.scripts.OnClick() end
+    end
+    error("no lure button for " .. itemID)
+end
+savedCreateFrame = CreateFrame
+CreateFrame = FishWidget
 local savedGetCVar, poleID, casting, enchanted = GetCVar, 6256, false, false
 GetCVar = function(name) return fishCVars[name] end
 SetCVar = function(name, value) fishCVars[name] = value end
 IsPlayerMoving = function() return false end
 GetInventoryItemID = function() return poleID end
 C_Item = { GetItemInfoInstant = function(id) return id, nil, nil, nil, nil, 2, id == 6256 and 20 or 7 end }
+GetItemCount = function() return 5 end
 C_Spell.GetSpellName = function(id) return (id == 7620 or id == 7731) and "Fishing" or "Other" end
 UnitCastingInfo = function() return casting or nil end
 GetWeaponEnchantInfo = function() return enchanted end
@@ -637,7 +670,9 @@ C_Container = { GetContainerNumSlots = function() return 4 end,
     GetContainerItemID = function(bag, slot) return bag == 2 and ({ 6529, nil, 6530 })[slot] or nil end }
 dofile("Modules/Fishing.lua")
 ScarletUI:SetupFishing()
-local function Fish(event, spellID) fishScripts.OnEvent(nil, event, "player", "guid", spellID) end
+local fishButton, fishBar = FishNamed("ScarletUIFishingButton"), FishNamed("ScarletUIFishingBar")
+local function Fish(event, spellID) fishWidgets[1].scripts.OnEvent(nil, event, "player", "guid", spellID) end
+local function Press() fishButton.scripts.PreClick(); return fishButton.attributes.macrotext end
 assert(fishBinding == "SPACE>click:ScarletUIFishingButton" and fishButton.attributes.type == "macro")
 Fish("UNIT_SPELLCAST_CHANNEL_START", 5)
 assert(fishBinding == "SPACE>click:ScarletUIFishingButton" and fishCVars.SoftTargetInteract == "0") -- another channel
@@ -653,34 +688,60 @@ Fish("PLAYER_STOPPED_MOVING"); assert(fishBinding)
 Fish("PLAYER_REGEN_DISABLED"); assert(fishBinding == nil)
 Fish("PLAYER_EQUIPMENT_CHANGED"); assert(fishBinding == nil)
 Fish("PLAYER_REGEN_ENABLED"); assert(fishBinding)
-poleID = 2092; Fish("PLAYER_EQUIPMENT_CHANGED"); assert(fishBinding == nil)
-poleID = 6256
+-- The bar shows with the pole, even in combat, listing the lures with the best one highlighted.
+local barLures, barApplied = BarLures()
+assert(fishBar.shown and barLures == "6530,6529" and barApplied == 6530)
+poleID = 2092; Fish("PLAYER_REGEN_DISABLED"); Fish("PLAYER_EQUIPMENT_CHANGED")
+assert(not fishBar.shown)
+Fish("PLAYER_REGEN_ENABLED"); assert(fishBinding == nil)
+poleID = 6256; Fish("PLAYER_EQUIPMENT_CHANGED"); assert(fishBar.shown and fishBinding)
 -- Fishing has its own settings page, led by its switch.
 local fishingOptions = ScarletUI:Options().args.fishingSettings
 assert(not fishingOptions.hidden() and fishingOptions.args.enabled.order == 0)
 assert(ScarletUI:Options().args.generalSettings.args.fishing == nil)
-fishingOptions.args.enabled.set(nil, false); assert(fishBinding == nil)
-fishingOptions.args.enabled.set(nil, true)
+fishingOptions.args.enabled.set(nil, false); assert(fishBinding == nil and not fishBar.shown)
+fishingOptions.args.enabled.set(nil, true); assert(fishBar.shown)
 fishingOptions.args.key.set(nil, "F"); assert(fishBinding == "F>click:ScarletUIFishingButton")
 fishingOptions.args.key.set(nil, ""); assert(fishBinding == nil)
 fishingOptions.args.key.set(nil, "SPACE")
 -- A press applies the best lure, waits out its cast, then casts Fishing.
 now = 200
-fishButton.PreClick(); assert(fishButton.attributes.macrotext == "/use 2 3\n/use 16")
+assert(Press() == "/use 2 3\n/use 16")
 Fish("UNIT_SPELLCAST_START", 9); casting = true
-fishButton.PreClick(); assert(fishButton.attributes.macrotext == nil)
+assert(Press() == nil)
 casting = false; Fish("UNIT_SPELLCAST_SUCCEEDED", 9)
-fishButton.PreClick(); assert(fishButton.attributes.macrotext == "/cast Fishing") -- enchant not reported yet
+assert(Press() == "/cast Fishing") -- enchant not reported yet
 now = 202; enchanted = true
-fishButton.PreClick(); assert(fishButton.attributes.macrotext == "/cast Fishing")
+assert(Press() == "/cast Fishing")
 -- A lure that fails to start a cast gives way to Fishing on the next press.
 enchanted = false
-fishButton.PreClick(); assert(fishButton.attributes.macrotext == "/use 2 3\n/use 16")
-fishButton.PreClick(); assert(fishButton.attributes.macrotext == "/cast Fishing")
-ScarletUI.db.global.fishingModule.autoLure = false
-fishButton.PreClick(); fishButton.PreClick(); assert(fishButton.attributes.macrotext == "/cast Fishing")
-ScarletUI.db.global.fishingModule.autoLure = true
+assert(Press() == "/use 2 3\n/use 16")
+assert(Press() == "/cast Fishing")
+-- Clicking a lure on the bar picks it; clicking it again goes back to the best one.
+ClickLure(6529)
+assert(ScarletUI.db.global.fishingModule.lure == 6529 and select(2, BarLures()) == 6529)
+assert(Press() == "/use 2 1\n/use 16" and Press() == "/cast Fishing")
+ClickLure(6529)
+assert(ScarletUI.db.global.fishingModule.lure == nil and select(2, BarLures()) == 6530)
+-- A picked lure that has run out falls back to the best one.
+ScarletUI.db.global.fishingModule.lure = 6532; Fish("BAG_UPDATE_DELAYED")
+assert(select(2, BarLures()) == 6530 and Press() == "/use 2 3\n/use 16" and Press() == "/cast Fishing")
+ScarletUI.db.global.fishingModule.lure = nil
+-- With auto lures off the bar keeps only the Fishing icon and the key only casts.
+fishingOptions.args.autoLure.set(nil, false)
+assert(fishBar.shown and BarLures() == "")
+assert(Press() == "/cast Fishing" and Press() == "/cast Fishing")
+fishingOptions.args.autoLure.set(nil, true); assert(BarLures() == "6530,6529")
+-- Dragging the Fishing icon saves the bar position, which a rerun of setup applies.
+for _, widget in ipairs(fishWidgets) do
+    if widget.scripts.OnDragStop then widget.scripts.OnDragStop() end
+end
+ScarletUI:SetupFishing()
+assert(fishBar.point[1] == "TOPLEFT" and fishBar.point[4] == 40 and fishBar.point[5] == -50)
+ScarletUI.db.global.fishingModule.position = nil
+ScarletUI:SetupFishing(); assert(fishBar.point[1] == "CENTER")
 CreateFrame, GetCVar, C_Container, C_Item = savedCreateFrame, savedGetCVar, nil, nil
+end
 
 -- Era, TBC, and Mists also load the Classic-UI-only modules and their old settings keys.
 C_Container = {}

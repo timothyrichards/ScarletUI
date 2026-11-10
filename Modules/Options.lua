@@ -339,7 +339,7 @@ function ScarletUI:GetFishingSettingsPage(database, order)
         args = {
             enabled = {
                 name = "Fishing Mode",
-                desc = "While a fishing pole is equipped, the fishing key casts Fishing, then hooks the bobber during the cast. The key keeps its normal action in combat and while you move.",
+                desc = "While a fishing pole is equipped, the fishing key casts Fishing, then hooks the bobber during the cast. The key keeps its normal action in combat and while you move.\n\nA small bar shows while the mode is on. Click a lure on it to pick which one is applied; drag the Fishing icon to move it.",
                 type = "toggle",
                 width = 1,
                 order = 0,
@@ -363,12 +363,15 @@ function ScarletUI:GetFishingSettingsPage(database, order)
             },
             autoLure = {
                 name = "Auto Apply Lures",
-                desc = "When the pole has no lure, the fishing key first applies the best lure in your bags.",
+                desc = "When the pole has no lure, the fishing key first applies one from your bags: the lure picked on the fishing bar, or the best one.",
                 type = "toggle",
                 width = 1,
                 order = 2,
                 get = function(_) return database.fishingModule.autoLure end,
-                set = function(_, val) database.fishingModule.autoLure = val end,
+                set = function(_, val)
+                    database.fishingModule.autoLure = val
+                    self:UpdateFishing()
+                end,
             },
         },
     }

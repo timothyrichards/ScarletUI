@@ -1,15 +1,19 @@
 -- Fishing mode: while a fishing pole is in the main hand, one key (Space by
 -- default) casts Fishing, and for the length of the cast the same key is
 -- Interact With Target, which hooks the bobber. With no lure on the pole, the
--- key applies the best lure in the bags first. The key keeps its normal action
--- in combat and while moving, since neither allows fishing.
+-- key applies a lure from the bags first. The key keeps its normal action in
+-- combat and while moving, since neither allows fishing.
+-- A small bar marks the mode while the pole is equipped: the Fishing icon, then
+-- a button per lure in the bags to pick which one the key applies.
 -- Everything protected goes through a secure button and override bindings,
--- which can only change out of combat.
+-- which can only change out of combat; the bar itself only stores a choice.
 local BUTTON = "ScarletUIFishingButton"
 local WEAPON, FISHING_POLE, MAIN_HAND = 2, 20, 16
 local FISHING = 7620 -- every rank shares this spell's name
+local ICON_SIZE, ICON_GAP = 32, 4
 local IsSecret = issecretvalue or function() return false end
 local GetItemInfoInstant = C_Item and C_Item.GetItemInfoInstant or GetItemInfoInstant
+local GetItemCount = C_Item and C_Item.GetItemCount or GetItemCount
 
 -- Item ID = fishing skill bonus.
 -- ponytail: hand-kept list; a lure missing here is never applied. Read the
@@ -43,22 +47,26 @@ local function PoleEquipped()
     return classID == WEAPON and subclassID == FISHING_POLE
 end
 
-local function BestLure()
-    local best, bestBag, bestSlot = 0, nil, nil
+-- Lures in the bags as itemID = { bag, slot } of one stack, and the one the key
+-- applies: the picked lure while the bags hold it, otherwise the biggest bonus.
+local function FindLures(picked)
+    local found, best = {}, nil
     for bag = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
         for slot = 1, C_Container.GetContainerNumSlots(bag) do
-            local bonus = LURES[C_Container.GetContainerItemID(bag, slot)]
-            if bonus and bonus > best then
-                best, bestBag, bestSlot = bonus, bag, slot
+            local itemID = C_Container.GetContainerItemID(bag, slot)
+            if LURES[itemID] and not found[itemID] then
+                found[itemID] = { bag, slot }
+                if not best or LURES[itemID] > LURES[best] then best = itemID end
             end
         end
     end
-    return bestBag, bestSlot
+    return found, found[picked] and picked or best
 end
 
 function ScarletUI:SetupFishing()
     if self.fishingFrame then
         -- Setup reruns after a settings reset.
+        self:PlaceFishingBar()
         self:UpdateFishing()
         return
     end
@@ -83,23 +91,118 @@ function ScarletUI:SetupFishing()
             lureTried = false -- a lure is being applied; this press does nothing
         else
             macro = "/cast " .. SpellName(FISHING)
+            local module = self.db.global.fishingModule
             -- The enchant shows up a moment after the lure cast succeeds.
-            local wanted = self.db.global.fishingModule.autoLure and not GetWeaponEnchantInfo()
-                and GetTime() - lastCast > 1
-            local bag, slot = nil, nil
-            if wanted then bag, slot = BestLure() end
+            local wanted = module.autoLure and not GetWeaponEnchantInfo() and GetTime() - lastCast > 1
+            local found, itemID = FindLures(module.lure)
+            local lure = wanted and found[itemID]
             -- ponytail: a lure that cannot be used (skill too low) would block
             -- fishing, so a press after a failed lure casts instead. That wastes
             -- every other press; compare skill requirements if it comes up.
-            if bag and not lureTried then
+            if lure and not lureTried then
                 lureTried = true
-                macro = "/use " .. bag .. " " .. slot .. "\n/use " .. MAIN_HAND
+                macro = "/use " .. lure[1] .. " " .. lure[2] .. "\n/use " .. MAIN_HAND
             else
                 lureTried = false
             end
         end
         button:SetAttribute("macrotext", macro)
     end)
+
+    local bar = CreateFrame("Frame", "ScarletUIFishingBar", UIParent)
+    bar:SetHeight(ICON_SIZE)
+    bar:SetMovable(true)
+    bar:SetClampedToScreen(true)
+    function self:PlaceFishingBar()
+        local position = self.db.global.fishingModule.position
+        bar:ClearAllPoints()
+        if position then
+            bar:SetPoint(position[1], UIParent, position[2], position[3], position[4])
+        else
+            bar:SetPoint("CENTER", UIParent, "CENTER", 0, -180)
+        end
+    end
+    self:PlaceFishingBar()
+
+    local function IconButton(index)
+        local icon = CreateFrame("Button", nil, bar)
+        icon:SetSize(ICON_SIZE, ICON_SIZE)
+        icon:SetPoint("LEFT", bar, "LEFT", index * (ICON_SIZE + ICON_GAP), 0)
+        icon.texture = icon:CreateTexture(nil, "ARTWORK")
+        icon.texture:SetAllPoints()
+        icon:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        return icon
+    end
+
+    -- The Fishing icon marks the mode and is the handle for dragging the bar.
+    local handle = IconButton(0)
+    handle.texture:SetTexture("Interface\\Icons\\Trade_Fishing")
+    handle:RegisterForDrag("LeftButton")
+    handle:SetScript("OnDragStart", function() bar:StartMoving() end)
+    handle:SetScript("OnDragStop", function()
+        bar:StopMovingOrSizing()
+        local point, _, relativePoint, x, y = bar:GetPoint()
+        self.db.global.fishingModule.position = { point, relativePoint, x, y }
+    end)
+    handle:SetScript("OnEnter", function()
+        local key = self.db.global.fishingModule.key
+        GameTooltip:SetOwner(handle, "ANCHOR_TOP")
+        GameTooltip:AddLine("Fishing Mode")
+        GameTooltip:AddLine((GetBindingText and GetBindingText(key) or key)
+            .. " casts Fishing, then hooks the bobber.", 1, 1, 1, true)
+        GameTooltip:AddLine("Drag to move.", 0.6, 0.6, 0.6)
+        GameTooltip:Show()
+    end)
+
+    local lureButtons = {}
+    local function RefreshBar()
+        local module = self.db.global.fishingModule
+        local shown = module.enabled and PoleEquipped()
+        bar:SetShown(shown)
+        if not shown then return end
+        local found, applied = FindLures(module.lure)
+        local lures = {}
+        if module.autoLure then
+            for itemID in pairs(found) do lures[#lures + 1] = itemID end
+        end
+        table.sort(lures, function(a, b)
+            if LURES[a] ~= LURES[b] then return LURES[a] > LURES[b] end
+            return a < b
+        end)
+        for index, itemID in ipairs(lures) do
+            local lure = lureButtons[index]
+            if not lure then
+                lure = IconButton(index)
+                lureButtons[index] = lure
+                lure.count = lure:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
+                lure.count:SetPoint("BOTTOMRIGHT", -2, 2)
+                lure.applied = lure:CreateTexture(nil, "OVERLAY")
+                lure.applied:SetTexture("Interface\\Buttons\\CheckButtonHilight")
+                lure.applied:SetBlendMode("ADD")
+                lure.applied:SetAllPoints()
+                lure:SetScript("OnClick", function()
+                    -- Clicking the picked lure again goes back to the best one.
+                    local settings = self.db.global.fishingModule
+                    settings.lure = settings.lure ~= lure.itemID and lure.itemID or nil
+                    RefreshBar()
+                end)
+                lure:SetScript("OnEnter", function()
+                    GameTooltip:SetOwner(lure, "ANCHOR_TOP")
+                    GameTooltip:SetHyperlink("item:" .. lure.itemID)
+                    GameTooltip:AddLine("Click to use this lure. Click it again to use the best one.", 0, 1, 0, true)
+                    GameTooltip:Show()
+                end)
+            end
+            lure.itemID = itemID
+            lure.texture:SetTexture((select(5, GetItemInfoInstant(itemID))))
+            lure.count:SetText(GetItemCount(itemID))
+            -- The highlight marks the lure the key applies.
+            lure.applied:SetShown(itemID == applied)
+            lure:Show()
+        end
+        for index = #lures + 1, #lureButtons do lureButtons[index]:Hide() end
+        bar:SetWidth(ICON_SIZE + #lures * (ICON_SIZE + ICON_GAP))
+    end
 
     local function RestoreCVars()
         for name, value in pairs(savedCVars) do
@@ -109,6 +212,7 @@ function ScarletUI:SetupFishing()
     end
 
     function self:UpdateFishing()
+        RefreshBar() -- not protected, so it also follows changes made in combat
         if combat then return end
         ClearOverrideBindings(frame)
         local module = self.db.global.fishingModule
@@ -140,6 +244,9 @@ function ScarletUI:SetupFishing()
         elseif event == "PLAYER_LOGOUT" then
             RestoreCVars()
             return
+        elseif event == "BAG_UPDATE_DELAYED" then
+            RefreshBar()
+            return
         elseif event == "UNIT_SPELLCAST_START" then
             lureTried = false
             return
@@ -158,7 +265,8 @@ function ScarletUI:SetupFishing()
         self:UpdateFishing()
     end)
     for _, event in ipairs({ "PLAYER_ENTERING_WORLD", "PLAYER_EQUIPMENT_CHANGED", "PLAYER_REGEN_DISABLED",
-        "PLAYER_REGEN_ENABLED", "PLAYER_STARTED_MOVING", "PLAYER_STOPPED_MOVING", "PLAYER_LOGOUT" }) do
+        "PLAYER_REGEN_ENABLED", "PLAYER_STARTED_MOVING", "PLAYER_STOPPED_MOVING", "PLAYER_LOGOUT",
+        "BAG_UPDATE_DELAYED" }) do
         frame:RegisterEvent(event)
     end
     for _, event in ipairs({ "UNIT_SPELLCAST_CHANNEL_START", "UNIT_SPELLCAST_CHANNEL_STOP",
