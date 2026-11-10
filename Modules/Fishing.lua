@@ -13,7 +13,7 @@ local WEAPON, FISHING_POLE, MAIN_HAND = 2, 20, 16
 local FISHING = 7620 -- every rank shares this spell's name
 local FISHING_SKILL = 356 -- skill line ID
 local ICON_SIZE, ICON_GAP = 32, 4
-local PADDING, TITLE_HEIGHT, TEXT_GAP = 10, 22, 8 -- panel edge, title row, icons to skill text
+local PADDING, TITLE_HEIGHT, TEXT_GAP = 16, 22, 8 -- panel edge, title row, icons to skill text
 local NONE = 0 -- picked in place of an item ID: apply no lure
 local IsSecret = issecretvalue or function() return false end
 local GetItemInfoInstant = C_Item and C_Item.GetItemInfoInstant or GetItemInfoInstant
@@ -133,14 +133,10 @@ function ScarletUI:SetupFishing()
         button:SetAttribute("macrotext", macro)
     end)
 
-    local bar = CreateFrame("Frame", "ScarletUIFishingBar", UIParent, "BackdropTemplate")
-    bar:SetBackdrop({
-        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        edgeSize = 16,
-        insets = { left = 4, right = 4, top = 4, bottom = 4 },
-    })
-    bar:SetBackdropColor(0, 0, 0, 0.8)
+    -- Blizzard's own art throughout, so the panel matches each client's dialogs
+    -- and item slots: the border template fills its parent and draws below it.
+    local bar = CreateFrame("Frame", "ScarletUIFishingBar", UIParent)
+    CreateFrame("Frame", nil, bar, "DialogBorderDarkTemplate")
     bar:SetMovable(true)
     bar:SetClampedToScreen(true)
     function self:PlaceFishingBar()
@@ -159,6 +155,14 @@ function ScarletUI:SetupFishing()
         icon:SetSize(ICON_SIZE, ICON_SIZE)
         icon.texture = icon:CreateTexture(nil, "ARTWORK")
         icon.texture:SetAllPoints()
+        -- The item slot border, sized as ItemButtonTemplate has it (64 on a 37 slot).
+        icon:SetNormalTexture("Interface\\Buttons\\UI-Quickslot2")
+        local border = icon:GetNormalTexture()
+        border:ClearAllPoints()
+        border:SetPoint("CENTER", 0, -1)
+        border:SetSize(ICON_SIZE * 64 / 37, ICON_SIZE * 64 / 37)
+        icon:SetPushedTexture("Interface\\Buttons\\UI-Quickslot-Depress")
+        icon:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
         icon:SetScript("OnLeave", function() GameTooltip:Hide() end)
         return icon
     end
@@ -228,7 +232,7 @@ function ScarletUI:SetupFishing()
     -- Whose panel this is, above the icons; the Fishing skill and its cap beside them.
     local title = bar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", bar, "TOPLEFT", PADDING, -PADDING)
-    title:SetText("|cffff2400Scarlet UI|r")
+    title:SetText("Scarlet UI") -- the font's gold, as on Blizzard's own titles
     local skill = bar:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
 
     local listButtons = {}

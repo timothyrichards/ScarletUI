@@ -138,7 +138,9 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   Clicking a list entry stores `lure` (an item ID, or 0 for no lure); the key
   applies a picked lure while the bags hold it and the best lure otherwise. The bar
   is plain frames with no secure children, so it can change in combat. It is a
-  backdrop panel sized to its contents: "Scarlet UI" above the icons and, beside
+  panel sized to its contents and drawn with Blizzard art so it matches each
+  client (`DialogBorderDarkTemplate`, item slot borders, the title font's gold;
+  no custom colors or backdrops): "Scarlet UI" above the icons and, beside
   them, the Fishing skill and its cap, from
   `C_SkillInfo.GetSkillLineInfoByID(356)` on Forever, `GetProfessions` on Mists,
   and the `GetSkillLineInfo` rows on Era and TBC (blank while that header is

@@ -625,6 +625,7 @@ local function FishWidget(kind, name)
     widget.SetText = function(self, text) self.text = text end
     widget.GetStringWidth = function(self) return #tostring(self.text or "") end
     widget.SetSize = function(self, width, height) self.width, self.height = width, height end
+    widget.GetNormalTexture = function() return FishWidget("Texture") end
     widget.SetPoint = function(self, ...) self.point = { ... } end
     widget.GetPoint = function() return "TOPLEFT", nil, "TOPLEFT", 40, -50 end
     widget.CreateTexture = function() return FishWidget("Texture") end
@@ -765,7 +766,7 @@ assert(select(2, BarLures()) == 0 and Press() == "/cast Fishing" and Press() == 
 ClickLure(0)
 assert(ScarletUI.db.global.fishingModule.lure == nil and fishCurrent.itemID == 6530)
 -- The bar names the addon and shows the Fishing skill and its cap, following skill-ups.
-assert(FishText("|cffff2400Scarlet UI|r") and FishText("Fishing 150/225"))
+assert(FishText("Scarlet UI") and FishText("Fishing 150/225"))
 fishSkill.rank = 151; Fish("SKILL_LINES_CHANGED"); assert(FishText("Fishing 151/225"))
 -- Era and TBC read it from the skill list; an unlisted skill shows nothing.
 C_SkillInfo = nil
@@ -779,7 +780,7 @@ GetNumSkillLines = function() return 1 end
 local skillWidth = fishBar.width
 Fish("SKILL_LINES_CHANGED"); assert(not FishText("Fishing 75/150"))
 -- The panel wraps its contents: narrower without the skill text, never narrower than the title.
-assert(fishBar.width < skillWidth and fishBar.width >= 20 + #"|cffff2400Scarlet UI|r" and fishBar.height == 74)
+assert(fishBar.width < skillWidth and fishBar.width >= 32 + #"Scarlet UI" and fishBar.height == 86)
 -- Mists reads it from the profession list.
 GetProfessions = function() return nil, nil, nil, 9 end
 GetProfessionInfo = function(index) return "Fishing", nil, index == 9 and 300, 600 end
