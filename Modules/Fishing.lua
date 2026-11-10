@@ -14,6 +14,7 @@ local FISHING = 7620 -- every rank shares this spell's name
 local FISHING_SKILL = 356 -- skill line ID
 local ICON_SIZE, ICON_GAP = 32, 4
 local PADDING, TITLE_HEIGHT, TEXT_GAP = 16, 22, 8 -- panel edge, title row, icons to skill text
+local LIST_CLOSE_DELAY = 1 -- seconds the mouse may be off the open lure list
 local NONE = 0 -- picked in place of an item ID: apply no lure
 local IsSecret = issecretvalue or function() return false end
 local GetItemInfoInstant = C_Item and C_Item.GetItemInfoInstant or GetItemInfoInstant
@@ -227,7 +228,20 @@ function ScarletUI:SetupFishing()
     local list = CreateFrame("Frame", nil, bar)
     list:SetAllPoints(current)
     list:Hide()
-    current:SetScript("OnClick", function() list:SetShown(not list:IsShown()) end)
+    local listButtons, away = {}, 0
+    current:SetScript("OnClick", function()
+        away = 0
+        list:SetShown(not list:IsShown())
+    end)
+    -- The open list closes once the mouse has been off the lures for a moment.
+    list:SetScript("OnUpdate", function(_, elapsed)
+        local over = current:IsMouseOver()
+        for _, lure in ipairs(listButtons) do
+            over = over or lure:IsShown() and lure:IsMouseOver()
+        end
+        away = over and 0 or away + elapsed
+        if away >= LIST_CLOSE_DELAY then list:Hide() end
+    end)
 
     -- Whose panel this is, above the icons; the Fishing skill and its cap beside them.
     local title = bar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -235,7 +249,6 @@ function ScarletUI:SetupFishing()
     title:SetText("Scarlet UI") -- the font's gold, as on Blizzard's own titles
     local skill = bar:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
 
-    local listButtons = {}
     local function RefreshBar()
         local module = self.db.global.fishingModule
         local found, applied = FindLures(module.lure)

@@ -714,6 +714,14 @@ assert(fishCurrent.shown and fishCurrent.itemID == 6530 and fishCurrent.count.te
 -- Clicking the lure opens and closes the list; losing the pole closes it too.
 fishCurrent.scripts.OnClick(); assert(fishList.shown)
 fishCurrent.scripts.OnClick(); assert(not fishList.shown)
+-- Left open, it closes after a second with the mouse off the lures, counted from the last hover.
+fishCurrent.scripts.OnClick()
+fishList.scripts.OnUpdate(nil, 0.6); assert(fishList.shown)
+fishCurrent.IsMouseOver = function() return true end
+fishList.scripts.OnUpdate(nil, 5); assert(fishList.shown)
+fishCurrent.IsMouseOver = nil
+fishList.scripts.OnUpdate(nil, 0.6); assert(fishList.shown)
+fishList.scripts.OnUpdate(nil, 0.6); assert(not fishList.shown)
 fishCurrent.scripts.OnClick()
 poleID = 2092; Fish("PLAYER_REGEN_DISABLED"); Fish("PLAYER_EQUIPMENT_CHANGED")
 assert(not fishBar.shown and not fishList.shown)
