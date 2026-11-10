@@ -46,6 +46,7 @@ ScarletUI.defaults = {
             enabled = true,
             key = "SPACE",
             autoLure = true,
+            quietSounds = false,
         },
         chatModule = {
             enabled = true,

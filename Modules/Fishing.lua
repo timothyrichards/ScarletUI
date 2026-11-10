@@ -41,6 +41,12 @@ local LURES = {
 -- The bobber is only interactable through soft targeting, widened for the cast.
 local INTERACT_CVARS = { SoftTargetInteract = "3", SoftTargetInteractArc = "2", SoftTargetInteractRange = "30" }
 
+-- Quiet fishing, while the pole is equipped: the other sound channels off and
+-- effects at full, so the bobber's splash stands out. The client mutes by
+-- channel, not by sound, so other effects (spells, footsteps) still play.
+local SOUND_CVARS = { Sound_EnableMusic = "0", Sound_EnableAmbience = "0", Sound_EnableDialog = "0",
+    Sound_EnableSFX = "1", Sound_SFXVolume = "1" }
+
 local function SpellName(spellID)
     if C_Spell and C_Spell.GetSpellName then return C_Spell.GetSpellName(spellID) end
     return GetSpellInfo and (GetSpellInfo(spellID))
@@ -103,7 +109,7 @@ function ScarletUI:SetupFishing()
     self.fishingFrame = frame
     local combat, moving, fishing = InCombatLockdown(), IsPlayerMoving(), false
     local lastCast, lureTried = 0, false
-    local savedCVars = {}
+    local savedCVars, savedSounds, quiet = {}, {}, false
 
     local button = CreateFrame("Button", BUTTON, nil, "SecureActionButtonTemplate")
     button:RegisterForClicks("AnyUp")
@@ -334,32 +340,47 @@ function ScarletUI:SetupFishing()
         for index = #lures + 1, #listButtons do listButtons[index]:Hide() end
     end
 
-    local function RestoreCVars()
-        for name, value in pairs(savedCVars) do
-            SetCVar(name, value)
-            savedCVars[name] = nil
+    -- ponytail: originals live in memory and go back at logout; a crash in
+    -- between keeps the changed values. Store them in the database if it bites.
+    local function ApplyCVars(values, saved)
+        for name, value in pairs(values) do
+            local current = GetCVar(name)
+            if current ~= nil then -- skip a CVar this client lacks
+                saved[name] = saved[name] or current
+                SetCVar(name, value)
+            end
         end
+    end
+    local function RestoreCVars(saved)
+        for name, value in pairs(saved) do
+            SetCVar(name, value)
+            saved[name] = nil
+        end
+    end
+
+    -- Sound CVars are not protected, so this also follows a pole swap in combat.
+    local function UpdateSounds()
+        local module = self.db.global.fishingModule
+        local wanted = (module.enabled and module.quietSounds and PoleEquipped()) or false
+        if wanted == quiet then return end
+        quiet = wanted
+        if wanted then ApplyCVars(SOUND_CVARS, savedSounds) else RestoreCVars(savedSounds) end
     end
 
     function self:UpdateFishing()
         RefreshBar() -- not protected, so it also follows changes made in combat
+        UpdateSounds()
         if combat then return end
         ClearOverrideBindings(frame)
         local module = self.db.global.fishingModule
         local key = module.enabled and module.key ~= "" and module.key
         local active = key and not moving and PoleEquipped()
         if active and fishing then
-            for name, value in pairs(INTERACT_CVARS) do
-                local current = GetCVar(name)
-                if current ~= nil then -- skip a CVar this client lacks
-                    savedCVars[name] = savedCVars[name] or current
-                    SetCVar(name, value)
-                end
-            end
+            ApplyCVars(INTERACT_CVARS, savedCVars)
             SetOverrideBinding(frame, true, key, "INTERACTTARGET")
             return
         end
-        RestoreCVars()
+        RestoreCVars(savedCVars)
         if active then
             SetOverrideBindingClick(frame, true, key, BUTTON)
         end
@@ -372,7 +393,8 @@ function ScarletUI:SetupFishing()
             combat = true
             return
         elseif event == "PLAYER_LOGOUT" then
-            RestoreCVars()
+            RestoreCVars(savedCVars)
+            RestoreCVars(savedSounds)
             return
         elseif event == "BAG_UPDATE_DELAYED" or event == "SKILL_LINES_CHANGED" then
             RefreshBar()
