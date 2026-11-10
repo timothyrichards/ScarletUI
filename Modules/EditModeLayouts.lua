@@ -1,4 +1,4 @@
-ScarletUI.editModeLayoutSchemaVersion = 15
+ScarletUI.editModeLayoutSchemaVersion = 16
 
 ScarletUI.editModeFrameCandidates = {
     -- MainActionBar is the Edit Mode system. MainMenuBar is the 1024px
@@ -120,7 +120,7 @@ local swingTimerSettings = {
 
 -- Frames with relativeTo snap to another layout key, matching Blizzard's
 -- stacked-bar anchors. Screen anchors use the nearest screen edge so they
--- hold across UI scales. The group frames, Utility cooldowns, and swing timers
+-- hold across UI scales. The group frames, Essential cooldowns, and swing timers
 -- line up with the bottom-center unit frames, so they anchor to the bottom
 -- center too; offsets were captured on a 2133x1200 UIParent (1440p).
 local standardFrames = {
@@ -291,12 +291,13 @@ local standardFrames = {
             { setting = EnumValue("EditModeDurabilityFrameSetting", "Size"), value = 100 },
         },
     },
+    -- Center anchors, so both bars stay centered as icons are added or removed.
     essentialCooldowns = {
-        point = "TOPLEFT", relativePoint = "BOTTOM", x = -120.8, y = 309,
+        point = "TOP", relativePoint = "BOTTOM", x = 0, y = 309,
         settings = CooldownViewerSettings("Horizontal", 12, "Right", 2),
     },
     utilityCooldowns = {
-        point = "CENTER", relativePoint = "BOTTOM", x = 0, y = 331.7,
+        point = "BOTTOM", relativeTo = "essentialCooldowns", relativePoint = "TOP", x = 0, y = 4,
         settings = CooldownViewerSettings("Horizontal", 7, "Right", 2),
     },
     swingTimerMainHand = {
