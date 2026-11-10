@@ -135,10 +135,6 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   the mode is on and a pole is equipped: the Fishing icon (drag handle, position
   in `position`) and the lure the key applies, which opens a list of the lures
   in the bags stacked upward, topped by a no-lure entry drawn as an empty slot.
-  `quietSounds` (off by default) turns music, ambience, and dialog off and
-  effects to full while the pole is equipped, restoring the saved values when
-  it comes off or at logout; these sound CVars are not protected, so that also
-  happens in combat. The client can only mute by channel, not a single sound.
   The open list closes itself after a second with the mouse off the lures.
   Clicking a list entry stores `lure` (an item ID, or 0 for no lure); the key
   applies a picked lure while the bags hold it and the best lure otherwise. The bar

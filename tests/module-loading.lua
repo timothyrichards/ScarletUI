@@ -739,15 +739,6 @@ fishingOptions.args.enabled.set(nil, true); assert(fishBar.shown)
 fishingOptions.args.key.set(nil, "F"); assert(fishBinding == "F>click:ScarletUIFishingButton")
 fishingOptions.args.key.set(nil, ""); assert(fishBinding == nil)
 fishingOptions.args.key.set(nil, "SPACE")
--- Quiet fishing mutes the other sound channels while the pole is on, even in combat, then restores them.
-fishCVars.Sound_EnableMusic, fishCVars.Sound_SFXVolume = "1", "0.4"
-fishingOptions.args.quietSounds.set(nil, true)
-assert(fishCVars.Sound_EnableMusic == "0" and fishCVars.Sound_SFXVolume == "1" and fishCVars.Sound_EnableDialog == nil)
-poleID = 2092; Fish("PLAYER_REGEN_DISABLED"); Fish("PLAYER_EQUIPMENT_CHANGED")
-assert(fishCVars.Sound_EnableMusic == "1" and fishCVars.Sound_SFXVolume == "0.4")
-poleID = 6256; Fish("PLAYER_REGEN_ENABLED"); assert(fishCVars.Sound_EnableMusic == "0")
-Fish("PLAYER_LOGOUT"); assert(fishCVars.Sound_EnableMusic == "1" and fishCVars.Sound_SFXVolume == "0.4")
-fishingOptions.args.quietSounds.set(nil, false)
 -- A press applies the best lure, waits out its cast, then casts Fishing.
 now = 200
 assert(Press() == "/use 2 3\n/use 16")

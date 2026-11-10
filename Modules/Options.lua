@@ -373,18 +373,6 @@ function ScarletUI:GetFishingSettingsPage(database, order)
                     self:UpdateFishing()
                 end,
             },
-            quietSounds = {
-                name = "Quiet Fishing",
-                desc = "While a fishing pole is equipped, turns off music, ambience, and dialog and raises sound effects to full, so the bobber's splash stands out. Other sound effects still play. Your sound settings return when the pole comes off.",
-                type = "toggle",
-                width = 1,
-                order = 3,
-                get = function(_) return database.fishingModule.quietSounds end,
-                set = function(_, val)
-                    database.fishingModule.quietSounds = val
-                    self:UpdateFishing()
-                end,
-            },
         },
     }
 end
