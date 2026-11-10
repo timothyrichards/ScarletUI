@@ -42,6 +42,11 @@ ScarletUI.defaults = {
             -- Seconds between swaps when a character knows both.
             switchInterval = 3,
         },
+        fishingModule = {
+            enabled = true,
+            key = "SPACE",
+            autoLure = true,
+        },
         chatModule = {
             enabled = true,
             fontSize = 14,

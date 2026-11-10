@@ -122,6 +122,16 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   so casts come from the player's `UNIT_SPELLCAST_SUCCEEDED` (not secret for the
   player) and `GetSpellPowerCost`, never from mana changes. Hidden while the bar
   shows rage or energy.
+- `Modules/Fishing.lua`: fishing mode (`db.global.fishingModule`, Fishing group
+  on the General page), every client but Retail. While a fishing pole is in the
+  main hand, a priority override binding puts the fishing key (Space by default)
+  on a secure macro button that casts Fishing; for the length of the Fishing
+  channel the key is `INTERACTTARGET` instead and the soft-target interact CVars
+  are widened, then restored, so it hooks the bobber. The button's `PreClick`
+  picks the macro text: with `autoLure` and no main-hand enchant it uses the best
+  lure from a hand-kept item ID list on the pole first. Bindings and CVars only
+  change out of combat; the key is released in `PLAYER_REGEN_DISABLED`, which
+  fires before the lockdown, and while moving.
 - `Modules/Bag.lua`, `Modules/Nameplates.lua`: custom bag/bank frames and
   nameplate threat colors, auras, and text. Classic UI clients only: listed in
   just those three manifests so Retail and Forever never load them. Each file adds its

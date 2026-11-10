@@ -67,7 +67,7 @@ end
 local calls = {}
 local setupMethods = { "SetupDebugFrame", "SetupActionBarToggles", "SetupBagSort", "SetupTracking", "SetupChat", "SetupCVars",
     "SetupItemLevels",
-    "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupFiveSecondRule", "SetupExpandCharacterInfo", "SetupGameMenuButtons",
+    "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupFiveSecondRule", "SetupFishing", "SetupExpandCharacterInfo", "SetupGameMenuButtons",
     "SetupFrameTweaks", "SetupMinimapIcon" }
 for _, name in ipairs(setupMethods) do
     ScarletUI[name] = function() calls[name] = true end
@@ -608,6 +608,77 @@ Cast(3) -- a free spell does not restart the timer
 now = 105; ruleScripts.OnUpdate()
 assert(not sparkShown and not ruleShown)
 assert(not ScarletUI:Options().args.generalSettings.args.interface.args.fiveSecondRule.hidden())
+-- Fishing mode: with a pole equipped the key clicks our button, and during the
+-- Fishing cast it is Interact With Target with soft targeting widened.
+local fishScripts, fishButton, fishBinding, fishCVars = {}, { attributes = {} }, nil, { SoftTargetInteract = "0", SoftTargetInteractArc = "1" }
+savedCreateFrame = CreateFrame
+CreateFrame = function(frameType)
+    if frameType == "Button" then
+        return { RegisterForClicks = noop, SetScript = function(_, name, fn) fishButton[name] = fn end,
+            SetAttribute = function(_, name, value) fishButton.attributes[name] = value end }
+    end
+    return { SetScript = function(_, name, fn) fishScripts[name] = fn end, RegisterEvent = noop, RegisterUnitEvent = noop }
+end
+local savedGetCVar, poleID, casting, enchanted = GetCVar, 6256, false, false
+GetCVar = function(name) return fishCVars[name] end
+SetCVar = function(name, value) fishCVars[name] = value end
+IsPlayerMoving = function() return false end
+GetInventoryItemID = function() return poleID end
+C_Item = { GetItemInfoInstant = function(id) return id, nil, nil, nil, nil, 2, id == 6256 and 20 or 7 end }
+C_Spell.GetSpellName = function(id) return (id == 7620 or id == 7731) and "Fishing" or "Other" end
+UnitCastingInfo = function() return casting or nil end
+GetWeaponEnchantInfo = function() return enchanted end
+ClearOverrideBindings = function() fishBinding = nil end
+SetOverrideBinding = function(_, _, key, action) fishBinding = key .. ">" .. action end
+SetOverrideBindingClick = function(_, _, key, name) fishBinding = key .. ">click:" .. name end
+BACKPACK_CONTAINER, NUM_BAG_SLOTS = 0, 4
+-- Bag 2 holds Shiny Bauble in slot 1 and Nightcrawlers in slot 3.
+C_Container = { GetContainerNumSlots = function() return 4 end,
+    GetContainerItemID = function(bag, slot) return bag == 2 and ({ 6529, nil, 6530 })[slot] or nil end }
+dofile("Modules/Fishing.lua")
+ScarletUI:SetupFishing()
+local function Fish(event, spellID) fishScripts.OnEvent(nil, event, "player", "guid", spellID) end
+assert(fishBinding == "SPACE>click:ScarletUIFishingButton" and fishButton.attributes.type == "macro")
+Fish("UNIT_SPELLCAST_CHANNEL_START", 5)
+assert(fishBinding == "SPACE>click:ScarletUIFishingButton" and fishCVars.SoftTargetInteract == "0") -- another channel
+Fish("UNIT_SPELLCAST_CHANNEL_START", 7731)
+assert(fishBinding == "SPACE>INTERACTTARGET" and fishCVars.SoftTargetInteract == "3" and fishCVars.SoftTargetInteractArc == "2")
+Fish("UNIT_SPELLCAST_CHANNEL_STOP", 7731)
+assert(fishBinding == "SPACE>click:ScarletUIFishingButton" and fishCVars.SoftTargetInteract == "0")
+-- The range CVar is missing in this harness, so it is left alone.
+assert(fishCVars.SoftTargetInteractArc == "1" and fishCVars.SoftTargetInteractRange == nil)
+-- The key is released while moving, in combat, with no pole, and when switched off.
+Fish("PLAYER_STARTED_MOVING"); assert(fishBinding == nil)
+Fish("PLAYER_STOPPED_MOVING"); assert(fishBinding)
+Fish("PLAYER_REGEN_DISABLED"); assert(fishBinding == nil)
+Fish("PLAYER_EQUIPMENT_CHANGED"); assert(fishBinding == nil)
+Fish("PLAYER_REGEN_ENABLED"); assert(fishBinding)
+poleID = 2092; Fish("PLAYER_EQUIPMENT_CHANGED"); assert(fishBinding == nil)
+poleID = 6256
+local fishingOptions = ScarletUI:Options().args.generalSettings.args.fishing
+assert(not fishingOptions.hidden())
+fishingOptions.args.enabled.set(nil, false); assert(fishBinding == nil)
+fishingOptions.args.enabled.set(nil, true)
+fishingOptions.args.key.set(nil, "F"); assert(fishBinding == "F>click:ScarletUIFishingButton")
+fishingOptions.args.key.set(nil, ""); assert(fishBinding == nil)
+fishingOptions.args.key.set(nil, "SPACE")
+-- A press applies the best lure, waits out its cast, then casts Fishing.
+now = 200
+fishButton.PreClick(); assert(fishButton.attributes.macrotext == "/use 2 3\n/use 16")
+Fish("UNIT_SPELLCAST_START", 9); casting = true
+fishButton.PreClick(); assert(fishButton.attributes.macrotext == nil)
+casting = false; Fish("UNIT_SPELLCAST_SUCCEEDED", 9)
+fishButton.PreClick(); assert(fishButton.attributes.macrotext == "/cast Fishing") -- enchant not reported yet
+now = 202; enchanted = true
+fishButton.PreClick(); assert(fishButton.attributes.macrotext == "/cast Fishing")
+-- A lure that fails to start a cast gives way to Fishing on the next press.
+enchanted = false
+fishButton.PreClick(); assert(fishButton.attributes.macrotext == "/use 2 3\n/use 16")
+fishButton.PreClick(); assert(fishButton.attributes.macrotext == "/cast Fishing")
+ScarletUI.db.global.fishingModule.autoLure = false
+fishButton.PreClick(); fishButton.PreClick(); assert(fishButton.attributes.macrotext == "/cast Fishing")
+ScarletUI.db.global.fishingModule.autoLure = true
+CreateFrame, GetCVar, C_Container, C_Item = savedCreateFrame, savedGetCVar, nil, nil
 
 -- Era, TBC, and Mists also load the Classic-UI-only modules and their old settings keys.
 C_Container = {}

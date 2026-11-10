@@ -253,11 +253,54 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                     },
                 },
             },
+            fishing = {
+                name = "Fishing",
+                type = "group",
+                hidden = function() return not self.fishingFrame end,
+                disabled = function() return self:InCombat() end,
+                inline = true,
+                order = 3,
+                args = {
+                    enabled = {
+                        name = "Fishing Mode",
+                        desc = "While a fishing pole is equipped, the fishing key casts Fishing, then hooks the bobber during the cast. The key keeps its normal action in combat and while you move.",
+                        type = "toggle",
+                        width = 1,
+                        order = 0,
+                        get = function(_) return database.fishingModule.enabled end,
+                        set = function(_, val)
+                            database.fishingModule.enabled = val
+                            self:UpdateFishing()
+                        end,
+                    },
+                    key = {
+                        name = "Fishing Key",
+                        desc = "Key taken over while a fishing pole is equipped.",
+                        type = "keybinding",
+                        width = 1,
+                        order = 1,
+                        get = function(_) return database.fishingModule.key end,
+                        set = function(_, val)
+                            database.fishingModule.key = val
+                            self:UpdateFishing()
+                        end,
+                    },
+                    autoLure = {
+                        name = "Auto Apply Lures",
+                        desc = "When the pole has no lure, the fishing key first applies the best lure in your bags.",
+                        type = "toggle",
+                        width = 1,
+                        order = 2,
+                        get = function(_) return database.fishingModule.autoLure end,
+                        set = function(_, val) database.fishingModule.autoLure = val end,
+                    },
+                },
+            },
             shortcuts = {
                 name = "Shortcuts",
                 type = "group",
                 inline = true,
-                order = 3,
+                order = 4,
                 args = {
                     minimapIcon = {
                         name = "Minimap Icon",
@@ -297,7 +340,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                 type = "group",
                 disabled = function() return self:InCombat() end,
                 inline = true,
-                order = 4,
+                order = 5,
                 args = {
                     defaultSettings = {
                         name = "Restore Defaults",
