@@ -699,7 +699,7 @@ Fish("PLAYER_EQUIPMENT_CHANGED"); assert(fishBinding == nil)
 Fish("PLAYER_REGEN_ENABLED"); assert(fishBinding)
 -- The bar shows with the pole, even in combat: the best lure, with a closed list of them all.
 local barLures, barApplied = BarLures()
-assert(fishBar.shown and barLures == "6530,6529" and barApplied == 6530)
+assert(fishBar.shown and barLures == "6530,6529,0" and barApplied == 6530) -- 0 is the no-lure entry
 assert(fishCurrent.shown and fishCurrent.itemID == 6530 and fishCurrent.count.text == 5 and not fishList.shown)
 -- Clicking the lure opens and closes the list; losing the pole closes it too.
 fishCurrent.scripts.OnClick(); assert(fishList.shown)
@@ -748,7 +748,13 @@ fishCurrent.scripts.OnClick()
 fishingOptions.args.autoLure.set(nil, false)
 assert(fishBar.shown and not fishCurrent.shown and not fishList.shown)
 assert(Press() == "/cast Fishing" and Press() == "/cast Fishing")
-fishingOptions.args.autoLure.set(nil, true); assert(fishCurrent.shown and BarLures() == "6530,6529")
+fishingOptions.args.autoLure.set(nil, true); assert(fishCurrent.shown and BarLures() == "6530,6529,0")
+-- The no-lure entry shows as an empty slot and makes the key only cast.
+ClickLure(0)
+assert(ScarletUI.db.global.fishingModule.lure == 0 and fishCurrent.itemID == 0 and fishCurrent.count.text == "")
+assert(select(2, BarLures()) == 0 and Press() == "/cast Fishing" and Press() == "/cast Fishing")
+ClickLure(0)
+assert(ScarletUI.db.global.fishingModule.lure == nil and fishCurrent.itemID == 6530)
 -- Dragging the Fishing icon saves the bar position, which a rerun of setup applies.
 for _, widget in ipairs(fishWidgets) do
     if widget.scripts.OnDragStop then widget.scripts.OnDragStop() end

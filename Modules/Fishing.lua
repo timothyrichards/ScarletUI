@@ -11,6 +11,7 @@ local BUTTON = "ScarletUIFishingButton"
 local WEAPON, FISHING_POLE, MAIN_HAND = 2, 20, 16
 local FISHING = 7620 -- every rank shares this spell's name
 local ICON_SIZE, ICON_GAP = 32, 4
+local NONE = 0 -- picked in place of an item ID: apply no lure
 local IsSecret = issecretvalue or function() return false end
 local GetItemInfoInstant = C_Item and C_Item.GetItemInfoInstant or GetItemInfoInstant
 local GetItemCount = C_Item and C_Item.GetItemCount or GetItemCount
@@ -48,7 +49,8 @@ local function PoleEquipped()
 end
 
 -- Lures in the bags as itemID = { bag, slot } of one stack, and the one the key
--- applies: the picked lure while the bags hold it, otherwise the biggest bonus.
+-- applies: NONE if that was picked, the picked lure while the bags hold it,
+-- otherwise the biggest bonus.
 local function FindLures(picked)
     local found, best = {}, nil
     for bag = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
@@ -60,7 +62,7 @@ local function FindLures(picked)
             end
         end
     end
-    return found, found[picked] and picked or best
+    return found, (picked == NONE or found[picked]) and picked or best
 end
 
 function ScarletUI:SetupFishing()
@@ -140,17 +142,28 @@ function ScarletUI:SetupFishing()
         lure.count:SetPoint("BOTTOMRIGHT", -2, 2)
         lure:SetScript("OnEnter", function()
             GameTooltip:SetOwner(lure, "ANCHOR_RIGHT")
-            GameTooltip:SetHyperlink("item:" .. lure.itemID)
+            if lure.itemID == NONE then
+                GameTooltip:AddLine("No Lure")
+                GameTooltip:AddLine("The fishing key only casts Fishing.", 1, 1, 1, true)
+            else
+                GameTooltip:SetHyperlink("item:" .. lure.itemID)
+            end
             GameTooltip:AddLine(hint, 0, 1, 0, true)
             GameTooltip:Show()
         end)
         return lure
     end
 
+    -- NONE shows as an empty bag slot.
     local function ShowLure(lure, itemID)
         lure.itemID = itemID
-        lure.texture:SetTexture((select(5, GetItemInfoInstant(itemID))))
-        lure.count:SetText(GetItemCount(itemID))
+        if itemID == NONE then
+            lure.texture:SetTexture("Interface\\PaperDoll\\UI-Backpack-EmptySlot")
+            lure.count:SetText("")
+        else
+            lure.texture:SetTexture((select(5, GetItemInfoInstant(itemID))))
+            lure.count:SetText(GetItemCount(itemID))
+        end
         lure:Show()
     end
 
@@ -176,7 +189,7 @@ function ScarletUI:SetupFishing()
     end)
 
     -- Next to it, the lure the key applies. Clicking it opens a list of the
-    -- lures in the bags, stacked upward from the button.
+    -- lures in the bags and a no-lure entry, stacked upward from the button.
     local current = LureButton(bar, "Click to choose a lure.")
     current:SetPoint("LEFT", handle, "RIGHT", ICON_GAP, 0)
     local list = CreateFrame("Frame", nil, bar)
@@ -205,10 +218,11 @@ function ScarletUI:SetupFishing()
             if LURES[a] ~= LURES[b] then return LURES[a] > LURES[b] end
             return a < b
         end)
+        lures[#lures + 1] = NONE -- top of the list
         for index, itemID in ipairs(lures) do
             local lure = listButtons[index]
             if not lure then
-                lure = LureButton(list, "Click to use this lure. Click it again to use the best one.")
+                lure = LureButton(list, "Click to pick this. Click it again to use the best lure.")
                 listButtons[index] = lure
                 lure:SetPoint("BOTTOM", current, "TOP", 0, ICON_GAP + (index - 1) * (ICON_SIZE + ICON_GAP))
                 lure.applied = lure:CreateTexture(nil, "OVERLAY")
