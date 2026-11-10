@@ -12,6 +12,7 @@ local BUTTON = "ScarletUIFishingButton"
 local WEAPON, FISHING_POLE, MAIN_HAND = 2, 20, 16
 local FISHING = 7620 -- every rank shares this spell's name
 local FISHING_SKILL = 356 -- skill line ID
+local FISHING_ICON = "Interface\\Icons\\Trade_Fishing"
 local ICON_SIZE, ICON_GAP = 32, 4
 local PADDING, TITLE_HEIGHT, TEXT_GAP = 16, 22, 8 -- panel edge, title row, icons to skill text
 local LIST_CLOSE_DELAY = 1 -- seconds the mouse may be off the open lure list
@@ -203,7 +204,7 @@ function ScarletUI:SetupFishing()
     -- The Fishing icon marks the mode and is the handle for dragging the bar.
     local handle = IconButton(bar)
     handle:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", PADDING, PADDING)
-    handle.texture:SetTexture("Interface\\Icons\\Trade_Fishing")
+    handle.texture:SetTexture(FISHING_ICON)
     handle:RegisterForDrag("LeftButton")
     handle:SetScript("OnDragStart", function() bar:StartMoving() end)
     handle:SetScript("OnDragStop", function()
@@ -249,6 +250,25 @@ function ScarletUI:SetupFishing()
     title:SetText("Scarlet UI") -- the font's gold, as on Blizzard's own titles
     local skill = bar:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
 
+    -- A skill-up drifts up from the panel and fades, like a RuneScape XP drop.
+    -- ponytail: one drop, restarted by the next skill-up; pool them if several
+    -- ever need to be on screen at once.
+    local drop = bar:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
+    drop:SetTextColor(1, 1, 1)
+    drop:SetPoint("BOTTOM", bar, "TOP", 0, 4)
+    drop:Hide()
+    local rise = drop:CreateAnimationGroup()
+    local move = rise:CreateAnimation("Translation")
+    move:SetOffset(0, 60)
+    move:SetDuration(1.8)
+    local fade = rise:CreateAnimation("Alpha")
+    fade:SetFromAlpha(1)
+    fade:SetToAlpha(0)
+    fade:SetStartDelay(1.2)
+    fade:SetDuration(0.6)
+    rise:SetScript("OnFinished", function() drop:Hide() end)
+    local lastRank
+
     local function RefreshBar()
         local module = self.db.global.fishingModule
         local found, applied = FindLures(module.lure)
@@ -256,6 +276,13 @@ function ScarletUI:SetupFishing()
         local hasLure = shown and module.autoLure and applied
         bar:SetShown(shown)
         local rank, maxRank = FishingSkill()
+        if rank and lastRank and rank > lastRank then
+            drop:SetText("|T" .. FISHING_ICON .. ":0|t +" .. rank - lastRank)
+            drop:Show()
+            rise:Stop()
+            rise:Play()
+        end
+        lastRank = rank or lastRank
         skill:SetText(rank and maxRank and maxRank > 0 and (SpellName(FISHING) .. " " .. rank .. "/" .. maxRank) or "")
         current:SetShown(hasLure)
         -- The panel wraps the title, the icons, and the skill text.

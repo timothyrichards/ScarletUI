@@ -626,6 +626,9 @@ local function FishWidget(kind, name)
     widget.GetStringWidth = function(self) return #tostring(self.text or "") end
     widget.SetSize = function(self, width, height) self.width, self.height = width, height end
     widget.GetNormalTexture = function() return FishWidget("Texture") end
+    widget.CreateAnimationGroup = function() return FishWidget("AnimationGroup") end
+    widget.CreateAnimation = function() return FishWidget("Animation") end
+    widget.Play = function(self) self.played = (rawget(self, "played") or 0) + 1 end
     widget.SetPoint = function(self, ...) self.point = { ... } end
     widget.GetPoint = function() return "TOPLEFT", nil, "TOPLEFT", 40, -50 end
     widget.CreateTexture = function() return FishWidget("Texture") end
@@ -775,7 +778,17 @@ ClickLure(0)
 assert(ScarletUI.db.global.fishingModule.lure == nil and fishCurrent.itemID == 6530)
 -- The bar names the addon and shows the Fishing skill and its cap, following skill-ups.
 assert(FishText("Scarlet UI") and FishText("Fishing 150/225"))
+local fishDrop, fishRise
+for _, widget in ipairs(fishWidgets) do
+    if widget.kind == "AnimationGroup" then fishRise = widget end
+    if widget.kind == "FontString" and rawget(widget, "shown") == false then fishDrop = widget end
+end
+assert(fishDrop and not rawget(fishRise, "played")) -- reading the skill at login is no skill-up
 fishSkill.rank = 151; Fish("SKILL_LINES_CHANGED"); assert(FishText("Fishing 151/225"))
+-- A skill-up floats the gain up from the panel, then hides again.
+assert(fishDrop.shown and fishDrop.text == "|TInterface\\Icons\\Trade_Fishing:0|t +1" and fishRise.played == 1)
+fishRise.scripts.OnFinished(); assert(not fishDrop.shown)
+Fish("SKILL_LINES_CHANGED"); assert(fishRise.played == 1 and not fishDrop.shown)
 -- Era and TBC read it from the skill list; an unlisted skill shows nothing.
 C_SkillInfo = nil
 GetNumSkillLines = function() return 2 end
