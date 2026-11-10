@@ -146,7 +146,7 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   `C_SkillInfo.GetSkillLineInfoByID(356)` on Forever, `GetProfessions` on Mists,
   and the `GetSkillLineInfo` rows on Era and TBC (blank while that header is
   collapsed), refreshed on `SKILL_LINES_CHANGED`. When the rank rises, the gain
-  ("+1" with the Fishing icon) drifts up from the panel and fades.
+  ("+1") drifts up from above the rank number and fades.
 - `Modules/Bag.lua`, `Modules/Nameplates.lua`: custom bag/bank frames and
   nameplate threat colors, auras, and text. Classic UI clients only: listed in
   just those three manifests so Retail and Forever never load them. Each file adds its

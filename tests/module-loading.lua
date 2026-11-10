@@ -777,16 +777,16 @@ assert(select(2, BarLures()) == 0 and Press() == "/cast Fishing" and Press() == 
 ClickLure(0)
 assert(ScarletUI.db.global.fishingModule.lure == nil and fishCurrent.itemID == 6530)
 -- The bar names the addon and shows the Fishing skill and its cap, following skill-ups.
-assert(FishText("Scarlet UI") and FishText("Fishing 150/225"))
+assert(FishText("Scarlet UI") and FishText("Fishing 150") and FishText("/225"))
 local fishDrop, fishRise
 for _, widget in ipairs(fishWidgets) do
     if widget.kind == "AnimationGroup" then fishRise = widget end
     if widget.kind == "FontString" and rawget(widget, "shown") == false then fishDrop = widget end
 end
 assert(fishDrop and not rawget(fishRise, "played")) -- reading the skill at login is no skill-up
-fishSkill.rank = 151; Fish("SKILL_LINES_CHANGED"); assert(FishText("Fishing 151/225"))
--- A skill-up floats the gain up from the panel, then hides again.
-assert(fishDrop.shown and fishDrop.text == "|TInterface\\Icons\\Trade_Fishing:0|t +1" and fishRise.played == 1)
+fishSkill.rank = 151; Fish("SKILL_LINES_CHANGED"); assert(FishText("Fishing 151") and FishText("/225"))
+-- A skill-up floats the gain up from the rank, then hides again.
+assert(fishDrop.shown and fishDrop.text == "+1" and fishRise.played == 1)
 fishRise.scripts.OnFinished(); assert(not fishDrop.shown)
 Fish("SKILL_LINES_CHANGED"); assert(fishRise.played == 1 and not fishDrop.shown)
 -- Era and TBC read it from the skill list; an unlisted skill shows nothing.
@@ -796,16 +796,16 @@ GetSkillLineInfo = function(index)
     if index == 1 then return "Secondary Skills", true end
     return "Fishing", false, nil, 75, 0, 0, 150
 end
-Fish("SKILL_LINES_CHANGED"); assert(FishText("Fishing 75/150"))
+Fish("SKILL_LINES_CHANGED"); assert(FishText("Fishing 75") and FishText("/150"))
 GetNumSkillLines = function() return 1 end
 local skillWidth = fishBar.width
-Fish("SKILL_LINES_CHANGED"); assert(not FishText("Fishing 75/150"))
+Fish("SKILL_LINES_CHANGED"); assert(not FishText("Fishing 75") and not FishText("/150"))
 -- The panel wraps its contents: narrower without the skill text, never narrower than the title.
 assert(fishBar.width < skillWidth and fishBar.width >= 32 + #"Scarlet UI" and fishBar.height == 86)
 -- Mists reads it from the profession list.
 GetProfessions = function() return nil, nil, nil, 9 end
 GetProfessionInfo = function(index) return "Fishing", nil, index == 9 and 300, 600 end
-Fish("SKILL_LINES_CHANGED"); assert(FishText("Fishing 300/600"))
+Fish("SKILL_LINES_CHANGED"); assert(FishText("Fishing 300") and FishText("/600"))
 GetNumSkillLines, GetSkillLineInfo, GetProfessions, GetProfessionInfo = nil, nil, nil, nil
 -- Dragging the Fishing icon saves the bar position, which a rerun of setup applies.
 for _, widget in ipairs(fishWidgets) do

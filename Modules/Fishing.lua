@@ -248,14 +248,17 @@ function ScarletUI:SetupFishing()
     local title = bar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", bar, "TOPLEFT", PADDING, -PADDING)
     title:SetText("Scarlet UI") -- the font's gold, as on Blizzard's own titles
+    -- The cap is its own string so the rank's right edge can anchor the drop.
     local skill = bar:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
+    local cap = bar:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
+    cap:SetPoint("LEFT", skill, "RIGHT")
 
-    -- A skill-up drifts up from the panel and fades, like a RuneScape XP drop.
+    -- A skill-up drifts up from the rank and fades, like a RuneScape XP drop.
     -- ponytail: one drop, restarted by the next skill-up; pool them if several
     -- ever need to be on screen at once.
     local drop = bar:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
     drop:SetTextColor(1, 1, 1)
-    drop:SetPoint("BOTTOM", bar, "TOP", 0, 4)
+    drop:SetPoint("BOTTOMRIGHT", skill, "TOPRIGHT", 0, 2)
     drop:Hide()
     local rise = drop:CreateAnimationGroup()
     local move = rise:CreateAnimation("Translation")
@@ -277,17 +280,19 @@ function ScarletUI:SetupFishing()
         bar:SetShown(shown)
         local rank, maxRank = FishingSkill()
         if rank and lastRank and rank > lastRank then
-            drop:SetText("|T" .. FISHING_ICON .. ":0|t +" .. rank - lastRank)
+            drop:SetText("+" .. rank - lastRank)
             drop:Show()
             rise:Stop()
             rise:Play()
         end
         lastRank = rank or lastRank
-        skill:SetText(rank and maxRank and maxRank > 0 and (SpellName(FISHING) .. " " .. rank .. "/" .. maxRank) or "")
+        local known = rank and maxRank and maxRank > 0
+        skill:SetText(known and SpellName(FISHING) .. " " .. rank or "")
+        cap:SetText(known and "/" .. maxRank or "")
         current:SetShown(hasLure)
         -- The panel wraps the title, the icons, and the skill text.
         local icons = hasLure and ICON_SIZE * 2 + ICON_GAP or ICON_SIZE
-        local text = skill:GetStringWidth()
+        local text = skill:GetStringWidth() + cap:GetStringWidth()
         skill:SetPoint("LEFT", handle, "LEFT", icons + TEXT_GAP, 0)
         bar:SetSize(PADDING * 2 + math.max(title:GetStringWidth(), icons + (text > 0 and TEXT_GAP + text or 0)),
             PADDING * 2 + TITLE_HEIGHT + ICON_SIZE)
