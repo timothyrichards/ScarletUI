@@ -623,6 +623,8 @@ local function FishWidget(kind, name)
     widget.SetShown = function(self, shown) self.shown = shown and true or false end
     widget.IsShown = function(self) return self.shown end
     widget.SetText = function(self, text) self.text = text end
+    widget.GetStringWidth = function(self) return #tostring(self.text or "") end
+    widget.SetSize = function(self, width, height) self.width, self.height = width, height end
     widget.SetPoint = function(self, ...) self.point = { ... } end
     widget.GetPoint = function() return "TOPLEFT", nil, "TOPLEFT", 40, -50 end
     widget.CreateTexture = function() return FishWidget("Texture") end
@@ -774,7 +776,10 @@ GetSkillLineInfo = function(index)
 end
 Fish("SKILL_LINES_CHANGED"); assert(FishText("Fishing 75/150"))
 GetNumSkillLines = function() return 1 end
+local skillWidth = fishBar.width
 Fish("SKILL_LINES_CHANGED"); assert(not FishText("Fishing 75/150"))
+-- The panel wraps its contents: narrower without the skill text, never narrower than the title.
+assert(fishBar.width < skillWidth and fishBar.width >= 20 + #"|cffff2400Scarlet UI|r" and fishBar.height == 74)
 -- Mists reads it from the profession list.
 GetProfessions = function() return nil, nil, nil, 9 end
 GetProfessionInfo = function(index) return "Fishing", nil, index == 9 and 300, 600 end

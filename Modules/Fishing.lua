@@ -3,9 +3,9 @@
 -- Interact With Target, which hooks the bobber. With no lure on the pole, the
 -- key applies a lure from the bags first. The key keeps its normal action in
 -- combat and while moving, since neither allows fishing.
--- A small bar marks the mode while the pole is equipped: the Fishing icon, then
--- the lure the key applies, which opens a list of the lures in the bags, then
--- the addon's name over the Fishing skill and its cap.
+-- A small panel marks the mode while the pole is equipped: the addon's name over
+-- the Fishing icon, the lure the key applies, which opens a list of the lures in
+-- the bags, and the Fishing skill with its cap.
 -- Everything protected goes through a secure button and override bindings,
 -- which can only change out of combat; the bar itself only stores a choice.
 local BUTTON = "ScarletUIFishingButton"
@@ -13,6 +13,7 @@ local WEAPON, FISHING_POLE, MAIN_HAND = 2, 20, 16
 local FISHING = 7620 -- every rank shares this spell's name
 local FISHING_SKILL = 356 -- skill line ID
 local ICON_SIZE, ICON_GAP = 32, 4
+local PADDING, TITLE_HEIGHT, TEXT_GAP = 10, 22, 8 -- panel edge, title row, icons to skill text
 local NONE = 0 -- picked in place of an item ID: apply no lure
 local IsSecret = issecretvalue or function() return false end
 local GetItemInfoInstant = C_Item and C_Item.GetItemInfoInstant or GetItemInfoInstant
@@ -132,8 +133,14 @@ function ScarletUI:SetupFishing()
         button:SetAttribute("macrotext", macro)
     end)
 
-    local bar = CreateFrame("Frame", "ScarletUIFishingBar", UIParent)
-    bar:SetHeight(ICON_SIZE)
+    local bar = CreateFrame("Frame", "ScarletUIFishingBar", UIParent, "BackdropTemplate")
+    bar:SetBackdrop({
+        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        edgeSize = 16,
+        insets = { left = 4, right = 4, top = 4, bottom = 4 },
+    })
+    bar:SetBackdropColor(0, 0, 0, 0.8)
     bar:SetMovable(true)
     bar:SetClampedToScreen(true)
     function self:PlaceFishingBar()
@@ -190,7 +197,7 @@ function ScarletUI:SetupFishing()
 
     -- The Fishing icon marks the mode and is the handle for dragging the bar.
     local handle = IconButton(bar)
-    handle:SetPoint("LEFT", bar, "LEFT")
+    handle:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", PADDING, PADDING)
     handle.texture:SetTexture("Interface\\Icons\\Trade_Fishing")
     handle:RegisterForDrag("LeftButton")
     handle:SetScript("OnDragStart", function() bar:StartMoving() end)
@@ -210,7 +217,7 @@ function ScarletUI:SetupFishing()
     end)
 
     -- Next to it, the lure the key applies. Clicking it opens a list of the
-    -- lures in the bags and a no-lure entry, stacked upward from the button.
+    -- lures in the bags and a no-lure entry, stacked upward from the panel's top.
     local current = LureButton(bar, "Click to choose a lure.")
     current:SetPoint("LEFT", handle, "RIGHT", ICON_GAP, 0)
     local list = CreateFrame("Frame", nil, bar)
@@ -218,12 +225,11 @@ function ScarletUI:SetupFishing()
     list:Hide()
     current:SetScript("OnClick", function() list:SetShown(not list:IsShown()) end)
 
-    -- Right of the icons: whose bar this is, over the Fishing skill and its cap.
-    local title = bar:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    title:SetPoint("BOTTOMLEFT", bar, "RIGHT", ICON_GAP + 2, 1)
+    -- Whose panel this is, above the icons; the Fishing skill and its cap beside them.
+    local title = bar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    title:SetPoint("TOPLEFT", bar, "TOPLEFT", PADDING, -PADDING)
     title:SetText("|cffff2400Scarlet UI|r")
-    local skill = bar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    skill:SetPoint("TOPLEFT", bar, "RIGHT", ICON_GAP + 2, -1)
+    local skill = bar:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
 
     local listButtons = {}
     local function RefreshBar()
@@ -235,12 +241,16 @@ function ScarletUI:SetupFishing()
         local rank, maxRank = FishingSkill()
         skill:SetText(rank and maxRank and maxRank > 0 and (SpellName(FISHING) .. " " .. rank .. "/" .. maxRank) or "")
         current:SetShown(hasLure)
+        -- The panel wraps the title, the icons, and the skill text.
+        local icons = hasLure and ICON_SIZE * 2 + ICON_GAP or ICON_SIZE
+        local text = skill:GetStringWidth()
+        skill:SetPoint("LEFT", handle, "LEFT", icons + TEXT_GAP, 0)
+        bar:SetSize(PADDING * 2 + math.max(title:GetStringWidth(), icons + (text > 0 and TEXT_GAP + text or 0)),
+            PADDING * 2 + TITLE_HEIGHT + ICON_SIZE)
         if not hasLure then
             list:Hide()
-            bar:SetWidth(ICON_SIZE)
             return
         end
-        bar:SetWidth(ICON_SIZE * 2 + ICON_GAP)
         ShowLure(current, applied)
         local lures = {}
         for itemID in pairs(found) do lures[#lures + 1] = itemID end
@@ -254,7 +264,8 @@ function ScarletUI:SetupFishing()
             if not lure then
                 lure = LureButton(list, "Click to pick this. Click it again to use the best lure.")
                 listButtons[index] = lure
-                lure:SetPoint("BOTTOM", current, "TOP", 0, ICON_GAP + (index - 1) * (ICON_SIZE + ICON_GAP))
+                lure:SetPoint("BOTTOM", current, "TOP", 0,
+                    TITLE_HEIGHT + PADDING + ICON_GAP + (index - 1) * (ICON_SIZE + ICON_GAP))
                 lure.applied = lure:CreateTexture(nil, "OVERLAY")
                 lure.applied:SetTexture("Interface\\Buttons\\CheckButtonHilight")
                 lure.applied:SetBlendMode("ADD")
