@@ -33,7 +33,7 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
 - `ScarletUI.lua`: addon initialization, setup dispatcher, events, popups, commands.
 - `Modules/Database.lua`: AceDB defaults and reset behavior.
 - `Modules/Options.lua`: AceConfig settings pages. There is no central module
-  list: each feature's enable toggle sits on its own page (Bags, Chat,
+  list: each feature's enable toggle sits on its own page (Bags, Chat, Fishing,
   Nameplates, CVars, Action Bars, and the Minimap Tracking group on General)
   and is the first setting on that page; Bags leads with Custom Bag Frames,
   then Share Sorting Across Characters. AceConfig sorts negative `order` values last.
@@ -122,8 +122,8 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   so casts come from the player's `UNIT_SPELLCAST_SUCCEEDED` (not secret for the
   player) and `GetSpellPowerCost`, never from mana changes. Hidden while the bar
   shows rage or energy.
-- `Modules/Fishing.lua`: fishing mode (`db.global.fishingModule`, Fishing group
-  on the General page), every client but Retail. While a fishing pole is in the
+- `Modules/Fishing.lua`: fishing mode (`db.global.fishingModule`, its own
+  Fishing settings page), every client but Retail. While a fishing pole is in the
   main hand, a priority override binding puts the fishing key (Space by default)
   on a secure macro button that casts Fishing; for the length of the Fishing
   channel the key is `INTERACTTARGET` instead and the soft-target interact CVars

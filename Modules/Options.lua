@@ -17,9 +17,10 @@ function ScarletUI:Options()
             actionBarTogglesSettings = self:GetActionBarTogglesSettingsPage(database, 3),
             bagModuleSettings = self:GetBagSettingsPage(database, defaults, 4),
             chatModuleSettings = self:GetChatModuleSettingsPage(database, defaults.chatModule, 5),
+            fishingSettings = self:GetFishingSettingsPage(database, 6),
             -- Nameplates only load on Era, TBC, and Mists.
-            nameplatesModuleSettings = self.GetNameplatesModuleSettingsPage and self:GetNameplatesModuleSettingsPage(database, defaults.nameplatesModule, 6),
-            CVarModuleSettings = self:GetCVarModuleSettingsPage(database, 7),
+            nameplatesModuleSettings = self.GetNameplatesModuleSettingsPage and self:GetNameplatesModuleSettingsPage(database, defaults.nameplatesModule, 7),
+            CVarModuleSettings = self:GetCVarModuleSettingsPage(database, 8),
         }
     }
 end
@@ -253,54 +254,11 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                     },
                 },
             },
-            fishing = {
-                name = "Fishing",
-                type = "group",
-                hidden = function() return not self.fishingFrame end,
-                disabled = function() return self:InCombat() end,
-                inline = true,
-                order = 3,
-                args = {
-                    enabled = {
-                        name = "Fishing Mode",
-                        desc = "While a fishing pole is equipped, the fishing key casts Fishing, then hooks the bobber during the cast. The key keeps its normal action in combat and while you move.",
-                        type = "toggle",
-                        width = 1,
-                        order = 0,
-                        get = function(_) return database.fishingModule.enabled end,
-                        set = function(_, val)
-                            database.fishingModule.enabled = val
-                            self:UpdateFishing()
-                        end,
-                    },
-                    key = {
-                        name = "Fishing Key",
-                        desc = "Key taken over while a fishing pole is equipped.",
-                        type = "keybinding",
-                        width = 1,
-                        order = 1,
-                        get = function(_) return database.fishingModule.key end,
-                        set = function(_, val)
-                            database.fishingModule.key = val
-                            self:UpdateFishing()
-                        end,
-                    },
-                    autoLure = {
-                        name = "Auto Apply Lures",
-                        desc = "When the pole has no lure, the fishing key first applies the best lure in your bags.",
-                        type = "toggle",
-                        width = 1,
-                        order = 2,
-                        get = function(_) return database.fishingModule.autoLure end,
-                        set = function(_, val) database.fishingModule.autoLure = val end,
-                    },
-                },
-            },
             shortcuts = {
                 name = "Shortcuts",
                 type = "group",
                 inline = true,
-                order = 4,
+                order = 3,
                 args = {
                     minimapIcon = {
                         name = "Minimap Icon",
@@ -340,7 +298,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                 type = "group",
                 disabled = function() return self:InCombat() end,
                 inline = true,
-                order = 5,
+                order = 4,
                 args = {
                     defaultSettings = {
                         name = "Restore Defaults",
@@ -367,6 +325,52 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                 }
             },
         }
+    }
+end
+
+function ScarletUI:GetFishingSettingsPage(database, order)
+    return {
+        name = "Fishing",
+        desc = "One key to cast, hook the bobber, and apply lures while a fishing pole is equipped.",
+        type = "group",
+        hidden = function() return not self.fishingFrame end,
+        disabled = function() return self:InCombat() end,
+        order = order,
+        args = {
+            enabled = {
+                name = "Fishing Mode",
+                desc = "While a fishing pole is equipped, the fishing key casts Fishing, then hooks the bobber during the cast. The key keeps its normal action in combat and while you move.",
+                type = "toggle",
+                width = 1,
+                order = 0,
+                get = function(_) return database.fishingModule.enabled end,
+                set = function(_, val)
+                    database.fishingModule.enabled = val
+                    self:UpdateFishing()
+                end,
+            },
+            key = {
+                name = "Fishing Key",
+                desc = "Key taken over while a fishing pole is equipped.",
+                type = "keybinding",
+                width = 1,
+                order = 1,
+                get = function(_) return database.fishingModule.key end,
+                set = function(_, val)
+                    database.fishingModule.key = val
+                    self:UpdateFishing()
+                end,
+            },
+            autoLure = {
+                name = "Auto Apply Lures",
+                desc = "When the pole has no lure, the fishing key first applies the best lure in your bags.",
+                type = "toggle",
+                width = 1,
+                order = 2,
+                get = function(_) return database.fishingModule.autoLure end,
+                set = function(_, val) database.fishingModule.autoLure = val end,
+            },
+        },
     }
 end
 

@@ -655,8 +655,10 @@ Fish("PLAYER_EQUIPMENT_CHANGED"); assert(fishBinding == nil)
 Fish("PLAYER_REGEN_ENABLED"); assert(fishBinding)
 poleID = 2092; Fish("PLAYER_EQUIPMENT_CHANGED"); assert(fishBinding == nil)
 poleID = 6256
-local fishingOptions = ScarletUI:Options().args.generalSettings.args.fishing
-assert(not fishingOptions.hidden())
+-- Fishing has its own settings page, led by its switch.
+local fishingOptions = ScarletUI:Options().args.fishingSettings
+assert(not fishingOptions.hidden() and fishingOptions.args.enabled.order == 0)
+assert(ScarletUI:Options().args.generalSettings.args.fishing == nil)
 fishingOptions.args.enabled.set(nil, false); assert(fishBinding == nil)
 fishingOptions.args.enabled.set(nil, true)
 fishingOptions.args.key.set(nil, "F"); assert(fishBinding == "F>click:ScarletUIFishingButton")
