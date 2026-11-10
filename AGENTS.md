@@ -137,7 +137,11 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   in the bags stacked upward, topped by a no-lure entry drawn as an empty slot.
   Clicking a list entry stores `lure` (an item ID, or 0 for no lure); the key
   applies a picked lure while the bags hold it and the best lure otherwise. The bar
-  is plain frames with no secure children, so it can change in combat.
+  is plain frames with no secure children, so it can change in combat. Right of
+  the icons it reads "Scarlet UI" over the Fishing skill and its cap, from
+  `C_SkillInfo.GetSkillLineInfoByID(356)` on Forever, `GetProfessions` on Mists,
+  and the `GetSkillLineInfo` rows on Era and TBC (blank while that header is
+  collapsed), refreshed on `SKILL_LINES_CHANGED`.
 - `Modules/Bag.lua`, `Modules/Nameplates.lua`: custom bag/bank frames and
   nameplate threat colors, auras, and text. Classic UI clients only: listed in
   just those three manifests so Retail and Forever never load them. Each file adds its

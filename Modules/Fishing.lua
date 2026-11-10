@@ -4,12 +4,14 @@
 -- key applies a lure from the bags first. The key keeps its normal action in
 -- combat and while moving, since neither allows fishing.
 -- A small bar marks the mode while the pole is equipped: the Fishing icon, then
--- the lure the key applies, which opens a list of the lures in the bags.
+-- the lure the key applies, which opens a list of the lures in the bags, then
+-- the addon's name over the Fishing skill and its cap.
 -- Everything protected goes through a secure button and override bindings,
 -- which can only change out of combat; the bar itself only stores a choice.
 local BUTTON = "ScarletUIFishingButton"
 local WEAPON, FISHING_POLE, MAIN_HAND = 2, 20, 16
 local FISHING = 7620 -- every rank shares this spell's name
+local FISHING_SKILL = 356 -- skill line ID
 local ICON_SIZE, ICON_GAP = 32, 4
 local NONE = 0 -- picked in place of an item ID: apply no lure
 local IsSecret = issecretvalue or function() return false end
@@ -46,6 +48,25 @@ local function PoleEquipped()
     if not itemID then return false end
     local _, _, _, _, _, classID, subclassID = GetItemInfoInstant(itemID)
     return classID == WEAPON and subclassID == FISHING_POLE
+end
+
+-- The Fishing skill's rank and cap, or nil while it is unknown.
+local function FishingSkill()
+    local info = C_SkillInfo and C_SkillInfo.GetSkillLineInfoByID and C_SkillInfo.GetSkillLineInfoByID(FISHING_SKILL)
+    if info then return info.rank, info.maxRank end
+    if GetProfessions then -- Mists has no skill list
+        local _, _, _, fishing = GetProfessions()
+        if not fishing then return end
+        local _, _, rank, maxRank = GetProfessionInfo(fishing)
+        return rank, maxRank
+    end
+    -- ponytail: Era and TBC only list skills by row, and a collapsed header
+    -- hides its rows, so the skill reads as unknown while Secondary Skills is
+    -- collapsed. Expand and re-collapse headers here if that comes up.
+    for index = 1, GetNumSkillLines and GetNumSkillLines() or 0 do
+        local name, _, _, rank, _, _, maxRank = GetSkillLineInfo(index)
+        if name == SpellName(FISHING) then return rank, maxRank end
+    end
 end
 
 -- Lures in the bags as itemID = { bag, slot } of one stack, and the one the key
@@ -181,7 +202,7 @@ function ScarletUI:SetupFishing()
     handle:SetScript("OnEnter", function()
         local key = self.db.global.fishingModule.key
         GameTooltip:SetOwner(handle, "ANCHOR_TOP")
-        GameTooltip:AddLine("Fishing Mode")
+        GameTooltip:AddLine("Scarlet UI - Fishing Mode")
         GameTooltip:AddLine((GetBindingText and GetBindingText(key) or key)
             .. " casts Fishing, then hooks the bobber.", 1, 1, 1, true)
         GameTooltip:AddLine("Drag to move.", 0.6, 0.6, 0.6)
@@ -197,6 +218,13 @@ function ScarletUI:SetupFishing()
     list:Hide()
     current:SetScript("OnClick", function() list:SetShown(not list:IsShown()) end)
 
+    -- Right of the icons: whose bar this is, over the Fishing skill and its cap.
+    local title = bar:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    title:SetPoint("BOTTOMLEFT", bar, "RIGHT", ICON_GAP + 2, 1)
+    title:SetText("|cffff2400Scarlet UI|r")
+    local skill = bar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    skill:SetPoint("TOPLEFT", bar, "RIGHT", ICON_GAP + 2, -1)
+
     local listButtons = {}
     local function RefreshBar()
         local module = self.db.global.fishingModule
@@ -204,6 +232,8 @@ function ScarletUI:SetupFishing()
         local shown = module.enabled and PoleEquipped()
         local hasLure = shown and module.autoLure and applied
         bar:SetShown(shown)
+        local rank, maxRank = FishingSkill()
+        skill:SetText(rank and maxRank and maxRank > 0 and (SpellName(FISHING) .. " " .. rank .. "/" .. maxRank) or "")
         current:SetShown(hasLure)
         if not hasLure then
             list:Hide()
@@ -284,7 +314,7 @@ function ScarletUI:SetupFishing()
         elseif event == "PLAYER_LOGOUT" then
             RestoreCVars()
             return
-        elseif event == "BAG_UPDATE_DELAYED" then
+        elseif event == "BAG_UPDATE_DELAYED" or event == "SKILL_LINES_CHANGED" then
             RefreshBar()
             return
         elseif event == "UNIT_SPELLCAST_START" then
@@ -306,7 +336,7 @@ function ScarletUI:SetupFishing()
     end)
     for _, event in ipairs({ "PLAYER_ENTERING_WORLD", "PLAYER_EQUIPMENT_CHANGED", "PLAYER_REGEN_DISABLED",
         "PLAYER_REGEN_ENABLED", "PLAYER_STARTED_MOVING", "PLAYER_STOPPED_MOVING", "PLAYER_LOGOUT",
-        "BAG_UPDATE_DELAYED" }) do
+        "BAG_UPDATE_DELAYED", "SKILL_LINES_CHANGED" }) do
         frame:RegisterEvent(event)
     end
     for _, event in ipairs({ "UNIT_SPELLCAST_CHANNEL_START", "UNIT_SPELLCAST_CHANNEL_STOP",
