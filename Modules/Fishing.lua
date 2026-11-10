@@ -4,7 +4,7 @@
 -- key applies a lure from the bags first. The key keeps its normal action in
 -- combat and while moving, since neither allows fishing.
 -- A small bar marks the mode while the pole is equipped: the Fishing icon, then
--- a button per lure in the bags to pick which one the key applies.
+-- the lure the key applies, which opens a list of the lures in the bags.
 -- Everything protected goes through a secure button and override bindings,
 -- which can only change out of combat; the bar itself only stores a choice.
 local BUTTON = "ScarletUIFishingButton"
@@ -124,18 +124,39 @@ function ScarletUI:SetupFishing()
     end
     self:PlaceFishingBar()
 
-    local function IconButton(index)
-        local icon = CreateFrame("Button", nil, bar)
+    local function IconButton(parent)
+        local icon = CreateFrame("Button", nil, parent)
         icon:SetSize(ICON_SIZE, ICON_SIZE)
-        icon:SetPoint("LEFT", bar, "LEFT", index * (ICON_SIZE + ICON_GAP), 0)
         icon.texture = icon:CreateTexture(nil, "ARTWORK")
         icon.texture:SetAllPoints()
         icon:SetScript("OnLeave", function() GameTooltip:Hide() end)
         return icon
     end
 
+    -- A lure's icon and stack count, with its item tooltip and a hint below it.
+    local function LureButton(parent, hint)
+        local lure = IconButton(parent)
+        lure.count = lure:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
+        lure.count:SetPoint("BOTTOMRIGHT", -2, 2)
+        lure:SetScript("OnEnter", function()
+            GameTooltip:SetOwner(lure, "ANCHOR_RIGHT")
+            GameTooltip:SetHyperlink("item:" .. lure.itemID)
+            GameTooltip:AddLine(hint, 0, 1, 0, true)
+            GameTooltip:Show()
+        end)
+        return lure
+    end
+
+    local function ShowLure(lure, itemID)
+        lure.itemID = itemID
+        lure.texture:SetTexture((select(5, GetItemInfoInstant(itemID))))
+        lure.count:SetText(GetItemCount(itemID))
+        lure:Show()
+    end
+
     -- The Fishing icon marks the mode and is the handle for dragging the bar.
-    local handle = IconButton(0)
+    local handle = IconButton(bar)
+    handle:SetPoint("LEFT", bar, "LEFT")
     handle.texture:SetTexture("Interface\\Icons\\Trade_Fishing")
     handle:RegisterForDrag("LeftButton")
     handle:SetScript("OnDragStart", function() bar:StartMoving() end)
@@ -154,28 +175,42 @@ function ScarletUI:SetupFishing()
         GameTooltip:Show()
     end)
 
-    local lureButtons = {}
+    -- Next to it, the lure the key applies. Clicking it opens a list of the
+    -- lures in the bags, stacked upward from the button.
+    local current = LureButton(bar, "Click to choose a lure.")
+    current:SetPoint("LEFT", handle, "RIGHT", ICON_GAP, 0)
+    local list = CreateFrame("Frame", nil, bar)
+    list:SetAllPoints(current)
+    list:Hide()
+    current:SetScript("OnClick", function() list:SetShown(not list:IsShown()) end)
+
+    local listButtons = {}
     local function RefreshBar()
         local module = self.db.global.fishingModule
-        local shown = module.enabled and PoleEquipped()
-        bar:SetShown(shown)
-        if not shown then return end
         local found, applied = FindLures(module.lure)
-        local lures = {}
-        if module.autoLure then
-            for itemID in pairs(found) do lures[#lures + 1] = itemID end
+        local shown = module.enabled and PoleEquipped()
+        local hasLure = shown and module.autoLure and applied
+        bar:SetShown(shown)
+        current:SetShown(hasLure)
+        if not hasLure then
+            list:Hide()
+            bar:SetWidth(ICON_SIZE)
+            return
         end
+        bar:SetWidth(ICON_SIZE * 2 + ICON_GAP)
+        ShowLure(current, applied)
+        local lures = {}
+        for itemID in pairs(found) do lures[#lures + 1] = itemID end
         table.sort(lures, function(a, b)
             if LURES[a] ~= LURES[b] then return LURES[a] > LURES[b] end
             return a < b
         end)
         for index, itemID in ipairs(lures) do
-            local lure = lureButtons[index]
+            local lure = listButtons[index]
             if not lure then
-                lure = IconButton(index)
-                lureButtons[index] = lure
-                lure.count = lure:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
-                lure.count:SetPoint("BOTTOMRIGHT", -2, 2)
+                lure = LureButton(list, "Click to use this lure. Click it again to use the best one.")
+                listButtons[index] = lure
+                lure:SetPoint("BOTTOM", current, "TOP", 0, ICON_GAP + (index - 1) * (ICON_SIZE + ICON_GAP))
                 lure.applied = lure:CreateTexture(nil, "OVERLAY")
                 lure.applied:SetTexture("Interface\\Buttons\\CheckButtonHilight")
                 lure.applied:SetBlendMode("ADD")
@@ -184,24 +219,15 @@ function ScarletUI:SetupFishing()
                     -- Clicking the picked lure again goes back to the best one.
                     local settings = self.db.global.fishingModule
                     settings.lure = settings.lure ~= lure.itemID and lure.itemID or nil
+                    list:Hide()
                     RefreshBar()
                 end)
-                lure:SetScript("OnEnter", function()
-                    GameTooltip:SetOwner(lure, "ANCHOR_TOP")
-                    GameTooltip:SetHyperlink("item:" .. lure.itemID)
-                    GameTooltip:AddLine("Click to use this lure. Click it again to use the best one.", 0, 1, 0, true)
-                    GameTooltip:Show()
-                end)
             end
-            lure.itemID = itemID
-            lure.texture:SetTexture((select(5, GetItemInfoInstant(itemID))))
-            lure.count:SetText(GetItemCount(itemID))
+            ShowLure(lure, itemID)
             -- The highlight marks the lure the key applies.
             lure.applied:SetShown(itemID == applied)
-            lure:Show()
         end
-        for index = #lures + 1, #lureButtons do lureButtons[index]:Hide() end
-        bar:SetWidth(ICON_SIZE + #lures * (ICON_SIZE + ICON_GAP))
+        for index = #lures + 1, #listButtons do listButtons[index]:Hide() end
     end
 
     local function RestoreCVars()

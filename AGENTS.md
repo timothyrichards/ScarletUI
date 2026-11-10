@@ -133,8 +133,9 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   change out of combat; the key is released in `PLAYER_REGEN_DISABLED`, which
   fires before the lockdown, and while moving. `ScarletUIFishingBar` shows while
   the mode is on and a pole is equipped: the Fishing icon (drag handle, position
-  in `position`) and a button per lure in the bags. Clicking one stores `lure`;
-  the key applies it while the bags hold it and the best lure otherwise. The bar
+  in `position`) and the lure the key applies, which opens a list of the lures
+  in the bags stacked upward. Clicking a list entry stores `lure`; the key
+  applies it while the bags hold it and the best lure otherwise. The bar
   is plain frames with no secure children, so it can change in combat.
 - `Modules/Bag.lua`, `Modules/Nameplates.lua`: custom bag/bank frames and
   nameplate threat colors, auras, and text. Classic UI clients only: listed in
