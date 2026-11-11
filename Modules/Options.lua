@@ -469,9 +469,9 @@ function ScarletUI:GetBagSettingsPage(database, defaults, order)
         order = 10,
         args = {
             sortBagsRightToLeft = SortToggle("sortBagsRightToLeft", "Sort Bags Right to Left",
-                "Clean Up fills your bags starting from the rightmost bag instead of the backpack.", 0),
+                "Clean Up packs items into your backpack (the rightmost bag) first. Unchecked, it starts from your leftmost bag.", 0),
             insertItemsLeftToRight = SortToggle("insertItemsLeftToRight", "Insert Items Left to Right",
-                "New items go into your leftmost bag first instead of the backpack.", 1),
+                "New items go into your leftmost bag first. Unchecked, they go into your backpack (the rightmost bag) first.", 1),
         },
     }
     -- Module switches lead each page; this one follows Bag.lua's Custom Bag Frames.
