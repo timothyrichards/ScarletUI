@@ -139,8 +139,10 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   get each row's total cost from `Auctionator.API.v1` (vendor price, else
   auction) and the cheapest row in green (`db.global.crateFillCosts`, toggle in
   the Interface group, hidden without Auctionator). Auctionator has no
-  price-by-name API, so names resolve through `GetItemInfoInstant`, which only
-  knows items the client has cached.
+  price-by-name API and the client only resolves names of items the character
+  has handled, so names are indexed from the item IDs in
+  `Auctionator.Database.db` (internal, guarded); names not loaded yet are
+  picked up on a later hover.
 - `Modules/ZoneLevels.lua`: appends difficulty-colored level ranges to the world
   map zone hover label on Era, TBC, and Forever, whose `C_Map.GetMapLevels` has
   no data. Uses a table of Classic UIMapIDs and post-hooks the area label's

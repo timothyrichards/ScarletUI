@@ -93,40 +93,66 @@ end
 -- Supply crates (Waylaid Crate) list the bundles that fill them as "- 20 Vision
 -- Dust" rows. Each row gets its total cost from Auctionator (vendor price
 -- first, as Auctionator does) and the cheapest row turns green.
--- ponytail: Auctionator has no price-by-name API, so names resolve through
--- GetItemInfoInstant, which only knows items this client has cached; unseen
--- items get no price. Add a name-to-ID table if that proves too patchy.
-local GetItemInfoInstant = C_Item and C_Item.GetItemInfoInstant or GetItemInfoInstant
+-- Auctionator has no price-by-name API and the client only resolves names of
+-- items the character has handled, so names are indexed from the item IDs in
+-- Auctionator's price database (an internal table, hence the guards). Names
+-- the client has not loaded yet are requested and picked up on a later hover.
+-- ponytail: one pass over the whole price database on the first crate hover,
+-- then only over IDs still unnamed; spread it over frames if it ever hitches.
+local GetItemName = C_Item and C_Item.GetItemNameByID or GetItemInfo
 local CHEAPEST_COLOR = "|cff20ff20"
+local itemIDByName, unnamed = {}, nil
 
-local function BundleCost(row)
-    local count, name = row:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):match("^%- (%d+) (.-)%s*$")
-    local itemID = name and GetItemInfoInstant(name)
-    if not itemID then
-        return
+local function IndexItemNames()
+    local database = Auctionator.Database and Auctionator.Database.db
+    if not unnamed and type(database) == "table" then
+        unnamed = {}
+        for key in pairs(database) do
+            unnamed[#unnamed + 1] = tonumber(key) -- other keys (pets, item levels) are not plain IDs
+        end
     end
-    local API = Auctionator.API.v1
-    local price = API.GetVendorPriceByItemID("ScarletUI", itemID) or API.GetAuctionPriceByItemID("ScarletUI", itemID)
-    return price and price * count
+    for i = unnamed and #unnamed or 0, 1, -1 do
+        local name = GetItemName(unnamed[i])
+        if name then
+            itemIDByName[name] = unnamed[i]
+            unnamed[i] = unnamed[#unnamed]
+            unnamed[#unnamed] = nil
+        end
+    end
 end
 
 local function AddCrateCosts(tooltip)
     if tooltip ~= GameTooltip or not ScarletUI.db.global.crateFillCosts or tooltip:IsForbidden()
-        or not (Auctionator and Auctionator.API and Auctionator.API.v1 and GetItemInfoInstant) then
+        or not (Auctionator and Auctionator.API and Auctionator.API.v1) then
         return
     end
     -- The list may be one row per tooltip line or one line with line breaks.
-    local costs, cheapest = {}, nil
+    local bundles, indexed = {}, false
     for i = 2, tooltip:NumLines() do
         local text = _G["GameTooltipTextLeft" .. i]:GetText()
         if text and not IsSecret(text) then
+            if text:find(CHEAPEST_COLOR, 1, true) then
+                return -- already decorated
+            end
             for row in text:gmatch("[^\r\n]+") do
-                local ok, cost = pcall(BundleCost, row)
-                if ok and cost then
-                    costs[row] = cost
-                    cheapest = math.min(cheapest or cost, cost)
+                local count, name = row:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):match("^%- (%d+) (.-)%s*$")
+                if name then
+                    if not itemIDByName[name] and not indexed then
+                        indexed = true
+                        IndexItemNames()
+                    end
+                    bundles[row] = { count = count, itemID = itemIDByName[name] }
                 end
             end
+        end
+    end
+    local API, costs, cheapest = Auctionator.API.v1, {}, nil
+    for row, bundle in pairs(bundles) do
+        local price = bundle.itemID and (API.GetVendorPriceByItemID("ScarletUI", bundle.itemID)
+            or API.GetAuctionPriceByItemID("ScarletUI", bundle.itemID))
+        if price then
+            costs[row] = price * bundle.count
+            cheapest = math.min(cheapest or costs[row], costs[row])
         end
     end
     if not cheapest then
@@ -136,7 +162,6 @@ local function AddCrateCosts(tooltip)
         local line = _G["GameTooltipTextLeft" .. i]
         local text = line:GetText()
         if text and not IsSecret(text) then
-            -- Decorated rows no longer resolve to an item, so a second pass adds nothing.
             line:SetText((text:gsub("[^\r\n]+", function(row)
                 local cost = costs[row]
                 if cost then

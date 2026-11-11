@@ -536,19 +536,26 @@ for text, expected in pairs({
     assert(PerMana() == expected, text)
 end
 -- Crate fill costs: every priced bundle gets its total, the cheapest turns green, once.
-local itemIDs = { ["Vision Dust"] = 1, ["Greater Mystic Essence"] = 2, ["Small Radiant Shard"] = 3 }
+local itemNames = { "Vision Dust", "Greater Mystic Essence" } -- the shard's name loads later
 local auctionPrices = { 100, 400, 9999 }
-C_Item = { GetItemInfoInstant = function(name) return itemIDs[name] end }
+C_Item = { GetItemNameByID = function(id) return itemNames[id] end }
 GetMoneyString = function(copper) return copper .. "c" end
-Auctionator = { API = { v1 = {
+Auctionator = { Database = { db = { ["1"] = {}, ["2"] = {}, ["3"] = {}, ["p:7"] = {} } }, API = { v1 = {
     GetVendorPriceByItemID = function(_, id) return id == 3 and 500 or nil end,
     GetAuctionPriceByItemID = function(_, id) return auctionPrices[id] end,
 } } }
 dofile("Modules/Tooltips.lua") -- again, to pick up C_Item
 ScarletUI.spellCostHooked = nil
 ScarletUI:SetupSpellCostPercent()
-GameTooltipTextLeft2 = Line("Use: Fill the crate:\n- 20 Vision Dust\n- 4 Greater Mystic Essence")
-GameTooltipTextLeft3 = Line("|cffffffff- 6 Small Radiant Shard|r")
+local function CrateTooltip()
+    GameTooltipTextLeft2 = Line("Use: Fill the crate:\n- 20 Vision Dust\n- 4 Greater Mystic Essence")
+    GameTooltipTextLeft3 = Line("|cffffffff- 6 Small Radiant Shard|r")
+end
+CrateTooltip()
+postCalls[3](GameTooltip)
+assert(GameTooltipTextLeft3:GetText() == "|cffffffff- 6 Small Radiant Shard|r") -- name not loaded yet
+itemNames[3] = "Small Radiant Shard"
+CrateTooltip()
 local crateText = "Use: Fill the crate:\n- 20 Vision Dust  |cffffffff2000c|r\n"
     .. "|cff20ff20- 4 Greater Mystic Essence|r  |cffffffff1600c|r"
 for _ = 1, 2 do
