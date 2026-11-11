@@ -147,6 +147,16 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   and the `GetSkillLineInfo` rows on Era and TBC (blank while that header is
   collapsed), refreshed on `SKILL_LINES_CHANGED`. When the rank rises, the gain
   ("+1") drifts up from above the rank number and fades.
+- `Modules/XPFood.lua`: XP food reminder (`db.global.xpFoodModule`, toggle in
+  the Interface group on the General page), Forever only. Cooked food there
+  also applies Well Fed XP Boost (spell 1243969, 5% more experience from kills).
+  While the player lacks that aura and the bags hold a listed food whose
+  required level they meet, `ScarletUIXPFood` shows the highest-level one's
+  icon (draggable, position in `position`). Hidden in combat, where auras may
+  be secret, and at max level. The item ID list is hand-kept from
+  forever.wowhead.com. The icon is a plain frame from
+  `ScarletUI:CreateIconButton` (Helpers, shared with the fishing bar), not a
+  secure button: it does not eat on click.
 - `Modules/Bag.lua`, `Modules/Nameplates.lua`: custom bag/bank frames and
   nameplate threat colors, auras, and text. Classic UI clients only: listed in
   just those three manifests so Retail and Forever never load them. Each file adds its

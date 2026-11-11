@@ -108,6 +108,19 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                             self:SetupBuffCollapse()
                         end,
                     },
+                    xpFood = {
+                        name = "XP Food Reminder",
+                        desc = "Show an icon while you have no Well Fed XP Boost (5% more experience from kills) and your bags hold food that gives it. Hidden in combat and at max level; drag the icon to move it.",
+                        type = "toggle",
+                        hidden = function() return not self.xpFoodFrame end,
+                        width = 1.5,
+                        order = 7,
+                        get = function(_) return database.xpFoodModule.enabled end,
+                        set = function(_, val)
+                            database.xpFoodModule.enabled = val
+                            self:UpdateXPFood()
+                        end,
+                    },
                     expandCharacterInfo = {
                         name = "Auto Expand Character Info",
                         desc = "Automatically opens the side panel in the character window showing your stats, titles, and equipment manager.",

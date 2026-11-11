@@ -47,6 +47,9 @@ ScarletUI.defaults = {
             key = "SPACE",
             autoLure = true,
         },
+        xpFoodModule = {
+            enabled = true,
+        },
         chatModule = {
             enabled = true,
             fontSize = 14,

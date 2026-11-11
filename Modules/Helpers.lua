@@ -144,6 +144,24 @@ function ScarletUI:ArrayHasValue(array, value)
     return false
 end
 
+-- A button drawn as a Blizzard item slot; `texture` holds the icon.
+function ScarletUI:CreateIconButton(parent, size, name)
+    local icon = CreateFrame("Button", name, parent)
+    icon:SetSize(size, size)
+    icon.texture = icon:CreateTexture(nil, "ARTWORK")
+    icon.texture:SetAllPoints()
+    -- The item slot border, sized as ItemButtonTemplate has it (64 on a 37 slot).
+    icon:SetNormalTexture("Interface\\Buttons\\UI-Quickslot2")
+    local border = icon:GetNormalTexture()
+    border:ClearAllPoints()
+    border:SetPoint("CENTER", 0, -1)
+    border:SetSize(size * 64 / 37, size * 64 / 37)
+    icon:SetPushedTexture("Interface\\Buttons\\UI-Quickslot-Depress")
+    icon:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+    icon:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    return icon
+end
+
 function ScarletUI:ConvertToPascalCase(string)
     if string == nil then
         return ""

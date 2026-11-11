@@ -67,7 +67,7 @@ end
 local calls = {}
 local setupMethods = { "SetupDebugFrame", "SetupActionBarToggles", "SetupBagSort", "SetupTracking", "SetupChat", "SetupCVars",
     "SetupItemLevels",
-    "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupFiveSecondRule", "SetupFishing", "SetupExpandCharacterInfo", "SetupGameMenuButtons",
+    "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupFiveSecondRule", "SetupFishing", "SetupXPFood", "SetupExpandCharacterInfo", "SetupGameMenuButtons",
     "SetupFrameTweaks", "SetupMinimapIcon" }
 for _, name in ipairs(setupMethods) do
     ScarletUI[name] = function() calls[name] = true end
@@ -816,6 +816,71 @@ assert(fishBar.point[1] == "TOPLEFT" and fishBar.point[4] == 40 and fishBar.poin
 ScarletUI.db.global.fishingModule.position = nil
 ScarletUI:SetupFishing(); assert(fishBar.point[1] == "CENTER")
 CreateFrame, GetCVar, C_Container, C_Item = savedCreateFrame, savedGetCVar, nil, nil
+end
+
+-- XP food reminder: the icon shows while the XP buff is missing and the bags
+-- hold a food the character can eat, and names the highest-level one.
+do
+local function FoodWidget(_, name)
+    local widget = { name = name, scripts = {}, shown = true }
+    widget.SetScript = function(self, script, fn) self.scripts[script] = fn end
+    widget.SetShown = function(self, shown) self.shown = shown end
+    widget.SetPoint = function(self, ...) self.point = { ... } end
+    widget.GetPoint = function() return "TOPLEFT", nil, "TOPLEFT", 40, -50 end
+    widget.SetTexture = function(self, texture) self.icon = texture end
+    widget.CreateTexture = function() return FoodWidget() end
+    widget.CreateFontString = function() return FoodWidget() end
+    widget.GetNormalTexture = function() return FoodWidget() end
+    return setmetatable(widget, { __index = function() return noop end })
+end
+local savedCreateFrame, savedUnitLevel, foodIcon = CreateFrame, UnitLevel, nil
+CreateFrame = function(kind, name)
+    foodIcon = FoodWidget(kind, name)
+    return foodIcon
+end
+local SECRET_AURA = {}
+-- Spiced Wolf Meat needs level 1, Bristle Whisker Catfish 15, Mithril Head Trout 25.
+local foodAura, foodLevel, foodBags, atMax = nil, 20, { 2680, 4593, 8364 }, false
+C_UnitAuras = { GetPlayerAuraBySpellID = function(id) return id == 1243969 and foodAura or nil end }
+UnitLevel = function() return foodLevel end
+IsPlayerAtEffectiveMaxLevel = function() return atMax end
+C_Container = { GetContainerNumSlots = function() return 4 end,
+    GetContainerItemID = function(bag, slot) return bag == 0 and foodBags[slot] or nil end }
+C_Item = { GetItemInfoInstant = function(id) return id, nil, nil, nil, "icon" .. id end }
+issecretvalue = function(v) return v == SECRET_AURA end
+dofile("Modules/XPFood.lua")
+issecretvalue = nil
+ScarletUI:SetupXPFood() -- this harness is the Forever client
+CreateFrame = savedCreateFrame
+assert(foodIcon.name == "ScarletUIXPFood" and ScarletUI.xpFoodFrame == foodIcon)
+local function Food(event) foodIcon.scripts.OnEvent(nil, event, "player") end
+assert(foodIcon.shown and foodIcon.itemID == 4593 and foodIcon.texture.icon == "icon4593")
+-- Buffed, or an unreadable aura: hidden.
+foodAura = {}; Food("UNIT_AURA"); assert(not foodIcon.shown)
+foodAura = SECRET_AURA; Food("UNIT_AURA"); assert(not foodIcon.shown)
+foodAura = nil; Food("UNIT_AURA"); assert(foodIcon.shown)
+-- Hidden in combat and at max level.
+Food("PLAYER_REGEN_DISABLED"); assert(not foodIcon.shown)
+Food("UNIT_AURA"); assert(not foodIcon.shown)
+Food("PLAYER_REGEN_ENABLED"); assert(foodIcon.shown)
+atMax = true; Food("PLAYER_LEVEL_UP"); assert(not foodIcon.shown)
+atMax = false
+-- A higher level unlocks the better food; food that is too high or absent hides the icon.
+foodLevel = 30; Food("PLAYER_LEVEL_UP"); assert(foodIcon.shown and foodIcon.itemID == 8364)
+foodBags = { 267341, 6529 }; Food("BAG_UPDATE_DELAYED"); assert(not foodIcon.shown) -- level 55 jam, a lure
+foodBags = { 2680 }; Food("BAG_UPDATE_DELAYED"); assert(foodIcon.shown and foodIcon.itemID == 2680)
+-- Its switch is in the Interface group.
+local foodOption = ScarletUI:Options().args.generalSettings.args.interface.args.xpFood
+assert(not foodOption.hidden())
+foodOption.set(nil, false); assert(not foodIcon.shown)
+foodOption.set(nil, true); assert(foodIcon.shown)
+-- Dragging saves the position, which a rerun of setup applies.
+foodIcon.scripts.OnDragStop()
+ScarletUI:SetupXPFood()
+assert(foodIcon.point[1] == "TOPLEFT" and foodIcon.point[4] == 40 and foodIcon.point[5] == -50)
+ScarletUI.db.global.xpFoodModule.position = nil
+ScarletUI:SetupXPFood(); assert(foodIcon.point[1] == "CENTER")
+UnitLevel, C_Container, C_Item, C_UnitAuras, IsPlayerAtEffectiveMaxLevel = savedUnitLevel, nil, nil, nil, nil
 end
 
 -- Era, TBC, and Mists also load the Classic-UI-only modules and their old settings keys.

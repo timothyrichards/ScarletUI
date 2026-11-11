@@ -153,20 +153,7 @@ function ScarletUI:SetupFishing()
     self:PlaceFishingBar()
 
     local function IconButton(parent)
-        local icon = CreateFrame("Button", nil, parent)
-        icon:SetSize(ICON_SIZE, ICON_SIZE)
-        icon.texture = icon:CreateTexture(nil, "ARTWORK")
-        icon.texture:SetAllPoints()
-        -- The item slot border, sized as ItemButtonTemplate has it (64 on a 37 slot).
-        icon:SetNormalTexture("Interface\\Buttons\\UI-Quickslot2")
-        local border = icon:GetNormalTexture()
-        border:ClearAllPoints()
-        border:SetPoint("CENTER", 0, -1)
-        border:SetSize(ICON_SIZE * 64 / 37, ICON_SIZE * 64 / 37)
-        icon:SetPushedTexture("Interface\\Buttons\\UI-Quickslot-Depress")
-        icon:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
-        icon:SetScript("OnLeave", function() GameTooltip:Hide() end)
-        return icon
+        return self:CreateIconButton(parent, ICON_SIZE)
     end
 
     -- A lure's icon and stack count, with its item tooltip and a hint below it.
