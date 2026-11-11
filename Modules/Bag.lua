@@ -2221,7 +2221,7 @@ function ScarletUI:GetBagModuleSettingsPage(database, defaults, order)
         args = {
             enabled = {
                 name = "Custom Bag Frames",
-                desc = "Replace Blizzard's bags and bank with one ScarletUI frame each. Turning this off reloads the UI.",
+                desc = "Replace Blizzard's bags and bank with one Scarlet UI frame each. Turning this off reloads the UI.",
                 type = "toggle",
                 disabled = function() return self:InCombat() end,
                 hidden = function() return self.lightWeightMode end,
@@ -2303,7 +2303,7 @@ function ScarletUI:GetBagModuleSettingsPage(database, defaults, order)
                 args = {
                     bagLocked = {
                         name = "Lock Position",
-                        desc = "When checked, the bag frame cannot be dragged.",
+                        desc = "Stop the bag frame from being dragged.",
                         type = "toggle",
                         width = 1,
                         order = 0,
@@ -2314,7 +2314,7 @@ function ScarletUI:GetBagModuleSettingsPage(database, defaults, order)
                     },
                     bagAlpha = {
                         name = "Background Opacity",
-                        desc = "Controls the background transparency of the bag frame.\n(Default " .. defaults.bagAlpha .. ")",
+                        desc = "How opaque the bag frame background is.\n(Default " .. defaults.bagAlpha .. ")",
                         type = "range",
                         min = 0,
                         max = 1,
@@ -2354,7 +2354,7 @@ function ScarletUI:GetBagModuleSettingsPage(database, defaults, order)
                 args = {
                     bankLocked = {
                         name = "Lock Position",
-                        desc = "When checked, the bank frame cannot be dragged.",
+                        desc = "Stop the bank frame from being dragged.",
                         type = "toggle",
                         width = 1,
                         order = 0,
@@ -2365,7 +2365,7 @@ function ScarletUI:GetBagModuleSettingsPage(database, defaults, order)
                     },
                     bankAlpha = {
                         name = "Background Opacity",
-                        desc = "Controls the background transparency of the bank frame.\n(Default " .. defaults.bankAlpha .. ")",
+                        desc = "How opaque the bank frame background is.\n(Default " .. defaults.bankAlpha .. ")",
                         type = "range",
                         min = 0,
                         max = 1,

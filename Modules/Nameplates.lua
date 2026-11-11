@@ -1035,7 +1035,6 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
     local function Color(name, colorOrder, settings, key)
         return {
             name = name,
-            desc = "Choose a color",
             type = "color",
             width = 0.75,
             hasAlpha = true,
@@ -1056,7 +1055,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                 track = Toggle("Show", "Show " .. what .. " and their durations on the nameplates.", 0, settings, "track", ReapplyAuras),
                 iconSize = Slider("Icon Size", "Size of the icons.", 1, 100, 1, settings, "iconSize", ReapplyAuras),
                 spacing = Slider("Icon Spacing", "Space between the icons.", 0, 100, 2, settings, "spacing", ReapplyAuras),
-                verticalOffset = Slider("Vertical Offset", "Vertical offset of the icon row from the nameplate.", -100, 100, 3, settings, "verticalOffset", ReapplyAuras),
+                verticalOffset = Slider("Vertical Offset", "How far above or below the nameplate the icon row sits.", -100, 100, 3, settings, "verticalOffset", ReapplyAuras),
             },
         }
     end
@@ -1100,7 +1099,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
     auras.debuffs.args.priorityDebuffs = {
         name = "Priority Debuffs",
         type = "input",
-        desc = "Add a comma seperated list of debuff spell names you wish to always track even if they're applied by another player, for example: Sunder Armor,Expose Armor,Hammer of Justice\n(This setting is saved per character)",
+        desc = "Debuffs to always show, even when another player applied them. Separate spell names with commas, for example: Sunder Armor,Expose Armor,Hammer of Justice\n\nSaved per character.",
         width = "full",
         order = 4,
         get = function(_) return characterDatabase.priorityDebuffs end,
@@ -1137,7 +1136,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
             },
             classColored = {
                 name = "Class Colors",
-                desc = "Change player nameplates to match their class color.",
+                desc = "Color player nameplates by class.",
                 type = "toggle",
                 disabled = ModuleOff,
                 width = 1,
@@ -1161,7 +1160,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                     show = Toggle("Show", "Add arrows around your target's nameplate.", 0, "targetIndicator", "show", UpdateArrows),
                     indicatorSize = Slider("Size", "Size of the target arrows.", -100, 100, 1, "targetIndicator", "indicatorSize", UpdateArrows),
                     indicatorDistance = Slider("Distance", "Space between the target arrows and the nameplate.", -100, 100, 2, "targetIndicator", "indicatorDistance", UpdateArrows),
-                    indicatorHeight = Slider("Height", "Height of the target arrows on the nameplate.", -100, 100, 3, "targetIndicator", "indicatorHeight", UpdateArrows),
+                    indicatorHeight = Slider("Height", "Vertical position of the target arrows.", -100, 100, 3, "targetIndicator", "indicatorHeight", UpdateArrows),
                 },
             },
             text = {
@@ -1183,7 +1182,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                 args = {
                     threatColored = {
                         name = "Color by Threat",
-                        desc = "Change enemy npc nameplates to reflect their threat status as a color.",
+                        desc = "Color enemy NPC nameplates by your threat on them.",
                         type = "toggle",
                         width = "full",
                         order = 0,
@@ -1195,7 +1194,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                     tankNames = {
                         name = "Tank Names",
                         type = "input",
-                        desc = "Add a comma seperated list of player names you wish to manually designate as tanks, for example: Tank1,Tank2,Tank3\n\nPlayers with the role of tank (in versions of WoW that have roles) and players marked Main Tank or Main Assist in raids, will automatically be designated as tanks by the nameplate colors.",
+                        desc = "Players to treat as tanks. Separate names with commas, for example: Tank1,Tank2,Tank3\n\nPlayers with the tank role (on clients that have roles) and players marked Main Tank or Main Assist in a raid already count as tanks.",
                         width = "full",
                         order = 3,
                         get = function(_) return module.tankNames end,
@@ -1224,7 +1223,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                     specialUnitColor = {
                         name = "Color",
                         type = "color",
-                        desc = "Choose a color",
+                        desc = "Nameplate color for special units.",
                         width = 1,
                         hasAlpha = true,
                         order = 1,
@@ -1234,7 +1233,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                     specialUnitNames = {
                         name = "Special Unit Names",
                         type = "input",
-                        desc = "Add a comma seperated list of enemy unit names you wish to manually designate as special units, for example: Unit1,Unit2,Unit3",
+                        desc = "Enemy units to color as special units. Separate names with commas, for example: Unit1,Unit2,Unit3",
                         width = "full",
                         order = 2,
                         get = function(_) return module.specialUnitNames end,

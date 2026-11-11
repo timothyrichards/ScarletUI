@@ -40,7 +40,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                 args = {
                     tidyIcons = {
                         name = "Bigger Icons",
-                        desc = "Make icons bigger to fill their actionbar slots.",
+                        desc = "Enlarge action bar icons so they fill their slots.",
                         type = "toggle",
                         hidden = function() return self.lightWeightMode end,
                         width = 1.5,
@@ -66,7 +66,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                     },
                     fiveSecondRule = {
                         name = "Five Second Rule",
-                        desc = "After you spend mana, a line crosses your player frame mana bar over the 5 seconds until spirit-based mana regeneration resumes.",
+                        desc = "After you spend mana, a marker crosses your mana bar for the 5 seconds until spirit mana regeneration resumes.",
                         type = "toggle",
                         hidden = function() return not self.fiveSecondRuleFrame end,
                         width = 1.5,
@@ -76,7 +76,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                     },
                     spellCostPercent = {
                         name = "Mana Cost in Tooltips",
-                        desc = "Show a spell's mana cost as a percent of your maximum mana, e.g. \"105 Mana (8%)\", and healing or absorb per mana for heals and shields (English clients).",
+                        desc = "Show a spell's mana cost as a percent of your maximum mana, such as \"105 Mana (8%)\". Heals and shields also show healing or absorb per mana (English clients only).",
                         type = "toggle",
                         width = 1.5,
                         order = 3,
@@ -85,7 +85,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                     },
                     zoneLevels = {
                         name = "Zone Levels on World Map",
-                        desc = "Show a zone's level range, colored by difficulty, when hovering it on the world map, as Retail does.",
+                        desc = "Show a zone's level range, colored by difficulty, when you hover over it on the world map.",
                         type = "toggle",
                         hidden = function() return not self.zoneLevelsHooked end,
                         width = 1.5,
@@ -95,7 +95,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                     },
                     collapseInactiveBuffs = {
                         name = "Collapse Inactive Buffs",
-                        desc = "The Cooldown Manager keeps an empty slot for every tracked buff that is not active. Slide the active buff icons and bars together toward one end instead.\n\nOnly matters with Hide When Inactive checked for Tracked Buffs in Edit Mode.",
+                        desc = "Close the gaps the Cooldown Manager leaves for inactive tracked buffs by sliding the active ones toward one end.\n\nOnly has an effect when Hide When Inactive is checked for Tracked Buffs in Edit Mode.",
                         type = "select",
                         hidden = function() return not self:IsBuffCollapseSupported() end,
                         width = 1.5,
@@ -123,7 +123,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                     },
                     expandCharacterInfo = {
                         name = "Auto Expand Character Info",
-                        desc = "Automatically opens the side panel in the character window showing your stats, titles, and equipment manager.",
+                        desc = "Open the character window with its side panel (stats, titles, and equipment manager) already expanded.",
                         type = "toggle",
                         hidden = function() return self.lightWeightMode or self:GetWoWVersion() ~= "CATA" end,
                         width = 1.5,
@@ -144,7 +144,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                 args = {
                     itemLevelCharacter = {
                         name = "Character Window",
-                        desc = "Display item level for items in your character window.",
+                        desc = "Show item levels on the equipment in your character window.",
                         type = "toggle",
                         width = 1,
                         order = 0,
@@ -156,7 +156,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                     },
                     itemLevelInspect = {
                         name = "Inspect Window",
-                        desc = "Display item level for items in the inspect window.",
+                        desc = "Show item levels on the equipment of players you inspect.",
                         type = "toggle",
                         width = 1,
                         order = 1,
@@ -168,7 +168,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                     },
                     itemLevelBag = {
                         name = "Bags",
-                        desc = "Display item level for items in your bags.",
+                        desc = "Show item levels on equipment in your bags and bank.",
                         type = "toggle",
                         width = 1,
                         order = 2,
@@ -193,7 +193,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                     },
                     itemLevelColor = {
                         name = "Color",
-                        desc = "Custom color for item level text.",
+                        desc = "The color used when Custom Color is on.",
                         type = "color",
                         width = 1,
                         order = 4,
@@ -218,7 +218,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                 args = {
                     enabled = {
                         name = "Share Across Characters",
-                        desc = "Share the minimap tracking menu checkboxes across characters. Saved on logout and applied on login; characters only receive entries they have.",
+                        desc = "Share what is checked in the minimap tracking menu across characters. Saved on logout and applied on login; a character only receives the entries it has.",
                         type = "toggle",
                         disabled = function() return self:InCombat() end,
                         width = 1,
@@ -255,7 +255,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                     },
                     switchInterval = {
                         name = "Switch Interval",
-                        desc = "Seconds between swaps when both are on and a character knows both but can only track one at a time. Paused in combat, cities, and instances, and while casting, looting, or hovering the minimap. Turn one off to stop switching.",
+                        desc = "Seconds between switching Find Minerals and Find Herbs when both are on, on clients that track only one at a time. Switching pauses in combat, in cities, inns, and instances, and while casting, looting, or hovering the minimap. Turn one of the two off to stop switching.",
                         type = "range",
                         min = 2,
                         max = 20,
@@ -275,7 +275,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                 args = {
                     minimapIcon = {
                         name = "Minimap Icon",
-                        desc = "Show the ScarletUI button on the minimap. Left-click opens settings; right-click opens Edit Mode.",
+                        desc = "Show the Scarlet UI button on the minimap. Left-click opens these settings; right-click opens Edit Mode.",
                         type = "toggle",
                         width = 1,
                         order = 0,
@@ -286,8 +286,8 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                         end,
                     },
                     sui = {
-                        name = "Esc Menu: Settings",
-                        desc = "Show a button below the escape menu that opens these settings.",
+                        name = "Esc Menu: Scarlet UI",
+                        desc = "Add a Scarlet UI button below the escape menu that opens these settings.",
                         type = "toggle",
                         width = 1,
                         order = 1,
@@ -295,8 +295,8 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                         set = function(_, val) database.gameMenuButtons.sui = val end,
                     },
                     cooldownManager = {
-                        name = "Esc Menu: Cooldowns",
-                        desc = "Show a button below the escape menu that opens Blizzard's Advanced Cooldown Settings.",
+                        name = "Esc Menu: Cooldown Manager",
+                        desc = "Add a Cooldown Manager button below the escape menu that opens Blizzard's Advanced Cooldown Settings.",
                         type = "toggle",
                         width = 1,
                         order = 2,
@@ -315,7 +315,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                 args = {
                     defaultSettings = {
                         name = "Restore Defaults",
-                        desc = "Restores all ScarletUI settings back to their defaults.",
+                        desc = "Restore every Scarlet UI setting to its default.",
                         type = "execute",
                         width = 1,
                         order = 0,
@@ -325,7 +325,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                     },
                     resetToBlizzard = {
                         name = "Reset to Blizzard UI",
-                        desc = "Reset all settings to a configuration that mimics the default Blizzard UI. (this will /reload your game)",
+                        desc = "Change every setting to match the default Blizzard UI. This reloads the UI.",
                         type = "execute",
                         hidden = function() return self.editMode or self.lightWeightMode or select(2, self:GetWoWVersion()) > 40000 end,
                         width = 1,
@@ -364,7 +364,7 @@ function ScarletUI:GetFishingSettingsPage(database, order)
             },
             key = {
                 name = "Fishing Key",
-                desc = "Key taken over while a fishing pole is equipped.",
+                desc = "The key that fishes while a fishing pole is equipped. It keeps its normal action the rest of the time.",
                 type = "keybinding",
                 width = 1,
                 order = 1,
@@ -404,7 +404,7 @@ function ScarletUI:GetActionBarTogglesSettingsPage(database, order)
     for i = 1, GetActionBarToggles and select("#", GetActionBarToggles()) or 0 do
         bars["bar" .. i] = {
             name = "Action Bar " .. (i + 1),
-            desc = "Share whether Action Bar " .. (i + 1) .. " is shown.",
+            desc = "Share whether Action Bar " .. (i + 1) .. " is shown. Unchecked, each character keeps its own setting.",
             type = "toggle",
             width = 1,
             order = i,
@@ -421,7 +421,7 @@ function ScarletUI:GetActionBarTogglesSettingsPage(database, order)
         args = {
             enabled = {
                 name = "Share Across Characters",
-                desc = "Share the Action Bars 2-8 checkboxes from Blizzard's settings across characters. Saved on logout and applied on login.",
+                desc = "Share which extra action bars are shown (the Action Bar checkboxes in Blizzard's settings) across characters. Saved on logout and applied on login.",
                 type = "toggle",
                 disabled = function() return self:InCombat() end,
                 width = "full",
@@ -477,7 +477,7 @@ function ScarletUI:GetBagSettingsPage(database, defaults, order)
     -- Module switches lead each page; this one follows Bag.lua's Custom Bag Frames.
     page.args.shareSorting = {
         name = "Share Sorting Across Characters",
-        desc = "Share the Sorting settings below across characters. Saved on logout and applied on login.",
+        desc = "Share the two Sorting settings below across characters. Saved on logout and applied on login.",
         type = "toggle",
         disabled = function() return self:InCombat() end,
         width = "full",
@@ -514,10 +514,10 @@ end
 function ScarletUI:GetChatModuleSettingsPage(database, defaults, order)
     local module = database.chatModule;
 
-    local function Tab(key, name, tabOrder, hidden)
+    local function Tab(key, name, what, tabOrder, hidden)
         return {
             name = name .. " Tab",
-            desc = "Create a chat tab for " .. name:lower() .. ".",
+            desc = "Create a chat tab for " .. what .. ".",
             type = "toggle",
             hidden = hidden,
             width = 1,
@@ -538,7 +538,7 @@ function ScarletUI:GetChatModuleSettingsPage(database, defaults, order)
         args = {
             enabled = {
                 name = "Manage Chat",
-                desc = "Let ScarletUI set the chat font size and create chat tabs. Turning this off reloads the UI.",
+                desc = "Let Scarlet UI set the chat font size and create chat tabs. Turning this off reloads the UI.",
                 type = "toggle",
                 disabled = function() return self:InCombat() end,
                 width = "full",
@@ -576,11 +576,11 @@ function ScarletUI:GetChatModuleSettingsPage(database, defaults, order)
                 inline = true,
                 order = 2,
                 args = {
-                    loot = Tab("loot", "Loot", 0),
-                    trade = Tab("trade", "Trade", 1),
-                    lfg = Tab("lfg", "LFG", 2, function() return self.lightWeightMode end),
+                    loot = Tab("loot", "Loot", "loot messages", 0),
+                    trade = Tab("trade", "Trade", "the Trade and Services channels", 1),
+                    lfg = Tab("lfg", "LFG", "the Looking For Group channel", 2, function() return self.lightWeightMode end),
                     description = {
-                        name = "\nIf a tab is not created, right click any chat tab, click Settings, then click Chat Defaults.",
+                        name = "\nIf a tab does not appear, right-click any chat tab, choose Settings, then click Chat Defaults.",
                         type = "description",
                         width = "full",
                         order = 3,
@@ -597,13 +597,13 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
 
     local options = {
         name = "CVars",
-        desc = "Set CVar overrides that sync across characters. Disabling restores saved original values.",
+        desc = "Override console variables (CVars) on every character. Turning overrides off restores your original values.",
         type = "group",
         order = order,
         args = {
             enabled = {
                 name = "Enable CVar Overrides",
-                desc = "Apply the overrides below on every character (meant for advanced users). Turning this off restores your original values and keeps the overrides for later.",
+                desc = "Apply the overrides below on every character. Meant for advanced users. Turning this off restores your original values and keeps the overrides for later.",
                 type = "toggle",
                 disabled = function() return ScarletUI:InCombat() end,
                 width = "full",
@@ -619,7 +619,7 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
                 end,
             },
             description = {
-                name = "Clear a value or press Remove to restore a CVar's saved original. Default applies the WoW default.\n",
+                name = "Clear a value or press Remove to restore a CVar's original value. Default sets it to WoW's default.\n",
                 type = "description",
                 width = "full",
                 order = 0.5,
@@ -633,7 +633,7 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
                 args = {
                     link = {
                         name = "CVar Reference",
-                        desc = "Copy this address for a list of console variables.",
+                        desc = "Copy this address to look up console variables.",
                         type = "input",
                         order = 1,
                         width = 1.5,
@@ -642,7 +642,7 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
                     addField = {
                         order = 0,
                         name = "",
-                        desc = "Type a CVar name and press Enter to add it",
+                        desc = "Type a CVar name and press Enter to add it.",
                         type = "input",
                         width = 1.5,
                         get = function() return "" end,
@@ -776,7 +776,7 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
         -- Override input field
         options.args.search.args[inputKey] = {
             name = "",
-            desc = isValid and ("Current: " .. tostring(GetCVar(cvarName))) or "This CVar does not exist in your WoW version",
+            desc = isValid and ("Current: " .. tostring(GetCVar(cvarName))) or "This CVar does not exist on this client.",
             type = "input",
             width = 0.6,
             order = orderCounter * 5 - 3,
@@ -803,7 +803,7 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
         -- Clear button
         options.args.search.args[clearKey] = {
             name = "Default",
-            desc = "Apply the WoW default; keep the original value available for restoration",
+            desc = "Set this CVar to WoW's default. Your original value stays saved so it can be restored.",
             type = "execute",
             width = 0.5,
             order = orderCounter * 5 - 2,
@@ -819,7 +819,7 @@ function ScarletUI:GetCVarModuleSettingsPage(database, order)
         local removeKey = "remove" .. orderCounter
         options.args.search.args[removeKey] = {
             name = "Remove",
-            desc = "Restore the saved original and remove this CVar from the list (re-add via the custom CVar field)",
+            desc = "Restore your original value and remove this CVar from the list. Add it again by name to bring it back.",
             type = "execute",
             width = 0.5,
             order = orderCounter * 5 - 1,

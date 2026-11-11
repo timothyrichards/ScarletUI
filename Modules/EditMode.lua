@@ -448,7 +448,7 @@ end
 function ScarletUI:GetEditModeSettingsPage(order)
     return {
         name = "Edit Mode Profile",
-        desc = "Install and manage ScarletUI's Blizzard Edit Mode profile.",
+        desc = "Install and manage Scarlet UI's layout profile for Blizzard Edit Mode.",
         type = "group",
         hidden = function() return not self.editMode end,
         order = order,

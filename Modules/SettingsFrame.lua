@@ -238,7 +238,7 @@ local function Row(parent)
         local option = item.option
         local name, desc = Value(option, "name") or "", Value(option, "desc")
         if name == "" then name, desc = desc or "", nil end
-        local short = desc and (desc:match("^(.-[%.!])%s+%u") or desc)
+        local short = desc and (desc:match("^(.-[%.!])%s+[%u%(]") or desc)
         self.option, self.disabled = option, item.disabled
         self.name, self.desc = name, desc ~= short and desc or nil
         -- A page's on/off switch stands out from its settings.
