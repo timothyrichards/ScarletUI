@@ -11,15 +11,17 @@ local TEXT_WIDTH = 330 -- a row's name and description; the control takes the re
 -- Left-hand navigation. An entry lists the option groups (paths into
 -- ScarletUI:Options().args) shown on that page; with several, each becomes a
 -- card. `name` and `desc` default to the first group's. Top-level pages
--- missing from here are appended, so a new page is never lost.
+-- missing from here are appended, so a new page is never lost. `master` marks
+-- a page whose groups have no switch of their own; it gets one made of its
+-- settings (see SetSettingsPageEnabled).
 local NAV = {
     { header = "Features" },
-    { "generalSettings.interface", desc = "Small interface tweaks and reminders." },
-    { "generalSettings.itemLevel", desc = "Show item levels on equipment and in bags." },
-    { "bagModuleSettings" },
+    { "generalSettings.interface", master = true, desc = "Small interface tweaks and reminders." },
+    { "generalSettings.itemLevel", master = true, desc = "Show item levels on equipment and in bags." },
+    { "bagModuleSettings", master = true },
     { "chatModuleSettings" },
     { "actionBarTogglesSettings" },
-    { "generalSettings.tracking", desc = "Share minimap tracking across characters and keep gathering tracking on." },
+    { "generalSettings.tracking", master = true, desc = "Share minimap tracking across characters and keep gathering tracking on." },
     { "fishingSettings" },
     { "nameplatesModuleSettings" },
     { header = "Setup" },
@@ -116,6 +118,60 @@ function ScarletUI:CollectSettings(group, text, items, disabled, card)
     return items
 end
 
+-- A page's rows: one card per group when it shows several.
+local function PageItems(page, text, disabled, items)
+    items = items or {}
+    for _, group in ipairs(page.groups) do
+        ScarletUI:CollectSettings(group, text, items, disabled, #page.groups > 1 and Value(group, "name") or "")
+    end
+    return items
+end
+
+function ScarletUI:IsSettingsPageEnabled(id)
+    local masters = self.db.global.settingsMasters
+    return not (masters and masters[id])
+end
+
+-- The switch of a `master` page. Off turns off every toggle on the page (and
+-- every select that has an OFF value) through its own setter, remembering
+-- what was on in db.global.settingsMasters[page.id]; on puts those back.
+-- ponytail: the modules know nothing of this, so a setting turned on elsewhere
+-- (/sui ace) while a page is off stays on. Give modules a real per-category
+-- flag if that ever matters.
+function ScarletUI:SetSettingsPageEnabled(page, on)
+    local masters = self.db.global.settingsMasters or {}
+    self.db.global.settingsMasters = masters
+
+    local options, card = {}, ""
+    for _, item in ipairs(PageItems(page)) do
+        local option = item.option
+        if item.card then
+            card = item.card
+        elseif option and (option.type == "toggle" or option.type == "select" and Value(option, "values").OFF) then
+            options[card .. "/" .. option.key] = option
+        end
+    end
+
+    if on then
+        for id, value in pairs(masters[page.id] or {}) do
+            if options[id] then options[id].set(nil, value) end
+        end
+        masters[page.id] = nil
+    else
+        local restore = {}
+        for id, option in pairs(options) do
+            local value = option.get()
+            local off = option.type == "select" and "OFF" or false
+            if value and value ~= off then
+                restore[id] = value
+                option.set(nil, off)
+            end
+        end
+        masters[page.id] = restore
+    end
+    self:RefreshSettings()
+end
+
 local pending
 function ScarletUI:RefreshSettings()
     if pending or not (frame and frame:IsShown()) then return end
@@ -185,8 +241,8 @@ local function Row(parent)
         local short = desc and (desc:match("^(.-[%.!])%s+%u") or desc)
         self.option, self.disabled = option, item.disabled
         self.name, self.desc = name, desc ~= short and desc or nil
-        -- A feature's own on/off switch stands out from its settings.
-        self.label:SetFontObject(item.disabled and "GameFontDisable" or option.key == "enabled" and "GameFontNormal" or "GameFontHighlight")
+        -- A page's on/off switch stands out from its settings.
+        self.label:SetFontObject(item.disabled and "GameFontDisable" or item.master and "GameFontNormal" or "GameFontHighlight")
         self.label:SetText(name)
         self.sub:SetText(short or "")
         self.sub:SetAlpha(item.disabled and 0.5 or 1)
@@ -593,7 +649,7 @@ local function Entries()
     local options = ScarletUI:Options()
     local entries, listed, header = {}, {}, nil
     local function Add(spec)
-        local page = { id = spec[1], groups = {} }
+        local page = { id = spec[1], master = spec.master, groups = {} }
         for _, path in ipairs(spec) do
             listed[path:match("^[^.]+")] = true
             local group = Resolve(options, path)
@@ -691,10 +747,15 @@ function Render()
             button.label:SetText(entry.name)
             button.label:SetFontObject(active and "GameFontHighlight" or "GameFontNormal")
             button.selected:SetShown(active)
-            local switch = entry.groups[1].args.enabled
-            button.status:SetShown(switch ~= nil)
-            if switch then
-                button.status:SetTexture(switch.get() and "Interface\\COMMON\\Indicator-Green" or "Interface\\COMMON\\Indicator-Gray")
+            local switch, lit = entry.groups[1].args.enabled, nil
+            if entry.master then
+                lit = ScarletUI:IsSettingsPageEnabled(entry.id)
+            elseif switch then
+                lit = switch.get() and true or false
+            end
+            button.status:SetShown(lit ~= nil)
+            if lit ~= nil then
+                button.status:SetTexture(lit and "Interface\\COMMON\\Indicator-Green" or "Interface\\COMMON\\Indicator-Gray")
             end
             button:Show()
             y = y + 24
@@ -708,8 +769,27 @@ function Render()
     for _, page in ipairs(query and pages or { current }) do
         local title = #items + 1
         items[title] = { title = page.name, desc = page.desc }
-        for _, group in ipairs(page.groups) do
-            ScarletUI:CollectSettings(group, query, items, nil, #page.groups > 1 and Value(group, "name") or "")
+        local off = page.master and not ScarletUI:IsSettingsPageEnabled(page.id)
+        if page.master and not query then
+            items[#items + 1] = { card = "" }
+            items[#items + 1] = {
+                master = true,
+                disabled = ScarletUI:InCombat(),
+                option = {
+                    type = "toggle",
+                    name = "Enable " .. page.name,
+                    desc = "Turn this off to switch off everything on this page. Turning it back on restores the settings you had.",
+                    get = function() return not off end,
+                    set = function(_, value) ScarletUI:SetSettingsPageEnabled(page, value) end,
+                },
+            }
+        end
+        local first = #items + 1
+        PageItems(page, query, off, items)
+        -- Other pages have their own switch among their settings.
+        local switch = not page.master and page.groups[1].args.enabled
+        for i = first, #items do
+            if switch and items[i].option == switch then items[i].master = true end
         end
         if query and #items == title then items[title] = nil end
     end

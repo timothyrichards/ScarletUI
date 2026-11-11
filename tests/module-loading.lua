@@ -1005,6 +1005,24 @@ assert(#rows == 4 and rows[1].card == "" and rows[2].option.name == "Alpha" and 
 assert(rows[3].card == "Group" and rows[4].option.name == "Gamma" and rows[4].disabled)
 rows = ScarletUI:CollectSettings(settingsGroup, "gam")
 assert(#rows == 2 and rows[1].card == "Group" and rows[2].option.name == "Gamma")
+-- A page's master switch turns its toggles off and later restores them.
+local pageState = { alpha = true, beta = false, mode = "END" }
+local function PageToggle(key)
+    return { type = "toggle", name = key, get = function() return pageState[key] end,
+        set = function(_, value) pageState[key] = value end }
+end
+local masterPage = { id = "testPage", groups = { { args = {
+    alpha = PageToggle("alpha"), beta = PageToggle("beta"),
+    mode = { type = "select", name = "mode", values = { OFF = "Off", END = "End" },
+        get = function() return pageState.mode end, set = function(_, value) pageState.mode = value end },
+} } } }
+assert(ScarletUI:IsSettingsPageEnabled("testPage"))
+ScarletUI:SetSettingsPageEnabled(masterPage, false)
+assert(not ScarletUI:IsSettingsPageEnabled("testPage"))
+assert(pageState.alpha == false and pageState.beta == false and pageState.mode == "OFF")
+ScarletUI:SetSettingsPageEnabled(masterPage, true)
+assert(ScarletUI:IsSettingsPageEnabled("testPage"))
+assert(pageState.alpha == true and pageState.beta == false and pageState.mode == "END")
 -- Numbered CVar options collapse into one row per CVar.
 rows = ScarletUI:CollectSettings({ args = {
     searchField = { type = "input", name = "" },

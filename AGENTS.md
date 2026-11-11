@@ -47,8 +47,14 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   path; top-level pages missing from `NAV` are appended. `CollectSettings`
   flattens a group into rows: its own settings form one card and each child
   group another. Every setting is one row, name and the description's first
-  sentence at the left (tooltip has the rest) and the control at the right. A
-  page whose group has an `enabled` toggle shows a status light in the list.
+  sentence at the left (tooltip has the rest) and the control at the right.
+  Every Features page has a master switch and a status light in the list:
+  the group's own `enabled` toggle where that turns the whole page off, and
+  otherwise (`master = true` in `NAV`: Interface, Item Level, Bags, Minimap
+  Tracking) an "Enable <page>" row. That one is not a module flag:
+  `SetSettingsPageEnabled` turns off every toggle and OFF-able select on the
+  page through its own setter and remembers what was on in
+  `db.global.settingsMasters[page id]`, restoring it when switched back on.
   The CVar list's numbered label/input/Default/Remove options are drawn as one
   row per CVar. The search box filters settings across all pages. It is built
   from Blizzard templates (`PortraitFrameTemplate`, `InsetFrameTemplate`, the
