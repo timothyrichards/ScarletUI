@@ -110,7 +110,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                     },
                     xpFood = {
                         name = "XP Food Reminder",
-                        desc = "Show an icon while you have no Well Fed XP Boost (5% more experience from kills) and your bags hold food that gives it. Hidden in combat and at max level; drag the icon to move it, Ctrl-click it to reset its position.",
+                        desc = "Show an icon while you have no Well Fed XP Boost (5% more experience from kills) and your bags hold food that gives it. Right-click the icon to eat; left-click it to choose which food it shows. Hidden in combat and at max level; drag the icon to move it, Ctrl-click it to reset its position.",
                         type = "toggle",
                         hidden = function() return not self.xpFoodFrame end,
                         width = 1.5,

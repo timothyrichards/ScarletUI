@@ -153,12 +153,19 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   That aura is hidden from addons, so the buff is read from the 14 visible
   Well Fed spells the foods trigger (`WELL_FED`).
   While the player has none of them and the bags hold a listed food whose
-  required level they meet, `ScarletUIXPFood` shows the highest-level one's
-  icon (draggable, position in `position`, Ctrl-click resets it). Hidden in combat, where auras may
-  be secret, and at max level. The item ID list is hand-kept from
-  forever.wowhead.com. The icon is a plain frame from
-  `ScarletUI:CreateIconButton` (Helpers, shared with the fishing bar), not a
-  secure button: it does not eat on click.
+  required level they meet, `ScarletUIXPFood` shows one, styled like the
+  fishing lure (stack count, draggable, position in `position`, Ctrl-click
+  resets it). Right-click eats it; left-click opens a list of the usable foods
+  stacked upward, which closes after a second with the mouse off it. Clicking
+  an entry stores `food` (an item ID); the icon shows a picked food while the
+  bags hold it and the highest-level one otherwise. The item ID list is
+  hand-kept from forever.wowhead.com. The icon is a `SecureActionButtonTemplate`
+  button from `ScarletUI:CreateIconButton` (Helpers, shared with the fishing
+  bar) whose `type2` macro is `/use item:ID`. Its `OnClick` belongs to the
+  template, so our clicks are read in `PostClick`. It hides in
+  `PLAYER_REGEN_DISABLED`, before the lockdown, and nothing on it is shown,
+  hidden, moved, or given attributes until combat ends. It is also hidden at
+  max level.
 - `Modules/Bag.lua`, `Modules/Nameplates.lua`: custom bag/bank frames and
   nameplate threat colors, auras, and text. Classic UI clients only: listed in
   just those three manifests so Retail and Forever never load them. Each file adds its

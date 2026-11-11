@@ -145,8 +145,8 @@ function ScarletUI:ArrayHasValue(array, value)
 end
 
 -- A button drawn as a Blizzard item slot; `texture` holds the icon.
-function ScarletUI:CreateIconButton(parent, size, name)
-    local icon = CreateFrame("Button", name, parent)
+function ScarletUI:CreateIconButton(parent, size, name, template)
+    local icon = CreateFrame("Button", name, parent, template)
     icon:SetSize(size, size)
     icon.texture = icon:CreateTexture(nil, "ARTWORK")
     icon.texture:SetAllPoints()

@@ -1,8 +1,11 @@
 -- XP food reminder, Forever only: cooked food and brewed drinks there also grant
 -- Well Fed XP Boost, 5% more experience from kills for 15 minutes. While that
 -- buff is missing and the bags hold a food the character can eat, that food's
--- icon shows on screen. Hidden in combat and at max level. The icon is a plain
--- frame: it reminds, it does not eat for you.
+-- icon shows on screen, styled like the fishing bar's lure: right-click eats
+-- it, left-click opens a list of the usable XP foods in the bags to pick the
+-- one shown. Hidden in combat and at max level. The icon is a secure button
+-- (eating is a protected action), so it only shows, hides, or changes food out
+-- of combat.
 -- The XP bonus itself (spell 1243969) is a hidden aura addons cannot see, so the
 -- buff is read from the visible Well Fed auras these foods apply: one spell per
 -- stat bonus, each triggered by the food's Nutritious Food or Drink use spell.
@@ -10,9 +13,11 @@ local WELL_FED = {
     1248406, 1248420, 1248421, 1248422, 1248688, 1249519, 1249520,
     1249521, 1249523, 1249907, 1249926, 1249927, 1294007, 1319310,
 }
-local ICON_SIZE = 36
+local ICON_SIZE, ICON_GAP = 36, 4
+local LIST_CLOSE_DELAY = 1 -- seconds the mouse may be off the open food list
 local IsSecret = issecretvalue or function() return false end
 local GetItemInfoInstant = C_Item and C_Item.GetItemInfoInstant or GetItemInfoInstant
+local GetItemCount = C_Item and C_Item.GetItemCount or GetItemCount
 
 -- Item ID = required level, keyed below by that level.
 -- ponytail: both lists are hand-kept from forever.wowhead.com (every item whose
@@ -68,19 +73,26 @@ local function HasBuff()
     return false
 end
 
--- The XP food in the bags with the highest required level the character meets.
-local function FindFood()
-    local level, best = UnitLevel("player"), nil
+-- The XP foods in the bags the character can eat, highest required level
+-- first, and the one to show: the picked food while the bags hold it,
+-- otherwise the first.
+local function FindFoods(picked)
+    local level, seen, foods = UnitLevel("player"), {}, {}
     for bag = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
         for slot = 1, C_Container.GetContainerNumSlots(bag) do
             local itemID = C_Container.GetContainerItemID(bag, slot)
             local required = itemID and FOODS[itemID]
-            if required and required <= level and (not best or required > FOODS[best]) then
-                best = itemID
+            if required and required <= level and not seen[itemID] then
+                seen[itemID] = true
+                foods[#foods + 1] = itemID
             end
         end
     end
-    return best
+    table.sort(foods, function(a, b)
+        if FOODS[a] ~= FOODS[b] then return FOODS[a] > FOODS[b] end
+        return a < b
+    end)
+    return foods, picked and seen[picked] and picked or foods[1]
 end
 
 function ScarletUI:SetupXPFood()
@@ -94,12 +106,53 @@ function ScarletUI:SetupXPFood()
         return
     end
 
-    local icon = self:CreateIconButton(UIParent, ICON_SIZE, "ScarletUIXPFood")
+    -- A food's icon and stack count, with its item tooltip and hints below it.
+    local function FoodButton(parent, hint, note, name, template)
+        local food = self:CreateIconButton(parent, ICON_SIZE, name, template)
+        food.count = food:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
+        food.count:SetPoint("BOTTOMRIGHT", -2, 2)
+        food:SetScript("OnEnter", function()
+            GameTooltip:SetOwner(food, "ANCHOR_RIGHT")
+            GameTooltip:SetHyperlink("item:" .. food.itemID)
+            GameTooltip:AddLine(hint, 0, 1, 0, true)
+            if note then GameTooltip:AddLine(note, 0.6, 0.6, 0.6, true) end
+            GameTooltip:Show()
+        end)
+        return food
+    end
+
+    local function ShowFood(food, itemID)
+        food.itemID = itemID
+        food.texture:SetTexture((select(5, GetItemInfoInstant(itemID))))
+        food.count:SetText(GetItemCount(itemID))
+    end
+
+    -- Right-click runs the secure macro that eats the food shown.
+    local icon = FoodButton(UIParent, "Right-click to eat. Left-click to choose a food.",
+        "Drag to move. Ctrl-click to reset its position.", "ScarletUIXPFood", "SecureActionButtonTemplate")
     self.xpFoodFrame = icon
+    icon:RegisterForClicks("AnyUp")
+    icon:SetAttribute("useOnKeyDown", false)
+    icon:SetAttribute("type2", "macro")
     local combat = InCombatLockdown()
     local label = icon:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     label:SetPoint("TOP", icon, "BOTTOM", 0, -4)
     label:SetText("XP Food")
+
+    -- Left-click opens the usable foods in the bags, stacked upward from the icon.
+    local list = CreateFrame("Frame", nil, icon)
+    list:SetAllPoints(icon)
+    list:Hide()
+    local listButtons, away = {}, 0
+    -- The open list closes once the mouse has been off the foods for a moment.
+    list:SetScript("OnUpdate", function(_, elapsed)
+        local over = icon:IsMouseOver()
+        for _, food in ipairs(listButtons) do
+            over = over or food:IsShown() and food:IsMouseOver()
+        end
+        away = over and 0 or away + elapsed
+        if away >= LIST_CLOSE_DELAY then list:Hide() end
+    end)
 
     icon:SetMovable(true)
     icon:SetClampedToScreen(true)
@@ -110,20 +163,20 @@ function ScarletUI:SetupXPFood()
         local point, _, relativePoint, x, y = icon:GetPoint()
         self.db.global.xpFoodModule.position = { point, relativePoint, x, y }
     end)
-    icon:SetScript("OnEnter", function()
-        GameTooltip:SetOwner(icon, "ANCHOR_RIGHT")
-        GameTooltip:SetHyperlink("item:" .. icon.itemID)
-        GameTooltip:AddLine("Eat this for 5% more experience from kills.", 0, 1, 0, true)
-        GameTooltip:AddLine("Drag to move. Ctrl-click to reset its position.", 0.6, 0.6, 0.6, true)
-        GameTooltip:Show()
-    end)
-    icon:SetScript("OnClick", function()
-        if not IsControlKeyDown() then return end
-        self.db.global.xpFoodModule.position = nil
-        self:PlaceXPFood()
+    -- OnClick belongs to the secure template, so our clicks are read after it.
+    icon:SetScript("PostClick", function(_, button)
+        if button ~= "LeftButton" then return end
+        if IsControlKeyDown() then
+            self.db.global.xpFoodModule.position = nil
+            self:PlaceXPFood()
+            return
+        end
+        away = 0
+        list:SetShown(not list:IsShown())
     end)
 
     function self:PlaceXPFood()
+        if InCombatLockdown() then return end -- a secure button cannot move in combat
         local position = self.db.global.xpFoodModule.position
         icon:ClearAllPoints()
         if position then
@@ -135,20 +188,55 @@ function ScarletUI:SetupXPFood()
     self:PlaceXPFood()
 
     function self:UpdateXPFood()
-        local wanted = self.db.global.xpFoodModule.enabled and not combat
-            and not (IsPlayerAtEffectiveMaxLevel and IsPlayerAtEffectiveMaxLevel())
-        local itemID = wanted and not HasBuff() and FindFood()
-        icon:SetShown(itemID and true or false)
-        if itemID then
-            icon.itemID = itemID
-            icon.texture:SetTexture((select(5, GetItemInfoInstant(itemID))))
+        -- Hidden on entering combat; nothing on a secure button may change until it ends.
+        if combat or InCombatLockdown() then return end
+        local module = self.db.global.xpFoodModule
+        local wanted = module.enabled and not (IsPlayerAtEffectiveMaxLevel and IsPlayerAtEffectiveMaxLevel())
+        local foods, shown = {}, nil
+        if wanted and not HasBuff() then foods, shown = FindFoods(module.food) end
+        icon:SetShown(shown ~= nil)
+        if not shown then
+            list:Hide()
+            return
         end
+        ShowFood(icon, shown)
+        icon:SetAttribute("macrotext2", "/use item:" .. shown)
+        for index, itemID in ipairs(foods) do
+            local food = listButtons[index]
+            if not food then
+                food = FoodButton(list, "Click to pick this. Click it again to show the best food.")
+                listButtons[index] = food
+                food:SetPoint("BOTTOM", icon, "TOP", 0, ICON_GAP + (index - 1) * (ICON_SIZE + ICON_GAP))
+                food.applied = food:CreateTexture(nil, "OVERLAY")
+                food.applied:SetTexture("Interface\\Buttons\\CheckButtonHilight")
+                food.applied:SetBlendMode("ADD")
+                food.applied:SetAllPoints()
+                food:SetScript("OnClick", function()
+                    -- Clicking the picked food again goes back to the best one.
+                    local settings = self.db.global.xpFoodModule
+                    settings.food = settings.food ~= food.itemID and food.itemID or nil
+                    list:Hide()
+                    self:UpdateXPFood()
+                end)
+            end
+            ShowFood(food, itemID)
+            food:Show()
+            -- The highlight marks the food the icon shows and eats.
+            food.applied:SetShown(itemID == shown)
+        end
+        for index = #foods + 1, #listButtons do listButtons[index]:Hide() end
     end
 
     -- Hidden frames still receive events.
     icon:SetScript("OnEvent", function(_, event)
-        if event == "PLAYER_REGEN_DISABLED" or event == "PLAYER_REGEN_ENABLED" then
-            combat = event == "PLAYER_REGEN_DISABLED"
+        if event == "PLAYER_REGEN_DISABLED" then
+            -- Fires before the combat lockdown, so the button can still hide.
+            list:Hide()
+            icon:Hide()
+            combat = true
+            return
+        elseif event == "PLAYER_REGEN_ENABLED" then
+            combat = false
         end
         self:UpdateXPFood()
     end)

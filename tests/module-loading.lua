@@ -819,25 +819,30 @@ CreateFrame, GetCVar, C_Container, C_Item = savedCreateFrame, savedGetCVar, nil,
 end
 
 -- XP food reminder: the icon shows while the XP buff is missing and the bags
--- hold a food the character can eat, and names the highest-level one.
+-- hold a food the character can eat. Right-click eats the food shown;
+-- left-click opens a list of the usable foods to pick which one that is.
 do
-local function FoodWidget(_, name)
-    local widget = { name = name, scripts = {}, shown = true }
+local foodWidgets = {}
+local function FoodWidget(kind, name, _, template)
+    local widget = { kind = kind, name = name, template = template, scripts = {}, attributes = {}, shown = true }
     widget.SetScript = function(self, script, fn) self.scripts[script] = fn end
-    widget.SetShown = function(self, shown) self.shown = shown end
+    widget.SetAttribute = function(self, attribute, value) self.attributes[attribute] = value end
+    widget.Show = function(self) self.shown = true end
+    widget.Hide = function(self) self.shown = false end
+    widget.SetShown = function(self, shown) self.shown = shown and true or false end
+    widget.IsShown = function(self) return self.shown end
+    widget.SetText = function(self, text) self.text = text end
     widget.SetPoint = function(self, ...) self.point = { ... } end
     widget.GetPoint = function() return "TOPLEFT", nil, "TOPLEFT", 40, -50 end
     widget.SetTexture = function(self, texture) self.icon = texture end
-    widget.CreateTexture = function() return FoodWidget() end
-    widget.CreateFontString = function() return FoodWidget() end
-    widget.GetNormalTexture = function() return FoodWidget() end
+    widget.CreateTexture = function() return FoodWidget("Texture") end
+    widget.CreateFontString = function() return FoodWidget("FontString") end
+    widget.GetNormalTexture = function() return FoodWidget("Texture") end
+    foodWidgets[#foodWidgets + 1] = widget
     return setmetatable(widget, { __index = function() return noop end })
 end
-local savedCreateFrame, savedUnitLevel, foodIcon = CreateFrame, UnitLevel, nil
-CreateFrame = function(kind, name)
-    foodIcon = FoodWidget(kind, name)
-    return foodIcon
-end
+local savedCreateFrame, savedUnitLevel = CreateFrame, UnitLevel
+CreateFrame = FoodWidget
 local SECRET_AURA = {}
 -- Spiced Wolf Meat needs level 1, Bristle Whisker Catfish 15, Mithril Head Trout 25.
 local foodAura, foodLevel, foodBags, atMax = nil, 20, { 2680, 4593, 8364 }, false
@@ -847,29 +852,92 @@ UnitLevel = function() return foodLevel end
 IsPlayerAtEffectiveMaxLevel = function() return atMax end
 C_Container = { GetContainerNumSlots = function() return 4 end,
     GetContainerItemID = function(bag, slot) return bag == 0 and foodBags[slot] or nil end }
-C_Item = { GetItemInfoInstant = function(id) return id, nil, nil, nil, "icon" .. id end }
+C_Item = { GetItemInfoInstant = function(id) return id, nil, nil, nil, "icon" .. id end,
+    GetItemCount = function(id) return id % 10 end }
 issecretvalue = function(v) return v == SECRET_AURA end
 dofile("Modules/XPFood.lua")
 issecretvalue = nil
 ScarletUI:SetupXPFood() -- this harness is the Forever client
-CreateFrame = savedCreateFrame
-assert(foodIcon.name == "ScarletUIXPFood" and ScarletUI.xpFoodFrame == foodIcon)
+local foodIcon, foodList = ScarletUI.xpFoodFrame, nil
+for _, widget in ipairs(foodWidgets) do
+    if widget.kind == "Frame" then foodList = widget end
+end
+local settings = ScarletUI.db.global.xpFoodModule
 local function Food(event) foodIcon.scripts.OnEvent(nil, event, "player") end
+local function Click(button) foodIcon.scripts.PostClick(foodIcon, button) end
+local function Eats() return foodIcon.attributes.macrotext2 end
+-- Item IDs of the list entries from the icon upward, and the highlighted one.
+local function ListFoods()
+    local shown, applied = {}, nil
+    for _, widget in ipairs(foodWidgets) do
+        if rawget(widget, "applied") and widget.shown then
+            shown[#shown + 1] = widget.itemID
+            if widget.applied.shown then applied = widget.itemID end
+        end
+    end
+    return table.concat(shown, ","), applied
+end
+local function PickFood(itemID)
+    for _, widget in ipairs(foodWidgets) do
+        if rawget(widget, "applied") and widget.shown and widget.itemID == itemID then return widget.scripts.OnClick() end
+    end
+    error("no food button for " .. itemID)
+end
+-- A secure button whose right-click eats; its own OnClick is left to the template.
+assert(foodIcon.name == "ScarletUIXPFood" and foodIcon.template == "SecureActionButtonTemplate")
+assert(foodIcon.attributes.type2 == "macro" and foodIcon.attributes.type == nil and foodIcon.scripts.OnClick == nil)
+-- The best usable food shows with its stack count.
 assert(foodIcon.shown and foodIcon.itemID == 4593 and foodIcon.texture.icon == "icon4593")
+assert(foodIcon.count.text == 3 and Eats() == "/use item:4593" and not foodList.shown)
 -- Buffed, or an unreadable aura: hidden.
 foodAura = {}; Food("UNIT_AURA"); assert(not foodIcon.shown)
 foodAura = SECRET_AURA; Food("UNIT_AURA"); assert(not foodIcon.shown)
 foodAura = nil; Food("UNIT_AURA"); assert(foodIcon.shown)
--- Hidden in combat and at max level.
+-- Hidden on entering combat, and nothing on the secure button changes until it ends.
 Food("PLAYER_REGEN_DISABLED"); assert(not foodIcon.shown)
-Food("UNIT_AURA"); assert(not foodIcon.shown)
-Food("PLAYER_REGEN_ENABLED"); assert(foodIcon.shown)
+foodBags = { 2680 }; Food("BAG_UPDATE_DELAYED")
+assert(not foodIcon.shown and foodIcon.itemID == 4593 and Eats() == "/use item:4593")
+Food("PLAYER_REGEN_ENABLED"); assert(foodIcon.shown and foodIcon.itemID == 2680 and Eats() == "/use item:2680")
+foodBags = { 2680, 4593, 8364 }
+-- Hidden at max level.
 atMax = true; Food("PLAYER_LEVEL_UP"); assert(not foodIcon.shown)
 atMax = false
 -- A higher level unlocks the better food; food that is too high or absent hides the icon.
-foodLevel = 30; Food("PLAYER_LEVEL_UP"); assert(foodIcon.shown and foodIcon.itemID == 8364)
+foodLevel = 30; Food("PLAYER_LEVEL_UP"); assert(foodIcon.shown and foodIcon.itemID == 8364 and Eats() == "/use item:8364")
 foodBags = { 267341, 6529 }; Food("BAG_UPDATE_DELAYED"); assert(not foodIcon.shown) -- level 55 jam, a lure
-foodBags = { 2680 }; Food("BAG_UPDATE_DELAYED"); assert(foodIcon.shown and foodIcon.itemID == 2680)
+foodBags = { 2680, 4593, 8364 }; Food("BAG_UPDATE_DELAYED"); assert(foodIcon.shown)
+-- The list holds every usable food, best first, and highlights the one shown.
+local listed, applied = ListFoods()
+assert(listed == "8364,4593,2680" and applied == 8364)
+-- Left-click opens and closes it; right-click (eating) leaves it alone.
+local ctrl = false
+IsControlKeyDown = function() return ctrl end
+Click("LeftButton"); assert(foodList.shown)
+Click("RightButton"); assert(foodList.shown)
+Click("LeftButton"); assert(not foodList.shown)
+-- Left open, it closes after a second with the mouse off the foods.
+Click("LeftButton")
+foodList.scripts.OnUpdate(nil, 0.6); assert(foodList.shown)
+foodIcon.IsMouseOver = function() return true end
+foodList.scripts.OnUpdate(nil, 5); assert(foodList.shown)
+foodIcon.IsMouseOver = nil
+foodList.scripts.OnUpdate(nil, 0.6); assert(foodList.shown)
+foodList.scripts.OnUpdate(nil, 0.6); assert(not foodList.shown)
+-- Clicking a food in the list picks it and closes the list.
+Click("LeftButton"); PickFood(2680)
+assert(settings.food == 2680 and foodIcon.itemID == 2680 and Eats() == "/use item:2680")
+assert(not foodList.shown and select(2, ListFoods()) == 2680)
+-- A picked food that has run out falls back to the best one, and returns with the food.
+foodBags = { 4593, 8364 }; Food("BAG_UPDATE_DELAYED")
+assert(foodIcon.itemID == 8364 and ListFoods() == "8364,4593")
+foodBags = { 2680, 4593, 8364 }; Food("BAG_UPDATE_DELAYED"); assert(foodIcon.itemID == 2680)
+-- Clicking the picked food again goes back to the best one.
+PickFood(2680); assert(settings.food == nil and foodIcon.itemID == 8364 and Eats() == "/use item:8364")
+-- Combat and the buff both close an open list.
+Click("LeftButton"); Food("PLAYER_REGEN_DISABLED"); assert(not foodList.shown and not foodIcon.shown)
+Food("PLAYER_REGEN_ENABLED"); assert(foodIcon.shown and not foodList.shown)
+Click("LeftButton"); foodAura = {}; Food("UNIT_AURA"); assert(not foodList.shown and not foodIcon.shown)
+foodAura = nil; Food("UNIT_AURA")
 -- Its switch is in the Interface group.
 local foodOption = ScarletUI:Options().args.generalSettings.args.interface.args.xpFood
 assert(not foodOption.hidden())
@@ -879,13 +947,13 @@ foodOption.set(nil, true); assert(foodIcon.shown)
 foodIcon.scripts.OnDragStop()
 ScarletUI:SetupXPFood()
 assert(foodIcon.point[1] == "TOPLEFT" and foodIcon.point[4] == 40 and foodIcon.point[5] == -50)
--- Only a Ctrl-click puts it back at its default position.
-local ctrl = false
-IsControlKeyDown = function() return ctrl end
-foodIcon.scripts.OnClick(); assert(foodIcon.point[1] == "TOPLEFT")
-ctrl = true; foodIcon.scripts.OnClick()
-assert(foodIcon.point[1] == "CENTER" and ScarletUI.db.global.xpFoodModule.position == nil)
-IsControlKeyDown = nil
+-- Only a Ctrl-left-click puts it back at its default position, without opening the list.
+Click("LeftButton"); assert(foodIcon.point[1] == "TOPLEFT" and foodList.shown)
+Click("LeftButton")
+ctrl = true; Click("RightButton"); assert(foodIcon.point[1] == "TOPLEFT")
+Click("LeftButton")
+assert(foodIcon.point[1] == "CENTER" and settings.position == nil and not foodList.shown)
+CreateFrame, IsControlKeyDown = savedCreateFrame, nil
 UnitLevel, C_Container, C_Item, C_UnitAuras, IsPlayerAtEffectiveMaxLevel = savedUnitLevel, nil, nil, nil, nil
 end
 
