@@ -150,7 +150,9 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
 - `Modules/XPFood.lua`: XP food reminder (`db.global.xpFoodModule`, toggle in
   the Interface group on the General page), Forever only. Cooked food there
   also applies Well Fed XP Boost (spell 1243969, 5% more experience from kills).
-  While the player lacks that aura and the bags hold a listed food whose
+  That aura is hidden from addons, so the buff is read from the 14 visible
+  Well Fed spells the foods trigger (`WELL_FED`).
+  While the player has none of them and the bags hold a listed food whose
   required level they meet, `ScarletUIXPFood` shows the highest-level one's
   icon (draggable, position in `position`). Hidden in combat, where auras may
   be secret, and at max level. The item ID list is hand-kept from

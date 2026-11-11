@@ -841,7 +841,8 @@ end
 local SECRET_AURA = {}
 -- Spiced Wolf Meat needs level 1, Bristle Whisker Catfish 15, Mithril Head Trout 25.
 local foodAura, foodLevel, foodBags, atMax = nil, 20, { 2680, 4593, 8364 }, false
-C_UnitAuras = { GetPlayerAuraBySpellID = function(id) return id == 1243969 and foodAura or nil end }
+-- The hidden XP aura (1243969) is never reported; a visible Well Fed spell is.
+C_UnitAuras = { GetPlayerAuraBySpellID = function(id) return id == 1249523 and foodAura or nil end }
 UnitLevel = function() return foodLevel end
 IsPlayerAtEffectiveMaxLevel = function() return atMax end
 C_Container = { GetContainerNumSlots = function() return 4 end,

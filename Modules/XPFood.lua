@@ -3,15 +3,22 @@
 -- buff is missing and the bags hold a food the character can eat, that food's
 -- icon shows on screen. Hidden in combat and at max level. The icon is a plain
 -- frame: it reminds, it does not eat for you.
-local XP_BUFF = 1243969 -- Well Fed XP Boost; every food below applies it
+-- The XP bonus itself (spell 1243969) is a hidden aura addons cannot see, so the
+-- buff is read from the visible Well Fed auras these foods apply: one spell per
+-- stat bonus, each triggered by the food's Nutritious Food or Drink use spell.
+local WELL_FED = {
+    1248406, 1248420, 1248421, 1248422, 1248688, 1249519, 1249520,
+    1249521, 1249523, 1249907, 1249926, 1249927, 1294007, 1319310,
+}
 local ICON_SIZE = 36
 local IsSecret = issecretvalue or function() return false end
 local GetItemInfoInstant = C_Item and C_Item.GetItemInfoInstant or GetItemInfoInstant
 
 -- Item ID = required level, keyed below by that level.
--- ponytail: hand-kept list from forever.wowhead.com (every item whose effect
--- text has "experience gained from kills", November 2026); a food added later
--- is not noticed. Match the item tooltip text instead if they keep appearing.
+-- ponytail: both lists are hand-kept from forever.wowhead.com (every item whose
+-- effect text has "experience gained from kills", November 2026); a food or
+-- Well Fed spell added later is not noticed. Match the item tooltip text and
+-- the aura name instead if they keep appearing.
 local FOODS = {}
 for level, items in pairs({
     [1] = {
@@ -54,8 +61,11 @@ end
 -- Only asked out of combat, where the player's own auras are readable; a
 -- secret answer counts as buffed so the reminder stays quiet.
 local function HasBuff()
-    local aura = C_UnitAuras.GetPlayerAuraBySpellID(XP_BUFF)
-    return IsSecret(aura) or aura ~= nil
+    for _, spellID in ipairs(WELL_FED) do
+        local aura = C_UnitAuras.GetPlayerAuraBySpellID(spellID)
+        if IsSecret(aura) or aura ~= nil then return true end
+    end
+    return false
 end
 
 -- The XP food in the bags with the highest required level the character meets.
