@@ -154,7 +154,7 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   Well Fed spells the foods trigger (`WELL_FED`).
   While the player has none of them and the bags hold a listed food whose
   required level they meet, `ScarletUIXPFood` shows the highest-level one's
-  icon (draggable, position in `position`). Hidden in combat, where auras may
+  icon (draggable, position in `position`, Ctrl-click resets it). Hidden in combat, where auras may
   be secret, and at max level. The item ID list is hand-kept from
   forever.wowhead.com. The icon is a plain frame from
   `ScarletUI:CreateIconButton` (Helpers, shared with the fishing bar), not a

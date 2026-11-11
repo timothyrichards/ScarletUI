@@ -879,8 +879,13 @@ foodOption.set(nil, true); assert(foodIcon.shown)
 foodIcon.scripts.OnDragStop()
 ScarletUI:SetupXPFood()
 assert(foodIcon.point[1] == "TOPLEFT" and foodIcon.point[4] == 40 and foodIcon.point[5] == -50)
-ScarletUI.db.global.xpFoodModule.position = nil
-ScarletUI:SetupXPFood(); assert(foodIcon.point[1] == "CENTER")
+-- Only a Ctrl-click puts it back at its default position.
+local ctrl = false
+IsControlKeyDown = function() return ctrl end
+foodIcon.scripts.OnClick(); assert(foodIcon.point[1] == "TOPLEFT")
+ctrl = true; foodIcon.scripts.OnClick()
+assert(foodIcon.point[1] == "CENTER" and ScarletUI.db.global.xpFoodModule.position == nil)
+IsControlKeyDown = nil
 UnitLevel, C_Container, C_Item, C_UnitAuras, IsPlayerAtEffectiveMaxLevel = savedUnitLevel, nil, nil, nil, nil
 end
 

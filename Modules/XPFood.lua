@@ -114,8 +114,13 @@ function ScarletUI:SetupXPFood()
         GameTooltip:SetOwner(icon, "ANCHOR_RIGHT")
         GameTooltip:SetHyperlink("item:" .. icon.itemID)
         GameTooltip:AddLine("Eat this for 5% more experience from kills.", 0, 1, 0, true)
-        GameTooltip:AddLine("Drag to move.", 0.6, 0.6, 0.6)
+        GameTooltip:AddLine("Drag to move. Ctrl-click to reset its position.", 0.6, 0.6, 0.6, true)
         GameTooltip:Show()
+    end)
+    icon:SetScript("OnClick", function()
+        if not IsControlKeyDown() then return end
+        self.db.global.xpFoodModule.position = nil
+        self:PlaceXPFood()
     end)
 
     function self:PlaceXPFood()
