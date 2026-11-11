@@ -24,9 +24,9 @@ local NAV = {
     { "generalSettings.tracking", master = true, desc = "Share minimap tracking across characters and keep gathering tracking on." },
     { "fishingSettings" },
     { "nameplatesModuleSettings" },
+    { "CVarModuleSettings" },
     { header = "Setup" },
     { "editModeSettings" },
-    { "CVarModuleSettings" },
     { "generalSettings.shortcuts", "generalSettings.reset", name = "Shortcuts & Reset",
         desc = "Ways to open Scarlet UI, and restoring its defaults." },
 }
