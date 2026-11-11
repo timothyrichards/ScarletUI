@@ -52,6 +52,10 @@ ScarletUI.defaults = {
         xpFoodModule = {
             enabled = true,
         },
+        craftProfit = {
+            enabled = true,
+            showAll = false,
+        },
         chatModule = {
             enabled = true,
             fontSize = 14,
@@ -80,6 +84,10 @@ ScarletUI.defaults = {
     },
     char = {
         cvarOriginalValues = {},
+        -- Recipes scanned from each profession window, keyed by profession name.
+        craftProfit = {
+            professions = {},
+        },
         editMode = {
             promptedVersions = {},
             declinedVersions = {},
@@ -95,6 +103,10 @@ ScarletUI.originalUIDefaults = {
         tidyIconsEnabled = false,
         spellCostPercent = false,
         crateFillCosts = false,
+        craftProfit = {
+            enabled = false,
+            showAll = false,
+        },
         zoneLevels = false,
         fiveSecondRule = false,
         itemLevelCharacter = true,
@@ -132,6 +144,9 @@ ScarletUI.originalUIDefaults = {
     },
     char = {
         cvarOriginalValues = {},
+        craftProfit = {
+            professions = {},
+        },
     }
 }
 

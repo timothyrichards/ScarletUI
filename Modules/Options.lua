@@ -18,6 +18,7 @@ function ScarletUI:Options()
             bagModuleSettings = self:GetBagSettingsPage(database, defaults, 4),
             chatModuleSettings = self:GetChatModuleSettingsPage(database, defaults.chatModule, 5),
             fishingSettings = self:GetFishingSettingsPage(database, 6),
+            auctionSettings = self:GetAuctionSettingsPage(database, 6.5),
             -- Nameplates only load on Era, TBC, and Mists.
             nameplatesModuleSettings = self.GetNameplatesModuleSettingsPage and self:GetNameplatesModuleSettingsPage(database, defaults.nameplatesModule, 7),
             CVarModuleSettings = self:GetCVarModuleSettingsPage(database, 8),
@@ -82,21 +83,6 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                         order = 3,
                         get = function(_) return database.spellCostPercent end,
                         set = function(_, val) database.spellCostPercent = val end,
-                    },
-                    crateFillCosts = {
-                        name = "Crate Fill Costs in Tooltips",
-                        desc = function()
-                            if not Auctionator then
-                                return "Requires the Auctionator addon. Install it, then scan the auction house so it has prices for the cheapest crate fill."
-                            end
-                            return "Show what each bundle that fills a supply crate costs and highlight the cheapest one. Prices come from your last Auctionator auction house scan; scan again to refresh them."
-                        end,
-                        type = "toggle",
-                        disabled = function() return not Auctionator end,
-                        width = 1.5,
-                        order = 3.5,
-                        get = function(_) return Auctionator ~= nil and database.crateFillCosts end,
-                        set = function(_, val) database.crateFillCosts = val end,
                     },
                     zoneLevels = {
                         name = "Zone Levels on World Map",
@@ -402,6 +388,50 @@ function ScarletUI:GetFishingSettingsPage(database, order)
                 end,
             },
         },
+    }
+end
+
+-- Features that read Auctionator's prices. Without Auctionator the page is
+-- grayed out and each description says what is needed instead.
+function ScarletUI:GetAuctionSettingsPage(database, order)
+    local function Desc(text)
+        return function()
+            if not Auctionator then
+                return "Requires the Auctionator addon. Install it, then scan the auction house so it has prices to work from."
+            end
+            return text
+        end
+    end
+    return {
+        name = "Auction Prices",
+        desc = Desc("Features that use Auctionator's prices. They are as fresh as your last auction house scan."),
+        type = "group",
+        disabled = function() return not Auctionator end,
+        order = order,
+        args = {
+            craftProfit = {
+                name = "Craft Profit",
+                desc = Desc("Add a Craft Profit tab to the profession window listing the recipes that make a profit, or break even while still giving a skill-up. Open a profession window to scan its recipes; /cp opens the list in its own window."),
+                type = "toggle",
+                hidden = function() return not self.craftProfitSupported end,
+                width = 1.5,
+                order = 0,
+                get = function(_) return Auctionator ~= nil and database.craftProfit.enabled end,
+                set = function(_, val)
+                    database.craftProfit.enabled = val
+                    self:UpdateCraftProfit()
+                end,
+            },
+            crateFillCosts = {
+                name = "Crate Fill Costs in Tooltips",
+                desc = Desc("Show what each bundle that fills a supply crate costs and highlight the cheapest one. Scan the auction house again to refresh the prices."),
+                type = "toggle",
+                width = 1.5,
+                order = 1,
+                get = function(_) return Auctionator ~= nil and database.crateFillCosts end,
+                set = function(_, val) database.crateFillCosts = val end,
+            },
+        }
     }
 end
 

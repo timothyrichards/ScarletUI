@@ -67,7 +67,7 @@ end
 local calls = {}
 local setupMethods = { "SetupDebugFrame", "SetupActionBarToggles", "SetupBagSort", "SetupTracking", "SetupChat", "SetupCVars",
     "SetupItemLevels",
-    "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupFiveSecondRule", "SetupFishing", "SetupXPFood", "SetupExpandCharacterInfo", "SetupGameMenuButtons",
+    "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupFiveSecondRule", "SetupFishing", "SetupXPFood", "SetupCraftProfit", "SetupExpandCharacterInfo", "SetupGameMenuButtons",
     "SetupFrameTweaks", "SetupMinimapIcon" }
 for _, name in ipairs(setupMethods) do
     ScarletUI[name] = function() calls[name] = true end
@@ -568,11 +568,38 @@ GameTooltipTextLeft2 = Line("- 20 Vision Dust")
 postCalls[3](GameTooltip)
 assert(GameTooltipTextLeft2:GetText() == "- 20 Vision Dust")
 ScarletUI.db.global.crateFillCosts = true
-local crateOption = ScarletUI:Options().args.generalSettings.args.interface.args.crateFillCosts
-assert(not crateOption.disabled() and crateOption.get() and not crateOption.desc():find("Requires"))
+-- The crate setting sits on the Auction Prices page with Craft Profit (Forever only).
+local auctionPage = ScarletUI:Options().args.auctionSettings
+local crateOption = auctionPage.args.crateFillCosts
+assert(ScarletUI:Options().args.generalSettings.args.interface.args.crateFillCosts == nil)
+assert(not auctionPage.disabled() and crateOption.get() and not crateOption.desc():find("Requires"))
+assert(auctionPage.args.craftProfit.hidden() and auctionPage.args.craftProfit.get())
 Auctionator, C_Item = nil, nil
--- Without Auctionator the setting is grayed out, reads off, and says what it needs.
-assert(crateOption.disabled() and not crateOption.get() and crateOption.desc():find("Requires the Auctionator addon"))
+-- Without Auctionator the page is grayed out, reads off, and says what it needs.
+assert(auctionPage.disabled() and not crateOption.get() and not auctionPage.args.craftProfit.get())
+assert(crateOption.desc():find("Requires the Auctionator addon") and auctionPage.desc():find("scan the auction house"))
+-- Craft Profit pricing rules; setup builds nothing without Auctionator.
+dofile("Modules/CraftProfit.lua")
+ScarletUI:SetupCraftProfit()
+assert(SLASH_SCARLETUICRAFTPROFIT1 == nil)
+ScarletUI.craftProfitSupported = nil
+do
+    local CP = ScarletUI.CraftProfit
+    local prices = { [1] = 10, [2] = 50 }
+    local function buy(id) return prices[id] end
+    local function sell(id) return id == 9 and 200 or 0 end
+    local cost, value, profit = CP.Evaluate({ reagents = { { id = 1, count = 3 }, { id = 2, count = 1 } }, output = 9, yield = 1 }, buy, sell)
+    assert(cost == 80 and value == 200 and profit == 120)
+    assert(select(2, CP.Evaluate({ reagents = {}, output = 9, yield = 1.5 }, buy, sell)) == 300) -- average of a 1-2 craft
+    local c, _, p, missing = CP.Evaluate({ reagents = { { id = 3, count = 1 } }, output = 9, yield = 1 }, buy, sell)
+    assert(c == nil and p == nil and missing == 3) -- a reagent with no price
+    assert(select(3, CP.Evaluate({ reagents = { { id = 1, count = 2 } }, yield = 1 }, buy, sell)) == -20) -- enchants have no output
+    assert(CP.Keep(1, 100, false) and not CP.Keep(0, 100, false)) -- gray break-even gains nothing
+    assert(CP.Keep(0, 100, true) and CP.Keep(-10, 100, true) and not CP.Keep(-11, 100, true)) -- within 10% of cost
+    assert(not CP.Keep(nil, nil, true))
+    assert(CP.Money(12345) == "1|cffffd700g|r 23|cffc7c7cfs|r" and CP.Money(-205) == "-2|cffc7c7cfs|r 5|cffeda55fc|r")
+    assert(CP.Money(7) == "7|cffeda55fc|r" and CP.Money(nil) == "?")
+end
 -- World map zone levels: appended once, difficulty-colored, only for known zones.
 local hovered, difficultyLevel = 1429, nil
 local areaLabel = { labelInfoByType = { [3] = {} } }

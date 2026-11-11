@@ -51,7 +51,7 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   Every Features page has a master switch and a status light in the list:
   the group's own `enabled` toggle where that turns the whole page off, and
   otherwise (`master = true` in `NAV`: Interface, Item Level, Bags, Minimap
-  Tracking) an "Enable <page>" row. That one is not a module flag:
+  Tracking, Auction Prices) an "Enable <page>" row. That one is not a module flag:
   `SetSettingsPageEnabled` turns off every toggle and OFF-able select on the
   page through its own setter and remembers what was on in
   `db.global.settingsMasters[page id]`, restoring it when switched back on.
@@ -137,13 +137,28 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   lines via post-hooks only (`TooltipDataProcessor` or `OnTooltipSetSpell`).
   Item tooltips that list bundles as "- 20 Vision Dust" rows (Waylaid Crate)
   get each row's total cost from `Auctionator.API.v1` (vendor price, else
-  auction) and the cheapest row in green (`db.global.crateFillCosts`, toggle in
-  the Interface group; without Auctionator the hook is not registered and the
-  toggle is disabled with a description saying to install it and scan). Auctionator has no
+  auction) and the cheapest row in green (`db.global.crateFillCosts`, toggle on
+  the Auction Prices page; without Auctionator the hook is not registered).
+  Auctionator has no
   price-by-name API and the client only resolves names of items the character
   has handled, so names are indexed from the item IDs in
   `Auctionator.Database.db` (internal, guarded); names not loaded yet are
   picked up on a later hover.
+- `Modules/CraftProfit.lua`: Craft Profit (`db.global.craftProfit`), Forever
+  only and only with Auctionator. Lists the recipes that make a profit, or break
+  even while still giving a skill-up, as a side tab on `ProfessionsFrame` (a
+  page covering the native one plus a copy of the selected native tab to switch
+  back, as WhatsTraining does) and in a pop-up window (`/cp`, `/craftprofit`).
+  Recipe data only exists while a profession window is open, so scans are cached
+  per character in `db.char.craftProfit.professions`. The pricing rules
+  (`ScarletUI.CraftProfit.Evaluate`, `Keep`, `Money`) call no WoW API so the
+  tests can run them; nothing else runs before `SetupCraftProfit`. It was a
+  standalone addon; setup yields when that addon's `CraftProfit_Toggle` exists.
+  Its toggle and the crate fill cost toggle share the Auction Prices settings
+  page (`auctionSettings`, `master = true` in `NAV`). Without Auctionator the
+  page's group is `disabled`, so every row and the master switch gray out, and
+  each description is replaced by a note to install Auctionator and scan the
+  auction house.
 - `Modules/ZoneLevels.lua`: appends difficulty-colored level ranges to the world
   map zone hover label on Era, TBC, and Forever, whose `C_Map.GetMapLevels` has
   no data. Uses a table of Classic UIMapIDs and post-hooks the area label's

@@ -17,6 +17,7 @@ Modules\BagSort.lua
 Modules\Chat.lua
 Modules\CheapestItem.lua
 Modules\CVars.lua
+Modules\CraftProfit.lua
 Modules\Database.lua
 Modules\Helpers.lua
 Modules\EditModeLayouts.lua

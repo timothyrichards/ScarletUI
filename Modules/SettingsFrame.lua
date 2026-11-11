@@ -23,6 +23,7 @@ local NAV = {
     { "actionBarTogglesSettings" },
     { "generalSettings.tracking", master = true, desc = "Share minimap tracking across characters and keep gathering tracking on." },
     { "fishingSettings" },
+    { "auctionSettings", master = true },
     { "nameplatesModuleSettings" },
     { "CVarModuleSettings" },
     { header = "Setup" },
@@ -774,7 +775,8 @@ function Render()
             items[#items + 1] = { card = "" }
             items[#items + 1] = {
                 master = true,
-                disabled = ScarletUI:InCombat(),
+                -- A page whose group is disabled (Auction Prices without Auctionator) has no switch to flip.
+                disabled = ScarletUI:InCombat() or Value(page.groups[1], "disabled") or false,
                 option = {
                     type = "toggle",
                     name = "Enable " .. page.name,
