@@ -377,6 +377,11 @@ HideUIPanel = function(frame) panelCalls.hidden = frame end
 PlaySound, SOUNDKIT = noop, SOUNDKIT or { IG_MAINMENU_OPTION = 1 }
 dofile("Modules/GameMenu.lua")
 ScarletUI:SetupGameMenuButtons()
+-- Both buttons are opt-in: nothing is created until one is turned on.
+assert(not ScarletUI.db.global.gameMenuButtons.sui and not ScarletUI.db.global.gameMenuButtons.cooldownManager)
+menuHooks.OnShow()
+assert(#created == 0)
+ScarletUI.db.global.gameMenuButtons.sui, ScarletUI.db.global.gameMenuButtons.cooldownManager = true, true
 menuHooks.OnShow()
 local suiButton, cooldownButton = created[1], created[2]
 assert(#created == 2 and suiButton.parent ~= GameMenuFrame and suiButton.template == "MainMenuFrameButtonTemplate")

@@ -31,9 +31,10 @@ ScarletUI.defaults = {
             enabled = true,
             sortBagsRightToLeft = true,
         },
+        -- Off by default: /sui and the minimap icon are the usual ways in.
         gameMenuButtons = {
-            sui = true,
-            cooldownManager = true,
+            sui = false,
+            cooldownManager = false,
         },
         trackingModule = {
             enabled = true,
