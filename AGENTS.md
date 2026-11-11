@@ -158,7 +158,7 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   change out of combat; the key is released in `PLAYER_REGEN_DISABLED`, which
   fires before the lockdown, and while moving. `ScarletUIFishingBar` shows while
   the mode is on and a pole is equipped: the Fishing icon (drag handle, position
-  in `position`) and the lure the key applies, which opens a list of the lures
+  in `position`, Ctrl-click resets it) and the lure the key applies, which opens a list of the lures
   in the bags stacked upward, topped by a no-lure entry drawn as an empty slot.
   The open list closes itself after a second with the mouse off the lures.
   Clicking a list entry stores `lure` (an item ID, or 0 for no lure); the key

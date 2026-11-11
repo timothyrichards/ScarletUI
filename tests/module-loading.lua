@@ -813,8 +813,17 @@ for _, widget in ipairs(fishWidgets) do
 end
 ScarletUI:SetupFishing()
 assert(fishBar.point[1] == "TOPLEFT" and fishBar.point[4] == 40 and fishBar.point[5] == -50)
-ScarletUI.db.global.fishingModule.position = nil
-ScarletUI:SetupFishing(); assert(fishBar.point[1] == "CENTER")
+-- Only a Ctrl-click on the icon puts the bar back at its default position.
+local function ClickFishingIcon()
+    for _, widget in ipairs(fishWidgets) do
+        if widget.scripts.OnDragStop and widget.scripts.OnClick then widget.scripts.OnClick() end
+    end
+end
+IsControlKeyDown = function() return false end
+ClickFishingIcon(); assert(fishBar.point[1] == "TOPLEFT" and ScarletUI.db.global.fishingModule.position)
+IsControlKeyDown = function() return true end
+ClickFishingIcon(); assert(fishBar.point[1] == "CENTER" and ScarletUI.db.global.fishingModule.position == nil)
+IsControlKeyDown = nil
 CreateFrame, GetCVar, C_Container, C_Item = savedCreateFrame, savedGetCVar, nil, nil
 end
 

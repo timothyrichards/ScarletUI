@@ -352,7 +352,7 @@ function ScarletUI:GetFishingSettingsPage(database, order)
         args = {
             enabled = {
                 name = "Fishing Mode",
-                desc = "While a fishing pole is equipped, the fishing key casts Fishing, then hooks the bobber during the cast. The key keeps its normal action in combat and while you move.\n\nA small bar shows while the mode is on. Click the lure on it to pick which one is applied; drag the Fishing icon to move it.",
+                desc = "While a fishing pole is equipped, the fishing key casts Fishing, then hooks the bobber during the cast. The key keeps its normal action in combat and while you move.\n\nA small bar shows while the mode is on. Click the lure on it to pick which one is applied; drag the Fishing icon to move it, Ctrl-click it to reset its position.",
                 type = "toggle",
                 width = 1,
                 order = 0,

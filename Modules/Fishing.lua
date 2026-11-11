@@ -199,13 +199,18 @@ function ScarletUI:SetupFishing()
         local point, _, relativePoint, x, y = bar:GetPoint()
         self.db.global.fishingModule.position = { point, relativePoint, x, y }
     end)
+    handle:SetScript("OnClick", function()
+        if not IsControlKeyDown() then return end
+        self.db.global.fishingModule.position = nil
+        self:PlaceFishingBar()
+    end)
     handle:SetScript("OnEnter", function()
         local key = self.db.global.fishingModule.key
         GameTooltip:SetOwner(handle, "ANCHOR_TOP")
-        GameTooltip:AddLine("Scarlet UI - Fishing Mode")
+        GameTooltip:AddLine("Fishing Mode")
         GameTooltip:AddLine((GetBindingText and GetBindingText(key) or key)
             .. " casts Fishing, then hooks the bobber.", 1, 1, 1, true)
-        GameTooltip:AddLine("Drag to move.", 0.6, 0.6, 0.6)
+        GameTooltip:AddLine("Drag to move. Ctrl-click to reset its position.", 0.6, 0.6, 0.6)
         GameTooltip:Show()
     end)
 
