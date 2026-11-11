@@ -90,12 +90,72 @@ local function AddManaPercent(tooltip, spellID)
     end
 end
 
+-- Supply crates (Waylaid Crate) list the bundles that fill them as "- 20 Vision
+-- Dust" rows. Each row gets its total cost from Auctionator (vendor price
+-- first, as Auctionator does) and the cheapest row turns green.
+-- ponytail: Auctionator has no price-by-name API, so names resolve through
+-- GetItemInfoInstant, which only knows items this client has cached; unseen
+-- items get no price. Add a name-to-ID table if that proves too patchy.
+local GetItemInfoInstant = C_Item and C_Item.GetItemInfoInstant or GetItemInfoInstant
+local CHEAPEST_COLOR = "|cff20ff20"
+
+local function BundleCost(row)
+    local count, name = row:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):match("^%- (%d+) (.-)%s*$")
+    local itemID = name and GetItemInfoInstant(name)
+    if not itemID then
+        return
+    end
+    local API = Auctionator.API.v1
+    local price = API.GetVendorPriceByItemID("ScarletUI", itemID) or API.GetAuctionPriceByItemID("ScarletUI", itemID)
+    return price and price * count
+end
+
+local function AddCrateCosts(tooltip)
+    if tooltip ~= GameTooltip or not ScarletUI.db.global.crateFillCosts or tooltip:IsForbidden()
+        or not (Auctionator and Auctionator.API and Auctionator.API.v1 and GetItemInfoInstant) then
+        return
+    end
+    -- The list may be one row per tooltip line or one line with line breaks.
+    local costs, cheapest = {}, nil
+    for i = 2, tooltip:NumLines() do
+        local text = _G["GameTooltipTextLeft" .. i]:GetText()
+        if text and not IsSecret(text) then
+            for row in text:gmatch("[^\r\n]+") do
+                local ok, cost = pcall(BundleCost, row)
+                if ok and cost then
+                    costs[row] = cost
+                    cheapest = math.min(cheapest or cost, cost)
+                end
+            end
+        end
+    end
+    if not cheapest then
+        return
+    end
+    for i = 2, tooltip:NumLines() do
+        local line = _G["GameTooltipTextLeft" .. i]
+        local text = line:GetText()
+        if text and not IsSecret(text) then
+            -- Decorated rows no longer resolve to an item, so a second pass adds nothing.
+            line:SetText((text:gsub("[^\r\n]+", function(row)
+                local cost = costs[row]
+                if cost then
+                    return (cost == cheapest and CHEAPEST_COLOR .. row .. "|r" or row)
+                        .. "  |cffffffff" .. GetMoneyString(cost, true) .. "|r"
+                end
+            end)))
+        end
+    end
+    return true
+end
+
 function ScarletUI:SetupSpellCostPercent()
     if self.spellCostHooked or not GameTooltip then
         return
     end
     self.spellCostHooked = true
     if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
+        TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, AddCrateCosts)
         TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Spell, function(tooltip, data)
             AddManaPercent(tooltip, data.id)
         end)
@@ -108,6 +168,11 @@ function ScarletUI:SetupSpellCostPercent()
         GameTooltip:HookScript("OnTooltipSetSpell", function(tooltip)
             AddManaPercent(tooltip, select(2, tooltip:GetSpell()))
             tooltip:Show() -- resize; this older path has no Show after hooks
+        end)
+        GameTooltip:HookScript("OnTooltipSetItem", function(tooltip)
+            if AddCrateCosts(tooltip) then
+                tooltip:Show()
+            end
         end)
     end
 end

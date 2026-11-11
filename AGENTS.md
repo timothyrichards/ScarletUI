@@ -135,6 +135,12 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
 - `Modules/TidyIcons.lua`: icon adjustments.
 - `Modules/Tooltips.lua`: appends percent of max mana to GameTooltip spell cost
   lines via post-hooks only (`TooltipDataProcessor` or `OnTooltipSetSpell`).
+  Item tooltips that list bundles as "- 20 Vision Dust" rows (Waylaid Crate)
+  get each row's total cost from `Auctionator.API.v1` (vendor price, else
+  auction) and the cheapest row in green (`db.global.crateFillCosts`, toggle in
+  the Interface group, hidden without Auctionator). Auctionator has no
+  price-by-name API, so names resolve through `GetItemInfoInstant`, which only
+  knows items the client has cached.
 - `Modules/ZoneLevels.lua`: appends difficulty-colored level ranges to the world
   map zone hover label on Era, TBC, and Forever, whose `C_Map.GetMapLevels` has
   no data. Uses a table of Classic UIMapIDs and post-hooks the area label's

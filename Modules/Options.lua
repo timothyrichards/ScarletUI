@@ -83,6 +83,16 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                         get = function(_) return database.spellCostPercent end,
                         set = function(_, val) database.spellCostPercent = val end,
                     },
+                    crateFillCosts = {
+                        name = "Crate Fill Costs in Tooltips",
+                        desc = "Show what each bundle that fills a supply crate costs and highlight the cheapest one. Prices come from Auctionator; items your client has not seen yet show no price.",
+                        type = "toggle",
+                        hidden = function() return not Auctionator end,
+                        width = 1.5,
+                        order = 3.5,
+                        get = function(_) return database.crateFillCosts end,
+                        set = function(_, val) database.crateFillCosts = val end,
+                    },
                     zoneLevels = {
                         name = "Zone Levels on World Map",
                         desc = "Show a zone's level range, colored by difficulty, when you hover over it on the world map.",

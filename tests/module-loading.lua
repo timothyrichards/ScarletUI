@@ -499,7 +499,7 @@ GameTooltipTextRight2 = Line("40 yd range")
 local postCalls, SECRET = {}, {}
 local description = "Heals the target of 206 damage over 15 sec."
 GameTooltip = { NumLines = function() return 3 end, IsForbidden = function() return false end }
-Enum.TooltipDataType = { Spell = 1, Macro = 2 }
+Enum.TooltipDataType = { Spell = 1, Macro = 2, Item = 3 }
 TooltipDataProcessor = { AddTooltipPostCall = function(kind, fn) postCalls[kind] = fn end }
 C_Spell = { GetSpellPowerCost = function() return { { type = 0, cost = 105 } } end,
     GetSpellDescription = function() return description end }
@@ -535,6 +535,33 @@ for text, expected in pairs({
     postCalls[1](GameTooltip, { id = 139 })
     assert(PerMana() == expected, text)
 end
+-- Crate fill costs: every priced bundle gets its total, the cheapest turns green, once.
+local itemIDs = { ["Vision Dust"] = 1, ["Greater Mystic Essence"] = 2, ["Small Radiant Shard"] = 3 }
+local auctionPrices = { 100, 400, 9999 }
+C_Item = { GetItemInfoInstant = function(name) return itemIDs[name] end }
+GetMoneyString = function(copper) return copper .. "c" end
+Auctionator = { API = { v1 = {
+    GetVendorPriceByItemID = function(_, id) return id == 3 and 500 or nil end,
+    GetAuctionPriceByItemID = function(_, id) return auctionPrices[id] end,
+} } }
+dofile("Modules/Tooltips.lua") -- again, to pick up C_Item
+ScarletUI.spellCostHooked = nil
+ScarletUI:SetupSpellCostPercent()
+GameTooltipTextLeft2 = Line("Use: Fill the crate:\n- 20 Vision Dust\n- 4 Greater Mystic Essence")
+GameTooltipTextLeft3 = Line("|cffffffff- 6 Small Radiant Shard|r")
+local crateText = "Use: Fill the crate:\n- 20 Vision Dust  |cffffffff2000c|r\n"
+    .. "|cff20ff20- 4 Greater Mystic Essence|r  |cffffffff1600c|r"
+for _ = 1, 2 do
+    postCalls[3](GameTooltip)
+    assert(GameTooltipTextLeft2:GetText() == crateText, GameTooltipTextLeft2:GetText())
+    assert(GameTooltipTextLeft3:GetText() == "|cffffffff- 6 Small Radiant Shard|r  |cffffffff3000c|r")
+end
+ScarletUI.db.global.crateFillCosts = false
+GameTooltipTextLeft2 = Line("- 20 Vision Dust")
+postCalls[3](GameTooltip)
+assert(GameTooltipTextLeft2:GetText() == "- 20 Vision Dust")
+ScarletUI.db.global.crateFillCosts = true
+Auctionator, C_Item = nil, nil
 -- World map zone levels: appended once, difficulty-colored, only for known zones.
 local hovered, difficultyLevel = 1429, nil
 local areaLabel = { labelInfoByType = { [3] = {} } }
