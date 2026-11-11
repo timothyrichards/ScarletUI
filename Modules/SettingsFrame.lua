@@ -1,10 +1,33 @@
--- Prototype settings window (/sui new). It draws the same options table
--- AceConfig does (ScarletUI:Options()), so pages need no second definition,
--- but with Blizzard's own frame templates, which carry each client's skin.
+-- The settings window (/sui). The settings themselves still come from
+-- ScarletUI:Options(), so each is defined once, but the window has its own
+-- navigation and layout: pages grouped by NAV, a card per option group, and
+-- one setting per row with its control at the right. It is built from
+-- Blizzard's frame templates, which carry each client's skin.
 
 local ICON = "Interface\\Icons\\INV_Misc_Gear_01"
-local WIDTH = 580 -- scrolling content width
-local UNIT = 170  -- one AceConfig width unit, so existing `width` hints carry over
+local WIDTH = 580      -- scrolling content width
+local TEXT_WIDTH = 330 -- a row's name and description; the control takes the rest
+
+-- Left-hand navigation. An entry lists the option groups (paths into
+-- ScarletUI:Options().args) shown on that page; with several, each becomes a
+-- card. `name` and `desc` default to the first group's. Top-level pages
+-- missing from here are appended, so a new page is never lost.
+local NAV = {
+    { header = "Features" },
+    { "generalSettings.interface", desc = "Small interface tweaks and reminders." },
+    { "generalSettings.itemLevel", desc = "Show item levels on equipment and in bags." },
+    { "bagModuleSettings" },
+    { "chatModuleSettings" },
+    { "actionBarTogglesSettings" },
+    { "generalSettings.tracking", desc = "Share minimap tracking across characters and keep gathering tracking on." },
+    { "fishingSettings" },
+    { "nameplatesModuleSettings" },
+    { header = "Setup" },
+    { "editModeSettings" },
+    { "CVarModuleSettings" },
+    { "generalSettings.shortcuts", "generalSettings.reset", name = "Shortcuts & Reset",
+        desc = "Ways to open Scarlet UI, and restoring its defaults." },
+}
 
 local frame, nav, scroll, content, search
 local selected, query
@@ -42,20 +65,50 @@ local function Matches(option, text)
     return haystack:lower():find(text, 1, true) ~= nil
 end
 
--- Flattens a group into the rows to draw: { header = name } for each child
--- group that has visible settings, { option, disabled } for each setting.
--- `text` (lowercase) keeps only settings whose name or description contain it.
-function ScarletUI:CollectSettings(group, text, items, disabled)
+-- Flattens a group into the rows to draw. { card = title } opens a card ("" for
+-- an untitled one) and is only added ahead of a visible setting; { option,
+-- disabled } is a setting. The group's own settings form the card named `card`
+-- and each child group its own. `text` (lowercase) keeps only settings whose
+-- name or description contain it.
+function ScarletUI:CollectSettings(group, text, items, disabled, card)
     items = items or {}
     disabled = disabled or Value(group, "disabled") or false
-    for _, option in ipairs(Sorted(group.args)) do
+    card = card or ""
+    local args, open = group.args, false
+
+    -- The CVar list is label/input/Default/Remove options per CVar, numbered;
+    -- each set is drawn as one row. Its filter field is left out: the
+    -- window's own search covers these rows.
+    if args.label1 then
+        local n = 1
+        while args["label" .. n] do
+            local label = args["label" .. n]
+            if not Value(label, "hidden") and (not text or Value(label, "name"):lower():find(text, 1, true)) then
+                if not open then
+                    items[#items + 1] = { card = "Overrides" }
+                    open = true
+                end
+                items[#items + 1] = {
+                    cvar = { label = label, input = args["input" .. n], clear = args["clear" .. n], remove = args["remove" .. n] },
+                    disabled = disabled,
+                }
+            end
+            n = n + 1
+        end
+        return items
+    end
+
+    for _, option in ipairs(Sorted(args)) do
         if not Value(option, "hidden") then
             if option.type == "group" then
-                local header = #items + 1
-                items[header] = { header = Value(option, "name") }
-                self:CollectSettings(option, text, items, disabled)
-                if #items == header then items[header] = nil end
+                local name = Value(option, "name")
+                self:CollectSettings(option, text, items, disabled, card ~= "" and (card .. " - " .. name) or name)
+                open = false
             elseif not text or Matches(option, text) then
+                if not open then
+                    items[#items + 1] = { card = card }
+                    open = true
+                end
                 items[#items + 1] = { option = option, disabled = disabled or Value(option, "disabled") or false }
             end
         end
@@ -86,35 +139,61 @@ local function Atlas(texture, name, useAtlasSize)
     end
 end
 
--- `control` shows the name and description of the widget it belongs to.
-local function Tooltip(control, widget)
+-- `control` shows the full description held by `tip` (a row, or any table
+-- with name and desc). Rows clear `desc` when all of it is already on screen.
+local function Tooltip(control, tip)
     control:SetScript("OnEnter", function(self)
-        local name, desc = widget.name, widget.desc
-        if (not name or name == "") and not desc then return end
+        if not tip.desc or tip.desc == "" then return end
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        if name and name ~= "" then
-            GameTooltip:SetText(name, 1, 0.82, 0)
-            if desc then GameTooltip:AddLine(desc, 1, 1, 1, true) end
-        else
-            GameTooltip:SetText(desc, 1, 1, 1, 1, true)
-        end
+        GameTooltip:SetText(tip.name, 1, 0.82, 0)
+        GameTooltip:AddLine(tip.desc, 1, 1, 1, true)
         GameTooltip:Show()
     end)
     control:SetScript("OnLeave", function() GameTooltip:Hide() end)
 end
 
-local function Label(widget)
-    local label = widget:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-    label:SetPoint("TOPLEFT", 2, -2)
-    label:SetPoint("RIGHT", -8, 0)
-    label:SetJustifyH("LEFT")
-    label:SetWordWrap(false)
-    return label
+local function Hover(row)
+    local hover = row:CreateTexture(nil, "HIGHLIGHT")
+    hover:SetAllPoints()
+    hover:SetColorTexture(1, 1, 1, 0.05)
 end
 
--- Each constructor returns a frame with Apply(option, name, disabled) and a
--- `height` the layout reads after Apply.
+-- Each constructor returns a frame with Apply(item) and a `height` the layout
+-- reads after Apply.
 local Widgets = {}
+
+-- The shared row: name and the first sentence of the description at the left
+-- (the tooltip has the rest), the control at the right.
+local function Row(parent)
+    local w = CreateFrame("Button", nil, parent)
+    Hover(w)
+    w.label = w:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    w.label:SetPoint("TOPLEFT", 12, -9)
+    w.label:SetWidth(TEXT_WIDTH)
+    w.label:SetJustifyH("LEFT")
+    w.label:SetWordWrap(false)
+    w.sub = w:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    w.sub:SetPoint("TOPLEFT", w.label, "BOTTOMLEFT", 0, -3)
+    w.sub:SetWidth(TEXT_WIDTH)
+    w.sub:SetJustifyH("LEFT")
+    w.sub:SetTextColor(0.65, 0.65, 0.65)
+    Tooltip(w, w)
+    function w:Base(item)
+        local option = item.option
+        local name, desc = Value(option, "name") or "", Value(option, "desc")
+        if name == "" then name, desc = desc or "", nil end
+        local short = desc and (desc:match("^(.-[%.!])%s+%u") or desc)
+        self.option, self.disabled = option, item.disabled
+        self.name, self.desc = name, desc ~= short and desc or nil
+        -- A feature's own on/off switch stands out from its settings.
+        self.label:SetFontObject(item.disabled and "GameFontDisable" or option.key == "enabled" and "GameFontNormal" or "GameFontHighlight")
+        self.label:SetText(name)
+        self.sub:SetText(short or "")
+        self.sub:SetAlpha(item.disabled and 0.5 or 1)
+        self.height = short and self.sub:GetStringHeight() + 34 or 30
+    end
+    return w
+end
 
 function Widgets.title(parent)
     local w = CreateFrame("Frame", nil, parent)
@@ -127,141 +206,137 @@ function Widgets.title(parent)
     function w:Apply(item)
         name:SetText(item.title)
         desc:SetText(item.desc or "")
-        self.height = 34 + (item.desc and desc:GetStringHeight() + 4 or 0)
+        self.height = 38 + (item.desc and desc:GetStringHeight() + 4 or 0)
     end
     return w
 end
 
--- The bronze bar Blizzard draws for list categories; plain gold text over a
--- rule on clients without that art.
-function Widgets.header(parent)
+-- A card's title: the bronze bar Blizzard draws for list categories, or plain
+-- gold text over a rule on clients without that art.
+function Widgets.card(parent)
     local w = CreateFrame("Frame", nil, parent)
-    w.height = 36
+    w.height = 32
     local left, right, middle = w:CreateTexture(nil, "BACKGROUND"), w:CreateTexture(nil, "BACKGROUND"), w:CreateTexture(nil, "BACKGROUND")
     if Atlas(left, "Professions-recipe-header-left", true) and Atlas(right, "Professions-recipe-header-right", true)
         and Atlas(middle, "Professions-recipe-header-middle") then
-        left:SetPoint("BOTTOMLEFT", 0, 2)
-        right:SetPoint("BOTTOMRIGHT", -6, 2)
+        left:SetPoint("BOTTOMLEFT", 0, 0)
+        right:SetPoint("BOTTOMRIGHT", 0, 0)
         middle:SetPoint("TOPLEFT", left, "TOPRIGHT")
         middle:SetPoint("BOTTOMRIGHT", right, "BOTTOMLEFT")
     else
         left:Hide()
         right:Hide()
         middle:SetColorTexture(0.6, 0.48, 0.28, 0.6)
-        middle:SetPoint("BOTTOMLEFT", 0, 2)
-        middle:SetPoint("BOTTOMRIGHT", -6, 2)
+        middle:SetPoint("BOTTOMLEFT", 0, 0)
+        middle:SetPoint("BOTTOMRIGHT", 0, 0)
         middle:SetHeight(1)
     end
     local label = w:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    label:SetPoint("BOTTOMLEFT", 10, 10)
-    function w:Apply(item) label:SetText(item.header) end
+    label:SetPoint("BOTTOMLEFT", 12, 9)
+    function w:Apply(item) label:SetText(item.card) end
     return w
 end
 
 function Widgets.description(parent)
     local w = CreateFrame("Frame", nil, parent)
     local text = w:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    text:SetPoint("TOPLEFT", 2, -3)
+    text:SetPoint("TOPLEFT", 12, -7)
+    text:SetWidth(WIDTH - 24)
     text:SetJustifyH("LEFT")
-    Tooltip(w, w)
-    function w:Apply(option, name)
-        text:SetFontObject(option.fontSize == "medium" and "GameFontHighlight" or "GameFontHighlightSmall")
-        text:SetWidth(self:GetWidth() - 10)
+    function w:Apply(item)
+        local name = strtrim(Value(item.option, "name") or "")
+        text:SetFontObject(item.option.fontSize == "medium" and "GameFontHighlight" or "GameFontHighlightSmall")
         text:SetText(name)
-        -- An empty description is AceConfig's line break.
-        self.height = name == "" and 0 or text:GetStringHeight() + 6
+        -- An empty description is only AceConfig's line break.
+        self.height = name == "" and 0 or text:GetStringHeight() + 14
     end
     return w
 end
 
 function Widgets.toggle(parent)
-    local w = CreateFrame("Frame", nil, parent)
-    w.height = 28
+    local w = Row(parent)
     local check = CreateFrame("CheckButton", nil, w, "UICheckButtonTemplate")
     check:SetSize(26, 26)
-    check:SetPoint("LEFT")
-    local label = w:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    label:SetPoint("LEFT", check, "RIGHT", 2, 0)
-    label:SetPoint("RIGHT", -8, 0)
-    label:SetJustifyH("LEFT")
-    label:SetWordWrap(false)
+    check:SetPoint("RIGHT", -10, 0)
     check:SetScript("OnClick", function(self)
         local checked = self:GetChecked() and true or false
         PlaySound(checked and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON or SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF)
         Set(w.option, checked)
     end)
+    -- The whole row is the click target.
+    w:SetScript("OnClick", function() if not w.disabled then check:Click() end end)
     Tooltip(check, w)
-    function w:Apply(option, name, disabled)
-        check:SetChecked(option.get() and true or false)
-        check:SetEnabled(not disabled)
-        label:SetFontObject(disabled and "GameFontDisable" or "GameFontHighlight")
-        label:SetText(name)
-        -- The label is part of the click target.
-        check:SetHitRectInsets(0, -math.min(label:GetStringWidth() + 4, self:GetWidth() - 34), 0, 0)
+    function w:Apply(item)
+        self:Base(item)
+        check:SetChecked(item.option.get() and true or false)
+        check:SetEnabled(not item.disabled)
     end
     return w
 end
 
 function Widgets.execute(parent)
-    local w = CreateFrame("Frame", nil, parent)
-    w.height = 28
+    local w = Row(parent)
     local button = CreateFrame("Button", nil, w, "UIPanelButtonTemplate")
-    button:SetHeight(22)
-    button:SetPoint("LEFT")
-    button:SetPoint("RIGHT", -8, 0)
+    button:SetSize(170, 22)
+    button:SetPoint("RIGHT", -10, 0)
     button:SetScript("OnClick", function()
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
         w.option.func()
         ScarletUI:RefreshSettings()
     end)
     Tooltip(button, w)
-    function w:Apply(_, name, disabled)
-        button:SetText(name)
-        button:SetEnabled(not disabled)
+    function w:Apply(item)
+        self:Base(item)
+        button:SetText(self.name)
+        button:SetEnabled(not item.disabled)
     end
     return w
 end
 
-function Widgets.input(parent)
-    local w = CreateFrame("Frame", nil, parent)
-    local label = Label(w)
-    local edit = CreateFrame("EditBox", nil, w, "InputBoxTemplate")
+local function EditBox(parent, width)
+    local edit = CreateFrame("EditBox", nil, parent, "InputBoxTemplate")
     edit:SetAutoFocus(false)
-    edit:SetHeight(20)
-    edit:SetPoint("BOTTOMLEFT", 7, 3)
-    edit:SetPoint("BOTTOMRIGHT", -10, 3)
-    edit:SetScript("OnEnterPressed", function(self)
-        local text = self:GetText()
-        self:ClearFocus()
-        Set(w.option, text)
-    end)
+    edit:SetSize(width, 20)
     edit:SetScript("OnEscapePressed", function(self)
         self:ClearFocus()
         ScarletUI:RefreshSettings()
     end)
     edit:SetScript("OnEditFocusGained", function(self) self:HighlightText() end)
     edit:SetScript("OnEditFocusLost", function(self) self:HighlightText(0, 0) end)
-    Tooltip(edit, w)
-    function w:Apply(option, name, disabled)
-        label:SetText(name)
-        self.height = name == "" and 28 or 44
-        if not edit:HasFocus() then
-            edit:SetText(tostring(option.get() or ""))
-            edit:SetCursorPosition(0)
+    function edit:Update(value, disabled)
+        if not self:HasFocus() then
+            self:SetText(tostring(value or ""))
+            self:SetCursorPosition(0)
         end
-        edit:SetEnabled(not disabled)
-        edit:SetTextColor(disabled and 0.5 or 1, disabled and 0.5 or 1, disabled and 0.5 or 1)
+        self:SetEnabled(not disabled)
+        local shade = disabled and 0.5 or 1
+        self:SetTextColor(shade, shade, shade)
+    end
+    return edit
+end
+
+function Widgets.input(parent)
+    local w = Row(parent)
+    local edit = EditBox(w, 190)
+    edit:SetPoint("RIGHT", -14, 0)
+    edit:SetScript("OnEnterPressed", function(self)
+        local text = self:GetText()
+        self:ClearFocus()
+        Set(w.option, text)
+    end)
+    Tooltip(edit, w)
+    function w:Apply(item)
+        self:Base(item)
+        edit:Update(item.option.get(), item.disabled)
     end
     return w
 end
 
 function Widgets.range(parent)
-    local w = CreateFrame("Frame", nil, parent)
-    w.height = 46
-    local label = Label(w)
+    local w = Row(parent)
     local slider = CreateFrame("Frame", nil, w, "MinimalSliderWithSteppersTemplate")
-    slider:SetPoint("BOTTOMLEFT", 0, 2)
-    slider:SetPoint("BOTTOMRIGHT", -46, 2) -- room for the value at its right
+    slider:SetWidth(160)
+    slider:SetPoint("RIGHT", -50, 0) -- room for the value at its right
     local formatters = {
         [MinimalSliderWithSteppersMixin.Label.Right] = function(value)
             return tostring(math.floor(value * 100 + 0.5) / 100)
@@ -271,8 +346,9 @@ function Widgets.range(parent)
         if not w.applying and value ~= w.option.get() then Set(w.option, value) end
     end, w)
     Tooltip(slider.Slider, w)
-    function w:Apply(option, name, disabled)
-        label:SetText(name)
+    function w:Apply(item)
+        self:Base(item)
+        local option = item.option
         local value, min, max, step = option.get(), option.min, option.max, option.step or 1
         -- Left alone while unchanged, so a refresh never interrupts a drag.
         if self.min ~= min or self.max ~= max or self.step ~= step or slider.Slider:GetValue() ~= value then
@@ -281,21 +357,20 @@ function Widgets.range(parent)
             self.applying = false
             self.min, self.max, self.step = min, max, step
         end
-        slider:SetEnabled(not disabled)
+        slider:SetEnabled(not item.disabled)
     end
     return w
 end
 
 function Widgets.select(parent)
-    local w = CreateFrame("Frame", nil, parent)
-    w.height = 46
-    local label = Label(w)
+    local w = Row(parent)
     local dropdown = CreateFrame("DropdownButton", nil, w, "WowStyle1DropdownTemplate")
-    dropdown:SetPoint("BOTTOMLEFT", 0, 2)
-    dropdown:SetPoint("BOTTOMRIGHT", -10, 2)
+    dropdown:SetWidth(200)
+    dropdown:SetPoint("RIGHT", -10, 0)
     Tooltip(dropdown, w)
-    function w:Apply(option, name, disabled)
-        label:SetText(name)
+    function w:Apply(item)
+        self:Base(item)
+        local option = item.option
         local values = Value(option, "values")
         local keys = option.sorting
         if not keys then
@@ -310,17 +385,16 @@ function Widgets.select(parent)
                     function() Set(option, key) end)
             end
         end)
-        dropdown:SetEnabled(not disabled)
+        dropdown:SetEnabled(not item.disabled)
     end
     return w
 end
 
 function Widgets.color(parent)
-    local w = CreateFrame("Frame", nil, parent)
-    w.height = 28
+    local w = Row(parent)
     local swatch = CreateFrame("Button", nil, w)
     swatch:SetSize(20, 20)
-    swatch:SetPoint("LEFT", 3, 0)
+    swatch:SetPoint("RIGHT", -13, 0)
     local border = swatch:CreateTexture(nil, "BACKGROUND")
     border:SetColorTexture(1, 1, 1)
     border:SetPoint("CENTER")
@@ -328,8 +402,6 @@ function Widgets.color(parent)
     local color = swatch:CreateTexture(nil, "ARTWORK")
     color:SetTexture("Interface\\ChatFrame\\ChatFrameColorSwatch")
     color:SetAllPoints()
-    local label = w:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    label:SetPoint("LEFT", swatch, "RIGHT", 6, 0)
     swatch:SetScript("OnClick", function()
         local option = w.option
         local r, g, b, a = option.get()
@@ -343,25 +415,22 @@ function Widgets.color(parent)
             cancelFunc = function() Set(option, r, g, b, a) end,
         })
     end)
+    w:SetScript("OnClick", function() if not w.disabled then swatch:Click() end end)
     Tooltip(swatch, w)
-    function w:Apply(option, name, disabled)
-        color:SetVertexColor(option.get())
-        label:SetText(name)
-        label:SetFontObject(disabled and "GameFontDisable" or "GameFontHighlight")
-        swatch:SetEnabled(not disabled)
-        swatch:SetAlpha(disabled and 0.4 or 1)
+    function w:Apply(item)
+        self:Base(item)
+        color:SetVertexColor(item.option.get())
+        swatch:SetEnabled(not item.disabled)
+        swatch:SetAlpha(item.disabled and 0.4 or 1)
     end
     return w
 end
 
 function Widgets.keybinding(parent)
-    local w = CreateFrame("Frame", nil, parent)
-    w.height = 46
-    local label = Label(w)
+    local w = Row(parent)
     local button = CreateFrame("Button", nil, w, "UIPanelButtonTemplate")
-    button:SetHeight(22)
-    button:SetPoint("BOTTOMLEFT", 0, 2)
-    button:SetPoint("BOTTOMRIGHT", -8, 2)
+    button:SetSize(170, 22)
+    button:SetPoint("RIGHT", -10, 0)
     local function Listen(listening)
         w.listening = listening
         button:EnableKeyboard(listening)
@@ -386,14 +455,66 @@ function Widgets.keybinding(parent)
     end)
     button:SetScript("OnHide", function() Listen(false) end)
     Tooltip(button, w)
-    function w:Apply(option, name, disabled)
-        label:SetText(name)
-        button:SetEnabled(not disabled)
-        if disabled then Listen(false) end
+    function w:Apply(item)
+        self:Base(item)
+        button:SetEnabled(not item.disabled)
+        if item.disabled then Listen(false) end
         if not self.listening then
-            local key = option.get()
+            local key = item.option.get()
             button:SetText(key and key ~= "" and (GetBindingText and GetBindingText(key) or key) or NOT_BOUND or "Not Bound")
         end
+    end
+    return w
+end
+
+-- One CVar: its name, override value, and the Default and Remove buttons.
+function Widgets.cvar(parent)
+    local w = CreateFrame("Frame", nil, parent)
+    w.height = 28
+    w:EnableMouse(true)
+    Hover(w)
+    local label = w:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    label:SetPoint("LEFT", 12, 0)
+    label:SetWidth(270)
+    label:SetJustifyH("LEFT")
+    label:SetWordWrap(false)
+    local remove = CreateFrame("Button", nil, w, "UIPanelButtonTemplate")
+    remove:SetSize(70, 20)
+    remove:SetPoint("RIGHT", -10, 0)
+    local default = CreateFrame("Button", nil, w, "UIPanelButtonTemplate")
+    default:SetSize(70, 20)
+    default:SetPoint("RIGHT", remove, "LEFT", -4, 0)
+    local edit = EditBox(w, 110)
+    edit:SetPoint("RIGHT", default, "LEFT", -10, 0)
+    edit:SetScript("OnEnterPressed", function(self)
+        local text = self:GetText()
+        self:ClearFocus()
+        Set(w.cvar.input, text)
+    end)
+    default:SetScript("OnClick", function()
+        w.cvar.clear.func()
+        ScarletUI:RefreshSettings()
+    end)
+    remove:SetScript("OnClick", function()
+        w.cvar.remove.func()
+        ScarletUI:RefreshSettings()
+    end)
+    local tips = { [w] = {}, [edit] = {}, [default] = {}, [remove] = {} }
+    for control, tip in pairs(tips) do Tooltip(control, tip) end
+    function w:Apply(item)
+        local cvar, off = item.cvar, item.disabled
+        self.cvar = cvar
+        local options = { [w] = cvar.label, [edit] = cvar.input, [default] = cvar.clear, [remove] = cvar.remove }
+        for control, tip in pairs(tips) do
+            tip.name, tip.desc = Value(cvar.label, "name"), Value(options[control], "desc")
+        end
+        label:SetText(tips[w].name)
+        label:SetAlpha(off and 0.5 or 1)
+        edit:Update(cvar.input.get(), off or Value(cvar.input, "disabled"))
+        default:SetText(Value(cvar.clear, "name"))
+        default:SetEnabled(not (off or Value(cvar.clear, "disabled")))
+        remove:SetText(Value(cvar.remove, "name"))
+        remove:SetEnabled(not off)
     end
     return w
 end
@@ -410,60 +531,98 @@ local function Acquire(kind)
     return pool[n]
 end
 
+local backgrounds = {}
+
 local function Layout(items)
     for kind, pool in pairs(pools) do
         used[kind] = 0
         for _, widget in ipairs(pool) do widget:Hide() end
     end
+    for _, background in ipairs(backgrounds) do background:Hide() end
 
-    local x, y, rowHeight, row = 0, 0, 0, {}
-    local function EndRow()
-        for _, widget in ipairs(row) do
-            widget:ClearAllPoints()
-            widget:SetPoint("TOPLEFT", content, "TOPLEFT", widget.x, -(y + (rowHeight - widget.height) / 2))
-        end
-        if rowHeight > 0 then y = y + rowHeight + 4 end
-        x, rowHeight, row = 0, 0, {}
+    -- A darker panel behind each card's rows sets it apart from the next.
+    local y, cardTop, cards = 0, nil, 0
+    local function CloseCard()
+        if not cardTop then return end
+        cards = cards + 1
+        local background = backgrounds[cards] or content:CreateTexture(nil, "BACKGROUND")
+        backgrounds[cards] = background
+        background:SetColorTexture(0, 0, 0, 0.3)
+        background:ClearAllPoints()
+        background:SetPoint("TOPLEFT", 0, -cardTop)
+        background:SetSize(WIDTH, y - cardTop + 4)
+        background:Show()
+        y, cardTop = y + 14, nil
     end
 
     for _, item in ipairs(items) do
-        local option = item.option
-        local kind = item.title and "title" or item.header and "header" or option.type
-        if Widgets[kind] then
-            local width = WIDTH
-            if option and type(option.width) == "number" then
-                width = math.min(WIDTH, option.width * UNIT)
-            elseif option and option.width ~= "full" and kind ~= "description" then
-                width = UNIT
-            end
-            if x > 0 and x + width > WIDTH then EndRow() end
-
+        local kind = item.title and "title" or item.card and "card" or item.cvar and "cvar" or item.option.type
+        if item.title or item.card then CloseCard() end
+        if item.card == "" then
+            cardTop, y = y, y + 4
+        elseif Widgets[kind] then
             local widget = Acquire(kind)
-            widget:SetWidth(width)
-            if option then
-                widget.option, widget.name, widget.desc = option, Value(option, "name") or "", Value(option, "desc")
-                widget:Apply(option, widget.name, item.disabled)
+            widget:SetWidth(WIDTH)
+            widget:Apply(item)
+            if widget.height > 0 then
+                widget:SetHeight(widget.height)
+                widget:ClearAllPoints()
+                widget:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -y)
+                y = y + widget.height
             else
-                widget:Apply(item)
+                widget:Hide()
             end
-            widget:SetHeight(math.max(widget.height, 1))
-            widget.x = x
-            row[#row + 1] = widget
-            x = x + width
-            rowHeight = math.max(rowHeight, widget.height)
+            if item.card then cardTop = y end
         end
     end
-    EndRow()
+    CloseCard()
     content:SetHeight(math.max(y, 1))
 end
 
-local navButtons = {}
+local function Resolve(options, path)
+    local node = options
+    for key in path:gmatch("[^.]+") do
+        node = node and node.args and node.args[key]
+    end
+    return type(node) == "table" and node or nil
+end
+
+-- NAV against the live options: section headers and the pages that have at
+-- least one group this client and character can see.
+local function Entries()
+    local options = ScarletUI:Options()
+    local entries, listed, header = {}, {}, nil
+    local function Add(spec)
+        local page = { id = spec[1], groups = {} }
+        for _, path in ipairs(spec) do
+            listed[path:match("^[^.]+")] = true
+            local group = Resolve(options, path)
+            if group and not Value(group, "hidden") then page.groups[#page.groups + 1] = group end
+        end
+        local first = page.groups[1]
+        if not first then return end
+        page.name = spec.name or Value(first, "name")
+        page.desc = spec.desc or Value(first, "desc")
+        if header then
+            entries[#entries + 1] = { header = header }
+            header = nil
+        end
+        entries[#entries + 1] = page
+    end
+    for _, spec in ipairs(NAV) do
+        if spec.header then header = spec.header else Add(spec) end
+    end
+    for _, page in ipairs(Sorted(options.args)) do
+        if not listed[page.key] then Add({ page.key }) end
+    end
+    return entries
+end
+
+local navButtons, navHeaders = {}, {}
 local function NavButton(i)
     if navButtons[i] then return navButtons[i] end
     local button = CreateFrame("Button", nil, nav)
     button:SetHeight(24)
-    button:SetPoint("TOPLEFT", 4, -5 - (i - 1) * 24)
-    button:SetPoint("TOPRIGHT", -4, -5 - (i - 1) * 24)
     button.selected = button:CreateTexture(nil, "BACKGROUND")
     button.selected:SetAllPoints()
     local highlight = button:CreateTexture(nil, "HIGHLIGHT")
@@ -479,10 +638,14 @@ local function NavButton(i)
         highlight:SetAlpha(0.5)
     end
     button.label = button:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    button.label:SetPoint("LEFT", 10, 0)
+    button.label:SetPoint("LEFT", 12, 0)
+    -- Lit while the page's feature is switched on.
+    button.status = button:CreateTexture(nil, "ARTWORK")
+    button.status:SetSize(12, 12)
+    button.status:SetPoint("RIGHT", -8, 0)
     button:SetScript("OnClick", function(self)
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
-        selected = self.key
+        selected = self.id
         scroll:SetVerticalScroll(0)
         if search:GetText() ~= "" then
             search:SetText("") -- its OnTextChanged renders
@@ -495,34 +658,59 @@ local function NavButton(i)
 end
 
 function Render()
-    local pages = {}
-    for _, page in ipairs(Sorted(ScarletUI:Options().args)) do
-        if not Value(page, "hidden") then pages[#pages + 1] = page end
+    local entries = Entries()
+    local pages, current = {}, nil
+    for _, entry in ipairs(entries) do
+        if not entry.header then
+            pages[#pages + 1] = entry
+            if entry.id == selected or not current then current = entry end
+        end
     end
+    selected = current.id
 
-    local current = pages[1]
-    for _, page in ipairs(pages) do
-        if page.key == selected then current = page end
+    local y, buttons, headers = 6, 0, 0
+    for _, entry in ipairs(entries) do
+        if entry.header then
+            headers = headers + 1
+            local header = navHeaders[headers] or nav:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+            navHeaders[headers] = header
+            y = y + (headers > 1 and 10 or 2)
+            header:ClearAllPoints()
+            header:SetPoint("TOPLEFT", 12, -y)
+            header:SetText(entry.header:upper())
+            header:Show()
+            y = y + 16
+        else
+            buttons = buttons + 1
+            local button = NavButton(buttons)
+            local active = not query and entry == current
+            button.id = entry.id
+            button:ClearAllPoints()
+            button:SetPoint("TOPLEFT", 4, -y)
+            button:SetPoint("TOPRIGHT", -4, -y)
+            button.label:SetText(entry.name)
+            button.label:SetFontObject(active and "GameFontHighlight" or "GameFontNormal")
+            button.selected:SetShown(active)
+            local switch = entry.groups[1].args.enabled
+            button.status:SetShown(switch ~= nil)
+            if switch then
+                button.status:SetTexture(switch.get() and "Interface\\COMMON\\Indicator-Green" or "Interface\\COMMON\\Indicator-Gray")
+            end
+            button:Show()
+            y = y + 24
+        end
     end
-    selected = current.key
-
-    for i, page in ipairs(pages) do
-        local button = NavButton(i)
-        local active = not query and page == current
-        button.key = page.key
-        button.label:SetText(Value(page, "name"))
-        button.label:SetFontObject(active and "GameFontHighlight" or "GameFontNormal")
-        button.selected:SetShown(active)
-        button:Show()
-    end
-    for i = #pages + 1, #navButtons do navButtons[i]:Hide() end
+    for i = buttons + 1, #navButtons do navButtons[i]:Hide() end
+    for i = headers + 1, #navHeaders do navHeaders[i]:Hide() end
 
     local items = {}
     -- A search covers every page; otherwise only the selected one is drawn.
     for _, page in ipairs(query and pages or { current }) do
         local title = #items + 1
-        items[title] = { title = Value(page, "name"), desc = Value(page, "desc") }
-        ScarletUI:CollectSettings(page, query, items)
+        items[title] = { title = page.name, desc = page.desc }
+        for _, group in ipairs(page.groups) do
+            ScarletUI:CollectSettings(group, query, items, nil, #page.groups > 1 and Value(group, "name") or "")
+        end
         if query and #items == title then items[title] = nil end
     end
     if #items == 0 then
@@ -593,7 +781,9 @@ local function Build()
     end)
 end
 
-function ScarletUI:ToggleSettingsFrame()
+-- `show` forces it open or closed; nil toggles.
+function ScarletUI:ToggleSettingsFrame(show)
     if not frame then Build() end
-    frame:SetShown(not frame:IsShown())
+    if show == nil then show = not frame:IsShown() end
+    frame:SetShown(show)
 end

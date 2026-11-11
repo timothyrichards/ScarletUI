@@ -5,7 +5,7 @@ local entries = {
     {
         key = "sui",
         text = "Scarlet UI",
-        open = function() LibStub("AceConfigDialog-3.0"):Open("ScarletUI") end,
+        open = function() ScarletUI:ToggleSettingsFrame(true) end,
     },
     {
         key = "cooldownManager",

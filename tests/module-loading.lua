@@ -1000,10 +1000,18 @@ local settingsGroup = { args = {
     empty = { type = "group", name = "Empty", order = 4, args = { delta = { type = "toggle", name = "Delta", hidden = true } } },
 } }
 local rows = ScarletUI:CollectSettings(settingsGroup)
-assert(#rows == 3 and rows[1].option.name == "Alpha" and not rows[1].disabled)
-assert(rows[2].header == "Group" and rows[3].option.name == "Gamma" and rows[3].disabled)
+-- Loose settings share an untitled card; each child group gets its own.
+assert(#rows == 4 and rows[1].card == "" and rows[2].option.name == "Alpha" and not rows[2].disabled)
+assert(rows[3].card == "Group" and rows[4].option.name == "Gamma" and rows[4].disabled)
 rows = ScarletUI:CollectSettings(settingsGroup, "gam")
-assert(#rows == 2 and rows[2].option.name == "Gamma")
+assert(#rows == 2 and rows[1].card == "Group" and rows[2].option.name == "Gamma")
+-- Numbered CVar options collapse into one row per CVar.
+rows = ScarletUI:CollectSettings({ args = {
+    searchField = { type = "input", name = "" },
+    label1 = { type = "description", name = "nameplateShowAll" }, input1 = { type = "input", name = "" },
+    label2 = { type = "description", name = "autoLootDefault", hidden = function() return true end },
+} }, "showall")
+assert(#rows == 2 and rows[1].card == "Overrides" and rows[2].cvar.input.type == "input")
 assert(#ScarletUI:CollectSettings(settingsGroup, "zzz") == 0)
 print("PASS: remaining settings, setup dispatcher, Era/TBC/Mists legacy modules, shared Era presets, and Edit Mode installation")
 

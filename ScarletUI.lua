@@ -149,10 +149,8 @@ function ScarletUI:SetupMinimapIcon()
         OnClick = function(_, button)
             if button == "RightButton" then
                 self:OpenEditMode()
-            elseif AceConfigDialog.OpenFrames.ScarletUI then
-                AceConfigDialog:Close("ScarletUI")
             else
-                AceConfigDialog:Open("ScarletUI")
+                self:ToggleSettingsFrame()
             end
         end,
         OnTooltipShow = function(tooltip)
@@ -209,17 +207,18 @@ end
 
 function ScarletUI:SlashCommand(msg)
     if msg == "" then
-        AceConfigDialog:Open("ScarletUI")
-    elseif msg == "new" then
         self:ToggleSettingsFrame()
+    elseif msg == "ace" then
+        -- The AceConfig panel, kept as a fallback for the new window.
+        AceConfigDialog:Open("ScarletUI")
     elseif msg == "move" then
         self:OpenEditMode()
     elseif msg == "debug" then
         self.debugContainer:SetShown(not self.debugContainer:IsShown())
     elseif msg == "help" then
         self:Print("Available commands:")
-        self:Print("- /sui: Open the options panel.")
-        self:Print("- /sui new: Toggle the prototype settings window.")
+        self:Print("- /sui: Toggle the settings window.")
+        self:Print("- /sui ace: Open the old settings panel.")
         self:Print("- /sui move: Open Blizzard Edit Mode.")
         self:Print("- /sui debug: Toggle the debug frame.")
         self:Print("- /sui help: Display this message.")
