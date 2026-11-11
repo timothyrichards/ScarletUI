@@ -28,6 +28,7 @@ Modules\GameMenu.lua
 Modules\FrameTweaks.lua
 Modules\ItemLevel.lua
 Modules\Options.lua
+Modules\SettingsFrame.lua
 Modules\Tracking.lua
 Modules\TidyIcons.lua
 Modules\Tooltips.lua

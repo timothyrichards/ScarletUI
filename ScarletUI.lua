@@ -210,6 +210,8 @@ end
 function ScarletUI:SlashCommand(msg)
     if msg == "" then
         AceConfigDialog:Open("ScarletUI")
+    elseif msg == "new" then
+        self:ToggleSettingsFrame()
     elseif msg == "move" then
         self:OpenEditMode()
     elseif msg == "debug" then
@@ -217,6 +219,7 @@ function ScarletUI:SlashCommand(msg)
     elseif msg == "help" then
         self:Print("Available commands:")
         self:Print("- /sui: Open the options panel.")
+        self:Print("- /sui new: Toggle the prototype settings window.")
         self:Print("- /sui move: Open Blizzard Edit Mode.")
         self:Print("- /sui debug: Toggle the debug frame.")
         self:Print("- /sui help: Display this message.")

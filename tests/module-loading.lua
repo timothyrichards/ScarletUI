@@ -990,6 +990,21 @@ for _, name in ipairs(legacyMethods) do
 end
 ScarletUI:Setup()
 for _, name in ipairs(legacyMethods) do assert(calls[name], name) end
+-- The prototype settings window flattens option groups into rows.
+dofile("Modules/SettingsFrame.lua")
+local settingsGroup = { args = {
+    alpha = { type = "toggle", name = "Alpha", order = 2 },
+    beta = { type = "toggle", name = "Beta", desc = "alpha", order = 1, hidden = function() return true end },
+    group = { type = "group", name = "Group", order = 3, disabled = function() return true end,
+        args = { gamma = { type = "range", name = "Gamma" } } },
+    empty = { type = "group", name = "Empty", order = 4, args = { delta = { type = "toggle", name = "Delta", hidden = true } } },
+} }
+local rows = ScarletUI:CollectSettings(settingsGroup)
+assert(#rows == 3 and rows[1].option.name == "Alpha" and not rows[1].disabled)
+assert(rows[2].header == "Group" and rows[3].option.name == "Gamma" and rows[3].disabled)
+rows = ScarletUI:CollectSettings(settingsGroup, "gam")
+assert(#rows == 2 and rows[2].option.name == "Gamma")
+assert(#ScarletUI:CollectSettings(settingsGroup, "zzz") == 0)
 print("PASS: remaining settings, setup dispatcher, Era/TBC/Mists legacy modules, shared Era presets, and Edit Mode installation")
 
 -- Run last: the prompt regression loads real AceDB in its own addon setup.

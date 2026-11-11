@@ -38,6 +38,17 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   and is the first setting on that page; Bags leads with Custom Bag Frames,
   then Share Sorting Across Characters. AceConfig sorts negative `order` values last.
 - `Modules/Helpers.lua`: client detection and shared helpers.
+- `Modules/SettingsFrame.lua`: prototype settings window, `/sui new`
+  (`ScarletUISettings`); `/sui` still opens AceConfig. It draws the same
+  `ScarletUI:Options()` table, so pages are defined once: `CollectSettings`
+  flattens a page into rows and pooled widgets render them in AceConfig's flow
+  layout (170px per `width` unit). Child groups, inline or not, become section
+  headers. The search box filters settings across all pages. It is built from
+  Blizzard templates (`PortraitFrameTemplate`, `InsetFrameTemplate`, the
+  Settings slider and dropdown) so it takes each client's skin; atlas names
+  are checked with `C_Texture.GetAtlasInfo` before use. Changes refresh it
+  through `RefreshSettings`, which also listens to AceConfigRegistry
+  `NotifyChange`.
 - `Modules/EditModeLayouts.lua`: shared frame definitions and display presets.
 - `Modules/EditMode.lua`: Edit Mode detection, profile installation, activation,
   update prompts, and settings page through LibEditModeOverride.
@@ -258,7 +269,8 @@ behavior. After changes, verify every TOC entry exists and run `git diff --check
 Check login, `/sui`, `/sui move`, affected frames, and Lua errors in-game when possible.
 No separate build or lint tool is configured.
 
-Commands: `/sui` opens settings, `/sui move` opens Blizzard Edit Mode,
+Commands: `/sui` opens settings, `/sui new` toggles the prototype settings
+window, `/sui move` opens Blizzard Edit Mode,
 `/sui debug` toggles diagnostics, and `/sui help` lists commands.
 
 ## Local installations
