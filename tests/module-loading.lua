@@ -568,7 +568,11 @@ GameTooltipTextLeft2 = Line("- 20 Vision Dust")
 postCalls[3](GameTooltip)
 assert(GameTooltipTextLeft2:GetText() == "- 20 Vision Dust")
 ScarletUI.db.global.crateFillCosts = true
+local crateOption = ScarletUI:Options().args.generalSettings.args.interface.args.crateFillCosts
+assert(not crateOption.disabled() and crateOption.get() and not crateOption.desc():find("Requires"))
 Auctionator, C_Item = nil, nil
+-- Without Auctionator the setting is grayed out, reads off, and says what it needs.
+assert(crateOption.disabled() and not crateOption.get() and crateOption.desc():find("Requires the Auctionator addon"))
 -- World map zone levels: appended once, difficulty-colored, only for known zones.
 local hovered, difficultyLevel = 1429, nil
 local areaLabel = { labelInfoByType = { [3] = {} } }

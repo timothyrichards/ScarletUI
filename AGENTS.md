@@ -138,7 +138,8 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   Item tooltips that list bundles as "- 20 Vision Dust" rows (Waylaid Crate)
   get each row's total cost from `Auctionator.API.v1` (vendor price, else
   auction) and the cheapest row in green (`db.global.crateFillCosts`, toggle in
-  the Interface group, hidden without Auctionator). Auctionator has no
+  the Interface group; without Auctionator the hook is not registered and the
+  toggle is disabled with a description saying to install it and scan). Auctionator has no
   price-by-name API and the client only resolves names of items the character
   has handled, so names are indexed from the item IDs in
   `Auctionator.Database.db` (internal, guarded); names not loaded yet are

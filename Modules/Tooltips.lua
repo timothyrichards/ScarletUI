@@ -180,7 +180,10 @@ function ScarletUI:SetupSpellCostPercent()
     end
     self.spellCostHooked = true
     if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
-        TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, AddCrateCosts)
+        -- Setup runs at login, after every addon has loaded.
+        if Auctionator then
+            TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, AddCrateCosts)
+        end
         TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Spell, function(tooltip, data)
             AddManaPercent(tooltip, data.id)
         end)
@@ -194,10 +197,12 @@ function ScarletUI:SetupSpellCostPercent()
             AddManaPercent(tooltip, select(2, tooltip:GetSpell()))
             tooltip:Show() -- resize; this older path has no Show after hooks
         end)
-        GameTooltip:HookScript("OnTooltipSetItem", function(tooltip)
-            if AddCrateCosts(tooltip) then
-                tooltip:Show()
-            end
-        end)
+        if Auctionator then
+            GameTooltip:HookScript("OnTooltipSetItem", function(tooltip)
+                if AddCrateCosts(tooltip) then
+                    tooltip:Show()
+                end
+            end)
+        end
     end
 end

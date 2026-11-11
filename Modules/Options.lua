@@ -85,12 +85,17 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                     },
                     crateFillCosts = {
                         name = "Crate Fill Costs in Tooltips",
-                        desc = "Show what each bundle that fills a supply crate costs and highlight the cheapest one. Prices come from Auctionator; items your client has not seen yet show no price.",
+                        desc = function()
+                            if not Auctionator then
+                                return "Requires the Auctionator addon. Install it, then scan the auction house so it has prices for the cheapest crate fill."
+                            end
+                            return "Show what each bundle that fills a supply crate costs and highlight the cheapest one. Prices come from your last Auctionator auction house scan; scan again to refresh them."
+                        end,
                         type = "toggle",
-                        hidden = function() return not Auctionator end,
+                        disabled = function() return not Auctionator end,
                         width = 1.5,
                         order = 3.5,
-                        get = function(_) return database.crateFillCosts end,
+                        get = function(_) return Auctionator ~= nil and database.crateFillCosts end,
                         set = function(_, val) database.crateFillCosts = val end,
                     },
                     zoneLevels = {
