@@ -445,36 +445,6 @@ function ScarletUI:InitializeEditMode()
     end)
 end
 
-function ScarletUI:GetEditModeStatusText()
-    if not self.editMode then
-        return "Blizzard Edit Mode is unavailable on this client."
-    elseif not GetEditModeLibrary() then
-        return "Edit Mode support is missing LibEditModeOverride-1.0."
-    elseif not self.editModeReady then
-        return "Waiting for Blizzard Edit Mode to finish loading."
-    end
-
-    local variant = self:GetEditModeVariant()
-    local profileName = self:GetEditModeProfileName(variant)
-    local installed = self:DoesEditModeProfileExist(variant)
-    local active = self:GetActiveEditModeProfile()
-    local state = installed and "Installed" or "Not installed"
-    local installedMetadata = self.db.global.editMode.installed[self:GetEditModePromptKey(variant)]
-    if installed and active == profileName then
-        state = state .. " and active"
-    end
-    if installed and (not installedMetadata or installedMetadata.version ~= self.editModeLayoutSchemaVersion) then
-        state = state .. "; update available"
-    end
-
-    return string.format(
-        "Detected layout: %s\nExpected profile: %s\nStatus: %s",
-        self:GetEditModeVariantLabel(variant),
-        profileName,
-        state
-    )
-end
-
 function ScarletUI:GetEditModeSettingsPage(order)
     return {
         name = "Edit Mode Profile",
@@ -483,12 +453,6 @@ function ScarletUI:GetEditModeSettingsPage(order)
         hidden = function() return not self.editMode end,
         order = order,
         args = {
-            status = {
-                name = function() return self:GetEditModeStatusText() end,
-                type = "description",
-                fontSize = "medium",
-                order = 1,
-            },
             install = {
                 name = function()
                     return self:DoesEditModeProfileExist(self:GetEditModeVariant())
