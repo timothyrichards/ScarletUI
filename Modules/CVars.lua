@@ -72,6 +72,7 @@ ScarletUI.knownCVars = {
     'statusText',
     'statusTextDisplay',
     'textToSpeech',
+    'threatShowNumeric',
     'UnitNameFriendlySpecialNPCName',
     'UnitNameHostleNPC',
     'UnitNameInteractiveNPC',

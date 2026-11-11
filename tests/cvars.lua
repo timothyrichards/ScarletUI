@@ -35,6 +35,7 @@ local expected = {
     raidFramesDisplayOnlyDispellableDebuffs = "1",
     raidFramesHealthText = "perc",
     raidOptionDisplayMainTankAndAssist = "0",
+    threatShowNumeric = "1",
 }
 local values, writes = {}, {}
 for name, value in pairs(expected) do
