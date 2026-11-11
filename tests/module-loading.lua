@@ -556,12 +556,12 @@ postCalls[3](GameTooltip)
 assert(GameTooltipTextLeft3:GetText() == "|cffffffff- 6 Small Radiant Shard|r") -- name not loaded yet
 itemNames[3] = "Small Radiant Shard"
 CrateTooltip()
-local crateText = "Use: Fill the crate:\n- 20 Vision Dust  |cffffffff2000c|r\n"
-    .. "|cff20ff20- 4 Greater Mystic Essence|r  |cffffffff1600c|r"
+local crateText = "Use: Fill the crate:\n- 20 Vision Dust\n    |cffffffff2000c|r\n"
+    .. "|cff20ff20- 4 Greater Mystic Essence|r\n    |cffffffff1600c|r"
 for _ = 1, 2 do
     postCalls[3](GameTooltip)
     assert(GameTooltipTextLeft2:GetText() == crateText, GameTooltipTextLeft2:GetText())
-    assert(GameTooltipTextLeft3:GetText() == "|cffffffff- 6 Small Radiant Shard|r  |cffffffff3000c|r")
+    assert(GameTooltipTextLeft3:GetText() == "|cffffffff- 6 Small Radiant Shard|r\n    |cffffffff3000c|r")
 end
 ScarletUI.db.global.crateFillCosts = false
 GameTooltipTextLeft2 = Line("- 20 Vision Dust")

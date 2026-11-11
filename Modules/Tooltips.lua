@@ -166,7 +166,7 @@ local function AddCrateCosts(tooltip)
                 local cost = costs[row]
                 if cost then
                     return (cost == cheapest and CHEAPEST_COLOR .. row .. "|r" or row)
-                        .. "  |cffffffff" .. GetMoneyString(cost, true) .. "|r"
+                        .. "\n    |cffffffff" .. GetMoneyString(cost, true) .. "|r"
                 end
             end)))
         end
