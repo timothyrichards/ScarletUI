@@ -20,9 +20,14 @@ function ScarletUI:GetBagSort(key)
     return requested[key]
 end
 
+-- The shared value is saved here, when it is chosen. Reading the client back at
+-- logout saved whatever Get returned then, which could be a stale "off" that
+-- the next login applied again.
 function ScarletUI:SetBagSort(key, value)
     requested[key] = value
     C_Container["Set" .. settings[key]](value)
+    local module = self.db.global.bagSortModule
+    if module.enabled then module[key] = value end
 end
 
 function ScarletUI:SetupBagSort()
@@ -37,18 +42,4 @@ function ScarletUI:SetupBagSort()
         end
     end
     self.bagSortApplied = true
-
-    if not self.bagSortShutdownRegistered then
-        self.bagSortShutdownRegistered = true
-        -- AceDB strips default-only tables on PLAYER_LOGOUT; this fires first.
-        self.db.RegisterCallback("ScarletUI-BagSort", "OnDatabaseShutdown", function()
-            local current = ScarletUI.db.global.bagSortModule
-            if not current.enabled or not ScarletUI.bagSortApplied then return end
-            for key in pairs(settings) do
-                if ScarletUI:IsBagSortSupported(key) then
-                    current[key] = ScarletUI:GetBagSort(key)
-                end
-            end
-        end)
-    end
 end

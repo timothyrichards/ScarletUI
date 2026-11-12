@@ -74,8 +74,9 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   Its Action Bars settings page picks which bars are shared; unchecked bars are
   stored in `ignored` and keep each character's own state.
 - `Modules/BagSort.lua`: shares the `C_Container` Sort Bags Right to Left and
-  Insert Items Left to Right settings via `db.global.bagSortModule`, saved on
-  logout and applied on login. These are per-character game settings, not CVars.
+  Insert Items Left to Right settings via `db.global.bagSortModule`, saved when
+  a toggle is set (never read back from the client at logout, which could save
+  a stale "off") and applied on login. These are per-character game settings, not CVars.
   Era, TBC, and Mists only have the insert setting. Its toggles go on the Bags
   page: a standalone page on Retail and Forever, and a Sorting group on the
   `Bag.lua` page elsewhere.
@@ -90,7 +91,7 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   every `switchInterval` seconds when a character knows both. The ticker skips
   combat, instances, resting, taxis, casts, loot, and minimap hover, and checks
   the spell cooldown, because a Classic tracking change is a cast on the GCD.
-  The sync modules save from AceDB `OnDatabaseShutdown` (before defaults are
+  The action bar and tracking sync modules save from AceDB `OnDatabaseShutdown` (before defaults are
   stripped), each with its own callback target so none replaces another.
 - `Modules/GameMenu.lua`: optional Scarlet UI and Cooldown Manager buttons
   below the escape menu (`db.global.gameMenuButtons`, both off by default).

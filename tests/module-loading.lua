@@ -317,7 +317,7 @@ ScarletUI:SwitchTracking()
 assert(tracking[2].active and not tracking[1].active, "timer overrode a single tracker")
 GetSpellInfo = nil
 
--- Bag sorting: shared on logout; Era, TBC, and Mists lack the sort direction.
+-- Bag sorting: shared when set; Era, TBC, and Mists lack the sort direction.
 local sort, unconfirmed = { SortBagsRightToLeft = false, InsertItemsLeftToRight = false }, {}
 C_Container = {
     GetSortBagsRightToLeft = function() return sort.SortBagsRightToLeft end,
@@ -338,19 +338,19 @@ assert(sorting.sortBagsRightToLeft.get())
 -- Once confirmed, changes made elsewhere show again.
 sort.SortBagsRightToLeft = false
 assert(not sorting.sortBagsRightToLeft.get())
-sort.SortBagsRightToLeft = true
+-- A choice is saved when made; whatever the client reports at logout is not.
 Fire("PLAYER_LOGOUT")
 local bagSort = ScarletUI.db.global.bagSortModule
-assert(bagSort.sortBagsRightToLeft == true and bagSort.insertItemsLeftToRight == false)
-bagSort.insertItemsLeftToRight = true
+assert(bagSort.sortBagsRightToLeft == true and bagSort.insertItemsLeftToRight == nil)
+sorting.insertItemsLeftToRight.set(nil, true)
+assert(bagSort.insertItemsLeftToRight == true)
 sort, ScarletUI.bagSortApplied = { InsertItemsLeftToRight = false }, nil
 C_Container.GetSortBagsRightToLeft, C_Container.SetSortBagsRightToLeft = nil, nil
 ScarletUI:SetupBagSort()
 assert(sort.InsertItemsLeftToRight == true and sorting.sortBagsRightToLeft.hidden())
 assert(not sorting.insertItemsLeftToRight.hidden())
 C_Container = nil
-assert(#shutdown == 0 and shutdown["ScarletUI-ActionBars"] and shutdown["ScarletUI-Tracking"]
-    and shutdown["ScarletUI-BagSort"])
+assert(#shutdown == 0 and shutdown["ScarletUI-ActionBars"] and shutdown["ScarletUI-Tracking"])
 ScarletUI.eventHandlers, ScarletUI.frame = originalHandlers, originalFrame
 
 -- Escape menu buttons: separate frames under the menu, never children of its layout.
