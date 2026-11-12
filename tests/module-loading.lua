@@ -948,13 +948,20 @@ local SECRET_AURA = {}
 -- Spiced Wolf Meat needs level 1, Bristle Whisker Catfish 15, Mithril Head Trout 25.
 local foodAura, foodLevel, foodBags, atMax = nil, 20, { 2680, 4593, 8364 }, false
 -- The hidden XP aura (1243969) is never reported; a visible Well Fed spell is.
-C_UnitAuras = { GetPlayerAuraBySpellID = function(id) return id == 1249523 and foodAura or nil end }
+-- Eating shows the ordinary Food aura; the use spell's own aura is hidden too.
+local eatingAura, clock = nil, 500
+C_UnitAuras = { GetPlayerAuraBySpellID = function(id) return id == 1249523 and foodAura or nil end,
+    GetAuraDataBySpellName = function(_, name) return name == "Food" and eatingAura or nil end }
+local savedSpell, savedGetTime = C_Spell, GetTime
+C_Spell = { GetSpellName = function(id) return ({ [433] = "Food", [430] = "Drink" })[id] end }
+GetTime = function() return clock end
 UnitLevel = function() return foodLevel end
 IsPlayerAtEffectiveMaxLevel = function() return atMax end
 C_Container = { GetContainerNumSlots = function() return 4 end,
     GetContainerItemID = function(bag, slot) return bag == 0 and foodBags[slot] or nil end }
 C_Item = { GetItemInfoInstant = function(id) return id, nil, nil, nil, "icon" .. id end,
-    GetItemCount = function(id) return id % 10 end }
+    GetItemCount = function(id) return id % 10 end,
+    GetItemSpell = function(id) return "Nutritious Food", 90000 + id end }
 issecretvalue = function(v) return v == SECRET_AURA end
 dofile("Modules/XPFood.lua")
 issecretvalue = nil
@@ -964,7 +971,7 @@ for _, widget in ipairs(foodWidgets) do
     if widget.kind == "Frame" then foodList = widget end
 end
 local settings = ScarletUI.db.global.xpFoodModule
-local function Food(event) foodIcon.scripts.OnEvent(nil, event, "player") end
+local function Food(event, ...) foodIcon.scripts.OnEvent(nil, event, "player", ...) end
 local function Click(button) foodIcon.scripts.PostClick(foodIcon, button) end
 local function Eats() return foodIcon.attributes.macrotext2 end
 -- Item IDs of the list entries from the icon upward, and the highlighted one.
@@ -1007,6 +1014,27 @@ atMax = false
 dead = true; Food("PLAYER_DEAD"); assert(not foodIcon.shown)
 Food("BAG_UPDATE_DELAYED"); assert(not foodIcon.shown)
 dead = false; Food("PLAYER_UNGHOST"); assert(foodIcon.shown)
+-- Eating a food in the bags covers it with a countdown to Well Fed.
+local foodTimer
+for _, widget in ipairs(foodWidgets) do
+    if widget.kind == "Frame" then foodTimer = widget break end
+end
+local function Eat() Food("UNIT_SPELLCAST_SUCCEEDED", "cast", 94593) end
+assert(foodTimer ~= foodList and not foodTimer.shown)
+Food("UNIT_SPELLCAST_SUCCEEDED", "cast", 12345); assert(not foodTimer.shown) -- some other spell
+Eat(); assert(foodTimer.shown and foodIcon.shown)
+clock = clock + 3.5; foodTimer.scripts.OnUpdate(); assert(foodTimer.text.text == 7)
+-- Standing up ends it: the Food aura was there and went. Before it shows, nothing does.
+Food("UNIT_AURA"); assert(foodTimer.shown)
+eatingAura = {}; Food("UNIT_AURA"); assert(foodTimer.shown)
+eatingAura = nil; Food("UNIT_AURA"); assert(not foodTimer.shown and foodIcon.shown)
+-- It ends when the time is up, and Well Fed or combat end it early.
+Eat(); clock = clock + 10; foodTimer.scripts.OnUpdate(); assert(not foodTimer.shown)
+Eat(); foodAura = {}; Food("UNIT_AURA"); assert(not foodTimer.shown and not foodIcon.shown)
+foodAura = nil; Food("UNIT_AURA")
+Eat(); Food("PLAYER_REGEN_DISABLED"); assert(not foodTimer.shown)
+Eat(); assert(not foodTimer.shown) -- nothing starts in combat
+Food("PLAYER_REGEN_ENABLED"); assert(foodIcon.shown and not foodTimer.shown)
 -- A higher level unlocks the better food; food that is too high or absent hides the icon.
 foodLevel = 30; Food("PLAYER_LEVEL_UP"); assert(foodIcon.shown and foodIcon.itemID == 8364 and Eats() == "/use item:8364")
 foodBags = { 267341, 6529 }; Food("BAG_UPDATE_DELAYED"); assert(not foodIcon.shown) -- level 55 jam, a lure
@@ -1060,6 +1088,7 @@ Click("LeftButton")
 assert(foodIcon.point[1] == "CENTER" and settings.position == nil and not foodList.shown)
 CreateFrame, IsControlKeyDown = savedCreateFrame, nil
 UnitLevel, C_Container, C_Item, C_UnitAuras, IsPlayerAtEffectiveMaxLevel = savedUnitLevel, nil, nil, nil, nil
+C_Spell, GetTime = savedSpell, savedGetTime
 end
 
 -- Stat display: off by default. Switched on, each role the character shows

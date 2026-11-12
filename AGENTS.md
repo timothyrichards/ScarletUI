@@ -218,7 +218,11 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   template, so our clicks are read in `PostClick`. It hides in
   `PLAYER_REGEN_DISABLED`, before the lockdown, and nothing on it is shown,
   hidden, moved, or given attributes until combat ends. It is also hidden at
-  max level and while dead or a ghost.
+  max level and while dead or a ghost. Eating a food from the bags (the
+  player's `UNIT_SPELLCAST_SUCCEEDED` matching its `GetItemSpell`) covers the
+  icon with a plain child frame counting down the 10 seconds to Well Fed. The
+  use spell's aura is hidden, so a meal cut short is read from the ordinary
+  Food or Drink aura, looked up by name, having been seen and gone.
 - `Modules/StatDisplay.lua`: stat display (`db.global.statDisplay`, off by
   default, its own Stat Display settings page), every client but Retail. It
   lists the stats of up to three roles, melee, ranged, and caster (`SETS`),

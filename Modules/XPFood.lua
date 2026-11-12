@@ -3,7 +3,8 @@
 -- buff is missing and the bags hold a food the character can eat, that food's
 -- icon shows on screen, styled like the fishing bar's lure: right-click eats
 -- it, left-click opens a list of the usable XP foods in the bags to pick the
--- one shown. Hidden in combat, while dead, and at max level. The icon is a secure button
+-- one shown. While a food is being eaten the icon counts down the seconds to
+-- Well Fed instead. Hidden in combat, while dead, and at max level. The icon is a secure button
 -- (eating is a protected action), so it only shows, hides, or changes food out
 -- of combat.
 -- The XP bonus itself (spell 1243969) is a hidden aura addons cannot see, so the
@@ -15,9 +16,13 @@ local WELL_FED = {
 }
 local ICON_SIZE, ICON_GAP = 36, 4
 local LIST_CLOSE_DELAY = 1 -- seconds the mouse may be off the open food list
+-- Seconds of eating before Well Fed: each food's use spell (Nutritious Food or
+-- Drink) is a hidden aura that triggers it once, after this long.
+local EAT_TIME = 10
 local IsSecret = issecretvalue or function() return false end
 local GetItemInfoInstant = C_Item and C_Item.GetItemInfoInstant or GetItemInfoInstant
 local GetItemCount = C_Item and C_Item.GetItemCount or GetItemCount
+local GetItemSpell = C_Item and C_Item.GetItemSpell or GetItemSpell
 
 -- Item ID = required level, keyed below by that level.
 -- ponytail: both lists are hand-kept from forever.wowhead.com (every item whose
@@ -69,6 +74,18 @@ local function HasBuff()
     for _, spellID in ipairs(WELL_FED) do
         local aura = C_UnitAuras.GetPlayerAuraBySpellID(spellID)
         if IsSecret(aura) or aura ~= nil then return true end
+    end
+    return false
+end
+
+-- The use spell's own aura is hidden, but it also applies the ordinary Food
+-- (433) or Drink (430) aura, which ends when the player stands up. Every rank
+-- shares the name.
+local function HasEatingAura()
+    local byName = C_UnitAuras.GetAuraDataBySpellName
+    for _, spellID in ipairs({ 433, 430 }) do
+        local name = byName and C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(spellID)
+        if name and byName("player", name) ~= nil then return true end
     end
     return false
 end
@@ -139,6 +156,29 @@ function ScarletUI:SetupXPFood()
     label:SetPoint("TOP", icon, "BOTTOM", 0, -4)
     label:SetText("XP Food")
 
+    -- While an XP food is being eaten, an empty slot counting down to Well Fed
+    -- covers the food. Not a secure frame, so it may show and hide at any time.
+    local timer = CreateFrame("Frame", nil, icon)
+    timer:SetAllPoints(icon)
+    timer:Hide()
+    local slot = timer:CreateTexture(nil, "BACKGROUND")
+    slot:SetAllPoints()
+    slot:SetTexture("Interface\\PaperDoll\\UI-Backpack-EmptySlot")
+    timer.text = timer:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
+    timer.text:SetPoint("CENTER")
+    -- When Well Fed is due, and whether the Food or Drink aura has been seen
+    -- since: only an aura that was there and went means the meal was cut short.
+    local wellFedAt, sawEating
+    local function StopEating()
+        wellFedAt, sawEating = nil, nil
+        timer:Hide()
+    end
+    timer:SetScript("OnUpdate", function()
+        local left = wellFedAt - GetTime()
+        if left <= 0 then return StopEating() end
+        timer.text:SetText(math.ceil(left))
+    end)
+
     -- Left-click opens the usable foods in the bags, stacked upward from the icon.
     local list = CreateFrame("Frame", nil, icon)
     list:SetAllPoints(icon)
@@ -187,6 +227,7 @@ function ScarletUI:SetupXPFood()
     end
     self:PlaceXPFood()
 
+    local foods = {} -- the usable foods as last drawn
     function self:UpdateXPFood()
         -- Hidden on entering combat; nothing on a secure button may change until it ends.
         if combat or InCombatLockdown() then return end
@@ -194,11 +235,13 @@ function ScarletUI:SetupXPFood()
         -- The dead and ghosts cannot eat.
         local wanted = module.enabled and not UnitIsDeadOrGhost("player")
             and not (IsPlayerAtEffectiveMaxLevel and IsPlayerAtEffectiveMaxLevel())
-        local foods, shown = {}, nil
+        local shown
+        foods = {}
         if wanted and not HasBuff() then foods, shown = FindFoods(module.food) end
         icon:SetShown(shown ~= nil)
         if not shown then
             list:Hide()
+            StopEating()
             return
         end
         ShowFood(icon, shown)
@@ -230,15 +273,34 @@ function ScarletUI:SetupXPFood()
     end
 
     -- Hidden frames still receive events.
-    icon:SetScript("OnEvent", function(_, event)
+    icon:SetScript("OnEvent", function(_, event, _, _, spellID)
         if event == "PLAYER_REGEN_DISABLED" then
             -- Fires before the combat lockdown, so the button can still hide.
             list:Hide()
             icon:Hide()
+            StopEating()
             combat = true
             return
         elseif event == "PLAYER_REGEN_ENABLED" then
             combat = false
+        elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
+            -- Eating a listed food (the player's own casts are not secret)
+            -- starts the countdown. Nobody eats in combat.
+            if combat or InCombatLockdown() then return end
+            for _, itemID in ipairs(foods) do
+                if select(2, GetItemSpell(itemID)) == spellID then
+                    wellFedAt, sawEating = GetTime() + EAT_TIME, nil
+                    timer:Show()
+                    break
+                end
+            end
+            return
+        elseif event == "UNIT_AURA" and wellFedAt then
+            if HasEatingAura() then
+                sawEating = true
+            elseif sawEating then
+                StopEating()
+            end
         end
         self:UpdateXPFood()
     end)
@@ -247,5 +309,6 @@ function ScarletUI:SetupXPFood()
         icon:RegisterEvent(event)
     end
     icon:RegisterUnitEvent("UNIT_AURA", "player")
+    icon:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
     self:UpdateXPFood()
 end
