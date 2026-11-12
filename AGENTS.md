@@ -36,7 +36,8 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   list: each feature's enable toggle sits on its own page (Bags, Chat, Fishing, Stat Display,
   Nameplates, CVars, Action Bars, and the Minimap Tracking group on General)
   and is the first setting on that page; Bags leads with Custom Bag Frames,
-  then Share Sorting Across Characters. AceConfig sorts negative `order` values last.
+  then Share Sorting Across Characters, and Action Bars with Hide Micro Menu
+  Background, then Share Across Characters. AceConfig sorts negative `order` values last.
 - `Modules/Helpers.lua`: client detection and shared helpers.
 - `Modules/SettingsFrame.lua`: the settings window (`ScarletUISettings`) that
   `/sui`, the minimap icon, and the Esc menu button open. `/sui ace` and the

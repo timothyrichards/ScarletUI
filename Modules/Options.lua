@@ -537,7 +537,7 @@ function ScarletUI:GetActionBarTogglesSettingsPage(database, order)
                 type = "toggle",
                 hidden = function() return not (MicroMenu and MicroMenu.BackgroundArt) end,
                 width = 1.5,
-                order = 2,
+                order = 0,
                 get = function(_) return database.hideMicroMenuArt end,
                 set = function(_, val)
                     database.hideMicroMenuArt = val
@@ -550,7 +550,7 @@ function ScarletUI:GetActionBarTogglesSettingsPage(database, order)
                 type = "toggle",
                 disabled = function() return self:InCombat() end,
                 width = "full",
-                order = 0,
+                order = 1,
                 get = function(_) return module.enabled end,
                 set = function(_, val)
                     module.enabled = val
@@ -562,7 +562,7 @@ function ScarletUI:GetActionBarTogglesSettingsPage(database, order)
                 type = "group",
                 disabled = function() return ScarletUI:SettingDisabled(module.enabled, true) end,
                 inline = true,
-                order = 1,
+                order = 2,
                 args = bars,
             },
         },
