@@ -22,7 +22,7 @@ dofile("Modules/Helpers.lua")
 dofile("Modules/CVars.lua")
 ScarletUI.InCombat = function() return false end
 ScarletUI.ShowReloadDialog = function() error("Raid CVars should not request a reload") end
-ScarletUI.db = { global = ScarletUI.defaults.global, char = ScarletUI.defaults.char }
+ScarletUI.db = { global = ScarletUI.defaults.global, char = ScarletUI.defaults.char, RegisterCallback = noop }
 assert(not ScarletUI.defaults.global.CVarModule.enabled)
 assert(not ScarletUI.originalUIDefaults.global.CVarModule.enabled)
 ScarletUI.db.global.CVarModule.enabled = true
@@ -94,6 +94,7 @@ local function login()
     LibStub:NewLibrary("AceConfigRegistry-3.0", 1).NotifyChange = noop
     dofile("Modules/Database.lua")
     dofile("Modules/Options.lua")
+    dofile("Modules/CVars.lua") -- A login starts with nothing applied yet.
     AceDB = LibStub("AceDB-3.0")
     ScarletUIDB, ScarletUI.db = saved, nil
     ScarletUI:PrepareCVarSettings()
@@ -197,10 +198,40 @@ assert(values.custom == "8", "Disabled module must not keep restoring")
 toggle(true)
 assert(values.custom == "13" and ScarletUI.db.char.cvarOriginalValues.custom == "8")
 
+-- Overrides are synced, not enforced: a change by the player or another addon
+-- becomes the shared override, right away where CVAR_UPDATE fires.
+values.custom = "14"
+events.CVAR_UPDATE()
+assert(ScarletUI.db.global.CVarModule.overrides.custom == "14")
+ScarletUI:SetupCVars()
+assert(values.custom == "14")
+-- Without the event it is picked up at logout, and the next login keeps it.
+values.custom = "15"
+logout()
+login()
+ScarletUI:SetupCVars()
+assert(values.custom == "15" and ScarletUI.db.global.CVarModule.overrides.custom == "15")
+-- A value typed in settings wins over an outside change not yet picked up.
+values.custom = "16"
+controls("custom").set(nil, "13")
+assert(values.custom == "13" and ScarletUI.db.global.CVarModule.overrides.custom == "13")
+-- A character that never received the overrides cannot replace them.
+logout()
+character, values.custom, combat = "Late", "40", true
+login()
+ScarletUI:SetupCVars()
+logout()
+assert(saved.global.CVarModule.overrides.custom == "13")
+character, values.custom, combat = "First", "13", false
+login()
+ScarletUI:SetupCVars()
+
 omniCC = true
 ScarletUI.db.global.CVarModule.overrides.countdownForCooldowns = "1"
 ScarletUI:SetupCVars()
 assert(values.countdownForCooldowns == "0")
+events.CVAR_UPDATE()
+assert(ScarletUI.db.global.CVarModule.overrides.countdownForCooldowns == "1", "OmniCC's 0 is not a change")
 assert(ScarletUI.db.char.cvarOriginalValues.countdownForCooldowns == "1")
 controls("XpBarText").set(nil, "1")
 assert(reloads == 1)

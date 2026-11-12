@@ -317,7 +317,12 @@ ScarletUI:SwitchTracking()
 assert(tracking[2].active and not tracking[1].active, "timer overrode a single tracker")
 GetSpellInfo = nil
 
--- Bag sorting: shared when set; Era, TBC, and Mists lack the sort direction.
+-- Bag sorting: shared when changed; Era, TBC, and Mists lack the sort direction.
+local bagSortHook = hooksecurefunc
+hooksecurefunc = function(target, key, hook)
+    local original = target[key]
+    target[key] = function(...) original(...) hook(...) end
+end
 local sort, unconfirmed = { SortBagsRightToLeft = false, InsertItemsLeftToRight = false }, {}
 C_Container = {
     GetSortBagsRightToLeft = function() return sort.SortBagsRightToLeft end,
@@ -326,6 +331,11 @@ C_Container = {
     SetInsertItemsLeftToRight = function(on) sort.InsertItemsLeftToRight = on end,
 }
 dofile("Modules/BagSort.lua")
+hooksecurefunc = bagSortHook
+-- A change before this character received the shared values is not shared.
+C_Container.SetInsertItemsLeftToRight(true)
+assert(ScarletUI.db.global.bagSortModule.insertItemsLeftToRight == nil)
+C_Container.SetInsertItemsLeftToRight(false)
 ScarletUI:SetupBagSort()
 -- Right to left is on by default; the insert setting keeps the client's value.
 assert(unconfirmed.SortBagsRightToLeft == true and sort.InsertItemsLeftToRight == false)
@@ -338,12 +348,15 @@ assert(sorting.sortBagsRightToLeft.get())
 -- Once confirmed, changes made elsewhere show again.
 sort.SortBagsRightToLeft = false
 assert(not sorting.sortBagsRightToLeft.get())
--- A choice is saved when made; whatever the client reports at logout is not.
+-- A change is saved when made; whatever the client reports at logout is not.
 Fire("PLAYER_LOGOUT")
 local bagSort = ScarletUI.db.global.bagSortModule
 assert(bagSort.sortBagsRightToLeft == true and bagSort.insertItemsLeftToRight == nil)
 sorting.insertItemsLeftToRight.set(nil, true)
 assert(bagSort.insertItemsLeftToRight == true)
+-- So is one made outside the settings, by the bag menu or another addon.
+C_Container.SetSortBagsRightToLeft(false)
+assert(bagSort.sortBagsRightToLeft == false)
 sort, ScarletUI.bagSortApplied = { InsertItemsLeftToRight = false }, nil
 C_Container.GetSortBagsRightToLeft, C_Container.SetSortBagsRightToLeft = nil, nil
 ScarletUI:SetupBagSort()

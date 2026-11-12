@@ -120,12 +120,37 @@ local function WriteCVar(self, name, value)
     return true
 end
 
+-- Overrides are synced, not enforced. `applied` is what this session wrote to
+-- each CVar and `source` the override it came from. A CVar that no longer
+-- matches was changed by the player or another addon, and that value becomes
+-- the shared override. Both stay empty until this character has received the
+-- overrides, so the values it had before are never taken for a change.
+local applied, source = {}, {}
+
+function ScarletUI:AdoptCVarChanges()
+    local module = self.db.global.CVarModule
+    if not module.enabled then return end
+    local adopted = false
+    for name, written in pairs(applied) do
+        local current = GetCVar(name)
+        -- An override edited in settings since then is about to be applied; it wins.
+        if current ~= nil and tostring(current) ~= written and module.overrides[name] == source[name]
+            and not module.hiddenCVars[name] then
+            current = tostring(current)
+            applied[name], source[name], module.overrides[name] = current, current, current
+            adopted = true
+        end
+    end
+    if adopted then LibStub("AceConfigRegistry-3.0"):NotifyChange("ScarletUI") end
+end
+
 function ScarletUI:RestoreCVars()
     if self:InCombat() then return end
     local module = self.db.global.CVarModule
     for _, originals in ipairs({ module.originalValues, self.db.char.cvarOriginalValues }) do
         for name, value in pairs(originals) do
             if not module.enabled or not module.overrides[name] or module.hiddenCVars[name] then
+                applied[name], source[name] = nil, nil
                 if WriteCVar(self, name, value) then
                     originals[name] = nil
                 end
@@ -142,9 +167,17 @@ function ScarletUI:SetupCVars()
                 ScarletUI:SetupCVars()
             end
         end)
+        -- CVAR_UPDATE shows a change right away; logout catches clients or
+        -- console commands that do not fire it.
+        self:RegisterEventHandler("CVAR_UPDATE", function() ScarletUI:AdoptCVarChanges() end)
+        self.db.RegisterCallback("ScarletUI-CVars", "OnDatabaseShutdown", function()
+            ScarletUI:AdoptCVarChanges()
+        end)
     end
     if self:InCombat() then return end
     local module = self.db.global.CVarModule
+    -- Before anything is written, so a re-apply cannot undo an outside change.
+    self:AdoptCVarChanges()
     -- Also restores this character after the module was disabled on another one.
     self:RestoreCVars()
     if not module.enabled then
@@ -165,10 +198,13 @@ function ScarletUI:SetupCVars()
     for name, value in pairs(module.overrides) do
         if value ~= false and not module.hiddenCVars[name] and GetCVar(name) ~= nil then
             self:SnapshotCVar(name)
+            source[name] = value
             if name == 'countdownForCooldowns' and IsAddOnLoaded('OmniCC') then
                 value = '0'
             end
-            WriteCVar(self, name, value)
+            -- Set before writing: CVAR_UPDATE fires during the write.
+            applied[name] = tostring(value)
+            if not WriteCVar(self, name, value) then applied[name] = nil end
         end
     end
     self:ShowCVarSetupDialog()

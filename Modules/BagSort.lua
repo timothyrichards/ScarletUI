@@ -20,14 +20,22 @@ function ScarletUI:GetBagSort(key)
     return requested[key]
 end
 
--- The shared value is saved here, when it is chosen. Reading the client back at
--- logout saved whatever Get returned then, which could be a stale "off" that
--- the next login applied again.
 function ScarletUI:SetBagSort(key, value)
     requested[key] = value
     C_Container["Set" .. settings[key]](value)
-    local module = self.db.global.bagSortModule
-    if module.enabled then module[key] = value end
+end
+
+-- A change made anywhere (/sui, the bag menu, another addon) becomes the shared
+-- value, but only once this character has received the shared values, so what
+-- it had before is not taken for a change. Get is never read back: at logout it
+-- could return a stale "off" that the next login applied again.
+for key, name in pairs(settings) do
+    if C_Container and C_Container["Set" .. name] then
+        hooksecurefunc(C_Container, "Set" .. name, function(value)
+            local module = ScarletUI.db.global.bagSortModule
+            if module.enabled and ScarletUI.bagSortApplied then module[key] = value and true or false end
+        end)
+    end
 end
 
 function ScarletUI:SetupBagSort()

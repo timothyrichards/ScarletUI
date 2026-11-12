@@ -74,9 +74,10 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   Its Action Bars settings page picks which bars are shared; unchecked bars are
   stored in `ignored` and keep each character's own state.
 - `Modules/BagSort.lua`: shares the `C_Container` Sort Bags Right to Left and
-  Insert Items Left to Right settings via `db.global.bagSortModule`, saved when
-  a toggle is set (never read back from the client at logout, which could save
-  a stale "off") and applied on login. These are per-character game settings, not CVars.
+  Insert Items Left to Right settings via `db.global.bagSortModule`, saved by a
+  post-hook on the `C_Container` setters, so a change from `/sui`, the bag menu,
+  or another addon is shared (never read back from the client at logout, which
+  could save a stale "off"), and applied on login. These are per-character game settings, not CVars.
   Era, TBC, and Mists only have the insert setting. Its toggles go on the Bags
   page: a standalone page on Retail and Forever, and a Sorting group on the
   `Bag.lua` page elsewhere.
@@ -277,7 +278,16 @@ previous enabled state, including old AceDB saves that omitted the former `true`
 default. `CVarModule.onboarding` tracks
 `offer`, `review`, or `done`; initialize it before AceDB applies defaults.
 
-CVar overrides are shared. Before applying an override or adding a custom CVar,
+Shared settings are synced, not enforced. A change the player or another addon
+makes to a shared setting (CVars, bag sort, action bar toggles, tracking) becomes
+the shared value and reaches the other characters at their next login; Scarlet UI
+must not put its older value back. A character's values only count as changes
+after it has received the shared ones that session, so a skipped apply (combat,
+a failed write) cannot replace them.
+
+CVar overrides are shared. `AdoptCVarChanges` compares each CVar with what this
+session wrote; one that differs becomes the override. It runs on `CVAR_UPDATE`,
+before each apply, and from `OnDatabaseShutdown`. Before applying an override or adding a custom CVar,
 original values are saved in `db.char.cvarOriginalValues` for character CVars and
 `db.global.CVarModule.originalValues` for shared CVars, using the storage flags
 from `GetCVarInfo`. Clients without that API use character backups.
