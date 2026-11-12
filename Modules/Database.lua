@@ -52,6 +52,9 @@ ScarletUI.defaults = {
         xpFoodModule = {
             enabled = true,
         },
+        statDisplay = {
+            enabled = false,
+        },
         craftProfit = {
             enabled = true,
             showAll = false,
@@ -88,6 +91,8 @@ ScarletUI.defaults = {
         craftProfit = {
             professions = {},
         },
+        -- The stat panel's role (set), once the character has switched it.
+        statDisplay = {},
         editMode = {
             promptedVersions = {},
             declinedVersions = {},

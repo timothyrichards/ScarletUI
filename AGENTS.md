@@ -217,6 +217,17 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   `PLAYER_REGEN_DISABLED`, before the lockdown, and nothing on it is shown,
   hidden, moved, or given attributes until combat ends. It is also hidden at
   max level.
+- `Modules/StatDisplay.lua`: stat display (`db.global.statDisplay`, off by
+  default, toggle in the Interface group on the General page), every client but
+  Retail. `ScarletUIStatDisplay` is a panel drawn like the fishing bar listing
+  one role's stats: melee, ranged, or caster (`SETS`). The role icon is the
+  handle: click steps through the roles (`db.char.statDisplay.set`; unset, the
+  class picks), drag moves the panel (`position`), Ctrl-click resets it. Each
+  stat function runs in `pcall` and returns its text or nil, so a function a
+  client lacks or a secret value drops that row instead of erroring. Refreshed
+  by a half-second `OnUpdate` poll while shown, not by events. The same line is
+  published as the LibDataBroker feed "ScarletUI Stats", created the first time
+  the display is on so broker displays do not list it otherwise.
 - `Modules/Bag.lua`, `Modules/Nameplates.lua`: custom bag/bank frames and
   nameplate threat colors, auras, and text. Classic UI clients only: listed in
   just those three manifests so Retail and Forever never load them. Each file adds its

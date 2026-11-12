@@ -122,6 +122,19 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                             self:UpdateXPFood()
                         end,
                     },
+                    statDisplay = {
+                        name = "Stat Display",
+                        desc = "Show a small panel with your attack power or spell power, crit chance, hit chance, and more, updated as they change. Click its icon to switch between melee, ranged, and caster stats; drag the icon to move the panel, Ctrl-click it to reset its position.\n\nThe same stats are published as a \"ScarletUI Stats\" data feed for Titan Panel and other broker displays.",
+                        type = "toggle",
+                        hidden = function() return not self.statDisplayFrame end,
+                        width = 1.5,
+                        order = 8,
+                        get = function(_) return database.statDisplay.enabled end,
+                        set = function(_, val)
+                            database.statDisplay.enabled = val
+                            self:UpdateStatDisplay()
+                        end,
+                    },
                     expandCharacterInfo = {
                         name = "Auto Expand Character Info",
                         desc = "Open the character window with its side panel (stats, titles, and equipment manager) already expanded.",

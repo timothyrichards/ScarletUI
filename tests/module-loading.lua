@@ -67,7 +67,7 @@ end
 local calls = {}
 local setupMethods = { "SetupDebugFrame", "SetupActionBarToggles", "SetupBagSort", "SetupTracking", "SetupChat", "SetupCVars",
     "SetupItemLevels",
-    "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupFiveSecondRule", "SetupFishing", "SetupXPFood", "SetupCraftProfit", "SetupExpandCharacterInfo", "SetupGameMenuButtons",
+    "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupFiveSecondRule", "SetupFishing", "SetupXPFood", "SetupStatDisplay", "SetupCraftProfit", "SetupExpandCharacterInfo", "SetupGameMenuButtons",
     "SetupFrameTweaks", "SetupMinimapIcon" }
 for _, name in ipairs(setupMethods) do
     ScarletUI[name] = function() calls[name] = true end
@@ -1047,6 +1047,108 @@ Click("LeftButton")
 assert(foodIcon.point[1] == "CENTER" and settings.position == nil and not foodList.shown)
 CreateFrame, IsControlKeyDown = savedCreateFrame, nil
 UnitLevel, C_Container, C_Item, C_UnitAuras, IsPlayerAtEffectiveMaxLevel = savedUnitLevel, nil, nil, nil, nil
+end
+
+-- Stat display: off by default. Switched on, a panel lists the stats for the
+-- character's role and the same line goes out as a broker feed.
+do
+local statWidgets = {}
+local function StatWidget(kind, name)
+    local widget = { kind = kind, name = name, scripts = {}, shown = true }
+    widget.SetScript = function(self, script, fn) self.scripts[script] = fn end
+    widget.Show = function(self) self.shown = true end
+    widget.Hide = function(self) self.shown = false end
+    widget.SetShown = function(self, shown) self.shown = shown and true or false end
+    widget.SetText = function(self, text) self.text = text end
+    widget.GetStringWidth = function(self) return #(self.text or "") end
+    widget.SetPoint = function(self, ...) self.point = { ... } end
+    widget.GetPoint = function() return "TOPLEFT", nil, "TOPLEFT", 40, -50 end
+    widget.SetSize = function(self, width, height) self.size = { width, height } end
+    widget.SetTexture = function(self, texture) self.icon = texture end
+    widget.CreateTexture = function() return StatWidget("Texture") end
+    widget.CreateFontString = function() return StatWidget("FontString") end
+    widget.GetNormalTexture = function() return StatWidget("Texture") end
+    statWidgets[#statWidgets + 1] = widget
+    return setmetatable(widget, { __index = function() return noop end })
+end
+local savedCreateFrame, savedLibStub, feed = CreateFrame, LibStub, nil
+CreateFrame = StatWidget
+LibStub = function() return { NewDataObject = function(_, name, object) feed = object; feed.name = name; return object end } end
+local SECRET, class, power, ctrl = {}, "WARRIOR", 100, false
+UnitClass = function() return "Class", class end
+UnitAttackPower = function() return power, 20, -5 end
+GetCritChance = function() return 12.5 end
+CR_HIT_MELEE, CR_HIT_SPELL = 6, 8
+GetCombatRatingBonus = function(rating) return rating == 6 and 2 or 0 end
+GetHitModifier = function() return 3 end
+UnitAttackSpeed = function() return 2.6, 1.8 end
+GetSpellBonusDamage = function(school) return school == 3 and 250 or 200 end
+GetSpellBonusHealing = function() return 300 end
+GetSpellCritChance = function(school) return school end
+GetSpellHitModifier = function() return nil end -- Era returns nil at zero
+GetManaRegen = function() return 10, 4.6 end
+IsControlKeyDown = function() return ctrl end
+issecretvalue = function(v) return v == SECRET end
+dofile("Modules/StatDisplay.lua")
+issecretvalue = nil
+assert(ScarletUI.defaults.global.statDisplay.enabled == false)
+ScarletUI:SetupStatDisplay() -- this harness is the Forever client
+local statPanel, statHandle = ScarletUI.statDisplayFrame, nil
+for _, widget in ipairs(statWidgets) do
+    if widget.kind == "Button" then statHandle = widget end
+end
+-- The visible label = value rows, top to bottom.
+local function Rows()
+    local rows = {}
+    for _, widget in ipairs(statWidgets) do
+        if widget.kind == "FontString" and widget.shown and widget.point and widget.point[1] ~= "LEFT" then
+            rows[#rows + 1] = widget.text
+        end
+    end
+    return table.concat(rows, "|")
+end
+local function Tick() statPanel.scripts.OnUpdate(nil, 1) end
+-- Off: no panel and no feed for broker displays to list.
+assert(statPanel.name == "ScarletUIStatDisplay" and not statPanel.shown and feed == nil)
+local statOption = ScarletUI:Options().args.generalSettings.args.interface.args.statDisplay
+assert(not statOption.hidden() and not statOption.get())
+statOption.set(nil, true)
+-- A warrior starts on melee: buffs count toward attack power, hit adds rating and modifier.
+assert(statPanel.shown and statHandle.texture.icon == "Interface\\Icons\\Ability_MeleeDamage")
+assert(Rows() == "Attack Power|115|Crit Chance|12.50%|Hit Chance|5.00%|Attack Speed|2.60 / 1.80")
+assert(feed.name == "ScarletUI Stats" and feed.text == "AP 115  Crit 12.50%  Hit 5.00%  Speed 2.60 / 1.80")
+-- The panel is sized to its rows, and follows stat changes while it shows.
+assert(statPanel.size[2] == 12 * 2 + 28 + 8 + 4 * 16)
+power = 200; statPanel.scripts.OnUpdate(nil, 0.2); assert(feed.text:find("AP 115", 1, true))
+statPanel.scripts.OnUpdate(nil, 0.4); assert(feed.text:find("AP 215", 1, true))
+-- A secret value or a function this client lacks drops that row and closes the gap.
+power, GetCritChance = SECRET, nil; Tick()
+assert(Rows() == "Hit Chance|5.00%|Attack Speed|2.60 / 1.80" and feed.text == "Hit 5.00%  Speed 2.60 / 1.80")
+assert(statPanel.size[2] == 12 * 2 + 28 + 8 + 2 * 16)
+power, GetCritChance = 100, function() return 12.5 end
+-- Clicking the icon steps through the roles, saved for the character; ranged has no API here.
+statHandle.scripts.OnClick(); assert(ScarletUI.db.char.statDisplay.set == "RANGED" and Rows() == "Hit Chance|3.00%")
+statHandle.scripts.OnClick(); assert(ScarletUI.db.char.statDisplay.set == "CASTER")
+-- Caster: the best school, healing when it differs, and mana per 5 seconds while casting.
+assert(Rows() == "Spell Power|250|Healing|300|Crit Chance|7.00%|Hit Chance|0.00%|MP5 (Casting)|23")
+GetSpellBonusHealing = function() return 250 end; Tick()
+assert(Rows() == "Spell Power|250|Crit Chance|7.00%|Hit Chance|0.00%|MP5 (Casting)|23")
+feed.OnClick(); assert(ScarletUI.db.char.statDisplay.set == "MELEE" and feed.text:find("AP 115", 1, true))
+-- A character that never switched starts on its class's role.
+ScarletUI.db.char.statDisplay.set = nil
+class = "MAGE"; Tick(); assert(feed.text:find("SP 250", 1, true))
+class = "HUNTER"; Tick(); assert(feed.icon == "Interface\\Icons\\Ability_Marksmanship")
+class = "WARRIOR"; Tick(); assert(ScarletUI.db.char.statDisplay.set == nil and feed.text:find("AP 115", 1, true))
+-- Dragging the icon saves the position, which a rerun of setup applies; Ctrl-click resets it.
+statHandle.scripts.OnDragStop()
+ScarletUI:SetupStatDisplay()
+assert(statPanel.point[1] == "TOPLEFT" and statPanel.point[4] == 40 and ScarletUI.db.global.statDisplay.position)
+ctrl = true; statHandle.scripts.OnClick()
+assert(statPanel.point[1] == "CENTER" and ScarletUI.db.global.statDisplay.position == nil)
+assert(ScarletUI.db.char.statDisplay.set == nil)
+-- Switched off, the panel hides and the feed empties.
+statOption.set(nil, false); assert(not statPanel.shown and feed.text == "")
+CreateFrame, LibStub, IsControlKeyDown, UnitClass = savedCreateFrame, savedLibStub, nil, nil
 end
 
 -- Era, TBC, and Mists also load the Classic-UI-only modules and their old settings keys.

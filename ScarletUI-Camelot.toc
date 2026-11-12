@@ -25,6 +25,7 @@ Modules\EditMode.lua
 Modules\FiveSecondRule.lua
 Modules\Fishing.lua
 Modules\XPFood.lua
+Modules\StatDisplay.lua
 Modules\GameMenu.lua
 Modules\FrameTweaks.lua
 Modules\ItemLevel.lua
