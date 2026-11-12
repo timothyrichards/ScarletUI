@@ -548,6 +548,8 @@ function ScarletUI:SetupCraftProfit()
     window:SetScript("OnDragStop", window.StopMovingOrSizing)
     window:Hide()
     tinsert(UISpecialFrames, "ScarletUICraftProfit")
+    -- The template's X calls HideUIPanel, which refuses addon code in combat.
+    if window.CloseButton then window.CloseButton:SetScript("OnClick", function() window:Hide() end) end
     local title = window:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     title:SetPoint("TOP", 0, -5)
     title:SetText("Craft Profit")

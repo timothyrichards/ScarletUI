@@ -816,6 +816,8 @@ local function Build()
     frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
     frame:Hide()
     tinsert(UISpecialFrames, "ScarletUISettings") -- Escape closes it
+    -- The template's X calls HideUIPanel, which refuses addon code in combat.
+    if frame.CloseButton then frame.CloseButton:SetScript("OnClick", function() frame:Hide() end) end
 
     if frame.SetTitle then frame:SetTitle("Scarlet UI") else frame.TitleText:SetText("Scarlet UI") end
     if frame.SetPortraitToAsset then frame:SetPortraitToAsset(ICON) else SetPortraitToTexture(frame.portrait, ICON) end
