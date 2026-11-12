@@ -53,19 +53,6 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                             self:SetupTidyIcons()
                         end,
                     },
-                    hideMicroMenuArt = {
-                        name = "Hide Micro Menu Background",
-                        desc = "Hide the frame and background art behind the micro menu buttons.",
-                        type = "toggle",
-                        hidden = function() return not (MicroMenu and MicroMenu.BackgroundArt) end,
-                        width = 1.5,
-                        order = 1,
-                        get = function(_) return database.hideMicroMenuArt end,
-                        set = function(_, val)
-                            database.hideMicroMenuArt = val
-                            self:SetupMicroMenuArt()
-                        end,
-                    },
                     fiveSecondRule = {
                         name = "Five Second Rule",
                         desc = "After you spend mana, a marker crosses your mana bar for the 5 seconds until spirit mana regeneration resumes.",
@@ -540,10 +527,23 @@ function ScarletUI:GetActionBarTogglesSettingsPage(database, order)
 
     return {
         name = "Action Bars",
-        desc = "Share which action bars are shown across characters.",
+        desc = "Share which action bars are shown across characters and tidy the micro menu.",
         type = "group",
         order = order,
         args = {
+            hideMicroMenuArt = {
+                name = "Hide Micro Menu Background",
+                desc = "Hide the frame and background art behind the micro menu buttons.",
+                type = "toggle",
+                hidden = function() return not (MicroMenu and MicroMenu.BackgroundArt) end,
+                width = 1.5,
+                order = 2,
+                get = function(_) return database.hideMicroMenuArt end,
+                set = function(_, val)
+                    database.hideMicroMenuArt = val
+                    self:SetupMicroMenuArt()
+                end,
+            },
             enabled = {
                 name = "Share Across Characters",
                 desc = "Share which extra action bars are shown (the Action Bar checkboxes in Blizzard's settings) across characters. Saved on logout and applied on login.",

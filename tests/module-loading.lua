@@ -437,7 +437,8 @@ ContainerFrameCombinedBags = { HookScript = function(_, script, handler) bagHook
 dofile("Modules/FrameTweaks.lua")
 ScarletUI:SetupFrameTweaks()
 assert(not MicroMenu.BackgroundArt.shown and not MicroMenu.BorderArt.shown and not GamepadBagBar.shown)
-local microOption = ScarletUI:Options().args.generalSettings.args.interface.args.hideMicroMenuArt
+assert(ScarletUI:Options().args.generalSettings.args.interface.args.hideMicroMenuArt == nil)
+local microOption = ScarletUI:Options().args.actionBarTogglesSettings.args.hideMicroMenuArt
 assert(not microOption.hidden())
 microOption.set(nil, false)
 assert(MicroMenu.BackgroundArt.shown and MicroMenu.BorderArt.shown)
@@ -446,7 +447,7 @@ bagHooks.OnShow()
 assert(GamepadBagBar.shown)
 ScarletUI.db.global.hideMicroMenuArt = true
 MicroMenu, GamepadBagBar, InputUtil, ContainerFrameCombinedBags = nil, nil, nil, nil
-assert(ScarletUI:Options().args.generalSettings.args.interface.args.hideMicroMenuArt.hidden())
+assert(ScarletUI:Options().args.actionBarTogglesSettings.args.hideMicroMenuArt.hidden())
 
 -- Collapsing inactive tracked buffs: shown items take the slots at one end.
 local collapseOption = ScarletUI:Options().args.generalSettings.args.interface.args.collapseInactiveBuffs

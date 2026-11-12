@@ -20,7 +20,7 @@ local NAV = {
     { "generalSettings.itemLevel", master = true, desc = "Show item levels on equipment and in bags." },
     { "bagModuleSettings", master = true },
     { "chatModuleSettings" },
-    { "actionBarTogglesSettings" },
+    { "actionBarTogglesSettings", master = true },
     { "generalSettings.tracking", master = true, desc = "Share minimap tracking across characters and keep gathering tracking on." },
     { "fishingSettings" },
     { "statDisplaySettings" },

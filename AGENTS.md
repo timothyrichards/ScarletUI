@@ -50,8 +50,8 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   sentence at the left (tooltip has the rest) and the control at the right.
   Every Features page has a master switch and a status light in the list:
   the group's own `enabled` toggle where that turns the whole page off, and
-  otherwise (`master = true` in `NAV`: Interface, Item Level, Bags, Minimap
-  Tracking, Auction Prices) an "Enable <page>" row. That one is not a module flag:
+  otherwise (`master = true` in `NAV`: Interface, Item Level, Bags, Action Bars,
+  Minimap Tracking, Auction Prices) an "Enable <page>" row. That one is not a module flag:
   `SetSettingsPageEnabled` turns off every toggle and OFF-able select on the
   page through its own setter and remembers what was on in
   `db.global.settingsMasters[page id]`, restoring it when switched back on.
@@ -101,7 +101,8 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   and Exit Game buttons. Cooldown settings open with `ShowUIPanel`, which goes
   through Blizzard's secure panel code; buttons are disabled in combat.
 - `Modules/FrameTweaks.lua`: hides `MicroMenu.BackgroundArt` and `BorderArt`
-  (`db.global.hideMicroMenuArt`, on by default, Forever only), plus a temporary
+  (`db.global.hideMicroMenuArt`, on by default, Forever only, toggle on the
+  Action Bars page), plus a temporary
   Forever hotfix that hides `GamepadBagBar` on the combined backpack while
   Gamepad UI is off. Blizzard's `GamepadBagBarMixin:OnLoad` skips hiding the bag
   buttons then; no event fires on toggle, so it rechecks on bag `OnShow`.
