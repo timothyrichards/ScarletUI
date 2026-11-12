@@ -116,11 +116,12 @@ for _, variant in ipairs({ "STANDARD", "COMPACT", "ULTRAWIDE" }) do
     if variant == "COMPACT" then
         assert(anchors.raidFrame[1] == 196.6 and anchors.raidFrame[2] == -174)
     else
-        assert(anchors.raidFrame[1] == -722 and anchors.raidFrame[2] == 898)
+        assert(anchors.raidFrame[1] == -712 and anchors.raidFrame[2] == 898)
         assert(anchors.partyFrame[1] == -372 and anchors.partyFrame[2] == 698)
     end
     assert(anchors.swingTimerOffHand[4] == "swingTimerMainHand" and anchors.totemBar[4] == "multiBarBottomRight")
-    assert(anchors.utilityCooldowns[3] == "BOTTOM" and anchors.utilityCooldowns[4] == "essentialCooldowns")
+    assert(anchors.utilityCooldowns[3] == "BOTTOM" and anchors.utilityCooldowns[4] == "castBar")
+    assert(anchors.castBar[3] == "BOTTOM" and anchors.castBar[4] == "essentialCooldowns" and anchors.castBar[2] == 25)
     assert(anchors.essentialCooldowns[1] == 0 and anchors.essentialCooldowns[3] == "TOP")
     assert(anchors.swingTimerRanged[2] == 400)
     assert(anchors.partyFrame[3] == (variant == "COMPACT" and "BOTTOMLEFT" or "TOPLEFT"))
@@ -131,7 +132,7 @@ for _, variant in ipairs({ "STANDARD", "COMPACT", "ULTRAWIDE" }) do
         assert(anchors.focusFrame[4] == UIParent)
     else
         assert(anchors.focusFrame[4] == "multiBarBottomRight")
-        assert(anchors.petFrame[4] == "playerFrame")
+        assert(anchors.petFrame[4] == "multiBarBottomRight")
     end
     assert(anchors.playerFrame[1] == (variant == "COMPACT" and -50 or -258))
     assert(anchors.playerFrame[3] == (variant == "COMPACT" and "TOPRIGHT" or "BOTTOM"))
@@ -144,6 +145,13 @@ ScarletUI.FindEditModeFrame = function(_, key) return key ~= "mainMenuBar" and k
 assert(ScarletUI:ApplyEditModeLayout("STANDARD"))
 assert(anchors.multiBarBottomLeft == nil)
 assert(anchors.multiBarBottomRight)
+
+-- Unless it has a fallback: without the Cooldown Manager the cast bar anchors to the screen.
+anchors = {}
+ScarletUI.FindEditModeFrame = function(_, key) return not key:find("Cooldowns") and key or nil end
+assert(ScarletUI:ApplyEditModeLayout("STANDARD"))
+assert(anchors.castBar[4] == UIParent and anchors.castBar[2] == 334)
+assert(anchors.utilityCooldowns == nil)
 LibStub, ScarletUI.GetWoWVersion = originalLibStub, originalClient
 ScarletUI.FindEditModeFrame = originalFindFrame
 

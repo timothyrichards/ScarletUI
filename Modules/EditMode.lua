@@ -161,18 +161,23 @@ function ScarletUI:ApplyEditModeLayout(variant)
                 relativeTo = self:FindEditModeFrame(definition.relativeTo)
             end
 
-            if definition.point and snapped and not relativeTo then
+            local anchor = definition
+            if snapped and not relativeTo and definition.fallback then
+                anchor, relativeTo, snapped = definition.fallback, UIParent, false
+            end
+
+            if anchor.point and snapped and not relativeTo then
                 table.insert(self.editModeSkippedSystems, settingsKey .. " anchor: " .. definition.relativeTo .. " is unavailable")
-            elseif definition.point then
+            elseif anchor.point then
                 local ok, reason = pcall(
                     library.ReanchorFrame,
                     library,
                     frame,
-                    definition.point,
+                    anchor.point,
                     relativeTo,
-                    definition.relativePoint or definition.point,
-                    definition.x or 0,
-                    definition.y or 0
+                    anchor.relativePoint or anchor.point,
+                    anchor.x or 0,
+                    anchor.y or 0
                 )
                 if not ok then
                     table.insert(self.editModeSkippedSystems, settingsKey .. " anchor: " .. tostring(reason))
