@@ -953,7 +953,8 @@ local eatingAura, clock = nil, 500
 C_UnitAuras = { GetPlayerAuraBySpellID = function(id) return id == 1249523 and foodAura or nil end,
     GetAuraDataBySpellName = function(_, name) return name == "Food" and eatingAura or nil end }
 local savedSpell, savedGetTime = C_Spell, GetTime
-C_Spell = { GetSpellName = function(id) return ({ [433] = "Food", [430] = "Drink" })[id] end }
+C_Spell = { GetSpellName = function(id) return ({ [433] = "Food", [430] = "Drink" })[id] end,
+    GetSpellTexture = function(id) return "buff" .. id end }
 GetTime = function() return clock end
 UnitLevel = function() return foodLevel end
 IsPlayerAtEffectiveMaxLevel = function() return atMax end
@@ -1014,11 +1015,13 @@ atMax = false
 dead = true; Food("PLAYER_DEAD"); assert(not foodIcon.shown)
 Food("BAG_UPDATE_DELAYED"); assert(not foodIcon.shown)
 dead = false; Food("PLAYER_UNGHOST"); assert(foodIcon.shown)
--- Eating a food in the bags covers it with a countdown to Well Fed.
-local foodTimer
+-- Eating a food in the bags covers it with the Well Fed icon and a countdown to the buff.
+local foodTimer, buffIcon
 for _, widget in ipairs(foodWidgets) do
-    if widget.kind == "Frame" then foodTimer = widget break end
+    if widget.kind == "Frame" and not foodTimer then foodTimer = widget end
+    buffIcon = buffIcon or widget.icon == "buff1248406"
 end
+assert(buffIcon)
 local function Eat() Food("UNIT_SPELLCAST_SUCCEEDED", "cast", 94593) end
 assert(foodTimer ~= foodList and not foodTimer.shown)
 Food("UNIT_SPELLCAST_SUCCEEDED", "cast", 12345); assert(not foodTimer.shown) -- some other spell

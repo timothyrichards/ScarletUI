@@ -220,7 +220,8 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   hidden, moved, or given attributes until combat ends. It is also hidden at
   max level and while dead or a ghost. Eating a food from the bags (the
   player's `UNIT_SPELLCAST_SUCCEEDED` matching its `GetItemSpell`) covers the
-  icon with a plain child frame counting down the 10 seconds to Well Fed. The
+  icon with a plain child frame: the Well Fed icon counting down the 10
+  seconds to the buff. The
   use spell's aura is hidden, so a meal cut short is read from the ordinary
   Food or Drink aura, looked up by name, having been seen and gone.
 - `Modules/StatDisplay.lua`: stat display (`db.global.statDisplay`, off by

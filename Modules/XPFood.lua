@@ -156,14 +156,14 @@ function ScarletUI:SetupXPFood()
     label:SetPoint("TOP", icon, "BOTTOM", 0, -4)
     label:SetText("XP Food")
 
-    -- While an XP food is being eaten, an empty slot counting down to Well Fed
-    -- covers the food. Not a secure frame, so it may show and hide at any time.
+    -- While an XP food is being eaten, the Well Fed icon counting down to the
+    -- buff covers the food. Not a secure frame, so it may show and hide at any time.
     local timer = CreateFrame("Frame", nil, icon)
     timer:SetAllPoints(icon)
     timer:Hide()
-    local slot = timer:CreateTexture(nil, "BACKGROUND")
-    slot:SetAllPoints()
-    slot:SetTexture("Interface\\PaperDoll\\UI-Backpack-EmptySlot")
+    local buff = timer:CreateTexture(nil, "BACKGROUND")
+    buff:SetAllPoints()
+    buff:SetTexture(C_Spell.GetSpellTexture(WELL_FED[1])) -- every Well Fed shares the icon
     timer.text = timer:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
     timer.text:SetPoint("CENTER")
     -- When Well Fed is due, and whether the Food or Drink aura has been seen
