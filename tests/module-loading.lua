@@ -1121,13 +1121,17 @@ assert(feed.name == "ScarletUI Stats" and feed.text == "AP 115  Crit 12.50%  Hit
 assert(statPanel.size[2] == 12 * 2 + 28 + 8 + 4 * 16)
 power = 200; statPanel.scripts.OnUpdate(nil, 0.2); assert(feed.text:find("AP 115", 1, true))
 statPanel.scripts.OnUpdate(nil, 0.4); assert(feed.text:find("AP 215", 1, true))
--- A secret value or a function this client lacks drops that row and closes the gap.
-power, GetCritChance = SECRET, nil; Tick()
-assert(Rows() == "Hit Chance|5.00%|Attack Speed|2.60 / 1.80" and feed.text == "Hit 5.00%  Speed 2.60 / 1.80")
-assert(statPanel.size[2] == 12 * 2 + 28 + 8 + 2 * 16)
+-- In combat the client may hand out secret values: those rows keep their last readable text.
+power, GetCritChance = SECRET, function() return SECRET end; Tick()
+assert(Rows() == "Attack Power|215|Crit Chance|12.50%|Hit Chance|5.00%|Attack Speed|2.60 / 1.80")
+assert(feed.text == "AP 215  Crit 12.50%  Hit 5.00%  Speed 2.60 / 1.80")
 power, GetCritChance = 100, function() return 12.5 end
--- Clicking the icon steps through the roles, saved for the character; ranged has no API here.
+-- Clicking the icon steps through the roles, saved for the character. A stat that was
+-- never readable (secret, or a function this client lacks) has no row, and the gap closes.
+UnitRangedAttackPower = function() return SECRET, 0, 0 end
 statHandle.scripts.OnClick(); assert(ScarletUI.db.char.statDisplay.set == "RANGED" and Rows() == "Hit Chance|3.00%")
+assert(statPanel.size[2] == 12 * 2 + 28 + 8 + 1 * 16)
+UnitRangedAttackPower = nil
 statHandle.scripts.OnClick(); assert(ScarletUI.db.char.statDisplay.set == "CASTER")
 -- Caster: the best school, healing when it differs, and mana per 5 seconds while casting.
 assert(Rows() == "Spell Power|250|Healing|300|Crit Chance|7.00%|Hit Chance|0.00%|MP5 (Casting)|23")
