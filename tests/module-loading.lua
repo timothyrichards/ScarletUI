@@ -1057,16 +1057,18 @@ CreateFrame, IsControlKeyDown = savedCreateFrame, nil
 UnitLevel, C_Container, C_Item, C_UnitAuras, IsPlayerAtEffectiveMaxLevel = savedUnitLevel, nil, nil, nil, nil
 end
 
--- Stat display: off by default. Switched on, a panel lists the stats for the
--- character's role and the same line goes out as a broker feed.
+-- Stat display: off by default. Switched on, each role the character shows
+-- lists its stats, in one panel or a panel per role, and the same stats go
+-- out as a broker feed.
 do
 local statWidgets = {}
-local function StatWidget(kind, name)
-    local widget = { kind = kind, name = name, scripts = {}, shown = true }
+local function StatWidget(kind, name, parent)
+    local widget = { kind = kind, name = name, parent = parent, scripts = {}, shown = true }
     widget.SetScript = function(self, script, fn) self.scripts[script] = fn end
     widget.Show = function(self) self.shown = true end
     widget.Hide = function(self) self.shown = false end
     widget.SetShown = function(self, shown) self.shown = shown and true or false end
+    widget.SetParent = function(self, newParent) self.parent = newParent end
     widget.SetText = function(self, text) self.text = text end
     widget.GetStringWidth = function(self) return #(self.text or "") end
     widget.SetPoint = function(self, ...) self.point = { ... } end
@@ -1074,7 +1076,7 @@ local function StatWidget(kind, name)
     widget.SetSize = function(self, width, height) self.size = { width, height } end
     widget.SetTexture = function(self, texture) self.icon = texture end
     widget.CreateTexture = function() return StatWidget("Texture") end
-    widget.CreateFontString = function() return StatWidget("FontString") end
+    widget.CreateFontString = function(self) return StatWidget("FontString", nil, self) end
     widget.GetNormalTexture = function() return StatWidget("Texture") end
     statWidgets[#statWidgets + 1] = widget
     return setmetatable(widget, { __index = function() return noop end })
@@ -1096,70 +1098,112 @@ GetSpellCritChance = function(school) return school end
 GetSpellHitModifier = function() return nil end -- Era returns nil at zero
 GetManaRegen = function() return 10, 4.6 end
 IsControlKeyDown = function() return ctrl end
-issecretvalue = function(v) return v == SECRET end
+-- 99.5 stands for a secret number; formatting one gives a secret string.
+issecretvalue = function(v) return v == SECRET or v == 99.5 or v == "99.50%" end
 dofile("Modules/StatDisplay.lua")
 issecretvalue = nil
-assert(ScarletUI.defaults.global.statDisplay.enabled == false)
+local statSettings = ScarletUI.db.global.statDisplay
+assert(statSettings.enabled == false and statSettings.layout == "COMBINED")
 ScarletUI:SetupStatDisplay() -- this harness is the Forever client
-local statPanel, statHandle = ScarletUI.statDisplayFrame, nil
-for _, widget in ipairs(statWidgets) do
-    if widget.kind == "Button" then statHandle = widget end
+local statPanel, ticker = ScarletUI.statDisplayFrame, nil
+local function Named(name)
+    for _, widget in ipairs(statWidgets) do
+        if widget.name == name then return widget end
+    end
 end
--- The visible label = value rows, top to bottom.
-local function Rows()
+local melee, ranged, caster = Named("ScarletUIStatDisplayMelee"), Named("ScarletUIStatDisplayRanged"), Named("ScarletUIStatDisplayCaster")
+for _, widget in ipairs(statWidgets) do
+    if widget.scripts.OnUpdate then ticker = widget end
+end
+-- A role's icon, the handle its panel is dragged by.
+local function Handle(section)
+    for _, widget in ipairs(statWidgets) do
+        if widget.kind == "Button" and widget.parent == section then return widget end
+    end
+end
+-- A role's visible label = value rows, top to bottom.
+local function Rows(section)
     local rows = {}
     for _, widget in ipairs(statWidgets) do
-        if widget.kind == "FontString" and widget.shown and widget.point and widget.point[1] ~= "LEFT" then
+        if widget.kind == "FontString" and widget.parent == section and widget.shown and widget.point[1] ~= "LEFT" then
             rows[#rows + 1] = widget.text
         end
     end
     return table.concat(rows, "|")
 end
-local function Tick() statPanel.scripts.OnUpdate(nil, 1) end
--- Off: no panel and no feed for broker displays to list.
-assert(statPanel.name == "ScarletUIStatDisplay" and not statPanel.shown and feed == nil)
-local statOption = ScarletUI:Options().args.generalSettings.args.interface.args.statDisplay
-assert(not statOption.hidden() and not statOption.get())
-statOption.set(nil, true)
--- A warrior starts on melee: buffs count toward attack power, hit adds rating and modifier.
-assert(statPanel.shown and statHandle.texture.icon == "Interface\\Icons\\Ability_MeleeDamage")
-assert(Rows() == "Attack Power|115|Crit Chance|12.50%|Hit Chance|5.00%|Attack Speed|2.60 / 1.80")
+local function Tick() ticker.scripts.OnUpdate(nil, 1) end
+-- Off: nothing shows and broker displays have no feed to list.
+assert(statPanel.name == "ScarletUIStatDisplay" and not statPanel.shown and not melee.shown and feed == nil)
+-- Its settings are their own page, led by the switch, and no longer part of Interface.
+local statPage = ScarletUI:Options().args.statDisplaySettings
+local roles = statPage.args.roles.args
+assert(not statPage.hidden() and statPage.args.enabled.order == 0 and not statPage.args.enabled.get())
+assert(ScarletUI:Options().args.generalSettings.args.interface.args.statDisplay == nil)
+statPage.args.enabled.set(nil, true)
+-- A warrior starts with melee only: buffs count toward attack power, hit adds rating and modifier.
+assert(statPanel.shown and melee.shown and not ranged.shown and not caster.shown)
+assert(roles.melee.get() and not roles.ranged.get() and not roles.caster.get())
+assert(Handle(melee).texture.icon == "Interface\\Icons\\Ability_MeleeDamage")
+assert(Rows(melee) == "Attack Power|115|Crit Chance|12.50%|Hit Chance|5.00%|Attack Speed|2.60 / 1.80")
 assert(feed.name == "ScarletUI Stats" and feed.text == "AP 115  Crit 12.50%  Hit 5.00%  Speed 2.60 / 1.80")
--- The panel is sized to its rows, and follows stat changes while it shows.
-assert(statPanel.size[2] == 12 * 2 + 28 + 8 + 4 * 16)
-power = 200; statPanel.scripts.OnUpdate(nil, 0.2); assert(feed.text:find("AP 115", 1, true))
-statPanel.scripts.OnUpdate(nil, 0.4); assert(feed.text:find("AP 215", 1, true))
--- In combat the client may hand out secret values: those rows keep their last readable text.
-power, GetCritChance = SECRET, function() return SECRET end; Tick()
-assert(Rows() == "Attack Power|215|Crit Chance|12.50%|Hit Chance|5.00%|Attack Speed|2.60 / 1.80")
+-- A role is sized to its rows and the panel to its roles; both follow stat changes.
+assert(melee.size[2] == 12 * 2 + 28 + 8 + 4 * 16 and statPanel.size[1] == melee.size[1] and statPanel.size[2] == melee.size[2])
+power = 200; ticker.scripts.OnUpdate(nil, 0.2); assert(feed.text:find("AP 115", 1, true))
+ticker.scripts.OnUpdate(nil, 0.4); assert(feed.text:find("AP 215", 1, true))
+-- In combat the client hands out secret values. A stat that needs arithmetic keeps its
+-- last readable text; a single value is shown live, while the feed keeps the readable one.
+power, GetCritChance = SECRET, function() return 99.5 end; Tick()
+assert(Rows(melee) == "Attack Power|215|Crit Chance|99.50%|Hit Chance|5.00%|Attack Speed|2.60 / 1.80")
 assert(feed.text == "AP 215  Crit 12.50%  Hit 5.00%  Speed 2.60 / 1.80")
-power, GetCritChance = 100, function() return 12.5 end
--- Clicking the icon steps through the roles, saved for the character. A stat that was
--- never readable (secret, or a function this client lacks) has no row, and the gap closes.
-UnitRangedAttackPower = function() return SECRET, 0, 0 end
-statHandle.scripts.OnClick(); assert(ScarletUI.db.char.statDisplay.set == "RANGED" and Rows() == "Hit Chance|3.00%")
-assert(statPanel.size[2] == 12 * 2 + 28 + 8 + 1 * 16)
-UnitRangedAttackPower = nil
-statHandle.scripts.OnClick(); assert(ScarletUI.db.char.statDisplay.set == "CASTER")
+power, GetCritChance = 100, function() return 12.5 end; Tick()
+assert(Rows(melee) == "Attack Power|115|Crit Chance|12.50%|Hit Chance|5.00%|Attack Speed|2.60 / 1.80")
+-- Roles are switched per character. With several on, the one panel holds them side by side.
+roles.caster.set(nil, true)
+assert(caster.shown and caster.parent == statPanel and caster.point[2] == statPanel and caster.point[4] == melee.size[1])
+assert(statPanel.size[1] == melee.size[1] + caster.size[1] and statPanel.size[2] == caster.size[2])
 -- Caster: the best school, healing when it differs, and mana per 5 seconds while casting.
-assert(Rows() == "Spell Power|250|Healing|300|Crit Chance|7.00%|Hit Chance|0.00%|MP5 (Casting)|23")
+assert(Rows(caster) == "Spell Power|250|Healing|300|Crit Chance|7.00%|Hit Chance|0.00%|MP5 (Casting)|23")
+assert(feed.text == "AP 115  Crit 12.50%  Hit 5.00%  Speed 2.60 / 1.80  |  SP 250  Heal 300  Crit 7.00%  Hit 0.00%  MP5 23")
 GetSpellBonusHealing = function() return 250 end; Tick()
-assert(Rows() == "Spell Power|250|Crit Chance|7.00%|Hit Chance|0.00%|MP5 (Casting)|23")
-feed.OnClick(); assert(ScarletUI.db.char.statDisplay.set == "MELEE" and feed.text:find("AP 115", 1, true))
--- A character that never switched starts on its class's role.
-ScarletUI.db.char.statDisplay.set = nil
-class = "MAGE"; Tick(); assert(feed.text:find("SP 250", 1, true))
-class = "HUNTER"; Tick(); assert(feed.icon == "Interface\\Icons\\Ability_Marksmanship")
-class = "WARRIOR"; Tick(); assert(ScarletUI.db.char.statDisplay.set == nil and feed.text:find("AP 115", 1, true))
--- Dragging the icon saves the position, which a rerun of setup applies; Ctrl-click resets it.
-statHandle.scripts.OnDragStop()
+assert(Rows(caster) == "Spell Power|250|Crit Chance|7.00%|Hit Chance|0.00%|MP5 (Casting)|23")
+-- A stat that was never readable (secret, or a function this client lacks) has no row, and the gap closes.
+UnitRangedAttackPower = function() return SECRET, 0, 0 end
+roles.ranged.set(nil, true)
+assert(Rows(ranged) == "Hit Chance|3.00%" and ranged.size[2] == 12 * 2 + 28 + 8 + 1 * 16)
+assert(ranged.point[4] == melee.size[1] and caster.point[4] == melee.size[1] + ranged.size[1])
+UnitRangedAttackPower = nil
+roles.ranged.set(nil, false)
+assert(not ranged.shown and ScarletUI.db.char.statDisplay.roles.RANGED == false and caster.point[4] == melee.size[1])
+-- Dragging any icon moves the one panel and saves its position, which a rerun of setup applies.
+Handle(caster).scripts.OnDragStop()
 ScarletUI:SetupStatDisplay()
-assert(statPanel.point[1] == "TOPLEFT" and statPanel.point[4] == 40 and ScarletUI.db.global.statDisplay.position)
-ctrl = true; statHandle.scripts.OnClick()
-assert(statPanel.point[1] == "CENTER" and ScarletUI.db.global.statDisplay.position == nil)
-assert(ScarletUI.db.char.statDisplay.set == nil)
--- Switched off, the panel hides and the feed empties.
-statOption.set(nil, false); assert(not statPanel.shown and feed.text == "")
+assert(statPanel.point[1] == "TOPLEFT" and statPanel.point[4] == 40 and statSettings.position)
+-- Only a Ctrl-click puts it back.
+Handle(melee).scripts.OnClick(); assert(statPanel.point[1] == "TOPLEFT")
+ctrl = true; Handle(melee).scripts.OnClick(); ctrl = false
+assert(statPanel.point[1] == "CENTER" and statSettings.position == nil)
+-- Separate panels: each role stands alone with its own border and position.
+statPage.args.layout.set(nil, "SPLIT")
+assert(not statPanel.shown and melee.shown and caster.shown and rawget(melee, "parent") == UIParent and melee.border.shown)
+assert(melee.point[1] == "CENTER" and melee.point[5] == 130 and caster.point[5] == -130)
+Handle(caster).scripts.OnDragStop()
+assert(statSettings.positions.CASTER[1] == "TOPLEFT" and statSettings.positions.MELEE == nil and statSettings.position == nil)
+-- The refresh leaves a separate panel where it is: a drag may be in progress.
+caster.point = nil; Tick(); assert(rawget(caster, "point") == nil)
+ScarletUI:SetupStatDisplay(); assert(caster.point[1] == "TOPLEFT" and caster.point[4] == 40 and melee.point[1] == "CENTER")
+ctrl = true; Handle(caster).scripts.OnClick(); ctrl = false
+assert(caster.point[1] == "CENTER" and statSettings.positions.CASTER == nil)
+statPage.args.layout.set(nil, "COMBINED")
+assert(statPanel.shown and melee.parent == statPanel and not melee.border.shown and caster.point[2] == statPanel)
+-- A character that never switched a role shows its class's.
+ScarletUI.db.char.statDisplay.roles = {}
+class = "MAGE"; Tick()
+assert(caster.shown and not melee.shown and feed.icon == "Interface\\Icons\\Spell_Holy_MagicalSentry" and caster.point[4] == 0)
+class = "HUNTER"; Tick(); assert(ranged.shown and not caster.shown and not melee.shown)
+class = "WARRIOR"; Tick(); assert(melee.shown and not ranged.shown)
+-- Switched off, everything hides, the feed empties, and the refresh stops.
+statPage.args.enabled.set(nil, false)
+assert(not statPanel.shown and not melee.shown and feed.text == "" and not ticker.shown)
 CreateFrame, LibStub, IsControlKeyDown, UnitClass = savedCreateFrame, savedLibStub, nil, nil
 end
 

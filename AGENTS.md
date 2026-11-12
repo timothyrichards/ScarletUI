@@ -33,7 +33,7 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
 - `ScarletUI.lua`: addon initialization, setup dispatcher, events, popups, commands.
 - `Modules/Database.lua`: AceDB defaults and reset behavior.
 - `Modules/Options.lua`: AceConfig settings pages. There is no central module
-  list: each feature's enable toggle sits on its own page (Bags, Chat, Fishing,
+  list: each feature's enable toggle sits on its own page (Bags, Chat, Fishing, Stat Display,
   Nameplates, CVars, Action Bars, and the Minimap Tracking group on General)
   and is the first setting on that page; Bags leads with Custom Bag Frames,
   then Share Sorting Across Characters. AceConfig sorts negative `order` values last.
@@ -218,18 +218,24 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   hidden, moved, or given attributes until combat ends. It is also hidden at
   max level.
 - `Modules/StatDisplay.lua`: stat display (`db.global.statDisplay`, off by
-  default, toggle in the Interface group on the General page), every client but
-  Retail. `ScarletUIStatDisplay` is a panel drawn like the fishing bar listing
-  one role's stats: melee, ranged, or caster (`SETS`). The role icon is the
-  handle: click steps through the roles (`db.char.statDisplay.set`; unset, the
-  class picks), drag moves the panel (`position`), Ctrl-click resets it. Each
-  stat function runs in `pcall` and returns its text or nil, so a function a
-  client lacks drops that row instead of erroring. A stat that was readable and
-  turns secret (in combat) keeps its last text, so the panel holds its
-  pre-combat values through a fight rather than emptying. Refreshed
-  by a half-second `OnUpdate` poll while shown, not by events. The same line is
-  published as the LibDataBroker feed "ScarletUI Stats", created the first time
-  the display is on so broker displays do not list it otherwise.
+  default, its own Stat Display settings page), every client but Retail. It
+  lists the stats of up to three roles, melee, ranged, and caster (`SETS`),
+  each drawn like the fishing bar. Roles are switched per character
+  (`db.char.statDisplay.roles`; one never switched follows the class). `layout`
+  is `COMBINED`, one `ScarletUIStatDisplay` panel with the shown roles side by
+  side, or `SPLIT`, a bordered panel per role (`ScarletUIStatDisplayMelee`
+  and so on). A role's icon is the handle: drag moves the one panel
+  (`position`) or that role's own (`positions[role]`), Ctrl-click resets it.
+  `PlaceStatDisplay` applies layout and positions; the refresh must not, or it
+  would pull a panel back mid-drag. Each stat function runs in `pcall` and
+  returns its text or nil, so a function a client lacks drops that row instead
+  of erroring. Forever makes these stats secret in combat. Single values (crit,
+  attack speed) are formatted into secret strings and shown live; stats that
+  need arithmetic or comparison (attack power, hit, spell stats) keep their
+  last readable text. Secret text is never measured or put in the feed.
+  Refreshed by a half-second `OnUpdate` poll while on, not by events. The same
+  stats are published as the LibDataBroker feed "ScarletUI Stats", created the
+  first time the display is on so broker displays do not list it otherwise.
 - `Modules/Bag.lua`, `Modules/Nameplates.lua`: custom bag/bank frames and
   nameplate threat colors, auras, and text. Classic UI clients only: listed in
   just those three manifests so Retail and Forever never load them. Each file adds its

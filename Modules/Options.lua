@@ -18,6 +18,7 @@ function ScarletUI:Options()
             bagModuleSettings = self:GetBagSettingsPage(database, defaults, 4),
             chatModuleSettings = self:GetChatModuleSettingsPage(database, defaults.chatModule, 5),
             fishingSettings = self:GetFishingSettingsPage(database, 6),
+            statDisplaySettings = self:GetStatDisplaySettingsPage(database, 6.2),
             auctionSettings = self:GetAuctionSettingsPage(database, 6.5),
             -- Nameplates only load on Era, TBC, and Mists.
             nameplatesModuleSettings = self.GetNameplatesModuleSettingsPage and self:GetNameplatesModuleSettingsPage(database, defaults.nameplatesModule, 7),
@@ -120,19 +121,6 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                         set = function(_, val)
                             database.xpFoodModule.enabled = val
                             self:UpdateXPFood()
-                        end,
-                    },
-                    statDisplay = {
-                        name = "Stat Display",
-                        desc = "Show a small panel with your attack power or spell power, crit chance, hit chance, and more, updated as they change. Click its icon to switch between melee, ranged, and caster stats; drag the icon to move the panel, Ctrl-click it to reset its position.\n\nThe same stats are published as a \"ScarletUI Stats\" data feed for Titan Panel and other broker displays.",
-                        type = "toggle",
-                        hidden = function() return not self.statDisplayFrame end,
-                        width = 1.5,
-                        order = 8,
-                        get = function(_) return database.statDisplay.enabled end,
-                        set = function(_, val)
-                            database.statDisplay.enabled = val
-                            self:UpdateStatDisplay()
                         end,
                     },
                     expandCharacterInfo = {
@@ -399,6 +387,70 @@ function ScarletUI:GetFishingSettingsPage(database, order)
                     database.fishingModule.autoLure = val
                     self:UpdateFishing()
                 end,
+            },
+        },
+    }
+end
+
+-- The roles are switched per character (db.char), the rest for the account.
+function ScarletUI:GetStatDisplaySettingsPage(database, order)
+    local function Role(key, name, stats, roleOrder)
+        return {
+            name = name,
+            desc = "Show " .. stats .. ". Saved for this character; one you never switched follows its class.",
+            type = "toggle",
+            width = 1,
+            order = roleOrder,
+            get = function(_) return self:IsStatRoleShown(key) end,
+            set = function(_, val)
+                self.db.char.statDisplay.roles[key] = val
+                self:PlaceStatDisplay()
+            end,
+        }
+    end
+    return {
+        name = "Stat Display",
+        desc = "Panels listing your combat stats, and a data feed for broker displays.",
+        type = "group",
+        hidden = function() return not self.statDisplayFrame end,
+        order = order,
+        args = {
+            enabled = {
+                name = "Stat Display",
+                desc = "Show your combat stats on screen, updated as they change. Drag a panel by its icon to move it; Ctrl-click the icon to reset its position.\n\nThe same stats are published as a \"ScarletUI Stats\" data feed for Titan Panel and other broker displays.",
+                type = "toggle",
+                width = 1,
+                order = 0,
+                get = function(_) return database.statDisplay.enabled end,
+                set = function(_, val)
+                    database.statDisplay.enabled = val
+                    self:PlaceStatDisplay()
+                end,
+            },
+            layout = {
+                name = "Layout",
+                desc = "One Panel puts the stats you show side by side in a single panel. Separate Panels gives melee, ranged, and caster each their own panel to drag around.",
+                type = "select",
+                width = 1,
+                order = 1,
+                values = { COMBINED = "One Panel", SPLIT = "Separate Panels" },
+                sorting = { "COMBINED", "SPLIT" },
+                get = function(_) return database.statDisplay.layout end,
+                set = function(_, val)
+                    database.statDisplay.layout = val
+                    self:PlaceStatDisplay()
+                end,
+            },
+            roles = {
+                name = "Stats Shown",
+                type = "group",
+                inline = true,
+                order = 2,
+                args = {
+                    melee = Role("MELEE", "Melee", "attack power, crit chance, hit chance, and attack speed", 0),
+                    ranged = Role("RANGED", "Ranged", "ranged attack power, crit chance, hit chance, and attack speed", 1),
+                    caster = Role("CASTER", "Caster", "spell power, healing, spell crit and hit chance, and mana per 5 seconds while casting", 2),
+                },
             },
         },
     }

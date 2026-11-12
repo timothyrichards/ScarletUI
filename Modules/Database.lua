@@ -54,6 +54,9 @@ ScarletUI.defaults = {
         },
         statDisplay = {
             enabled = false,
+            layout = "COMBINED",
+            -- Saved positions of the separate panels, keyed by role.
+            positions = {},
         },
         craftProfit = {
             enabled = true,
@@ -91,8 +94,10 @@ ScarletUI.defaults = {
         craftProfit = {
             professions = {},
         },
-        -- The stat panel's role (set), once the character has switched it.
-        statDisplay = {},
+        -- The stat display roles this character has switched on or off.
+        statDisplay = {
+            roles = {},
+        },
         editMode = {
             promptedVersions = {},
             declinedVersions = {},
