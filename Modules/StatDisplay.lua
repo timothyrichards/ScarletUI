@@ -11,12 +11,20 @@ local PADDING, ICON_SIZE, GAP, ROW_HEIGHT = 12, 28, 8, 16
 local INTERVAL = 0.5 -- seconds between refreshes
 local IsSecret = issecretvalue or function() return false end
 
+-- Set when a stat meets a secret value: in combat some clients (Forever) hand
+-- addons stats they may not read or do arithmetic on.
+local unreadable
+
 -- The total of the numbers given, or nil when one is missing or secret.
 local function Sum(...)
     local total = 0
     for index = 1, select("#", ...) do
         local value = select(index, ...)
-        if IsSecret(value) or type(value) ~= "number" then return nil end
+        if IsSecret(value) then
+            unreadable = true
+            return nil
+        end
+        if type(value) ~= "number" then return nil end
         total = total + value
     end
     return total
@@ -116,7 +124,7 @@ function ScarletUI:SetupStatDisplay()
     local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("LEFT", handle, "RIGHT", GAP, 0)
 
-    local rows, current, feed = {}, nil, nil
+    local rows, last, current, feed = {}, {}, nil, nil
     local function Cycle()
         for index, key in ipairs(ORDER) do
             if key == current then
@@ -179,9 +187,17 @@ function ScarletUI:SetupStatDisplay()
                 rows[index] = row
             end
             -- Clients differ in which stat functions exist: one that is missing
-            -- errors here, and its row is left out like an unreadable value.
+            -- errors here and its row is left out. A stat that was readable
+            -- and now is not (secret in combat) keeps the last text it had,
+            -- so the panel holds its pre-combat values through a fight.
+            unreadable = false
             local ok, text = pcall(stat[3])
             text = ok and text or nil
+            if text or (ok and not unreadable) then
+                last[stat] = text
+            else
+                text = last[stat]
+            end
             row.label:SetShown(text ~= nil)
             row.value:SetShown(text ~= nil)
             if text then

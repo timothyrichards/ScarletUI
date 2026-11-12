@@ -224,7 +224,9 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   handle: click steps through the roles (`db.char.statDisplay.set`; unset, the
   class picks), drag moves the panel (`position`), Ctrl-click resets it. Each
   stat function runs in `pcall` and returns its text or nil, so a function a
-  client lacks or a secret value drops that row instead of erroring. Refreshed
+  client lacks drops that row instead of erroring. A stat that was readable and
+  turns secret (in combat) keeps its last text, so the panel holds its
+  pre-combat values through a fight rather than emptying. Refreshed
   by a half-second `OnUpdate` poll while shown, not by events. The same line is
   published as the LibDataBroker feed "ScarletUI Stats", created the first time
   the display is on so broker displays do not list it otherwise.
