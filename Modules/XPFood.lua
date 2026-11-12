@@ -3,7 +3,7 @@
 -- buff is missing and the bags hold a food the character can eat, that food's
 -- icon shows on screen, styled like the fishing bar's lure: right-click eats
 -- it, left-click opens a list of the usable XP foods in the bags to pick the
--- one shown. Hidden in combat and at max level. The icon is a secure button
+-- one shown. Hidden in combat, while dead, and at max level. The icon is a secure button
 -- (eating is a protected action), so it only shows, hides, or changes food out
 -- of combat.
 -- The XP bonus itself (spell 1243969) is a hidden aura addons cannot see, so the
@@ -191,7 +191,9 @@ function ScarletUI:SetupXPFood()
         -- Hidden on entering combat; nothing on a secure button may change until it ends.
         if combat or InCombatLockdown() then return end
         local module = self.db.global.xpFoodModule
-        local wanted = module.enabled and not (IsPlayerAtEffectiveMaxLevel and IsPlayerAtEffectiveMaxLevel())
+        -- The dead and ghosts cannot eat.
+        local wanted = module.enabled and not UnitIsDeadOrGhost("player")
+            and not (IsPlayerAtEffectiveMaxLevel and IsPlayerAtEffectiveMaxLevel())
         local foods, shown = {}, nil
         if wanted and not HasBuff() then foods, shown = FindFoods(module.food) end
         icon:SetShown(shown ~= nil)
@@ -241,7 +243,7 @@ function ScarletUI:SetupXPFood()
         self:UpdateXPFood()
     end)
     for _, event in ipairs({ "PLAYER_ENTERING_WORLD", "BAG_UPDATE_DELAYED", "PLAYER_LEVEL_UP",
-        "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED" }) do
+        "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED", "PLAYER_DEAD", "PLAYER_ALIVE", "PLAYER_UNGHOST" }) do
         icon:RegisterEvent(event)
     end
     icon:RegisterUnitEvent("UNIT_AURA", "player")
