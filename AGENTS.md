@@ -224,9 +224,9 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   (`db.char.statDisplay.roles`; one never switched follows the class). `layout`
   is `COMBINED`, one `ScarletUIStatDisplay` panel holding the shown roles, or
   `SPLIT`, a bordered panel per role (`ScarletUIStatDisplayMelee` and so on).
-  `orientation` is `VERTICAL`, a role's stats as rows (roles side by side in
-  the one panel), or `HORIZONTAL`, the stats along one line after the role's
-  name, label above value (roles one above another). A role's icon is the handle: drag moves the one panel
+  `orientation` arranges the roles in the one panel: `HORIZONTAL`, side by
+  side, or `VERTICAL`, one above another and all as wide as the widest.
+  Separate panels ignore it. A role's icon is the handle: drag moves the one panel
   (`position`) or that role's own (`positions[role]`), Ctrl-click resets it.
   `PlaceStatDisplay` applies layout and positions; the refresh must not, or it
   would pull a panel back mid-drag. Each stat function runs in `pcall` and

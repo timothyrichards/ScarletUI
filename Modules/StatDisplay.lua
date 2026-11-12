@@ -3,9 +3,8 @@
 -- switched on per character (the class picks the first one) and drawn like the
 -- fishing bar: Blizzard's dialog border, an item slot icon as the handle, gold
 -- labels and white values as on the character sheet. The layout is either one
--- panel holding the roles or a panel per role; dragging a role's icon moves
--- its panel, Ctrl-click resets the position. A role's stats stack vertically
--- (rows) or horizontally (one line, label above value).
+-- panel with the roles side by side or one above another, or a panel per role;
+-- dragging a role's icon moves its panel, Ctrl-click resets the position.
 -- The same stats are published as a LibDataBroker feed, "ScarletUI Stats", for
 -- Titan Panel, ChocolateBar, and other broker displays.
 -- Every client but Retail, whose stats (mastery, versatility) are not these.
@@ -198,14 +197,9 @@ function ScarletUI:SetupStatDisplay()
         self:UpdateStatDisplay()
     end
 
-    -- Fills a role's stats and sizes its section; returns the size and the feed
-    -- text. Stacked vertically, each stat is a row, label left and value right.
-    -- Horizontally, the stats run along one line after the role's name, label
-    -- above value; `titleWidth` is the widest name, so every role's line
-    -- starts at the same place.
-    local function Fill(section, set, horizontal, titleWidth)
+    -- Fills a role's rows and sizes its section; returns the size and the feed text.
+    local function Fill(section, set)
         local shown, labels, values, parts = 0, 0, 0, {}
-        local x = PADDING + ICON_SIZE + GAP + titleWidth + GAP * 2 -- the next stat on a horizontal line
         for index, stat in ipairs(set.stats) do
             local row = section.rows[index]
             if not row then
@@ -234,30 +228,21 @@ function ScarletUI:SetupStatDisplay()
             row.label:SetShown(visible)
             row.value:SetShown(visible)
             if visible then
+                local y = -(PADDING + ICON_SIZE + GAP + shown * ROW_HEIGHT)
                 row.label:SetText(stat[1])
+                row.label:SetPoint("TOPLEFT", section, "TOPLEFT", PADDING, y)
                 -- A secret text is shown live; if the client refuses it, the last readable one stands in.
                 if not (secret and pcall(row.value.SetText, row.value, text)) then
                     row.value:SetText(plain or "")
                 end
+                row.value:SetPoint("TOPRIGHT", section, "TOPRIGHT", -PADDING, y)
+                shown = shown + 1
+                labels = math.max(labels, row.label:GetStringWidth())
                 if not secret then
                     local width = row.value:GetStringWidth()
                     if not IsSecret(width) then widths[stat] = width end
                 end
-                local labelWidth, valueWidth = row.label:GetStringWidth(), widths[stat] or 0
-                -- The two layouts anchor by different points, so the old ones go first.
-                row.label:ClearAllPoints()
-                row.value:ClearAllPoints()
-                if horizontal then
-                    row.label:SetPoint("TOPLEFT", section, "TOPLEFT", x, -PADDING)
-                    row.value:SetPoint("BOTTOMLEFT", section, "BOTTOMLEFT", x, PADDING)
-                    x = x + math.max(labelWidth, valueWidth) + GAP * 2
-                else
-                    local y = -(PADDING + ICON_SIZE + GAP + shown * ROW_HEIGHT)
-                    row.label:SetPoint("TOPLEFT", section, "TOPLEFT", PADDING, y)
-                    row.value:SetPoint("TOPRIGHT", section, "TOPRIGHT", -PADDING, y)
-                end
-                shown = shown + 1
-                labels, values = math.max(labels, labelWidth), math.max(values, valueWidth)
+                values = math.max(values, widths[stat] or 0)
                 if plain then parts[#parts + 1] = stat[2] .. " " .. plain end
             end
         end
@@ -265,12 +250,9 @@ function ScarletUI:SetupStatDisplay()
             section.rows[index].label:Hide()
             section.rows[index].value:Hide()
         end
-        -- The section wraps its header and its stats: a line as tall as the icon, or two columns below it.
-        local width, height = x - GAP * 2 + PADDING, PADDING * 2 + ICON_SIZE
-        if not horizontal then
-            width = PADDING * 2 + math.max(ICON_SIZE + GAP + section.title:GetStringWidth(), labels + GAP * 2 + values)
-            height = height + GAP + shown * ROW_HEIGHT
-        end
+        -- The section wraps its header and the two columns.
+        local width = PADDING * 2 + math.max(ICON_SIZE + GAP + section.title:GetStringWidth(), labels + GAP * 2 + values)
+        local height = PADDING * 2 + ICON_SIZE + GAP + shown * ROW_HEIGHT
         section:SetSize(width, height)
         return width, height, table.concat(parts, "  ")
     end
@@ -288,32 +270,33 @@ function ScarletUI:SetupStatDisplay()
 
     function self:UpdateStatDisplay()
         local settings = self.db.global.statDisplay
-        local combined, horizontal = Combined(), settings.orientation == "HORIZONTAL"
-        local titleWidth = 0
-        for _, section in pairs(sections) do
-            titleWidth = math.max(titleWidth, section.title:GetStringWidth())
-        end
-        -- One panel: roles run across it when their stats stack vertically, and
-        -- down it when each is a horizontal line. `along` is that direction.
+        local combined = Combined()
+        local vertical = combined and settings.orientation == "VERTICAL"
+        -- One panel: the roles sit side by side, each as wide as its stats, or
+        -- one above another, all as wide as the widest. `along` is that direction.
         local along, across, texts, icon = 0, 0, {}, nil
         for _, key in ipairs(ORDER) do
             local section = sections[key]
             local shown = settings.enabled and self:IsStatRoleShown(key)
             section:SetShown(shown)
             if shown then
-                local width, height, text = Fill(section, SETS[key], horizontal, titleWidth)
+                local width, height, text = Fill(section, SETS[key])
                 if combined then
                     section:ClearAllPoints()
-                    section:SetPoint("TOPLEFT", panel, "TOPLEFT", horizontal and 0 or along, horizontal and -along or 0)
+                    section:SetPoint("TOPLEFT", panel, "TOPLEFT", vertical and 0 or along, vertical and -along or 0)
                 end
-                if horizontal then width, height = height, width end
+                if vertical then width, height = height, width end
                 along, across = along + width, math.max(across, height)
                 texts[#texts + 1] = text
                 icon = icon or SETS[key].icon
             end
         end
+        if vertical then
+            -- Values sit at a section's right edge, so equal widths line the columns up.
+            for _, section in pairs(sections) do section:SetWidth(across) end
+        end
         panel:SetShown(combined and along > 0)
-        panel:SetSize(horizontal and across or along, horizontal and along or across)
+        panel:SetSize(vertical and across or along, vertical and along or across)
         ticker:SetShown(settings.enabled)
         -- Made on first use, so broker displays only list the feed once it is on.
         if settings.enabled and not feed then

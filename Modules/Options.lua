@@ -443,12 +443,13 @@ function ScarletUI:GetStatDisplaySettingsPage(database, order)
             },
             orientation = {
                 name = "Stat Stacking",
-                desc = "Vertical lists each role's stats top to bottom, with the roles side by side in One Panel. Horizontal runs each role's stats along one line, with the roles one above another in One Panel.",
+                desc = "How One Panel arranges the roles. Horizontal puts them side by side. Vertical puts them one above another.",
                 type = "select",
                 width = 1,
                 order = 2,
-                values = { VERTICAL = "Vertical", HORIZONTAL = "Horizontal" },
-                sorting = { "VERTICAL", "HORIZONTAL" },
+                values = { HORIZONTAL = "Horizontal", VERTICAL = "Vertical" },
+                sorting = { "HORIZONTAL", "VERTICAL" },
+                disabled = function() return database.statDisplay.layout == "SPLIT" end,
                 get = function(_) return database.statDisplay.orientation end,
                 set = function(_, val)
                     database.statDisplay.orientation = val

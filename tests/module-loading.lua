@@ -1002,6 +1002,10 @@ foodBags = { 2680, 4593, 8364 }
 -- Hidden at max level.
 atMax = true; Food("PLAYER_LEVEL_UP"); assert(not foodIcon.shown)
 atMax = false
+-- Hidden while dead or a ghost, back on resurrection.
+dead = true; Food("PLAYER_DEAD"); assert(not foodIcon.shown)
+Food("BAG_UPDATE_DELAYED"); assert(not foodIcon.shown)
+dead = false; Food("PLAYER_UNGHOST"); assert(foodIcon.shown)
 -- A higher level unlocks the better food; food that is too high or absent hides the icon.
 foodLevel = 30; Food("PLAYER_LEVEL_UP"); assert(foodIcon.shown and foodIcon.itemID == 8364 and Eats() == "/use item:8364")
 foodBags = { 267341, 6529 }; Food("BAG_UPDATE_DELAYED"); assert(not foodIcon.shown) -- level 55 jam, a lure
@@ -1074,6 +1078,7 @@ local function StatWidget(kind, name, parent)
     widget.SetPoint = function(self, ...) self.point = { ... } end
     widget.GetPoint = function() return "TOPLEFT", nil, "TOPLEFT", 40, -50 end
     widget.SetSize = function(self, width, height) self.size = { width, height } end
+    widget.SetWidth = function(self, width) self.size = { width, self.size and self.size[2] } end
     widget.SetTexture = function(self, texture) self.icon = texture end
     widget.CreateTexture = function() return StatWidget("Texture") end
     widget.CreateFontString = function(self) return StatWidget("FontString", nil, self) end
@@ -1195,22 +1200,20 @@ ctrl = true; Handle(caster).scripts.OnClick(); ctrl = false
 assert(caster.point[1] == "CENTER" and statSettings.positions.CASTER == nil)
 statPage.args.layout.set(nil, "COMBINED")
 assert(statPanel.shown and melee.parent == statPanel and not melee.border.shown and caster.point[2] == statPanel)
--- Stacked horizontally, a role is one line as tall as its icon: label above value,
--- each stat after the last, starting at the same place for every role. The one
--- panel then holds the roles one above another.
-assert(statPage.args.orientation.get() == "VERTICAL")
-statPage.args.orientation.set(nil, "HORIZONTAL")
-local first, second = melee.rows[1], melee.rows[2]
-assert(melee.size[2] == 12 * 2 + 28 and caster.size[2] == melee.size[2])
-assert(first.label.point[1] == "TOPLEFT" and first.value.point[1] == "BOTTOMLEFT" and first.value.point[4] == first.label.point[4])
-assert(second.label.point[4] == first.label.point[4] + #"Attack Power" + 16)
-assert(caster.rows[1].label.point[4] == first.label.point[4])
-assert(Rows(melee) == "Attack Power|115|Crit Chance|12.50%|Hit Chance|5.00%|Attack Speed|2.60 / 1.80")
-assert(caster.point[4] == 0 and caster.point[5] == -melee.size[2])
-assert(statPanel.size[1] == math.max(melee.size[1], caster.size[1]) and statPanel.size[2] == melee.size[2] + caster.size[2])
+-- Stacked vertically, the one panel holds the roles one above another, all as
+-- wide as the widest so the value columns line up. Separate panels ignore it.
+local meleeWidth, casterWidth = melee.size[1], caster.size[1]
+assert(statPage.args.orientation.get() == "HORIZONTAL" and not statPage.args.orientation.disabled())
 statPage.args.orientation.set(nil, "VERTICAL")
-assert(first.value.point[1] == "TOPRIGHT" and melee.size[2] == 12 * 2 + 28 + 8 + 4 * 16)
-assert(caster.point[4] == melee.size[1] and caster.point[5] == 0 and statPanel.size[1] == melee.size[1] + caster.size[1])
+assert(caster.point[4] == 0 and caster.point[5] == -melee.size[2])
+assert(statPanel.size[1] == math.max(meleeWidth, casterWidth) and statPanel.size[2] == melee.size[2] + caster.size[2])
+assert(melee.size[1] == statPanel.size[1] and caster.size[1] == statPanel.size[1])
+statPage.args.layout.set(nil, "SPLIT")
+assert(statPage.args.orientation.disabled() and melee.size[1] == meleeWidth and caster.size[1] == casterWidth)
+statPage.args.layout.set(nil, "COMBINED")
+statPage.args.orientation.set(nil, "HORIZONTAL")
+assert(caster.point[4] == meleeWidth and caster.point[5] == 0 and melee.size[1] == meleeWidth)
+assert(statPanel.size[1] == meleeWidth + casterWidth and statPanel.size[2] == caster.size[2])
 -- A character that never switched a role shows its class's.
 ScarletUI.db.char.statDisplay.roles = {}
 class = "MAGE"; Tick()

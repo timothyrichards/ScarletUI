@@ -55,7 +55,7 @@ ScarletUI.defaults = {
         statDisplay = {
             enabled = false,
             layout = "COMBINED",
-            orientation = "VERTICAL",
+            orientation = "HORIZONTAL",
             -- Saved positions of the separate panels, keyed by role.
             positions = {},
         },
