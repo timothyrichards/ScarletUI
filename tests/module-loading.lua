@@ -121,7 +121,7 @@ for _, variant in ipairs({ "STANDARD", "COMPACT", "ULTRAWIDE" }) do
     end
     assert(anchors.swingTimerOffHand[4] == "swingTimerMainHand" and anchors.totemBar[4] == "multiBarBottomRight")
     assert(anchors.utilityCooldowns[3] == "BOTTOM" and anchors.utilityCooldowns[4] == "castBar")
-    assert(anchors.castBar[3] == "BOTTOM" and anchors.castBar[4] == "essentialCooldowns" and anchors.castBar[2] == 25)
+    assert(anchors.castBar[3] == "BOTTOM" and anchors.castBar[4] == "essentialCooldowns" and anchors.castBar[2] == 4)
     assert(anchors.essentialCooldowns[1] == 0 and anchors.essentialCooldowns[3] == "TOP")
     assert(anchors.swingTimerRanged[2] == 400)
     assert(anchors.partyFrame[3] == (variant == "COMPACT" and "BOTTOMLEFT" or "TOPLEFT"))
@@ -150,7 +150,7 @@ assert(anchors.multiBarBottomRight)
 anchors = {}
 ScarletUI.FindEditModeFrame = function(_, key) return not key:find("Cooldowns") and key or nil end
 assert(ScarletUI:ApplyEditModeLayout("STANDARD"))
-assert(anchors.castBar[4] == UIParent and anchors.castBar[2] == 334)
+assert(anchors.castBar[4] == UIParent and anchors.castBar[2] == 313)
 assert(anchors.utilityCooldowns == nil)
 LibStub, ScarletUI.GetWoWVersion = originalLibStub, originalClient
 ScarletUI.FindEditModeFrame = originalFindFrame

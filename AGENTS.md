@@ -264,7 +264,7 @@ There is no Era-specific imported layout or separate Retail preset. Variant
 selection uses UIParent dimensions: aspect ratio at least 2.1 selects Ultrawide;
 otherwise width at most 1500 selects Compact; other displays use Standard.
 
-Layout schema version is currently 17. Existing saved layouts are not silently
+Layout schema version is currently 18. Existing saved layouts are not silently
 replaced when definitions change. `/sui` > Edit Mode Profile > Update Profile
 applies current defaults to the current display's ScarletUI profile and activates
 it. A reload alone does not update that saved layout. Bump the schema version
