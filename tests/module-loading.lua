@@ -1195,6 +1195,22 @@ ctrl = true; Handle(caster).scripts.OnClick(); ctrl = false
 assert(caster.point[1] == "CENTER" and statSettings.positions.CASTER == nil)
 statPage.args.layout.set(nil, "COMBINED")
 assert(statPanel.shown and melee.parent == statPanel and not melee.border.shown and caster.point[2] == statPanel)
+-- Stacked horizontally, a role is one line as tall as its icon: label above value,
+-- each stat after the last, starting at the same place for every role. The one
+-- panel then holds the roles one above another.
+assert(statPage.args.orientation.get() == "VERTICAL")
+statPage.args.orientation.set(nil, "HORIZONTAL")
+local first, second = melee.rows[1], melee.rows[2]
+assert(melee.size[2] == 12 * 2 + 28 and caster.size[2] == melee.size[2])
+assert(first.label.point[1] == "TOPLEFT" and first.value.point[1] == "BOTTOMLEFT" and first.value.point[4] == first.label.point[4])
+assert(second.label.point[4] == first.label.point[4] + #"Attack Power" + 16)
+assert(caster.rows[1].label.point[4] == first.label.point[4])
+assert(Rows(melee) == "Attack Power|115|Crit Chance|12.50%|Hit Chance|5.00%|Attack Speed|2.60 / 1.80")
+assert(caster.point[4] == 0 and caster.point[5] == -melee.size[2])
+assert(statPanel.size[1] == math.max(melee.size[1], caster.size[1]) and statPanel.size[2] == melee.size[2] + caster.size[2])
+statPage.args.orientation.set(nil, "VERTICAL")
+assert(first.value.point[1] == "TOPRIGHT" and melee.size[2] == 12 * 2 + 28 + 8 + 4 * 16)
+assert(caster.point[4] == melee.size[1] and caster.point[5] == 0 and statPanel.size[1] == melee.size[1] + caster.size[1])
 -- A character that never switched a role shows its class's.
 ScarletUI.db.char.statDisplay.roles = {}
 class = "MAGE"; Tick()

@@ -441,11 +441,25 @@ function ScarletUI:GetStatDisplaySettingsPage(database, order)
                     self:PlaceStatDisplay()
                 end,
             },
+            orientation = {
+                name = "Stat Stacking",
+                desc = "Vertical lists each role's stats top to bottom, with the roles side by side in One Panel. Horizontal runs each role's stats along one line, with the roles one above another in One Panel.",
+                type = "select",
+                width = 1,
+                order = 2,
+                values = { VERTICAL = "Vertical", HORIZONTAL = "Horizontal" },
+                sorting = { "VERTICAL", "HORIZONTAL" },
+                get = function(_) return database.statDisplay.orientation end,
+                set = function(_, val)
+                    database.statDisplay.orientation = val
+                    self:PlaceStatDisplay()
+                end,
+            },
             roles = {
                 name = "Stats Shown",
                 type = "group",
                 inline = true,
-                order = 2,
+                order = 3,
                 args = {
                     melee = Role("MELEE", "Melee", "attack power, crit chance, hit chance, and attack speed", 0),
                     ranged = Role("RANGED", "Ranged", "ranged attack power, crit chance, hit chance, and attack speed", 1),
