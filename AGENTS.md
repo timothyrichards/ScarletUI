@@ -216,7 +216,7 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   template, so our clicks are read in `PostClick`. It hides in
   `PLAYER_REGEN_DISABLED`, before the lockdown, and nothing on it is shown,
   hidden, moved, or given attributes until combat ends. It is also hidden at
-  max level.
+  max level and while dead or a ghost.
 - `Modules/StatDisplay.lua`: stat display (`db.global.statDisplay`, off by
   default, its own Stat Display settings page), every client but Retail. It
   lists the stats of up to three roles, melee, ranged, and caster (`SETS`),
