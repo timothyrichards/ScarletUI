@@ -5,6 +5,8 @@ CreateFrame = function()
 end
 GetRealmName = function() return "Test Realm" end
 UnitName = function() return "Test Character" end
+UnitNameUnmodified = function() return "Test Character", "Surname" end
+strmatch = string.match
 UnitClass = function() return "Warrior", "WARRIOR" end
 UnitRace = function() return "Human", "Human" end
 UnitFactionGroup = function() return "Alliance" end
@@ -15,13 +17,16 @@ strlenutf8 = string.len -- The profile names in this test are ASCII.
 Enum = Enum or {}
 Enum.GameRule = { HardcoreRuleset = 1, RPRuleset = 2, PvPRuleset = 3 }
 securecallfunction = function(fn, ...) return fn(...) end
--- Load the bundled AceDB for each client/ruleset, including Forever's realm keys.
+-- Load the bundled AceDB for each client/ruleset. Forever has regional unique
+-- names: its realm key is the ruleset and its character key is name and surname.
 for _, case in ipairs({
     { 120100, 0, "Test Realm" }, { 11509, 0, "Test Realm" },
     { 16001, 1, "Hardcore" }, { 16001, 2, "RP" },
     { 16001, 3, "PvP" }, { 16001, 0, "PvE" },
 }) do
+    local forever = case[1] == 16001
     GetBuildInfo = function() return nil, nil, nil, case[1] end
+    RegionalUniqueNamesEnabled = function() return forever end
     C_GameRules = { IsGameRuleActive = function(rule) return rule == case[2] end }
     LibStub = nil
     dofile("Libs/LibStub/LibStub.lua")
@@ -29,8 +34,10 @@ for _, case in ipairs({
     dofile("Libs/AceDB-3.0/AceDB-3.0.lua")
     local db = LibStub("AceDB-3.0"):New({}, nil, true)
     assert(db.keys.realm == case[3], "Incorrect AceDB realm key")
-    assert(db.keys.char == "Test Character - " .. case[3], "Incorrect AceDB character key")
+    assert(db.keys.char == (forever and "Test Character Surname" or "Test Character - " .. case[3]),
+        "Incorrect AceDB character key")
 end
+RegionalUniqueNamesEnabled = nil -- AceDB read it at load; keep it out of later tests.
 print("PASS: bundled AceDB realm and character keys for Retail, Era, and all Forever rulesets")
 LibStub:NewLibrary("AceConfigRegistry-3.0", 1).NotifyChange = noop
 ScarletUI, StaticPopupDialogs = {}, {}

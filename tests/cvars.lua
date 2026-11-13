@@ -76,6 +76,7 @@ end
 GetRealmName = function() return "Test Realm" end
 local character = "First"
 UnitName = function() return character end
+UnitNameUnmodified, strmatch = UnitName, string.match
 UnitClass = function() return "Warrior", "WARRIOR" end
 UnitRace = function() return "Human", "Human" end
 UnitFactionGroup = function() return "Alliance" end
