@@ -323,6 +323,16 @@ now = now + 3
 tracking = { { name = "Find Minerals", active = false }, { name = "Track Beasts", active = true } }
 ScarletUI:SwitchTracking()
 assert(tracking[2].active and not tracking[1].active, "timer overrode a single tracker")
+-- Forever: cooldown numbers are secret (comparing one errors); isActive is read instead.
+local savedSpell, onCooldown = C_Spell, true
+C_Spell = { GetSpellCooldown = function() return { duration = {}, isActive = onCooldown } end }
+tracking = { { name = "Find Minerals", active = false }, { name = "Find Herbs", active = true } }
+ScarletUI:SwitchTracking()
+assert(tracking[2].active, "swapped during a secret cooldown")
+onCooldown = false
+ScarletUI:SwitchTracking()
+assert(tracking[1].active and not tracking[2].active, "did not swap after a secret cooldown")
+C_Spell = savedSpell
 GetSpellInfo = nil
 
 -- Bag sorting: shared when changed; Era, TBC, and Mists lack the sort direction.

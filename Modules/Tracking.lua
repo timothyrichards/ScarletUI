@@ -39,7 +39,10 @@ end
 local function OnCooldown(spellID)
     if C_Spell and C_Spell.GetSpellCooldown then
         local info = C_Spell.GetSpellCooldown(spellID)
-        return info and info.duration > 0
+        if not info then return false end
+        -- Forever returns the cooldown numbers as secret values; isActive is readable.
+        if info.isActive ~= nil then return info.isActive end
+        return not (issecretvalue and issecretvalue(info.duration)) and info.duration > 0
     end
     local _, duration = GetSpellCooldown(spellID)
     return (duration or 0) > 0
