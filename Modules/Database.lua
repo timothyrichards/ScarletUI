@@ -99,6 +99,8 @@ ScarletUI.defaults = {
         statDisplay = {
             roles = {},
         },
+        -- Equipment set name per talent spec group (1 primary, 2 secondary).
+        specGearSets = {},
         editMode = {
             promptedVersions = {},
             declinedVersions = {},

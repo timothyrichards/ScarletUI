@@ -224,6 +224,19 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   seconds to the buff. The
   use spell's aura is hidden, so a meal cut short is read from the ordinary
   Food or Drink aura, looked up by name, having been seen and gone.
+- `Modules/SpecGearSets.lua`: gear set per talent specialization, Forever only.
+  `ScarletUISpecGearSet`, a dropdown at the left of the talent window's header
+  row, lists the Equipment Manager sets; the set picked for the Primary or
+  Secondary tab being viewed is equipped on `ACTIVE_TALENT_GROUP_CHANGED` when
+  that spec group becomes active, after combat if need be. Stored by set name
+  in `db.char.specGearSets[spec group]`, since set IDs are reused after a
+  delete; a missing name counts as no set. `C_EquipmentSet.AssignSpecToEquipmentSet`
+  is for Retail specializations, not spec groups, and is not used. The dropdown
+  is a child of `PlayerSpellsFrame.TalentsFrame.ActiveSpec`, so Blizzard hides
+  it without dual specialization and while inspecting, and it redraws from a
+  post-hook on that frame's `Refresh`: the tab buttons call a closure over
+  `SetTab`, so a hook on `SetTab` misses clicks. No settings toggle; "No Gear
+  Set" is off. `Blizzard_PlayerSpells` loads on demand.
 - `Modules/StatDisplay.lua`: stat display (`db.global.statDisplay`, off by
   default, its own Stat Display settings page), every client but Retail. It
   lists the stats of up to three roles, melee, ranged, and caster (`SETS`),

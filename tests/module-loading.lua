@@ -67,7 +67,7 @@ end
 local calls = {}
 local setupMethods = { "SetupDebugFrame", "SetupActionBarToggles", "SetupBagSort", "SetupTracking", "SetupChat", "SetupCVars",
     "SetupItemLevels",
-    "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupFiveSecondRule", "SetupFishing", "SetupXPFood", "SetupStatDisplay", "SetupCraftProfit", "SetupExpandCharacterInfo", "SetupGameMenuButtons",
+    "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupFiveSecondRule", "SetupFishing", "SetupXPFood", "SetupSpecGearSets", "SetupStatDisplay", "SetupCraftProfit", "SetupExpandCharacterInfo", "SetupGameMenuButtons",
     "SetupFrameTweaks", "SetupMinimapIcon" }
 for _, name in ipairs(setupMethods) do
     ScarletUI[name] = function() calls[name] = true end
@@ -1092,6 +1092,82 @@ assert(foodIcon.point[1] == "CENTER" and settings.position == nil and not foodLi
 CreateFrame, IsControlKeyDown = savedCreateFrame, nil
 UnitLevel, C_Container, C_Item, C_UnitAuras, IsPlayerAtEffectiveMaxLevel = savedUnitLevel, nil, nil, nil, nil
 C_Spell, GetTime = savedSpell, savedGetTime
+end
+
+-- Gear set per talent specialization: the set picked on a talent tab is
+-- equipped when that spec group becomes active, after combat if need be.
+do
+local hooks, onLoaded = {}, nil
+local savedCreateFrame, savedHook, savedCombat, savedClient = CreateFrame, hooksecurefunc, InCombatLockdown, ScarletUI.GetWoWVersion
+CreateFrame = function(kind, name)
+    local frame = { kind = kind, name = name, events = {}, scripts = {}, generated = 0 }
+    frame.SetScript = function(self, script, fn) self.scripts[script] = fn end
+    frame.RegisterEvent = function(self, event) self.events[event] = true end
+    frame.UnregisterEvent = function(self, event) self.events[event] = nil end
+    frame.SetupMenu = function(self, generator) self.generator = generator end
+    frame.GenerateMenu = function(self) self.generated = self.generated + 1 end
+    return setmetatable(frame, { __index = function() return noop end })
+end
+hooksecurefunc = function(_, key, hook) hooks[key] = hook end
+EventUtil = { ContinueOnAddOnLoaded = function(name, fn) assert(name == "Blizzard_PlayerSpells"); onLoaded = fn end }
+-- Set IDs start at 0 and have gaps.
+local sets, activeGroup, tab, combat, used = { [0] = "Ret", [3] = "Holy" }, 1, 1, false, {}
+C_SpecializationInfo = { GetActiveSpecGroup = function() return activeGroup end }
+C_EquipmentSet = {
+    GetEquipmentSetIDs = function() return { 0, 3 } end,
+    GetEquipmentSetInfo = function(id) return sets[id] end,
+    GetEquipmentSetID = function(name)
+        for id, setName in pairs(sets) do if setName == name then return id end end
+    end,
+    UseEquipmentSet = function(id) used[#used + 1] = id end,
+}
+InCombatLockdown = function() return combat end
+PlayerSpellsFrame = { TalentsFrame = { ActiveSpec = {}, BackgroundBorder = {}, GetTab = function() return tab end } }
+dofile("Modules/SpecGearSets.lua")
+-- Mists has dual specialization too, but another talent window.
+ScarletUI.GetWoWVersion = function() return "MOP", 50504 end
+ScarletUI:SetupSpecGearSets()
+assert(ScarletUI.specGearSetEvents == nil and onLoaded == nil)
+ScarletUI.GetWoWVersion = savedClient
+ScarletUI:SetupSpecGearSets()
+local events = ScarletUI.specGearSetEvents
+assert(events.events.ACTIVE_TALENT_GROUP_CHANGED and ScarletUI.specGearSetDropdown == nil)
+-- The dropdown waits for the load-on-demand talent window.
+onLoaded()
+local dropdown = ScarletUI.specGearSetDropdown
+assert(dropdown.kind == "DropdownButton" and dropdown.name == "ScarletUISpecGearSet")
+local radios = {}
+dropdown.generator(dropdown, { CreateRadio = function(_, text, isSelected, setSelected, data)
+    radios[#radios + 1] = { text = text, picked = function() return isSelected(data) end, pick = function() setSelected(data) end }
+end })
+assert(#radios == 3 and radios[1].text == "No Gear Set" and radios[2].text == "Ret" and radios[3].text == "Holy")
+assert(radios[1].picked() and not radios[2].picked())
+-- A pick belongs to the tab being viewed, not the active specialization.
+tab = 2; radios[3].pick()
+assert(ScarletUI.db.char.specGearSets[2] == "Holy" and radios[3].picked() and #used == 0)
+tab = 1; assert(radios[1].picked() and not radios[3].picked())
+radios[2].pick(); assert(radios[2].picked())
+-- Switching tabs redraws the dropdown's text.
+hooks.Refresh(); assert(dropdown.generated == 1)
+local fire = events.scripts.OnEvent
+activeGroup = 2; fire(events, "ACTIVE_TALENT_GROUP_CHANGED", 2, 1)
+assert(#used == 1 and used[1] == 3)
+-- The event without a change of specialization equips nothing.
+fire(events, "ACTIVE_TALENT_GROUP_CHANGED", 2, 2); assert(#used == 1)
+-- In combat the set waits.
+combat, activeGroup = true, 1
+fire(events, "ACTIVE_TALENT_GROUP_CHANGED", 1, 2)
+assert(#used == 1 and events.events.PLAYER_REGEN_ENABLED)
+combat = false; fire(events, "PLAYER_REGEN_ENABLED")
+assert(#used == 2 and used[2] == 0 and not events.events.PLAYER_REGEN_ENABLED)
+-- A deleted set counts as no set.
+sets[3], activeGroup, tab = nil, 2, 2
+fire(events, "ACTIVE_TALENT_GROUP_CHANGED", 2, 1)
+assert(#used == 2 and radios[1].picked() and not radios[3].picked())
+tab = 1; radios[1].pick(); assert(ScarletUI.db.char.specGearSets[1] == nil)
+ScarletUI.db.char.specGearSets = {}
+CreateFrame, hooksecurefunc, InCombatLockdown = savedCreateFrame, savedHook, savedCombat
+EventUtil, C_SpecializationInfo, C_EquipmentSet, PlayerSpellsFrame = nil, nil, nil, nil
 end
 
 -- Stat display: off by default. Switched on, each role the character shows
