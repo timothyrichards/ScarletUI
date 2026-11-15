@@ -24,7 +24,10 @@ do
     local oldTime, now = time, 1000
     time = function() return now end
     ScarletUI.db.keys = { char = "Scarlet Bubbles" }
-    ScarletUI.db.global.played = { ["Scarlet-Realm"] = 1 } -- first version's table is dropped
+    -- The first version's "Name-Realm" table is dropped on Forever, where the
+    -- names collide, and moved to AceDB's "Name - Realm" keys elsewhere.
+    ScarletUI.db.global.played = { ["Scarlet-Realm"] = 1 }
+    RegionalUniqueNamesEnabled = function() return true end
     local function Fire(event, ...)
         for _, handler in ipairs(ScarletUI.eventHandlers[event]) do handler(event, ...) end
     end
@@ -35,6 +38,13 @@ do
     now = 1600
     Fire("PLAYER_LOGOUT")
     assert(ScarletUI.db.global.playtime["Scarlet Bubbles"] == 5600)
+    assert(ScarletUI.db.global.playtime["Scarlet - Realm"] == nil)
+    RegionalUniqueNamesEnabled = nil
+    ScarletUI.db.keys.char = "Tester - Azjol-Nerub"
+    ScarletUI.db.global.played = { ["Other-Azjol-Nerub"] = 7, ["Tester-Azjol-Nerub"] = 8 }
+    Fire("TIME_PLAYED_MSG", 9000, 20)
+    assert(ScarletUI.db.global.playtime["Other - Azjol-Nerub"] == 7 and ScarletUI.db.global.played == nil)
+    assert(ScarletUI.db.global.playtime["Tester - Azjol-Nerub"] == 9000)
     ScarletUI.db.global.playtime, ScarletUI.db.keys, time = nil, nil, oldTime
 end
 assert(ScarletUI.defaults.global.actionbarsModule == nil)

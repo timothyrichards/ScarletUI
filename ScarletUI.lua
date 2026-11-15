@@ -279,8 +279,15 @@ local playedTotal, playedAt
 local function SavePlayed()
     if not playedTotal then return end
     local global = ScarletUI.db.global
-    global.played = nil -- first version, keyed by first name
     global.playtime = global.playtime or {}
+    if global.played then -- first version: "Name-Realm" keys, which collide on Forever
+        if not (RegionalUniqueNamesEnabled and RegionalUniqueNamesEnabled()) then
+            for key, seconds in pairs(global.played) do
+                global.playtime[(key:gsub("-", " - ", 1))] = seconds
+            end
+        end
+        global.played = nil
+    end
     global.playtime[ScarletUI.db.keys.char] = playedTotal + time() - playedAt
 end
 
