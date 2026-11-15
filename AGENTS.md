@@ -31,6 +31,11 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
 ## Source map
 
 - `ScarletUI.lua`: addon initialization, setup dispatcher, events, popups, commands.
+  It also records playtime: `RequestTimePlayed()` at `PLAYER_LOGIN` (which
+  prints Blizzard's two /played chat lines) and each `TIME_PLAYED_MSG` total
+  saved in `db.global.played["Name-Realm"]`, topped up at logout. No toggle and
+  no AceDB default. `python tools/playtime.py` sums it across every client's
+  SavedVariables; `tools` is not packaged.
 - `Modules/Database.lua`: AceDB defaults and reset behavior.
 - `Modules/Options.lua`: AceConfig settings pages. There is no central module
   list: each feature's enable toggle sits on its own page (Bags, Chat, Fishing, Stat Display,
