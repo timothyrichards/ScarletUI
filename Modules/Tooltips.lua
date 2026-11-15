@@ -48,14 +48,27 @@ local function FindCostLine(tooltip, amount)
     end
 end
 
+-- Max mana can be a secret value in combat; the last readable one stands in.
+-- ponytail: a max mana change mid-combat (level up, buff) shows a stale percent
+-- until combat ends.
+local lastMaxMana
+local function MaxMana()
+    local maxMana = UnitPowerMax("player", MANA_TYPE)
+    if IsSecret(maxMana) then
+        return lastMaxMana
+    end
+    lastMaxMana = maxMana
+    return maxMana
+end
+
 local function AddManaPercent(tooltip, spellID)
     if tooltip ~= GameTooltip or IsSecret(spellID) or not spellID or not ScarletUI.db.global.spellCostPercent
         or tooltip:IsForbidden() then
         return
     end
     local costs = GetSpellPowerCost and GetSpellPowerCost(spellID)
-    local maxMana = UnitPowerMax("player", MANA_TYPE)
-    if not costs or IsSecret(maxMana) or not maxMana or maxMana <= 0 then
+    local maxMana = MaxMana()
+    if not costs or not maxMana or maxMana <= 0 then
         return
     end
 
@@ -179,6 +192,7 @@ function ScarletUI:SetupSpellCostPercent()
         return
     end
     self.spellCostHooked = true
+    MaxMana() -- seed the cache in case no spell is hovered before combat
     if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
         -- Setup runs at login, after every addon has loaded.
         if Auctionator then

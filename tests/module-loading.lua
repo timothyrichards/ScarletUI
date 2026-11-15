@@ -573,6 +573,12 @@ assert(GameTooltipTextLeft2:GetText() == costText)
 GameTooltipTextLeft2, GameTooltipTextRight2 = Line(SECRET), Line(SECRET)
 postCalls[1](GameTooltip, { id = 139 })
 assert(GameTooltipTextLeft2:GetText() == SECRET and GameTooltipTextRight2:GetText() == SECRET)
+-- Secret max mana (combat): the percent uses the last readable value.
+UnitPowerMax = function() return SECRET end
+GameTooltipTextLeft2, GameTooltipTextRight2 = Line("105 Mana"), Line("40 yd range")
+postCalls[1](GameTooltip, { id = 139 })
+assert(GameTooltipTextLeft2:GetText() == costText)
+UnitPowerMax = function() return 1300 end
 -- Per mana: range average plus heal over time, or absorb; damage adds nothing.
 for text, expected in pairs({
     ["Heals a friendly target for 93 to 107 and another 98 over 21 sec."] = "1.89 healing per mana",
