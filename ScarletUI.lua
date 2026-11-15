@@ -269,17 +269,19 @@ end
 ScarletUI:RegisterEventHandler("PLAYER_REGEN_DISABLED", OnCombatChanged)
 ScarletUI:RegisterEventHandler("PLAYER_REGEN_ENABLED", OnCombatChanged)
 
--- Playtime: saves each character's /played total in db.global.played so
--- tools/playtime.py can sum every client. The request at login prints
--- Blizzard's two /played chat lines. The total is topped up at logout, since
--- the server only reports it on request.
+-- Playtime: saves each character's /played total in db.global.playtime so
+-- tools/playtime.py can sum every client. Keyed by AceDB's character key:
+-- Forever characters share first names, so UnitName alone collides. The request
+-- at login prints Blizzard's two /played chat lines. The total is topped up at
+-- logout, since the server only reports it on request.
 local playedTotal, playedAt
 
 local function SavePlayed()
     if not playedTotal then return end
     local global = ScarletUI.db.global
-    global.played = global.played or {}
-    global.played[UnitName("player") .. "-" .. GetRealmName()] = playedTotal + time() - playedAt
+    global.played = nil -- first version, keyed by first name
+    global.playtime = global.playtime or {}
+    global.playtime[ScarletUI.db.keys.char] = playedTotal + time() - playedAt
 end
 
 ScarletUI:RegisterEventHandler("PLAYER_LOGIN", function() RequestTimePlayed() end)

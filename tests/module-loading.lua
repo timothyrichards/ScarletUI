@@ -21,22 +21,21 @@ ScarletUI.knownCVars = {}
 GetCVar = function() return nil end
 -- Playtime: the /played total is saved per character and topped up at logout.
 do
-    local oldTime, oldName, oldRealm, now = time, UnitName, GetRealmName, 1000
+    local oldTime, now = time, 1000
     time = function() return now end
-    UnitName = function() return "Tester" end
-    GetRealmName = function() return "Realm" end
+    ScarletUI.db.keys = { char = "Scarlet Bubbles" }
+    ScarletUI.db.global.played = { ["Scarlet-Realm"] = 1 } -- first version's table is dropped
     local function Fire(event, ...)
         for _, handler in ipairs(ScarletUI.eventHandlers[event]) do handler(event, ...) end
     end
     Fire("PLAYER_LOGOUT") -- nothing received yet: nothing saved
-    assert(ScarletUI.db.global.played == nil)
+    assert(ScarletUI.db.global.playtime == nil)
     Fire("TIME_PLAYED_MSG", 5000, 20)
-    assert(ScarletUI.db.global.played["Tester-Realm"] == 5000)
+    assert(ScarletUI.db.global.playtime["Scarlet Bubbles"] == 5000 and ScarletUI.db.global.played == nil)
     now = 1600
     Fire("PLAYER_LOGOUT")
-    assert(ScarletUI.db.global.played["Tester-Realm"] == 5600)
-    ScarletUI.db.global.played = nil
-    time, UnitName, GetRealmName = oldTime, oldName, oldRealm
+    assert(ScarletUI.db.global.playtime["Scarlet Bubbles"] == 5600)
+    ScarletUI.db.global.playtime, ScarletUI.db.keys, time = nil, nil, oldTime
 end
 assert(ScarletUI.defaults.global.actionbarsModule == nil)
 assert(ScarletUI.originalUIDefaults.global.actionbarsModule == nil)

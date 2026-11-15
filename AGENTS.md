@@ -33,7 +33,8 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
 - `ScarletUI.lua`: addon initialization, setup dispatcher, events, popups, commands.
   It also records playtime: `RequestTimePlayed()` at `PLAYER_LOGIN` (which
   prints Blizzard's two /played chat lines) and each `TIME_PLAYED_MSG` total
-  saved in `db.global.played["Name-Realm"]`, topped up at logout. No toggle and
+  saved in `db.global.playtime[db.keys.char]`, topped up at logout. AceDB's
+  character key is used because Forever characters share first names. No toggle and
   no AceDB default. `python tools/playtime.py` sums it across every client's
   SavedVariables; `tools` is not packaged.
 - `Modules/Database.lua`: AceDB defaults and reset behavior.
