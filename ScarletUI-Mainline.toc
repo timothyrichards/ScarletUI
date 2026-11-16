@@ -23,6 +23,7 @@ Modules\Helpers.lua
 Modules\EditModeLayouts.lua
 Modules\EditMode.lua
 Modules\FiveSecondRule.lua
+Modules\QuestXPBar.lua
 Modules\Fishing.lua
 Modules\XPFood.lua
 Modules\SpecGearSets.lua

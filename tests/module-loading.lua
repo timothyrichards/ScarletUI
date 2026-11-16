@@ -100,7 +100,7 @@ end
 local calls = {}
 local setupMethods = { "SetupDebugFrame", "SetupActionBarToggles", "SetupBagSort", "SetupTracking", "SetupChat", "SetupCVars",
     "SetupItemLevels",
-    "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupFiveSecondRule", "SetupFishing", "SetupXPFood", "SetupSpecGearSets", "SetupStatDisplay", "SetupCraftProfit", "SetupExpandCharacterInfo", "SetupGameMenuButtons",
+    "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupFiveSecondRule", "SetupQuestXPBar", "SetupFishing", "SetupXPFood", "SetupSpecGearSets", "SetupStatDisplay", "SetupCraftProfit", "SetupExpandCharacterInfo", "SetupGameMenuButtons",
     "SetupFrameTweaks", "SetupMinimapIcon" }
 for _, name in ipairs(setupMethods) do
     ScarletUI[name] = function() calls[name] = true end
@@ -751,6 +751,50 @@ Cast(3) -- a free spell does not restart the timer
 now = 105; ruleScripts.OnUpdate()
 assert(not sparkShown and not ruleShown)
 assert(not ScarletUI:Options().args.generalSettings.args.interface.args.fiveSecondRule.hidden())
+-- Quest XP bar: completed quests' XP is highlighted after the fill, up to the bar's end.
+do
+    local shown, width
+    local expBar = { isExpBar = true, StatusBar = {
+        GetWidth = function() return 200 end,
+        GetStatusBarTexture = function() return {} end,
+        CreateTexture = function() return {
+            SetTexture = noop, SetVertexColor = noop, SetPoint = noop,
+            SetShown = function(_, value) shown = value end,
+            SetWidth = function(_, value) width = value end,
+        } end,
+    } }
+    StatusTrackingBarManager = { barContainers = { { bars = { {}, expBar } } } }
+    local savedQuestLog, xp = C_QuestLog, 500
+    UnitXP = function() return xp end
+    UnitXPMax = function() return 1000 end
+    -- Quest 1 is complete, 2 is in progress, 3 is complete but hidden.
+    local entries = { { isHeader = true }, { questID = 1 }, { questID = 2 }, { questID = 3, isHidden = true } }
+    C_QuestLog = {
+        GetNumQuestLogEntries = function() return #entries end,
+        GetInfo = function(i) return entries[i] end,
+        IsComplete = function(id) return id ~= 2 end,
+    }
+    GetQuestLogRewardXP = function(id) return id * 100 end
+    local scripts, savedCreate = {}, CreateFrame
+    CreateFrame = function() return { RegisterEvent = noop, SetScript = function(_, name, fn) scripts[name] = fn end } end
+    dofile("Modules/QuestXPBar.lua")
+    ScarletUI:SetupQuestXPBar()
+    CreateFrame = savedCreate
+    assert(shown and width == 20) -- 100 of 1000 XP on a 200 wide bar
+    xp = 950; scripts.OnEvent() -- only 50 XP left in the level
+    assert(shown and width == 10)
+    ScarletUI.db.global.questXPBar = false; scripts.OnEvent()
+    assert(not shown)
+    ScarletUI.db.global.questXPBar = true
+    -- Classic quest log API.
+    C_QuestLog, xp = {}, 0
+    GetNumQuestLogEntries = function() return 3 end
+    GetQuestLogTitle = function(i) return "q", 1, 0, i == 1, false, i == 2 and 1 or -1, 0, i end
+    scripts.OnEvent()
+    assert(shown and width == 40)
+    C_QuestLog = savedQuestLog
+    assert(not ScarletUI:Options().args.generalSettings.args.interface.args.questXPBar.hidden())
+end
 -- Fishing mode: with a pole equipped the key clicks our button, and during the
 -- Fishing cast it is Interact With Target with soft targeting widened.
 do

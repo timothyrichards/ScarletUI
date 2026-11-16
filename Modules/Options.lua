@@ -110,6 +110,19 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                             self:UpdateXPFood()
                         end,
                     },
+                    questXPBar = {
+                        name = "Quest XP on Experience Bar",
+                        desc = "Highlight the part of your experience bar that turning in every completed quest in your log would fill.",
+                        type = "toggle",
+                        hidden = function() return not self.questXPBarFrame end,
+                        width = 1.5,
+                        order = 8,
+                        get = function(_) return database.questXPBar end,
+                        set = function(_, val)
+                            database.questXPBar = val
+                            self:UpdateQuestXPBar()
+                        end,
+                    },
                     expandCharacterInfo = {
                         name = "Auto Expand Character Info",
                         desc = "Open the character window with its side panel (stats, titles, and equipment manager) already expanded.",

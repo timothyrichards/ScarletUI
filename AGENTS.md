@@ -185,6 +185,13 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   so casts come from the player's `UNIT_SPELLCAST_SUCCEEDED` (not secret for the
   player) and `GetSpellPowerCost`, never from mana changes. Hidden while the bar
   shows rage or energy.
+- `Modules/QuestXPBar.lua`: draws in gold the part of the experience bar that
+  turning in every completed quest in the log would fill, clamped to the end of
+  the bar (`db.global.questXPBar`, Interface group on the General page). The
+  texture sits on the `StatusBar` of each `isExpBar` frame in
+  `StatusTrackingBarManager.barContainers`, anchored to the fill texture. Set up
+  wherever `GetQuestLogRewardXP` exists; Blizzard's Era and TBC quest log shows
+  no XP reward, and whether the function returns any there is unverified.
 - `Modules/Fishing.lua`: fishing mode (`db.global.fishingModule`, its own
   Fishing settings page), every client but Retail. While a fishing pole is in the
   main hand, a priority override binding puts the fishing key (Space by default)
