@@ -273,7 +273,8 @@ ScarletUI:RegisterEventHandler("PLAYER_REGEN_ENABLED", OnCombatChanged)
 -- tools/playtime.py can sum every client. Keyed by AceDB's character key:
 -- Forever characters share first names, so UnitName alone collides. The request
 -- at login prints Blizzard's two /played chat lines. The total is topped up at
--- logout, since the server only reports it on request.
+-- logout, since the server only reports it on request. The class token goes in
+-- db.global.playtimeClasses under the same key, so the totals stay plain numbers.
 local playedTotal, playedAt
 
 local function SavePlayed()
@@ -289,6 +290,8 @@ local function SavePlayed()
         global.played = nil
     end
     global.playtime[ScarletUI.db.keys.char] = playedTotal + time() - playedAt
+    global.playtimeClasses = global.playtimeClasses or {}
+    global.playtimeClasses[ScarletUI.db.keys.char] = select(2, UnitClass("player"))
 end
 
 ScarletUI:RegisterEventHandler("PLAYER_LOGIN", function() RequestTimePlayed() end)

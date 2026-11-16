@@ -36,9 +36,11 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   saved in `db.global.playtime[db.keys.char]`, topped up at logout. AceDB's
   character key is used because Forever characters share first names. The first
   version's `db.global.played` ("Name-Realm" keys) is moved over on the next
-  login, or dropped on Forever. No toggle and
-  no AceDB default. `python tools/playtime.py` sums it across every client's
-  SavedVariables; `tools` is not packaged.
+  login, or dropped on Forever. The class token (`PALADIN`) goes in
+  `db.global.playtimeClasses` under the same key, so the totals stay plain
+  numbers. No toggle and no AceDB default. `python tools/playtime.py` sums it
+  across every client's SavedVariables, per character and per class; `tools`
+  is not packaged.
 - `Modules/Database.lua`: AceDB defaults and reset behavior.
 - `Modules/Options.lua`: AceConfig settings pages. There is no central module
   list: each feature's enable toggle sits on its own page (Bags, Chat, Fishing, Stat Display,

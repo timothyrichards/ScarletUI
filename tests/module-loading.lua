@@ -21,8 +21,9 @@ ScarletUI.knownCVars = {}
 GetCVar = function() return nil end
 -- Playtime: the /played total is saved per character and topped up at logout.
 do
-    local oldTime, now = time, 1000
+    local oldTime, oldClass, now = time, UnitClass, 1000
     time = function() return now end
+    UnitClass = function() return "Paladin", "PALADIN" end
     ScarletUI.db.keys = { char = "Scarlet Bubbles" }
     -- The first version's "Name-Realm" table is dropped on Forever, where the
     -- names collide, and moved to AceDB's "Name - Realm" keys elsewhere.
@@ -45,7 +46,11 @@ do
     Fire("TIME_PLAYED_MSG", 9000, 20)
     assert(ScarletUI.db.global.playtime["Other - Azjol-Nerub"] == 7 and ScarletUI.db.global.played == nil)
     assert(ScarletUI.db.global.playtime["Tester - Azjol-Nerub"] == 9000)
-    ScarletUI.db.global.playtime, ScarletUI.db.keys, time = nil, nil, oldTime
+    -- The class is saved beside the total, only for characters that logged in.
+    assert(ScarletUI.db.global.playtimeClasses["Tester - Azjol-Nerub"] == "PALADIN")
+    assert(ScarletUI.db.global.playtimeClasses["Other - Azjol-Nerub"] == nil)
+    ScarletUI.db.global.playtime, ScarletUI.db.global.playtimeClasses = nil, nil
+    ScarletUI.db.keys, time, UnitClass = nil, oldTime, oldClass
 end
 assert(ScarletUI.defaults.global.actionbarsModule == nil)
 assert(ScarletUI.originalUIDefaults.global.actionbarsModule == nil)
