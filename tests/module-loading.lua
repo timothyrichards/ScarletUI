@@ -100,7 +100,7 @@ end
 local calls = {}
 local setupMethods = { "SetupDebugFrame", "SetupActionBarToggles", "SetupBagSort", "SetupTracking", "SetupChat", "SetupCVars",
     "SetupItemLevels",
-    "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupFiveSecondRule", "SetupQuestXPBar", "SetupFishing", "SetupXPFood", "SetupSpecGearSets", "SetupStatDisplay", "SetupCraftProfit", "SetupExpandCharacterInfo", "SetupGameMenuButtons",
+    "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupFiveSecondRule", "SetupQuestXPBar", "SetupFishing", "SetupXPFood", "SetupWeaponReminder", "SetupSpecGearSets", "SetupStatDisplay", "SetupCraftProfit", "SetupExpandCharacterInfo", "SetupGameMenuButtons",
     "SetupFrameTweaks", "SetupMinimapIcon" }
 for _, name in ipairs(setupMethods) do
     ScarletUI[name] = function() calls[name] = true end
@@ -1012,7 +1012,7 @@ IsControlKeyDown = nil
 CreateFrame, GetCVar, C_Container, C_Item = savedCreateFrame, savedGetCVar, nil, nil
 end
 
--- XP food reminder: the icon shows while the XP buff is missing and the bags
+-- Reminders. XP food: the icon shows while the XP buff is missing and the bags
 -- hold a food the character can eat. Right-click eats the food shown;
 -- left-click opens a list of the usable foods to pick which one that is.
 do
@@ -1053,16 +1053,23 @@ UnitLevel = function() return foodLevel end
 IsPlayerAtEffectiveMaxLevel = function() return atMax end
 C_Container = { GetContainerNumSlots = function() return 4 end,
     GetContainerItemID = function(bag, slot) return bag == 0 and foodBags[slot] or nil end }
-C_Item = { GetItemInfoInstant = function(id) return id, nil, nil, nil, "icon" .. id end,
+-- Weapons by item ID: a sword, a mace, a fishing pole; 99 is a shield.
+local weaponSubclass = { [50] = 7, [51] = 4, [52] = 20 }
+-- Required levels of the weapon enhancements below; the rest need none.
+local requiredLevel = { [12404] = 35, [2871] = 15, [3241] = 15, [20749] = 45 }
+C_Item = { GetItemInfoInstant = function(id)
+        return id, nil, nil, nil, "icon" .. id, weaponSubclass[id] and 2 or id == 99 and 4 or 0, weaponSubclass[id]
+    end,
+    GetItemInfo = function(id) return "item", nil, nil, nil, requiredLevel[id] or 1 end,
     GetItemCount = function(id) return id % 10 end,
     GetItemSpell = function(id) return "Nutritious Food", 90000 + id end }
 issecretvalue = function(v) return v == SECRET_AURA end
-dofile("Modules/XPFood.lua")
+dofile("Modules/Reminders.lua")
 issecretvalue = nil
 ScarletUI:SetupXPFood() -- this harness is the Forever client
 local foodIcon, foodList = ScarletUI.xpFoodFrame, nil
 for _, widget in ipairs(foodWidgets) do
-    if widget.kind == "Frame" then foodList = widget end
+    if widget.kind == "Frame" then foodList = foodList or widget end
 end
 local settings = ScarletUI.db.global.xpFoodModule
 local function Food(event, ...) foodIcon.scripts.OnEvent(nil, event, "player", ...) end
@@ -1111,7 +1118,7 @@ dead = false; Food("PLAYER_UNGHOST"); assert(foodIcon.shown)
 -- Eating a food in the bags covers it with the Well Fed icon and a countdown to the buff.
 local foodTimer, buffIcon
 for _, widget in ipairs(foodWidgets) do
-    if widget.kind == "Frame" and not foodTimer then foodTimer = widget end
+    if widget.kind == "Frame" then foodTimer = widget end
     buffIcon = buffIcon or widget.icon == "buff1248406"
 end
 assert(buffIcon)
@@ -1167,9 +1174,11 @@ Click("LeftButton"); Food("PLAYER_REGEN_DISABLED"); assert(not foodList.shown an
 Food("PLAYER_REGEN_ENABLED"); assert(foodIcon.shown and not foodList.shown)
 Click("LeftButton"); foodAura = {}; Food("UNIT_AURA"); assert(not foodList.shown and not foodIcon.shown)
 foodAura = nil; Food("UNIT_AURA")
--- Its switch is in the Interface group.
-local foodOption = ScarletUI:Options().args.generalSettings.args.interface.args.xpFood
-assert(not foodOption.hidden())
+-- Its switch is on the Reminders page, not in the Interface group.
+local remindersPage = ScarletUI:Options().args.remindersSettings
+local foodOption = remindersPage.args.xpFood
+assert(not remindersPage.hidden() and not foodOption.hidden() and remindersPage.args.weapon.hidden())
+assert(ScarletUI:Options().args.generalSettings.args.interface.args.xpFood == nil)
 foodOption.set(nil, false); assert(not foodIcon.shown)
 foodOption.set(nil, true); assert(foodIcon.shown)
 -- Dragging saves the position, which a rerun of setup applies.
@@ -1182,6 +1191,108 @@ Click("LeftButton")
 ctrl = true; Click("RightButton"); assert(foodIcon.point[1] == "TOPLEFT")
 Click("LeftButton")
 assert(foodIcon.point[1] == "CENTER" and settings.position == nil and not foodList.shown)
+ctrl = false
+
+-- Weapon enhancements: the icon shows for a weapon with no temporary enchant
+-- while the bags hold a stone, oil, or poison that fits it.
+local firstWeaponWidget = #foodWidgets + 1
+local mainHand, offHand, mainEnchant, offEnchant, class = 50, nil, false, false, "WARRIOR"
+local expiryTimer, cancelled = nil, 0
+local savedTimer = C_Timer
+C_Timer = { NewTimer = function(seconds, callback)
+    expiryTimer = { seconds = seconds, callback = callback, Cancel = function() cancelled = cancelled + 1 end }
+    return expiryTimer
+end }
+GetWeaponEnchantInfo = function()
+    return mainEnchant and true or false, mainEnchant or nil, nil, nil, offEnchant and true or false, offEnchant or nil
+end
+GetInventoryItemID = function(_, slot) return slot == 16 and mainHand or slot == 17 and offHand or nil end
+UnitClass = function() return "Class", class end
+-- Heavy Sharpening Stone, Instant Poison, Heavy Weightstone, Brilliant Wizard Oil; the bags have four slots.
+local weaponBags = { 2871, 6947, 3241, 20749 }
+foodLevel, foodBags = 40, weaponBags
+foodAura = {}; Food("UNIT_AURA") -- Well Fed, so only the weapon icon is left
+ScarletUI:SetupWeaponReminder()
+local weaponIcon, weaponList = ScarletUI.weaponReminderFrame, nil
+for index = firstWeaponWidget, #foodWidgets do
+    if foodWidgets[index].kind == "Frame" then weaponList = weaponList or foodWidgets[index] end
+end
+local weaponSettings = ScarletUI.db.global.weaponReminderModule
+local function Weapon(event) weaponIcon.scripts.OnEvent(nil, event, "player") end
+local function Applies() return weaponIcon.attributes.macrotext2 end
+local function WeaponItems()
+    local shown = {}
+    for index = firstWeaponWidget, #foodWidgets do
+        local widget = foodWidgets[index]
+        if rawget(widget, "applied") and widget.shown then shown[#shown + 1] = widget.itemID end
+    end
+    return table.concat(shown, ",")
+end
+local function PickWeaponItem(itemID)
+    for index = firstWeaponWidget, #foodWidgets do
+        local widget = foodWidgets[index]
+        if rawget(widget, "applied") and widget.shown and widget.itemID == itemID then return widget.scripts.OnClick() end
+    end
+    error("no enhancement button for " .. itemID)
+end
+assert(weaponIcon.name == "ScarletUIWeaponReminder" and weaponIcon.template == "SecureActionButtonTemplate")
+assert(weaponIcon.point[1] == "CENTER" and weaponIcon.point[4] == 60) -- beside the food icon
+-- A sword takes the sharpening stone: not a weightstone, another class's
+-- poison, or the level 45 oil.
+assert(weaponIcon.shown and weaponIcon.itemID == 2871 and Applies() == "/use item:2871\n/use 16")
+assert(WeaponItems() == "2871" and weaponIcon.hint:find("main hand") and not weaponList.shown)
+-- A mace takes the weightstone, and at 45 the oil outranks it; a rogue's sword takes poison too.
+mainHand = 51; Weapon("PLAYER_EQUIPMENT_CHANGED"); assert(weaponIcon.itemID == 3241 and WeaponItems() == "3241")
+foodLevel = 45; Weapon("PLAYER_LEVEL_UP"); assert(weaponIcon.itemID == 20749 and WeaponItems() == "20749,3241")
+mainHand, class = 50, "ROGUE"; Weapon("PLAYER_EQUIPMENT_CHANGED"); assert(WeaponItems() == "20749,2871,6947")
+class, foodLevel = "WARRIOR", 40
+-- Nothing for a fishing pole, an empty hand, or bags with nothing that fits.
+mainHand = 52; Weapon("PLAYER_EQUIPMENT_CHANGED"); assert(not weaponIcon.shown)
+mainHand = nil; Weapon("PLAYER_EQUIPMENT_CHANGED"); assert(not weaponIcon.shown)
+mainHand, foodBags = 50, { 3241, 2680 }; Weapon("BAG_UPDATE_DELAYED"); assert(not weaponIcon.shown)
+-- The better of two stones is the one shown.
+foodBags = { 2871, 12404, 3241 }; Weapon("BAG_UPDATE_DELAYED")
+assert(weaponIcon.shown and weaponIcon.itemID == 12404 and WeaponItems() == "12404,2871")
+-- An enchanted main hand hides it, and a timer rechecks when the enchant runs out.
+mainEnchant = 1800000; Weapon("UNIT_INVENTORY_CHANGED")
+assert(not weaponIcon.shown and expiryTimer.seconds == 1801)
+mainEnchant = false; expiryTimer.callback(); assert(weaponIcon.shown and weaponIcon.itemID == 12404)
+-- Each update replaces the timer instead of stacking another.
+mainEnchant = 1800000; Weapon("UNIT_INVENTORY_CHANGED"); cancelled = 0
+Weapon("BAG_UPDATE_DELAYED"); assert(cancelled == 1)
+-- With the main hand done, a bare off-hand weapon is next; a shield is not.
+offHand = 51; Weapon("PLAYER_EQUIPMENT_CHANGED")
+assert(weaponIcon.shown and weaponIcon.itemID == 3241 and Applies() == "/use item:3241\n/use 17")
+assert(weaponIcon.hint:find("off hand"))
+offHand = 99; Weapon("PLAYER_EQUIPMENT_CHANGED"); assert(not weaponIcon.shown)
+offHand = 51; offEnchant = 60000; Weapon("UNIT_INVENTORY_CHANGED")
+assert(not weaponIcon.shown and expiryTimer.seconds == 61) -- the sooner of the two
+mainEnchant, offEnchant = false, false; Weapon("UNIT_INVENTORY_CHANGED"); assert(weaponIcon.shown)
+-- A pick is kept per hand, and clicking it again goes back to the best.
+weaponIcon.scripts.PostClick(weaponIcon, "LeftButton"); assert(weaponList.shown)
+PickWeaponItem(2871)
+assert(weaponSettings.items[16] == 2871 and weaponIcon.itemID == 2871 and not weaponList.shown)
+mainEnchant = 1800000; Weapon("UNIT_INVENTORY_CHANGED")
+assert(weaponIcon.itemID == 3241 and weaponSettings.items[17] == nil) -- the off hand has no pick
+mainEnchant = false; Weapon("UNIT_INVENTORY_CHANGED"); assert(weaponIcon.itemID == 2871)
+PickWeaponItem(2871); assert(weaponSettings.items[16] == nil and weaponIcon.itemID == 12404)
+-- Unreadable enchants keep it quiet. The file was loaded with issecretvalue set.
+local readEnchants = GetWeaponEnchantInfo
+GetWeaponEnchantInfo = function() return SECRET_AURA end
+Weapon("UNIT_INVENTORY_CHANGED"); assert(not weaponIcon.shown)
+GetWeaponEnchantInfo = readEnchants; Weapon("UNIT_INVENTORY_CHANGED"); assert(weaponIcon.shown)
+-- Hidden in combat and while dead, like the food.
+Weapon("PLAYER_REGEN_DISABLED"); assert(not weaponIcon.shown)
+Weapon("BAG_UPDATE_DELAYED"); assert(not weaponIcon.shown)
+Weapon("PLAYER_REGEN_ENABLED"); assert(weaponIcon.shown)
+dead = true; Weapon("PLAYER_DEAD"); assert(not weaponIcon.shown)
+dead = false; Weapon("PLAYER_UNGHOST"); assert(weaponIcon.shown)
+-- Its switch sits under the XP food switch on the Reminders page.
+local weaponOption = ScarletUI:Options().args.remindersSettings.args.weapon
+assert(not weaponOption.hidden() and weaponOption.order > foodOption.order)
+weaponOption.set(nil, false); assert(not weaponIcon.shown)
+weaponOption.set(nil, true); assert(weaponIcon.shown)
+C_Timer, GetWeaponEnchantInfo, GetInventoryItemID, UnitClass = savedTimer, nil, nil, nil
 CreateFrame, IsControlKeyDown = savedCreateFrame, nil
 UnitLevel, C_Container, C_Item, C_UnitAuras, IsPlayerAtEffectiveMaxLevel = savedUnitLevel, nil, nil, nil, nil
 C_Spell, GetTime = savedSpell, savedGetTime

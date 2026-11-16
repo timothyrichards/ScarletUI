@@ -25,7 +25,7 @@ Modules\EditMode.lua
 Modules\FiveSecondRule.lua
 Modules\QuestXPBar.lua
 Modules\Fishing.lua
-Modules\XPFood.lua
+Modules\Reminders.lua
 Modules\SpecGearSets.lua
 Modules\StatDisplay.lua
 Modules\GameMenu.lua

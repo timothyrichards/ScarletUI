@@ -23,6 +23,7 @@ local NAV = {
     { "actionBarTogglesSettings", master = true },
     { "generalSettings.tracking", master = true, desc = "Share minimap tracking across characters and keep gathering tracking on." },
     { "fishingSettings" },
+    { "remindersSettings", master = true },
     { "statDisplaySettings" },
     { "auctionSettings", master = true },
     { "nameplatesModuleSettings" },

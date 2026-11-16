@@ -18,6 +18,7 @@ function ScarletUI:Options()
             bagModuleSettings = self:GetBagSettingsPage(database, defaults, 4),
             chatModuleSettings = self:GetChatModuleSettingsPage(database, defaults.chatModule, 5),
             fishingSettings = self:GetFishingSettingsPage(database, 6),
+            remindersSettings = self:GetRemindersSettingsPage(database, 6.1),
             statDisplaySettings = self:GetStatDisplaySettingsPage(database, 6.2),
             auctionSettings = self:GetAuctionSettingsPage(database, 6.5),
             -- Nameplates only load on Era, TBC, and Mists.
@@ -95,19 +96,6 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                         set = function(_, val)
                             database.collapseInactiveBuffs = val
                             self:SetupBuffCollapse()
-                        end,
-                    },
-                    xpFood = {
-                        name = "XP Food Reminder",
-                        desc = "Show an icon while you have no Well Fed XP Boost (5% more experience from kills) and your bags hold food that gives it. Right-click the icon to eat; left-click it to choose which food it shows. Hidden in combat and at max level; drag the icon to move it, Ctrl-click it to reset its position.",
-                        type = "toggle",
-                        hidden = function() return not self.xpFoodFrame end,
-                        width = 1.5,
-                        order = 7,
-                        get = function(_) return database.xpFoodModule.enabled end,
-                        set = function(_, val)
-                            database.xpFoodModule.enabled = val
-                            self:UpdateXPFood()
                         end,
                     },
                     questXPBar = {
@@ -386,6 +374,45 @@ function ScarletUI:GetFishingSettingsPage(database, order)
                 set = function(_, val)
                     database.fishingModule.autoLure = val
                     self:UpdateFishing()
+                end,
+            },
+        },
+    }
+end
+
+-- Each reminder is its own icon; the page has no switch of its own.
+function ScarletUI:GetRemindersSettingsPage(database, order)
+    return {
+        name = "Reminders",
+        desc = "Icons that show while a buff is missing and your bags hold the item for it.",
+        type = "group",
+        hidden = function() return not (self.xpFoodFrame or self.weaponReminderFrame) end,
+        order = order,
+        args = {
+            xpFood = {
+                name = "XP Food",
+                desc = "Show an icon while you have no Well Fed XP Boost (5% more experience from kills) and your bags hold food that gives it. Right-click the icon to eat; left-click it to choose which food it shows. Hidden in combat and at max level; drag the icon to move it, Ctrl-click it to reset its position.",
+                type = "toggle",
+                hidden = function() return not self.xpFoodFrame end,
+                width = 1.5,
+                order = 0,
+                get = function(_) return database.xpFoodModule.enabled end,
+                set = function(_, val)
+                    database.xpFoodModule.enabled = val
+                    self:UpdateXPFood()
+                end,
+            },
+            weapon = {
+                name = "Weapon Enhancements",
+                desc = "Show an icon while a weapon has no temporary enchant and your bags hold a sharpening stone, weightstone, oil, or poison that fits it. Right-click the icon to apply it; left-click it to choose which one it shows. Hidden in combat; drag the icon to move it, Ctrl-click it to reset its position.",
+                type = "toggle",
+                hidden = function() return not self.weaponReminderFrame end,
+                width = 1.5,
+                order = 1,
+                get = function(_) return database.weaponReminderModule.enabled end,
+                set = function(_, val)
+                    database.weaponReminderModule.enabled = val
+                    self:UpdateWeaponReminder()
                 end,
             },
         },

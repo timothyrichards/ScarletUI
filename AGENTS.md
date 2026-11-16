@@ -43,7 +43,7 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   is not packaged.
 - `Modules/Database.lua`: AceDB defaults and reset behavior.
 - `Modules/Options.lua`: AceConfig settings pages. There is no central module
-  list: each feature's enable toggle sits on its own page (Bags, Chat, Fishing, Stat Display,
+  list: each feature's enable toggle sits on its own page (Bags, Chat, Fishing, Reminders, Stat Display,
   Nameplates, CVars, Action Bars, and the Minimap Tracking group on General)
   and is the first setting on that page; Bags leads with Custom Bag Frames,
   then Share Sorting Across Characters, and Action Bars with Hide Micro Menu
@@ -62,7 +62,7 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   Every Features page has a master switch and a status light in the list:
   the group's own `enabled` toggle where that turns the whole page off, and
   otherwise (`master = true` in `NAV`: Interface, Item Level, Bags, Action Bars,
-  Minimap Tracking, Auction Prices) an "Enable <page>" row. That one is not a module flag:
+  Minimap Tracking, Reminders, Auction Prices) an "Enable <page>" row. That one is not a module flag:
   `SetSettingsPageEnabled` turns off every toggle and OFF-able select on the
   page through its own setter and remembers what was on in
   `db.global.settingsMasters[page id]`, restoring it when switched back on.
@@ -217,30 +217,47 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   and the `GetSkillLineInfo` rows on Era and TBC (blank while that header is
   collapsed), refreshed on `SKILL_LINES_CHANGED`. When the rank rises, the gain
   ("+1") drifts up from above the rank number and fades.
-- `Modules/XPFood.lua`: XP food reminder (`db.global.xpFoodModule`, toggle in
-  the Interface group on the General page), Forever only. Cooked food there
-  also applies Well Fed XP Boost (spell 1243969, 5% more experience from kills).
-  That aura is hidden from addons, so the buff is read from the 14 visible
-  Well Fed spells the foods trigger (`WELL_FED`).
-  While the player has none of them and the bags hold a listed food whose
-  required level they meet, `ScarletUIXPFood` shows one, styled like the
-  fishing lure (stack count, draggable, position in `position`, Ctrl-click
-  resets it). Right-click eats it; left-click opens a list of the usable foods
-  stacked upward, which closes after a second with the mouse off it. Clicking
-  an entry stores `food` (an item ID); the icon shows a picked food while the
-  bags hold it and the highest-level one otherwise. The item ID list is
-  hand-kept from forever.wowhead.com. The icon is a `SecureActionButtonTemplate`
-  button from `ScarletUI:CreateIconButton` (Helpers, shared with the fishing
-  bar) whose `type2` macro is `/use item:ID`. Its `OnClick` belongs to the
-  template, so our clicks are read in `PostClick`. It hides in
-  `PLAYER_REGEN_DISABLED`, before the lockdown, and nothing on it is shown,
-  hidden, moved, or given attributes until combat ends. It is also hidden at
-  max level and while dead or a ghost. Eating a food from the bags (the
-  player's `UNIT_SPELLCAST_SUCCEEDED` matching its `GetItemSpell`) covers the
-  icon with a plain child frame: the Well Fed icon counting down the 10
-  seconds to the buff. The
-  use spell's aura is hidden, so a meal cut short is read from the ordinary
-  Food or Drink aura, looked up by name, having been seen and gone.
+- `Modules/Reminders.lua`: reminder icons, each with its toggle on the
+  Reminders settings page (`remindersSettings`, `master = true` in `NAV`). A
+  reminder shows an item from the bags while its buff is missing.
+  `CreateReminder(spec)` builds one, styled like the fishing lure (stack count,
+  draggable, position in its settings' `position`, Ctrl-click resets it):
+  right-click uses the item; left-click opens a list of the usable items
+  stacked upward, which closes after a second with the mouse off it. The spec's
+  `Find` returns the usable items, the one to show, and the macro that uses it;
+  `FindItems` scans the bags and puts a picked item first while the bags hold
+  it, the highest required level otherwise. The icon is a
+  `SecureActionButtonTemplate` button from `ScarletUI:CreateIconButton`
+  (Helpers, shared with the fishing bar) whose `type2` is that macro. Its
+  `OnClick` belongs to the template, so our clicks are read in `PostClick`. It
+  hides in `PLAYER_REGEN_DISABLED`, before the lockdown, and nothing on it is
+  shown, hidden, moved, or given attributes until combat ends. It is also
+  hidden while dead or a ghost. Add a reminder as another spec with its own
+  settings table, frame name, and toggle.
+  - XP food (`db.global.xpFoodModule`, `ScarletUIXPFood`), Forever only. Cooked
+    food there also applies Well Fed XP Boost (spell 1243969, 5% more experience
+    from kills). That aura is hidden from addons, so the buff is read from the
+    14 visible Well Fed spells the foods trigger (`WELL_FED`). Shown for a
+    listed food whose required level the player meets; the macro is
+    `/use item:ID` and the pick is stored in `food`. Hidden at max level. The
+    item ID list is hand-kept from forever.wowhead.com. Eating a food from the
+    bags (the player's `UNIT_SPELLCAST_SUCCEEDED` matching its `GetItemSpell`)
+    covers the icon with a plain child frame: the Well Fed icon counting down
+    the 10 seconds to the buff. The use spell's aura is hidden, so a meal cut
+    short is read from the ordinary Food or Drink aura, looked up by name,
+    having been seen and gone.
+  - Weapon enhancements (`db.global.weaponReminderModule`,
+    `ScarletUIWeaponReminder`), Era, TBC, and Forever. Shown for the main hand,
+    then the off hand, when it holds a weapon `GetWeaponEnchantInfo` reports no
+    temporary enchant on and the bags hold an item from `ENHANCEMENTS` that
+    fits: sharpening stones on axes, swords, polearms, and daggers, weightstones
+    on maces, staves, and fist weapons, oils on any weapon but a fishing pole,
+    poisons likewise but only for rogues. The macro is `/use item:ID` then
+    `/use 16` or `/use 17`; the pick is stored per hand in `items[slot]`. The
+    required level comes from `GetItemInfo`. A `C_Timer` rechecks when the
+    soonest enchant runs out, since no event is known to fire then. The item
+    IDs and the fist weapon rule are hand-kept from memory, not checked against
+    a database; fishing lures are left to `Fishing.lua`.
 - `Modules/SpecGearSets.lua`: gear set per talent specialization, Forever only.
   `ScarletUISpecGearSet`, a dropdown at the left of the talent window's header
   row, lists the Equipment Manager sets; the set picked for the Primary or

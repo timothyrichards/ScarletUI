@@ -53,6 +53,11 @@ ScarletUI.defaults = {
         xpFoodModule = {
             enabled = true,
         },
+        weaponReminderModule = {
+            enabled = true,
+            -- The enhancement picked for each hand, keyed by inventory slot.
+            items = {},
+        },
         statDisplay = {
             enabled = false,
             layout = "COMBINED",
