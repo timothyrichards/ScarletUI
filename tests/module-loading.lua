@@ -153,8 +153,8 @@ for _, variant in ipairs({ "STANDARD", "COMPACT", "ULTRAWIDE" }) do
         assert(anchors.partyFrame[1] == -372 and anchors.partyFrame[2] == 698)
     end
     assert(anchors.swingTimerOffHand[4] == "swingTimerMainHand" and anchors.totemBar[4] == "multiBarBottomRight")
-    assert(anchors.utilityCooldowns[3] == "BOTTOM" and anchors.utilityCooldowns[4] == "castBar")
-    assert(anchors.castBar[3] == "BOTTOM" and anchors.castBar[4] == "essentialCooldowns" and anchors.castBar[2] == 18)
+    assert(anchors.utilityCooldowns[3] == "BOTTOM" and anchors.utilityCooldowns[4] == "essentialCooldowns")
+    assert(anchors.castBar[3] == "BOTTOM" and anchors.castBar[4] == "utilityCooldowns" and anchors.castBar[2] == 18)
     assert(anchors.essentialCooldowns[1] == 0 and anchors.essentialCooldowns[3] == "TOP")
     assert(anchors.swingTimerRanged[2] == 400)
     assert(anchors.partyFrame[3] == (variant == "COMPACT" and "BOTTOMLEFT" or "TOPLEFT"))

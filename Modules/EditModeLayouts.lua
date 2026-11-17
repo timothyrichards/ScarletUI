@@ -1,4 +1,4 @@
-ScarletUI.editModeLayoutSchemaVersion = 19
+ScarletUI.editModeLayoutSchemaVersion = 20
 
 ScarletUI.editModeFrameCandidates = {
     -- MainActionBar is the Edit Mode system. MainMenuBar is the 1024px
@@ -212,11 +212,12 @@ local standardFrames = {
             UnitFrameSetting("FrameSize", 100),
         },
     },
-    -- Stacked upward: Essential cooldowns, cast bar, Utility cooldowns. The
+    -- Stacked upward: Essential cooldowns, Utility cooldowns, cast bar. The
     -- spell name box hangs 14 below the cast bar frame, so 18 leaves a gap of 4.
-    -- Clients without the Cooldown Manager get the same spot as a screen anchor.
+    -- Clients without the Cooldown Manager get a screen anchor just above
+    -- where the Essential cooldowns would be.
     castBar = {
-        point = "BOTTOM", relativeTo = "essentialCooldowns", relativePoint = "TOP", x = 0, y = 18,
+        point = "BOTTOM", relativeTo = "utilityCooldowns", relativePoint = "TOP", x = 0, y = 18,
         fallback = { point = "BOTTOM", relativePoint = "BOTTOM", x = 0, y = 327 },
         settings = {
             { setting = EnumValue("EditModeCastBarSetting", "BarSize"), value = 100 },
@@ -302,7 +303,7 @@ local standardFrames = {
         settings = CooldownViewerSettings("Horizontal", 12, "Right", 2),
     },
     utilityCooldowns = {
-        point = "BOTTOM", relativeTo = "castBar", relativePoint = "TOP", x = 0, y = 4,
+        point = "BOTTOM", relativeTo = "essentialCooldowns", relativePoint = "TOP", x = 0, y = 4,
         settings = CooldownViewerSettings("Horizontal", 7, "Right", 2),
     },
     swingTimerMainHand = {
