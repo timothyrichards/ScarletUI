@@ -9,7 +9,8 @@ local MANA_COLOR = "|cff40a0ff" -- lighter than PowerBarColor's pure blue, reada
 local GetSpellDescription = C_Spell and C_Spell.GetSpellDescription or GetSpellDescription
 
 -- Heal or absorb amount parsed from an English description: the average of the
--- first "X to Y" plus a "N ... over T" heal over time, else "absorbing N".
+-- first "X to Y" after the word heal (or "X to Y healing", as Holy Shock puts
+-- it) plus a "N ... over T" heal over time, else "absorbing N".
 -- ponytail: English only and misses fixed single-value heals; no API exposes
 -- heal amounts.
 local function HealAmount(description)
@@ -18,7 +19,10 @@ local function HealAmount(description)
         return
     end
     local healText = text:match("[Hh]eal.*") or ""
-    local low, high = healText:match("(%d+) to (%d+)")
+    local low, high = text:match("(%d+) to (%d+) healing")
+    if not low then
+        low, high = healText:match("(%d+) to (%d+)")
+    end
     local overTime = healText:match("(%d+)%D-over %d")
     if low or overTime then
         return (low and (low + high) / 2 or 0) + (overTime or 0), "healing"
