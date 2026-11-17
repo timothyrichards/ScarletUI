@@ -1012,7 +1012,7 @@ IsControlKeyDown = nil
 CreateFrame, GetCVar, C_Container, C_Item = savedCreateFrame, savedGetCVar, nil, nil
 end
 
--- Reminders. XP food: the icon shows while the XP buff is missing and the bags
+-- Reminders. Food buff: the icon shows while Well Fed is missing and the bags
 -- hold a food the character can eat. Right-click eats the food shown;
 -- left-click opens a list of the usable foods to pick which one that is.
 do
@@ -1043,10 +1043,18 @@ local foodAura, foodLevel, foodBags, atMax = nil, 20, { 2680, 4593, 8364 }, fals
 -- The hidden XP aura (1243969) is never reported; a visible Well Fed spell is.
 -- Eating shows the ordinary Food aura; the use spell's own aura is hidden too.
 local eatingAura, clock = nil, 500
+-- Another client's Well Fed is only known by its name.
+local namedAura
 C_UnitAuras = { GetPlayerAuraBySpellID = function(id) return id == 1249523 and foodAura or nil end,
-    GetAuraDataBySpellName = function(_, name) return name == "Food" and eatingAura or nil end }
+    GetAuraDataBySpellName = function(_, name)
+        return name == "Food" and eatingAura or name == "Well Fed" and namedAura or nil
+    end }
 local savedSpell, savedGetTime = C_Spell, GetTime
-C_Spell = { GetSpellName = function(id) return ({ [433] = "Food", [430] = "Drink" })[id] end,
+-- Use spell text of the unlisted items 5000 to 5002; the third has not loaded yet.
+local spellText = { [95000] = "Restores 552 health. If you spend at least 10 seconds eating you will become well fed.",
+    [95001] = "Restores 61 health over 18 sec.", [95002] = "" }
+C_Spell = { GetSpellName = function(id) return ({ [433] = "Food", [430] = "Drink", [19705] = "Well Fed" })[id] end,
+    GetSpellDescription = function(id) return spellText[id] end,
     GetSpellTexture = function(id) return "buff" .. id end }
 GetTime = function() return clock end
 UnitLevel = function() return foodLevel end
@@ -1108,13 +1116,25 @@ foodBags = { 2680 }; Food("BAG_UPDATE_DELAYED")
 assert(not foodIcon.shown and foodIcon.itemID == 4593 and Eats() == "/use item:4593")
 Food("PLAYER_REGEN_ENABLED"); assert(foodIcon.shown and foodIcon.itemID == 2680 and Eats() == "/use item:2680")
 foodBags = { 2680, 4593, 8364 }
--- Hidden at max level.
-atMax = true; Food("PLAYER_LEVEL_UP"); assert(not foodIcon.shown)
+-- Max level does not hide it: Well Fed is more than the XP bonus.
+atMax = true; Food("PLAYER_LEVEL_UP"); assert(foodIcon.shown)
 atMax = false
 -- Hidden while dead or a ghost, back on resurrection.
 dead = true; Food("PLAYER_DEAD"); assert(not foodIcon.shown)
 Food("BAG_UPDATE_DELAYED"); assert(not foodIcon.shown)
 dead = false; Food("PLAYER_UNGHOST"); assert(foodIcon.shown)
+-- An unlisted consumable is a food when its use spell's text says Well Fed.
+foodBags = { 5000, 5001, 5002 }; Food("BAG_UPDATE_DELAYED")
+assert(foodIcon.shown and foodIcon.itemID == 5000 and Eats() == "/use item:5000")
+-- Text that had not loaded is asked for again, and the higher level food leads.
+spellText[95002], requiredLevel[5002] = "You will become Well Fed.", 10
+Food("BAG_UPDATE_DELAYED"); assert(foodIcon.itemID == 5002)
+requiredLevel[5002] = 30; Food("BAG_UPDATE_DELAYED"); assert(foodIcon.itemID == 5000)
+-- A Well Fed aura known only by name hides it, as Forever's by ID do.
+namedAura = {}; Food("UNIT_AURA"); assert(not foodIcon.shown)
+namedAura = SECRET_AURA; Food("UNIT_AURA"); assert(not foodIcon.shown)
+namedAura = nil; Food("UNIT_AURA"); assert(foodIcon.shown)
+foodBags = { 2680, 4593, 8364 }; Food("BAG_UPDATE_DELAYED")
 -- Eating a food in the bags covers it with the Well Fed icon and a countdown to the buff.
 local foodTimer, buffIcon
 for _, widget in ipairs(foodWidgets) do
@@ -1287,7 +1307,7 @@ Weapon("BAG_UPDATE_DELAYED"); assert(not weaponIcon.shown)
 Weapon("PLAYER_REGEN_ENABLED"); assert(weaponIcon.shown)
 dead = true; Weapon("PLAYER_DEAD"); assert(not weaponIcon.shown)
 dead = false; Weapon("PLAYER_UNGHOST"); assert(weaponIcon.shown)
--- Its switch sits under the XP food switch on the Reminders page.
+-- Its switch sits under the food switch on the Reminders page.
 local weaponOption = ScarletUI:Options().args.remindersSettings.args.weapon
 assert(not weaponOption.hidden() and weaponOption.order > foodOption.order)
 weaponOption.set(nil, false); assert(not weaponIcon.shown)

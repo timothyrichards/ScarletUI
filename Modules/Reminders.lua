@@ -5,13 +5,14 @@
 -- secure button (using an item is a protected action), so it only shows, hides,
 -- or changes item out of combat.
 --
--- XP food, Forever only: cooked food and brewed drinks there also grant Well
--- Fed XP Boost, 5% more experience from kills for 15 minutes. While a food is
--- being eaten the icon counts down the seconds to Well Fed instead. Hidden at
--- max level.
--- The XP bonus itself (spell 1243969) is a hidden aura addons cannot see, so the
--- buff is read from the visible Well Fed auras these foods apply: one spell per
--- stat bonus, each triggered by the food's Nutritious Food or Drink use spell.
+-- Food buff, every client: a food that leaves the character Well Fed, while
+-- that buff is missing. While a food is being eaten the icon counts down the
+-- seconds to Well Fed instead.
+-- On Forever cooked food and brewed drinks also grant Well Fed XP Boost, 5% more
+-- experience from kills for 15 minutes. That bonus (spell 1243969) is a hidden
+-- aura addons cannot see, so the buff is read from the visible Well Fed auras
+-- these foods apply: one spell per stat bonus, each triggered by the food's
+-- Nutritious Food or Drink use spell.
 --
 -- Weapon enhancements, Era, TBC, and Forever: sharpening stones, weightstones,
 -- oils, and poisons, for a main- or off-hand weapon with no temporary enchant.
@@ -19,6 +20,8 @@ local WELL_FED = {
     1248406, 1248420, 1248421, 1248422, 1248688, 1249519, 1249520,
     1249521, 1249523, 1249907, 1249926, 1249927, 1294007, 1319310,
 }
+-- The Classic Well Fed, on every client: its name finds the buff and the foods.
+local WELL_FED_NAME = 19705
 local ICON_SIZE, ICON_GAP = 36, 4
 local LIST_CLOSE_DELAY = 1 -- seconds the mouse may be off the open item list
 -- Seconds of eating before Well Fed: each food's use spell (Nutritious Food or
@@ -29,12 +32,25 @@ local GetItemInfo = C_Item and C_Item.GetItemInfo or GetItemInfo
 local GetItemInfoInstant = C_Item and C_Item.GetItemInfoInstant or GetItemInfoInstant
 local GetItemCount = C_Item and C_Item.GetItemCount or GetItemCount
 local GetItemSpell = C_Item and C_Item.GetItemSpell or GetItemSpell
+local GetSpellDescription = C_Spell and C_Spell.GetSpellDescription or GetSpellDescription
 
--- Item ID = required level, keyed below by that level.
+local function SpellName(spellID)
+    if C_Spell and C_Spell.GetSpellName then return C_Spell.GetSpellName(spellID) end
+    return GetSpellInfo and (GetSpellInfo(spellID))
+end
+
+local function SpellTexture(spellID)
+    if C_Spell and C_Spell.GetSpellTexture then return C_Spell.GetSpellTexture(spellID) end
+    return GetSpellTexture and GetSpellTexture(spellID)
+end
+
+-- Forever's foods, item ID = required level, keyed below by that level. Their
+-- use spell is not known to mention Well Fed, so they are listed; every other
+-- food is found by its use spell's text (see FoodLevel).
 -- ponytail: both lists are hand-kept from forever.wowhead.com (every item whose
--- effect text has "experience gained from kills", November 2026); a food or
--- Well Fed spell added later is not noticed. Match the item tooltip text and
--- the aura name instead if they keep appearing.
+-- effect text has "experience gained from kills", November 2026); a Forever
+-- food or Well Fed spell added later is only noticed if its text or name says
+-- Well Fed.
 local FOODS = {}
 for level, items in pairs({
     [1] = {
@@ -105,13 +121,38 @@ local FISHING_POLE = 20
 local HANDS = { { slot = 16, name = "main hand" }, { slot = 17, name = "off hand" } }
 
 -- Only asked out of combat, where the player's own auras are readable; a
--- secret answer counts as buffed so the reminder stays quiet.
+-- secret answer counts as buffed so the reminder stays quiet. Forever's Well
+-- Fed spells are asked for by ID, any other by the name they all share.
 local function HasBuff()
     for _, spellID in ipairs(WELL_FED) do
         local aura = C_UnitAuras.GetPlayerAuraBySpellID(spellID)
         if IsSecret(aura) or aura ~= nil then return true end
     end
-    return false
+    local name, byName = SpellName(WELL_FED_NAME), C_UnitAuras.GetAuraDataBySpellName
+    local aura = name and byName and byName("player", name)
+    return IsSecret(aura) or aura ~= nil
+end
+
+-- The level a buff food needs, or nothing for any other item. A food not in
+-- FOODS is a consumable whose use spell's text names Well Fed.
+-- ponytail: a plain lowercase match on the buff's name, which fits English
+-- ("you will become well fed"); a language that words the text differently
+-- finds no foods. Read the Well Fed spell the food triggers if that matters.
+local textFoods = {} -- item ID = true or false, once the spell text has loaded
+local function FoodLevel(itemID)
+    if FOODS[itemID] then return FOODS[itemID] end
+    if textFoods[itemID] == nil then
+        local _, spellID = GetItemSpell(itemID)
+        local name = SpellName(WELL_FED_NAME)
+        if not spellID or select(6, GetItemInfoInstant(itemID)) ~= 0 then
+            textFoods[itemID] = false
+        elseif name and GetSpellDescription then
+            local text = GetSpellDescription(spellID)
+            -- Empty until the client has loaded the spell; asked again next time.
+            if text and text ~= "" then textFoods[itemID] = text:lower():find(name:lower(), 1, true) ~= nil end
+        end
+    end
+    return textFoods[itemID] and (select(5, GetItemInfo(itemID)) or 0)
 end
 
 -- The use spell's own aura is hidden, but it also applies the ordinary Food
@@ -311,9 +352,7 @@ function ScarletUI:SetupXPFood()
         self:UpdateXPFood()
         return
     end
-    if self:GetWoWVersion() ~= "FOREVER" or not (C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID) then
-        return
-    end
+    if not (C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID) then return end
 
     -- When Well Fed is due, and whether the Food or Drink aura has been seen
     -- since: only an aura that was there and went means the meal was cut short.
@@ -325,17 +364,17 @@ function ScarletUI:SetupXPFood()
 
     icon = CreateReminder({
         name = "ScarletUIXPFood",
-        label = "XP Food",
+        label = "Food",
         x = 0,
         hint = "Right-click to eat. Left-click to choose a food.",
         pickHint = "Click to pick this. Click it again to show the best food.",
         Settings = function() return self.db.global.xpFoodModule end,
-        -- The XP foods the character can eat, highest required level first.
+        -- The buff foods the character can eat, highest required level first.
         Find = function(settings)
-            if IsPlayerAtEffectiveMaxLevel and IsPlayerAtEffectiveMaxLevel() or HasBuff() then return end
+            if HasBuff() then return end
             local level = UnitLevel("player")
             local foods, shown = FindItems(function(itemID)
-                local required = FOODS[itemID]
+                local required = FoodLevel(itemID)
                 return required and required <= level and required
             end, settings.food)
             return foods, shown, shown and "/use item:" .. shown
@@ -370,14 +409,14 @@ function ScarletUI:SetupXPFood()
     })
     self.xpFoodFrame = icon
 
-    -- While an XP food is being eaten, the Well Fed icon counting down to the
+    -- While a food is being eaten, the Well Fed icon counting down to the
     -- buff covers the food. Not a secure frame, so it may show and hide at any time.
     timer = CreateFrame("Frame", nil, icon)
     timer:SetAllPoints(icon)
     timer:Hide()
     local buff = timer:CreateTexture(nil, "BACKGROUND")
     buff:SetAllPoints()
-    buff:SetTexture(C_Spell.GetSpellTexture(WELL_FED[1])) -- every Well Fed shares the icon
+    buff:SetTexture(SpellTexture(WELL_FED[1]) or SpellTexture(WELL_FED_NAME)) -- every Well Fed shares the icon
     timer.text = timer:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
     timer.text:SetPoint("CENTER")
     timer:SetScript("OnUpdate", function()

@@ -234,18 +234,24 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   shown, hidden, moved, or given attributes until combat ends. It is also
   hidden while dead or a ghost. Add a reminder as another spec with its own
   settings table, frame name, and toggle.
-  - XP food (`db.global.xpFoodModule`, `ScarletUIXPFood`), Forever only. Cooked
-    food there also applies Well Fed XP Boost (spell 1243969, 5% more experience
-    from kills). That aura is hidden from addons, so the buff is read from the
-    14 visible Well Fed spells the foods trigger (`WELL_FED`). Shown for a
-    listed food whose required level the player meets; the macro is
-    `/use item:ID` and the pick is stored in `food`. Hidden at max level. The
-    item ID list is hand-kept from forever.wowhead.com. Eating a food from the
-    bags (the player's `UNIT_SPELLCAST_SUCCEEDED` matching its `GetItemSpell`)
-    covers the icon with a plain child frame: the Well Fed icon counting down
-    the 10 seconds to the buff. The use spell's aura is hidden, so a meal cut
-    short is read from the ordinary Food or Drink aura, looked up by name,
-    having been seen and gone.
+  - Food buff (`db.global.xpFoodModule`, `ScarletUIXPFood`, `SetupXPFood`: the
+    names are from when it was Forever's XP food reminder, kept for saved
+    settings), every client. Shown while the player is not Well Fed and the bags
+    hold a buff food whose required level they meet; the macro is
+    `/use item:ID` and the pick is stored in `food`. A buff food is a
+    consumable whose use spell's text (`GetSpellDescription`) contains the name
+    of Well Fed (spell 19705), lowercased, which fits English wording; the
+    answer is cached per item once the text has loaded. The buff is any aura
+    with that name. Forever is also covered by two lists hand-kept from
+    forever.wowhead.com, since its cooked food applies Well Fed XP Boost (spell
+    1243969, 5% more experience from kills) through a hidden aura: `FOODS`
+    (item ID = required level) and the 14 visible Well Fed spells the foods
+    trigger (`WELL_FED`). Eating a food from the bags (the player's
+    `UNIT_SPELLCAST_SUCCEEDED` matching its `GetItemSpell`) covers the icon
+    with a plain child frame: the Well Fed icon counting down the 10 seconds to
+    the buff. The use spell's aura is hidden, so a meal cut short is read from
+    the ordinary Food or Drink aura, looked up by name, having been seen and
+    gone.
   - Weapon enhancements (`db.global.weaponReminderModule`,
     `ScarletUIWeaponReminder`), Era, TBC, and Forever. Shown for the main hand,
     then the off hand, when it holds a weapon `GetWeaponEnchantInfo` reports no
