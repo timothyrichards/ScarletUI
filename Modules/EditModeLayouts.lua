@@ -1,4 +1,4 @@
-ScarletUI.editModeLayoutSchemaVersion = 20
+ScarletUI.editModeLayoutSchemaVersion = 21
 
 ScarletUI.editModeFrameCandidates = {
     -- MainActionBar is the Edit Mode system. MainMenuBar is the 1024px
@@ -307,15 +307,16 @@ local standardFrames = {
         settings = CooldownViewerSettings("Horizontal", 7, "Right", 2),
     },
     swingTimerMainHand = {
-        point = "CENTER", relativePoint = "BOTTOM", x = 0, y = 400,
+        point = "BOTTOM", relativePoint = "BOTTOM", x = 0, y = 221.6,
         settings = swingTimerSettings,
     },
+    -- Off hand and ranged share the spot under the main hand bar.
     swingTimerOffHand = {
-        point = "BOTTOMLEFT", relativeTo = "swingTimerMainHand", relativePoint = "TOPLEFT", x = 0, y = 3.2,
+        point = "TOPLEFT", relativeTo = "swingTimerMainHand", relativePoint = "BOTTOMLEFT", x = 0, y = -3.2,
         settings = swingTimerSettings,
     },
     swingTimerRanged = {
-        point = "CENTER", relativePoint = "BOTTOM", x = 0, y = 400,
+        point = "TOPLEFT", relativeTo = "swingTimerMainHand", relativePoint = "BOTTOMLEFT", x = 0, y = -3.2,
         settings = swingTimerSettings,
     },
     buffIconCooldowns = {
