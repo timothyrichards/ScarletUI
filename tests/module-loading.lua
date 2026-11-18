@@ -186,8 +186,25 @@ ScarletUI.FindEditModeFrame = function(_, key) return not key:find("Cooldowns") 
 assert(ScarletUI:ApplyEditModeLayout("STANDARD"))
 assert(anchors.castBar[4] == UIParent and anchors.castBar[2] == 327)
 assert(anchors.utilityCooldowns == nil)
-LibStub, ScarletUI.GetWoWVersion = originalLibStub, originalClient
+
+-- The gryphon end caps are child frames, found by dotted name, hidden and left in place.
+local leftEndCap, hidden = {}, {}
+MainActionBar = { EndCaps = { LeftEndCap = leftEndCap } }
+Enum.EditModeMainActionBarEndCapSetting = { Hidden = 0 }
+LibStub = function()
+    return {
+        HasEditModeSettings = function(_, frame) return frame == leftEndCap end,
+        ReanchorFrame = function(_, frame) anchors[frame] = true end,
+        SetFrameSetting = function(_, frame, setting, value) hidden[frame] = setting == 0 and value end,
+    }
+end
 ScarletUI.FindEditModeFrame = originalFindFrame
+anchors = {}
+assert(ScarletUI:ApplyEditModeLayout("STANDARD"))
+assert(hidden[leftEndCap] == 1 and anchors[leftEndCap] == nil)
+assert(ScarletUI:FindEditModeFrame("endCapRight") == nil)
+MainActionBar, Enum.EditModeMainActionBarEndCapSetting = nil, nil
+LibStub, ScarletUI.GetWoWVersion = originalLibStub, originalClient
 
 -- Profile installation must complete without calling the removed preference hook.
 ScarletUI.InCombat = function() return false end

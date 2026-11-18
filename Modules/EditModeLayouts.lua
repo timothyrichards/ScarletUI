@@ -4,6 +4,9 @@ ScarletUI.editModeFrameCandidates = {
     -- MainActionBar is the Edit Mode system. MainMenuBar is the 1024px
     -- Classic artwork container and is not the movable button row.
     mainMenuBar = { "MainActionBar", "MainMenuBar" },
+    -- The gryphons, an Edit Mode system of their own on Forever.
+    endCapLeft = { "MainActionBar.EndCaps.LeftEndCap" },
+    endCapRight = { "MainActionBar.EndCaps.RightEndCap" },
     multiBarBottomLeft = { "MultiBarBottomLeft" },
     multiBarBottomRight = { "MultiBarBottomRight" },
     multiBarLeft = { "MultiBarLeft" },
@@ -139,6 +142,12 @@ local standardFrames = {
             { setting = EnumValue("EditModeActionBarSetting", "HideBarScrolling"), value = 0 },
             { setting = EnumValue("EditModeActionBarSetting", "AlwaysShowButtons"), value = 1 },
         },
+    },
+    endCapLeft = {
+        settings = { { setting = EnumValue("EditModeMainActionBarEndCapSetting", "Hidden"), value = 1 } },
+    },
+    endCapRight = {
+        settings = { { setting = EnumValue("EditModeMainActionBarEndCapSetting", "Hidden"), value = 1 } },
     },
     multiBarBottomLeft = {
         point = "BOTTOMRIGHT", relativeTo = "mainMenuBar", relativePoint = "TOPRIGHT", x = 0, y = 4,

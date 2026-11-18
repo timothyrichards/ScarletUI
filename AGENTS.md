@@ -75,6 +75,9 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   `NotifyChange`. AceConfig rejects unknown option keys, so layout hints
   belong in `NAV`, not in the options table.
 - `Modules/EditModeLayouts.lua`: shared frame definitions and display presets.
+  Frame candidates may be dotted paths to child frames without a global name,
+  such as Forever's gryphon end caps (`MainActionBar.EndCaps.LeftEndCap`),
+  which the presets hide.
 - `Modules/EditMode.lua`: Edit Mode detection, profile installation, activation,
   update prompts, and settings page through LibEditModeOverride.
 - `Modules/ActionBars.lua`: shares the Settings > Action Bars 2-8 toggles

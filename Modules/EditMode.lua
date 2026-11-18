@@ -125,7 +125,11 @@ function ScarletUI:FindEditModeFrame(settingsKey)
     local library = GetEditModeLibrary()
 
     for _, frameName in ipairs(candidates) do
-        local frame = _G[frameName]
+        -- Dotted names reach child frames, which have no global name.
+        local frame = _G
+        for key in frameName:gmatch("[^.]+") do
+            frame = type(frame) == "table" and frame[key] or nil
+        end
         if frame then
             local managed = false
             if library then
