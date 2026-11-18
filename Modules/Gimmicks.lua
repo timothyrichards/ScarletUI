@@ -1133,7 +1133,6 @@ function ScarletUI:SetupSealSlots()
         local slots, old = Slots(), SealSlotsDB
         if type(old) == "table" and not slots.imported then
             slots.pos, slots.best, slots.tally, slots.imported = old.pos, old.best, old.tally, true
-            if old.show ~= nil then slots.show = old.show end
         end
         return
     end

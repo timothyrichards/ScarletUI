@@ -1743,22 +1743,24 @@ do
     -- Both gimmicks are off by default; Seal Slots only shows where it is set up.
     local page = ScarletUI:Options().args.gimmicksSettings
     assert(not page.args.sealSlots.get() and not page.args.windfury.get() and page.args.sound.get())
+    assert(not page.args.sealSlotsShow.get())
     ScarletUI.sealSlotsSupported = nil
     assert(page.args.sealSlots.hidden() and page.args.sealSlotsShow.hidden() and not page.args.windfury.hidden)
     -- With the standalone addon loaded the switch still shows: its saved spins
-    -- are taken over, and turning the switch on turns that addon off.
+    -- are taken over (not its always-shown setting, which this default turns
+    -- off), and turning the switch on turns that addon off.
     local oldVersion, oldLoaded, oldAddOns = ScarletUI.GetWoWVersion, ScarletUI.IsAddOnLoaded, C_AddOns
     ScarletUI.GetWoWVersion = function() return "FOREVER" end
     ScarletUI.IsAddOnLoaded = function(_, name) return name == "SealSlots" end
     local disabled
     C_AddOns = { DisableAddOn = function(name, character) disabled = { name, character } end }
-    SealSlotsDB = { best = { { crits = 1, hits = 1 } }, show = false }
+    SealSlotsDB = { best = { { crits = 1, hits = 1 } }, show = true }
     ScarletUI:SetupSealSlots()
     local slots = ScarletUI.db.global.gimmicks.sealSlots
     assert(not page.args.sealSlots.hidden() and slots.best == SealSlotsDB.best and slots.show == false and not disabled)
     page.args.sealSlots.set(nil, true)
     assert(slots.enabled and disabled[1] == "SealSlots" and disabled[2] == nil)
-    slots.enabled, slots.show, slots.best, slots.imported = false, true, nil, nil
+    slots.enabled, slots.best, slots.imported = false, nil, nil
     ScarletUI.sealSlotsSupported, ScarletUI.sealSlotsStandalone, SealSlotsDB = nil, nil, nil
     ScarletUI.GetWoWVersion, ScarletUI.IsAddOnLoaded, C_AddOns = oldVersion, oldLoaded, oldAddOns
 end
