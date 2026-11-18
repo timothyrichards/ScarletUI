@@ -229,9 +229,9 @@ end
 --                          secret = true when the amount is a secret value }
 --                          or { miss = "DODGE" } for an attack that was avoided
 --   ns.Miss()              calls the spin off: the swing was avoided, nothing was spent
---   ns.Rest()              back to idle: up and empty, or hidden with show off
+--   ns.Rest()              back to idle: hidden, unless unlocked
 --   ns.Off()               hidden, Seal Slots was turned off
---   ns.Stacks(seal, count) the stacks stored so far, shown grayed out between spins
+--   ns.Stacks(seal, count) the stacks stored so far, shown grayed out while unlocked
 --   ns.Glow(on)            the outline that says a full set of stacks is ready to twist
 --   ns.Board()             opens or closes the board of best spins
 --   ns.Place()             puts the machine at its saved position
@@ -484,7 +484,7 @@ local function BuildMachine()
             banner:SetText("Unlocked")
             banner:SetTextColor(unpack(GRAY))
         end
-        frame:SetShown(preview or (Slots().show and ns.Active()))
+        frame:SetShown(preview)
     end
 
     function ns.Miss()
@@ -611,7 +611,7 @@ local function BuildMachine()
         end
         if spin.hideAt and now >= spin.hideAt and not preview then
             local left = 1 - (now - spin.hideAt) / FADE
-            if left <= 0 or Slots().show then
+            if left <= 0 then
                 ns.Rest()
             else
                 frame:SetAlpha(left)
@@ -798,7 +798,7 @@ function ns.Active()
     return wasActive == true
 end
 
--- Talents changed: show or hide the idle machine. The talent tree decides;
+-- Talents changed: whether there are stacks to spin. The talent tree decides;
 -- the spellbook only stands in while the tree cannot be read.
 local function Gate()
     local active, rank = false, nil
@@ -855,7 +855,7 @@ local function With(this)
     return list
 end
 
--- The idle machine shows the stacks stored so far, and its outline is lit
+-- The unlocked machine shows the stacks stored so far, and its outline is lit
 -- while a full set waits for a twist. Checked whenever the stacks or the seal
 -- may have changed, and when they run out.
 local lit, shownSeal, shownCount, watching
@@ -1088,11 +1088,6 @@ local function SealSlotsCommand(msg)
         Settings().sound = not Settings().sound
         Print("gimmick sounds", Settings().sound and "on" or "off")
         LibStub("AceConfigRegistry-3.0"):NotifyChange("ScarletUI")
-    elseif msg == "show" then
-        Slots().show = not Slots().show
-        ns.Rest()
-        Print(Slots().show and "always shown" or "shown only for a spin")
-        LibStub("AceConfigRegistry-3.0"):NotifyChange("ScarletUI")
     elseif msg == "test" then
         local procs = {}
         for _ = 1, 3 do
@@ -1109,7 +1104,6 @@ local function SealSlotsCommand(msg)
         Print("Hold Shift and drag the machine to move it")
         Print("Right-click it out of combat, or /sealslots best, for your best spins")
         Print("/sealslots - unlock it to drag without Shift, again to lock it")
-        Print("/sealslots show - keep it on screen between spins, or only for a spin")
         Print("/sealslots test - spin a made-up result")
         Print("/sealslots sound - gimmick sounds on or off")
     else

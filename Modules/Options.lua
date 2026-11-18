@@ -392,7 +392,7 @@ function ScarletUI:GetRemindersSettingsPage(database, order)
         args = {
             xpFood = {
                 name = "Food Buff",
-                desc = "Show an icon while you are not Well Fed and your bags hold food that gives the buff. Right-click the icon to eat; left-click it to choose which food it shows. Hidden in combat; drag the icon to move it, Ctrl-click it to reset its position.",
+                desc = "Show an icon while you are not Well Fed and your bags hold food that gives the buff. Right-click the icon to eat; left-click it to choose which food it shows. Hidden in combat; drag any reminder icon to move them all, Ctrl-click one to reset their position.",
                 type = "toggle",
                 hidden = function() return not self.xpFoodFrame end,
                 width = 1.5,
@@ -405,7 +405,7 @@ function ScarletUI:GetRemindersSettingsPage(database, order)
             },
             weapon = {
                 name = "Weapon Enhancements",
-                desc = "Show an icon while a weapon has no temporary enchant and your bags hold a sharpening stone, weightstone, oil, or poison that fits it. Right-click the icon to apply it; left-click it to choose which one it shows. Hidden in combat; drag the icon to move it, Ctrl-click it to reset its position.",
+                desc = "Show an icon while a weapon has no temporary enchant and your bags hold a sharpening stone, weightstone, oil, or poison that fits it. Right-click the icon to apply it; left-click it to choose which one it shows. Hidden in combat; drag any reminder icon to move them all, Ctrl-click one to reset their position.",
                 type = "toggle",
                 hidden = function() return not self.weaponReminderFrame end,
                 width = 1.5,
@@ -522,19 +522,6 @@ function ScarletUI:GetGimmicksSettingsPage(database, order)
                 set = function(_, val)
                     database.gimmicks.sealSlots.enabled = val
                     self:UpdateSealSlots(val)
-                end,
-            },
-            sealSlotsShow = {
-                name = "Keep Slot Machine on Screen",
-                desc = "Show the slot machine between spins, with the seals stored so far. Off, it only shows while it spins.",
-                type = "toggle",
-                hidden = function() return not self.sealSlotsSupported end,
-                width = 1.5,
-                order = 1,
-                get = function(_) return database.gimmicks.sealSlots.show end,
-                set = function(_, val)
-                    database.gimmicks.sealSlots.show = val
-                    self:UpdateSealSlots()
                 end,
             },
             windfury = {

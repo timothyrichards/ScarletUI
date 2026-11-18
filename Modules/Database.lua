@@ -74,8 +74,6 @@ ScarletUI.defaults = {
             sound = true,
             sealSlots = {
                 enabled = false,
-                -- Off: the machine only shows while it spins.
-                show = false,
             },
             windfury = {
                 enabled = false,
