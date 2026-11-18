@@ -1031,6 +1031,7 @@ local function FoodWidget(kind, name, _, template)
     widget.SetText = function(self, text) self.text = text end
     widget.SetPoint = function(self, ...) self.point = { ... } end
     widget.GetPoint = function() return "TOPLEFT", nil, "TOPLEFT", 40, -50 end
+    widget.SetWidth = function(self, width) self.width = width end
     widget.SetTexture = function(self, texture) self.icon = texture end
     widget.CreateTexture = function() return FoodWidget("Texture") end
     widget.CreateFontString = function() return FoodWidget("FontString") end
@@ -1077,12 +1078,19 @@ C_Item = { GetItemInfoInstant = function(id)
 issecretvalue = function(v) return v == SECRET_AURA end
 dofile("Modules/Reminders.lua")
 issecretvalue = nil
+-- The food icon's own position, from before the reminders shared a bar.
+ScarletUI.db.global.xpFoodModule.position = { "CENTER", "CENTER", 5, 6 }
 ScarletUI:SetupXPFood() -- this harness is the Forever client
-local foodIcon, foodList = ScarletUI.xpFoodFrame, nil
+local foodIcon, foodList, reminderBar = ScarletUI.xpFoodFrame, nil, nil
 for _, widget in ipairs(foodWidgets) do
-    if widget.kind == "Frame" then foodList = foodList or widget end
+    if widget.name == "ScarletUIReminders" then reminderBar = widget end
+    if widget.kind == "Frame" and not rawget(widget, "name") then foodList = foodList or widget end
 end
 local settings = ScarletUI.db.global.xpFoodModule
+-- It became the bar's position.
+assert(settings.position == nil and ScarletUI.db.global.remindersPosition[3] == 5)
+assert(reminderBar.point[1] == "CENTER" and reminderBar.point[4] == 5 and reminderBar.point[5] == 6)
+assert(foodIcon.point[1] == "LEFT" and foodIcon.point[2] == reminderBar and foodIcon.point[4] == 0)
 local function Food(event, ...) foodIcon.scripts.OnEvent(nil, event, "player", ...) end
 local function Click(button) foodIcon.scripts.PostClick(foodIcon, button) end
 local function Eats() return foodIcon.attributes.macrotext2 end
@@ -1204,16 +1212,17 @@ assert(not remindersPage.hidden() and not foodOption.hidden() and remindersPage.
 assert(ScarletUI:Options().args.generalSettings.args.interface.args.xpFood == nil)
 foodOption.set(nil, false); assert(not foodIcon.shown)
 foodOption.set(nil, true); assert(foodIcon.shown)
--- Dragging saves the position, which a rerun of setup applies.
+-- Dragging saves the bar's position, which a rerun of setup applies.
 foodIcon.scripts.OnDragStop()
 ScarletUI:SetupXPFood()
-assert(foodIcon.point[1] == "TOPLEFT" and foodIcon.point[4] == 40 and foodIcon.point[5] == -50)
+assert(reminderBar.point[1] == "TOPLEFT" and reminderBar.point[4] == 40 and reminderBar.point[5] == -50)
 -- Only a Ctrl-left-click puts it back at its default position, without opening the list.
-Click("LeftButton"); assert(foodIcon.point[1] == "TOPLEFT" and foodList.shown)
+Click("LeftButton"); assert(reminderBar.point[1] == "TOPLEFT" and foodList.shown)
 Click("LeftButton")
-ctrl = true; Click("RightButton"); assert(foodIcon.point[1] == "TOPLEFT")
+ctrl = true; Click("RightButton"); assert(reminderBar.point[1] == "TOPLEFT")
 Click("LeftButton")
-assert(foodIcon.point[1] == "CENTER" and settings.position == nil and not foodList.shown)
+assert(reminderBar.point[1] == "LEFT" and reminderBar.point[3] == "CENTER" and reminderBar.point[4] == -18)
+assert(ScarletUI.db.global.remindersPosition == nil and not foodList.shown)
 ctrl = false
 
 -- Weapon enhancements: the icon shows for a weapon with no temporary enchant
@@ -1259,7 +1268,17 @@ local function PickWeaponItem(itemID)
     error("no enhancement button for " .. itemID)
 end
 assert(weaponIcon.name == "ScarletUIWeaponReminder" and weaponIcon.template == "SecureActionButtonTemplate")
-assert(weaponIcon.point[1] == "CENTER" and weaponIcon.point[4] == 60) -- beside the food icon
+-- On the bar, where the hidden food icon leaves it the first place.
+assert(weaponIcon.point[2] == reminderBar and weaponIcon.point[4] == 0 and reminderBar.width == 36)
+-- With both shown the food comes first and the weapon moves over beside it.
+foodAura, foodBags = nil, { 2680, 2871 }; Food("UNIT_AURA"); Weapon("BAG_UPDATE_DELAYED")
+assert(foodIcon.shown and weaponIcon.shown)
+assert(foodIcon.point[4] == 0 and weaponIcon.point[4] == 48 and reminderBar.width == 84)
+foodAura, foodBags = {}, weaponBags; Food("UNIT_AURA"); Weapon("BAG_UPDATE_DELAYED")
+assert(weaponIcon.point[4] == 0 and reminderBar.width == 36)
+-- Dragging the weapon icon moves the shared bar too.
+weaponIcon.scripts.OnDragStop(); assert(ScarletUI.db.global.remindersPosition[1] == "TOPLEFT")
+ScarletUI.db.global.remindersPosition = nil
 -- A sword takes the sharpening stone: not a weightstone, another class's
 -- poison, or the level 45 oil.
 assert(weaponIcon.shown and weaponIcon.itemID == 2871 and Applies() == "/use item:2871\n/use 16")

@@ -187,9 +187,53 @@ local function FindItems(Rank, picked)
     return items, picked and ranks[picked] and picked or items[1]
 end
 
--- One reminder icon. `spec` has the frame `name`, the `label` under it, the
--- default horizontal offset `x`, the tooltip lines `hint` and `pickHint`,
--- `Settings()` returning its saved table (enabled, position), `Find(settings)`
+-- The reminders share one bar: the shown icons sit side by side in setup order,
+-- and dragging any of them moves the bar (position in
+-- `db.global.remindersPosition`). It holds secure buttons, so it only moves or
+-- lays out out of combat.
+local BAR_GAP = 12 -- room for the labels under neighboring icons
+local bar, barIcons
+
+local function PlaceBar()
+    if InCombatLockdown() then return end
+    local position = ScarletUI.db.global.remindersPosition
+    bar:ClearAllPoints()
+    if position then
+        bar:SetPoint(position[1], UIParent, position[2], position[3], position[4])
+    else
+        bar:SetPoint("LEFT", UIParent, "CENTER", -ICON_SIZE / 2, 150)
+    end
+end
+
+local function LayOutBar()
+    if InCombatLockdown() then return end
+    local x = 0
+    for _, icon in ipairs(barIcons) do
+        if icon:IsShown() then
+            icon:ClearAllPoints()
+            icon:SetPoint("LEFT", bar, "LEFT", x, 0)
+            x = x + ICON_SIZE + BAR_GAP
+        end
+    end
+    bar:SetWidth(math.max(ICON_SIZE, x - BAR_GAP))
+end
+
+local function CreateBar()
+    bar, barIcons = CreateFrame("Frame", "ScarletUIReminders", UIParent), {}
+    bar:SetSize(ICON_SIZE, ICON_SIZE)
+    bar:SetMovable(true)
+    bar:SetClampedToScreen(true)
+    -- Each icon had its own position before they shared the bar; the food
+    -- icon's, the one there was for longest, becomes the bar's.
+    local global = ScarletUI.db.global
+    if global.xpFoodModule.position then
+        global.remindersPosition, global.xpFoodModule.position = global.xpFoodModule.position, nil
+    end
+end
+
+-- One reminder icon on the bar. `spec` has the frame `name`, the `label` under it,
+-- the tooltip lines `hint` and `pickHint`,
+-- `Settings()` returning its saved table (enabled), `Find(settings)`
 -- returning the usable items, the one to show, the macro that uses it, and
 -- optionally a hint for it, and `Pick(settings, itemID)` for a click in the
 -- list. Optional: `events`, `unitEvents`, `OnEvent(event, ...)` returning true
@@ -219,8 +263,10 @@ local function CreateReminder(spec)
     end
 
     -- Right-click runs the secure macro that uses the item shown.
-    local icon = ItemButton(UIParent, spec.hint, "Drag to move. Ctrl-click to reset its position.",
+    if not bar then CreateBar() end
+    local icon = ItemButton(UIParent, spec.hint, "Drag to move the reminders. Ctrl-click to reset their position.",
         spec.name, "SecureActionButtonTemplate")
+    barIcons[#barIcons + 1] = icon
     icon.items = {}
     icon:RegisterForClicks("AnyUp")
     icon:SetAttribute("useOnKeyDown", false)
@@ -245,32 +291,20 @@ local function CreateReminder(spec)
         if away >= LIST_CLOSE_DELAY then list:Hide() end
     end)
 
-    function icon.Place()
-        if InCombatLockdown() then return end -- a secure button cannot move in combat
-        local position = spec.Settings().position
-        icon:ClearAllPoints()
-        if position then
-            icon:SetPoint(position[1], UIParent, position[2], position[3], position[4])
-        else
-            icon:SetPoint("CENTER", UIParent, "CENTER", spec.x, 150)
-        end
-    end
-
-    icon:SetMovable(true)
-    icon:SetClampedToScreen(true)
+    icon.Place = PlaceBar
     icon:RegisterForDrag("LeftButton")
-    icon:SetScript("OnDragStart", function() icon:StartMoving() end)
+    icon:SetScript("OnDragStart", function() bar:StartMoving() end)
     icon:SetScript("OnDragStop", function()
-        icon:StopMovingOrSizing()
-        local point, _, relativePoint, x, y = icon:GetPoint()
-        spec.Settings().position = { point, relativePoint, x, y }
+        bar:StopMovingOrSizing()
+        local point, _, relativePoint, x, y = bar:GetPoint()
+        ScarletUI.db.global.remindersPosition = { point, relativePoint, x, y }
     end)
     -- OnClick belongs to the secure template, so our clicks are read after it.
     icon:SetScript("PostClick", function(_, button)
         if button ~= "LeftButton" then return end
         if IsControlKeyDown() then
-            spec.Settings().position = nil
-            icon.Place()
+            ScarletUI.db.global.remindersPosition = nil
+            PlaceBar()
             return
         end
         away = 0
@@ -288,6 +322,7 @@ local function CreateReminder(spec)
         end
         icon.items = items or {}
         icon:SetShown(shown ~= nil)
+        LayOutBar()
         if not shown then
             list:Hide()
             if spec.OnHide then spec.OnHide() end
@@ -365,7 +400,6 @@ function ScarletUI:SetupXPFood()
     icon = CreateReminder({
         name = "ScarletUIXPFood",
         label = "Food",
-        x = 0,
         hint = "Right-click to eat. Left-click to choose a food.",
         pickHint = "Click to pick this. Click it again to show the best food.",
         Settings = function() return self.db.global.xpFoodModule end,
@@ -448,7 +482,6 @@ function ScarletUI:SetupWeaponReminder()
     icon = CreateReminder({
         name = "ScarletUIWeaponReminder",
         label = "Weapon",
-        x = 60,
         pickHint = "Click to pick this. Click it again to show the best one.",
         Settings = function() return self.db.global.weaponReminderModule end,
         -- The first hand holding a weapon with no temporary enchant that an

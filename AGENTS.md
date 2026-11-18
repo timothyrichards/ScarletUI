@@ -220,8 +220,11 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
 - `Modules/Reminders.lua`: reminder icons, each with its toggle on the
   Reminders settings page (`remindersSettings`, `master = true` in `NAV`). A
   reminder shows an item from the bags while its buff is missing.
-  `CreateReminder(spec)` builds one, styled like the fishing lure (stack count,
-  draggable, position in its settings' `position`, Ctrl-click resets it):
+  `CreateReminder(spec)` builds one, styled like the fishing lure (stack count)
+  and placed on the shared `ScarletUIReminders` bar: shown icons sit side by
+  side in setup order, dragging any icon moves the bar (position in
+  `db.global.remindersPosition`, taken over once from the food icon's old
+  `xpFoodModule.position`), and Ctrl-click resets it.
   right-click uses the item; left-click opens a list of the usable items
   stacked upward, which closes after a second with the mouse off it. The spec's
   `Find` returns the usable items, the one to show, and the macro that uses it;
