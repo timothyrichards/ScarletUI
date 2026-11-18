@@ -100,7 +100,7 @@ end
 local calls = {}
 local setupMethods = { "SetupDebugFrame", "SetupActionBarToggles", "SetupBagSort", "SetupTracking", "SetupChat", "SetupCVars",
     "SetupItemLevels",
-    "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupFiveSecondRule", "SetupQuestXPBar", "SetupFishing", "SetupXPFood", "SetupWeaponReminder", "SetupSpecGearSets", "SetupStatDisplay", "SetupCraftProfit", "SetupExpandCharacterInfo", "SetupGameMenuButtons",
+    "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupFiveSecondRule", "SetupQuestXPBar", "SetupFishing", "SetupXPFood", "SetupWeaponReminder", "SetupSpecGearSets", "SetupStatDisplay", "SetupSealSlots", "SetupWindfury", "SetupCraftProfit", "SetupExpandCharacterInfo", "SetupGameMenuButtons",
     "SetupFrameTweaks", "SetupMinimapIcon" }
 for _, name in ipairs(setupMethods) do
     ScarletUI[name] = function() calls[name] = true end
@@ -1636,6 +1636,117 @@ rows = ScarletUI:CollectSettings({ args = {
 } }, "showall")
 assert(#rows == 2 and rows[1].card == "Overrides" and rows[2].cvar.input.type == "input")
 assert(#ScarletUI:CollectSettings(settingsGroup, "zzz") == 0)
+-- Gimmicks: the Seal Slots rules (from the standalone addon's tests) and the
+-- Windfury combat log rule.
+dofile("Modules/Gimmicks.lua")
+do
+    local ns = ScarletUI.Gimmicks.SealSlots
+    local COMMAND, RIGHTEOUSNESS = "Seal of Command", "Seal of Righteousness"
+
+    -- Three swings stack a seal; the fourth stays at three.
+    local state = {}
+    for i = 1, 4 do assert(ns.Swing(state, COMMAND, i) == nil) end
+    assert(state.stacks == 3 and state.seal == COMMAND)
+
+    -- A swing with another seal spends them and stores the new seal once.
+    local seal, spent = ns.Swing(state, RIGHTEOUSNESS, 5)
+    assert(seal == COMMAND and spent == 3)
+    assert(state.stacks == 1 and state.seal == RIGHTEOUSNESS)
+
+    -- Stacks that ran out are not spent.
+    assert(ns.Swing(state, COMMAND, 5 + ns.STACK_TIME) == nil)
+    assert(state.stacks == 1 and state.seal == COMMAND)
+
+    -- No seal known: nothing stored or spent.
+    assert(ns.Swing(state, nil, 30) == nil and state.stacks == 1)
+
+    local hit, crit, miss, cast = { amount = 1 }, { amount = 2, crit = true }, { miss = "MISS" }, { cast = true }
+
+    -- Procs: one per stack at most, in order.
+    local procs = ns.Procs({ hit, crit, hit, hit }, 3)
+    assert(#procs == 3 and procs[2] == crit)
+    assert(#ns.Procs({}, 3) == 0)
+
+    -- A miss is a stack's outcome too.
+    procs = ns.Procs({ miss, crit }, 3)
+    assert(#procs == 2 and procs[1].miss == "MISS" and procs[2] == crit)
+
+    -- A cast's own result (the new seal's proc, a Judgement) is not a stack's.
+    procs = ns.Procs({ hit, cast, crit, hit, hit }, 3)
+    assert(#procs == 3 and procs[1] == hit and procs[2] == hit and procs[3] == hit)
+    assert(#ns.Procs({ cast, miss }, 3) == 0)
+
+    -- Righteousness adds one plain hit of its own to the swing.
+    procs = ns.Procs({ miss, hit, crit }, 3, true)
+    assert(#procs == 2 and procs[1] == miss and procs[2] == crit)
+    assert(#ns.Procs({ hit }, 3, true) == 0)
+
+    -- Tiers.
+    assert(ns.Tier(3, {}) == "BUST")
+    assert(ns.Tier(3, { miss, miss }) == "BUST")
+    assert(ns.Tier(3, { hit, crit }) == "WIN")
+    assert(ns.Tier(3, { hit, crit, miss }) == "WIN")
+    assert(ns.Tier(2, { crit, crit }) == "WIN")
+    assert(ns.Tier(3, { hit, crit, hit }) == "JACKPOT")
+    assert(ns.Tier(3, { crit, crit, crit }) == "MEGA")
+
+    -- Ready: a full set, still running, same seal.
+    local full = { seal = "A", stacks = 3, expires = 20 }
+    assert(ns.Ready(full, "A", 10))
+    assert(not ns.Ready(full, "B", 10) and not ns.Ready(full, "A", 20))
+    assert(not ns.Ready({ seal = "A", stacks = 2, expires = 20 }, "A", 10) and not ns.Ready({}, "A", 10))
+
+    -- Record: most crits, then most hits, then newest; busts are only counted.
+    local db = {}
+    ns.Record(db, { crits = 0, hits = 2, id = "a" }, "WIN")
+    ns.Record(db, { crits = 1, hits = 1, id = "b" }, "WIN")
+    ns.Record(db, { crits = 0, hits = 0, id = "bust" }, "BUST")
+    ns.Record(db, { crits = 0, hits = 3, id = "c" }, "JACKPOT")
+    ns.Record(db, { crits = 1, hits = 1, id = "d" }, "WIN")
+    local order = {}
+    for i, entry in ipairs(db.best) do order[i] = entry.id end
+    assert(table.concat(order) == "dbca", table.concat(order))
+    assert(db.tally.spins == 5 and db.tally.WIN == 3 and db.tally.BUST == 1 and db.tally.JACKPOT == 1)
+    for _ = 1, 20 do ns.Record(db, { crits = 3, hits = 3 }, "MEGA") end
+    assert(#db.best == ns.BEST and db.best[ns.BEST].crits == 3)
+
+    -- Windfury. Log() builds an event as CombatLogGetCurrentEventInfo returns it.
+    local WF = ScarletUI.Gimmicks.WindfuryEvent
+    local function Log(subevent, ...) return 0, subevent, false, "Player-1", "Me", 0, 0, "Creature-1", "Boar", 0, 0, ... end
+    local wf, hit, fresh = {}
+    -- The totem: extra attacks, then that many main-hand swings.
+    hit, fresh = WF(wf, 10, Log("SPELL_EXTRA_ATTACKS", 8516, "Windfury Attack", 1, 1))
+    assert(hit == nil and fresh)
+    assert(WF(wf, 10, Log("SWING_DAMAGE", 250, 0, 1, nil, nil, nil, true, nil, nil, true)) == nil) -- off hand
+    hit, fresh = WF(wf, 10, Log("SWING_DAMAGE", 250, 0, 1, nil, nil, nil, true, nil, nil, nil))
+    assert(hit.amount == 250 and hit.crit and not fresh)
+    assert(WF(wf, 10.2, Log("SWING_DAMAGE", 100, 0, 1)) == nil) -- an ordinary swing
+    WF(wf, 20, Log("SPELL_EXTRA_ATTACKS", 8516, "Windfury Attack", 1, 1))
+    assert(WF(wf, 21.5, Log("SWING_MISSED", "DODGE")) == nil) -- too late to be the extra one
+    WF(wf, 30, Log("SPELL_EXTRA_ATTACKS", 8516, "Windfury Attack", 1, 1))
+    assert(WF(wf, 30.4, Log("SWING_MISSED", "PARRY", nil)).miss == "PARRY")
+    -- The weapon in TBC and Mists: its own Windfury Attack hits, one proc.
+    hit, fresh = WF(wf, 40, Log("SPELL_DAMAGE", 25504, "Windfury Attack", 1, 400, 0, 1, nil, nil, nil, nil))
+    assert(hit.amount == 400 and not hit.crit and fresh)
+    hit, fresh = WF(wf, 40, Log("SPELL_MISSED", 25504, "Windfury Attack", 1, "DODGE"))
+    assert(hit.miss == "DODGE" and not fresh)
+    assert(WF(wf, 40.1, Log("SWING_DAMAGE", 100, 0, 1)) == nil) -- no swings owed
+    -- Extra attacks paid in Windfury Attack hits leave no swing owed.
+    WF(wf, 50, Log("SPELL_EXTRA_ATTACKS", 8516, "Windfury Attack", 1, 2))
+    assert(WF(wf, 50, Log("SPELL_DAMAGE", 25504, "Windfury Attack", 1, 800, 0, 1, nil, nil, nil, true)).crit)
+    assert(WF(wf, 50, Log("SPELL_DAMAGE", 25504, "Windfury Attack", 1, 400, 0, 1)).amount == 400)
+    assert(WF(wf, 50.2, Log("SWING_DAMAGE", 100, 0, 1)) == nil)
+    -- Windfury's buffs and other spells are not procs.
+    assert(WF(wf, 60, Log("SPELL_AURA_APPLIED", 8515, "Windfury Totem", 8, "BUFF")) == nil)
+    assert(WF(wf, 60, Log("SPELL_DAMAGE", 1752, "Sinister Strike", 1, 90)) == nil)
+
+    -- Both gimmicks are off by default; Seal Slots only shows where it is set up.
+    local page = ScarletUI:Options().args.gimmicksSettings
+    assert(not page.args.sealSlots.get() and not page.args.windfury.get() and page.args.sound.get())
+    ScarletUI.sealSlotsSupported = nil
+    assert(page.args.sealSlots.hidden() and page.args.sealSlotsShow.hidden() and not page.args.windfury.hidden)
+end
+
 print("PASS: remaining settings, setup dispatcher, Era/TBC/Mists legacy modules, shared Era presets, and Edit Mode installation")
 
 -- Run last: the prompt regression loads real AceDB in its own addon setup.

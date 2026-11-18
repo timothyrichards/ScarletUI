@@ -298,6 +298,28 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   Refreshed by a half-second `OnUpdate` poll while on, not by events. The same
   stats are published as the LibDataBroker feed "ScarletUI Stats", created the
   first time the display is on so broker displays do not list it otherwise.
+- `Modules/Gimmicks.lua`: just-for-fun shows (`db.global.gimmicks`), each off
+  by default with its toggle on the Gimmicks page (`gimmicksSettings`,
+  `master = true` in `NAV`), and one `sound` toggle for all. Nothing is built
+  until a gimmick is turned on. Sounds are `Sounds\*.ogg`, made by
+  `python tools/make-sounds.py` (numpy, ffmpeg); new files need a full restart.
+  - Seal Slots (`sealSlots`, `ScarletUISealSlots`, `/sealslots`), Forever
+    only: a three-reel slot machine for the Unsealed Wrath stacks a seal twist
+    spends. It was the standalone SealSlots addon; while that addon is loaded
+    this one stays out and copies its position and best spins once. Forever
+    closes the combat log and hides the Echo buffs in combat, so the stacks are
+    counted from seal casts and `PLAYER_SWING`, the reels land on the target's
+    `UNIT_COMBAT` holy hits and misses, and out of combat the buffs resync the
+    count. The rules (`ScarletUI.Gimmicks.SealSlots`) call no WoW API so the
+    tests run them. While on it logs what the client shows to `sealSlots.log`
+    (last 3000 lines) for tuning detection.
+  - Windfury (`windfury`, `ScarletUIWindfury`, `/windfury`), every client:
+    "WINDFURY!" slams in with the extra attacks' damage, counting on for chained
+    procs. Era, TBC, and Mists read the combat log
+    (`ScarletUI.Gimmicks.WindfuryEvent`: `SPELL_EXTRA_ATTACKS` from a Windfury
+    spell and the main-hand swings it owes, or Windfury Attack hits). Forever
+    and Retail take a `UNIT_SPELLCAST_SUCCEEDED` of a Windfury spell the player
+    does not know, unverified, and show no damage.
 - `Modules/Bag.lua`, `Modules/Nameplates.lua`: custom bag/bank frames and
   nameplate threat colors, auras, and text. Classic UI clients only: listed in
   just those three manifests so Retail and Forever never load them. Each file adds its

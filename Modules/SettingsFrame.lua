@@ -25,6 +25,7 @@ local NAV = {
     { "fishingSettings" },
     { "remindersSettings", master = true },
     { "statDisplaySettings" },
+    { "gimmicksSettings", master = true },
     { "auctionSettings", master = true },
     { "nameplatesModuleSettings" },
     { "CVarModuleSettings" },

@@ -26,6 +26,7 @@ Modules\FiveSecondRule.lua
 Modules\QuestXPBar.lua
 Modules\Fishing.lua
 Modules\Reminders.lua
+Modules\Gimmicks.lua
 Modules\SpecGearSets.lua
 Modules\StatDisplay.lua
 Modules\GameMenu.lua

@@ -69,6 +69,17 @@ ScarletUI.defaults = {
             enabled = true,
             showAll = false,
         },
+        -- Just-for-fun shows, each off by default; their sounds share a toggle.
+        gimmicks = {
+            sound = true,
+            sealSlots = {
+                enabled = false,
+                show = true,
+            },
+            windfury = {
+                enabled = false,
+            },
+        },
         chatModule = {
             enabled = true,
             fontSize = 14,

@@ -20,6 +20,7 @@ function ScarletUI:Options()
             fishingSettings = self:GetFishingSettingsPage(database, 6),
             remindersSettings = self:GetRemindersSettingsPage(database, 6.1),
             statDisplaySettings = self:GetStatDisplaySettingsPage(database, 6.2),
+            gimmicksSettings = self:GetGimmicksSettingsPage(database, 6.3),
             auctionSettings = self:GetAuctionSettingsPage(database, 6.5),
             -- Nameplates only load on Era, TBC, and Mists.
             nameplatesModuleSettings = self.GetNameplatesModuleSettingsPage and self:GetNameplatesModuleSettingsPage(database, defaults.nameplatesModule, 7),
@@ -493,6 +494,69 @@ function ScarletUI:GetStatDisplaySettingsPage(database, order)
                     ranged = Role("RANGED", "Ranged", "ranged attack power, crit chance, hit chance, and attack speed", 1),
                     caster = Role("CASTER", "Caster", "spell power, healing, spell crit and hit chance, and mana per 5 seconds while casting", 2),
                 },
+            },
+        },
+    }
+end
+
+-- Each gimmick has its own switch, off by default; the page has none of its own.
+function ScarletUI:GetGimmicksSettingsPage(database, order)
+    return {
+        name = "Gimmicks",
+        desc = "Just for fun: shows for lucky procs.",
+        type = "group",
+        order = order,
+        args = {
+            sealSlots = {
+                name = "Seal Slots",
+                desc = "A slot machine for Unsealed Wrath: when a seal twist spends your stored seals, three reels spin and each lands on what its stack did. For a Retribution Paladin with the talent.\n\nHold Shift and drag the machine to move it; right-click it out of combat for your best spins. /sealslots test spins a made-up result.",
+                type = "toggle",
+                hidden = function() return not self.sealSlotsSupported end,
+                width = 1.5,
+                order = 0,
+                get = function(_) return database.gimmicks.sealSlots.enabled end,
+                set = function(_, val)
+                    database.gimmicks.sealSlots.enabled = val
+                    self:UpdateSealSlots()
+                end,
+            },
+            sealSlotsShow = {
+                name = "Keep Slot Machine on Screen",
+                desc = "Show the slot machine between spins, with the seals stored so far. Off, it only shows while it spins.",
+                type = "toggle",
+                hidden = function() return not self.sealSlotsSupported end,
+                width = 1.5,
+                order = 1,
+                get = function(_) return database.gimmicks.sealSlots.show end,
+                set = function(_, val)
+                    database.gimmicks.sealSlots.show = val
+                    self:UpdateSealSlots()
+                end,
+            },
+            windfury = {
+                name = "Windfury!",
+                desc = function()
+                    return "Slam WINDFURY! onto the screen when a Windfury proc gives you extra attacks"
+                        .. (self.retail and ". This client hides the combat log, so the damage is not shown." or ", with what they hit for.")
+                        .. "\n\n/windfury unlocks it to drag; /windfury test shows one."
+                end,
+                type = "toggle",
+                width = 1.5,
+                order = 2,
+                get = function(_) return database.gimmicks.windfury.enabled end,
+                set = function(_, val)
+                    database.gimmicks.windfury.enabled = val
+                    self:UpdateWindfury()
+                end,
+            },
+            sound = {
+                name = "Gimmick Sounds",
+                desc = "Play sound effects with the gimmicks: the reels turning and paying out, and the gust of a Windfury.",
+                type = "toggle",
+                width = 1.5,
+                order = 3,
+                get = function(_) return database.gimmicks.sound end,
+                set = function(_, val) database.gimmicks.sound = val end,
             },
         },
     }
