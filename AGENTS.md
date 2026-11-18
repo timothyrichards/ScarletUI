@@ -267,6 +267,17 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
     soonest enchant runs out, since no event is known to fire then. The item
     IDs and the fist weapon rule are hand-kept from memory, not checked against
     a database; fishing lures are left to `Fishing.lua`.
+  - Camp items (`db.global.campReminderModule`, `SetupCampReminders`), Forever
+    only. A second page of the bar: one icon per profession in `CAMP`
+    (`ScarletUICampCooking` and so on), shown while the bags hold one of its
+    campfire kits (Cooking) or camp items, highest tier first, picked per
+    profession in `items[label]`; no buff is checked. A plain button,
+    `ScarletUIRemindersPage`, leads the bar while any icon on either page has
+    something to show and flips `db.global.remindersPage` (nil or `camp`);
+    with the toggle off the bar stays on the buffs. Icons record
+    `active` in `Update` and `LayOutBar` shows the ones on the current page.
+    The item IDs come from fan sites and cover the kits, each profession's
+    skill 20 item, the Alchemy Laboratory, and the Tanning Rack only.
 - `Modules/SpecGearSets.lua`: gear set per talent specialization, Forever only.
   `ScarletUISpecGearSet`, a dropdown at the left of the talent window's header
   row, lists the Equipment Manager sets; the set picked for the Primary or

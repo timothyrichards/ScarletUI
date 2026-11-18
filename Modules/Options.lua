@@ -387,7 +387,7 @@ function ScarletUI:GetRemindersSettingsPage(database, order)
         name = "Reminders",
         desc = "Icons that show while a buff is missing and your bags hold the item for it.",
         type = "group",
-        hidden = function() return not (self.xpFoodFrame or self.weaponReminderFrame) end,
+        hidden = function() return not (self.xpFoodFrame or self.weaponReminderFrame or self.campReminderFrames) end,
         order = order,
         args = {
             xpFood = {
@@ -414,6 +414,19 @@ function ScarletUI:GetRemindersSettingsPage(database, order)
                 set = function(_, val)
                     database.weaponReminderModule.enabled = val
                     self:UpdateWeaponReminder()
+                end,
+            },
+            camp = {
+                name = "Camp Items",
+                desc = "Add a switch to the front of the reminders that flips them to a page of camp items: an icon for each profession whose campfire kits or camp items are in your bags. Right-click an icon to use the item; left-click it to choose which one it shows.",
+                type = "toggle",
+                hidden = function() return not self.campReminderFrames end,
+                width = 1.5,
+                order = 2,
+                get = function(_) return database.campReminderModule.enabled end,
+                set = function(_, val)
+                    database.campReminderModule.enabled = val
+                    self:UpdateCampReminders()
                 end,
             },
         },

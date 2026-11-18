@@ -100,7 +100,7 @@ end
 local calls = {}
 local setupMethods = { "SetupDebugFrame", "SetupActionBarToggles", "SetupBagSort", "SetupTracking", "SetupChat", "SetupCVars",
     "SetupItemLevels",
-    "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupFiveSecondRule", "SetupQuestXPBar", "SetupFishing", "SetupXPFood", "SetupWeaponReminder", "SetupSpecGearSets", "SetupStatDisplay", "SetupSealSlots", "SetupWindfury", "SetupCraftProfit", "SetupExpandCharacterInfo", "SetupGameMenuButtons",
+    "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupFiveSecondRule", "SetupQuestXPBar", "SetupFishing", "SetupXPFood", "SetupWeaponReminder", "SetupCampReminders","SetupSpecGearSets", "SetupStatDisplay", "SetupSealSlots", "SetupWindfury", "SetupCraftProfit", "SetupExpandCharacterInfo", "SetupGameMenuButtons",
     "SetupFrameTweaks", "SetupMinimapIcon" }
 for _, name in ipairs(setupMethods) do
     ScarletUI[name] = function() calls[name] = true end
@@ -1334,6 +1334,50 @@ local weaponOption = ScarletUI:Options().args.remindersSettings.args.weapon
 assert(not weaponOption.hidden() and weaponOption.order > foodOption.order)
 weaponOption.set(nil, false); assert(not weaponIcon.shown)
 weaponOption.set(nil, true); assert(weaponIcon.shown)
+
+-- Camp items, Forever: a switch at the front of the bar flips it to a page with
+-- an icon per profession for that profession's camp items in the bags.
+foodBags = { 12404, 279981, 279961, 279968 } -- a stone, Basic and Journeyman kits, a First Aid Kit
+ScarletUI:SetupCampReminders()
+local campIcons, pageSwitch = ScarletUI.campReminderFrames, nil
+for _, widget in ipairs(foodWidgets) do
+    if rawget(widget, "name") == "ScarletUIRemindersPage" then pageSwitch = widget end
+end
+local cooking, firstAid, fishing = campIcons[1], campIcons[2], campIcons[3]
+assert(#campIcons == 12 and cooking.name == "ScarletUICampCooking" and firstAid.name == "ScarletUICampFirstAid")
+local function Camp(icon, event) icon.scripts.OnEvent(nil, event, "player") end
+-- The buff page: the switch leads and offers the camp page; no camp icon shows.
+Weapon("BAG_UPDATE_DELAYED")
+assert(pageSwitch.shown and pageSwitch.point[4] == 0 and pageSwitch.texture.icon == "icon279981")
+assert(weaponIcon.shown and weaponIcon.point[4] == 48 and not cooking.shown and not firstAid.shown)
+pageSwitch.scripts.OnClick()
+assert(ScarletUI.db.global.remindersPage == "camp" and not weaponIcon.shown and pageSwitch.texture.icon == "buff19705")
+-- The higher tier kit leads; a profession with nothing in the bags has no icon.
+assert(cooking.shown and cooking.itemID == 279961 and cooking.attributes.macrotext2 == "/use item:279961")
+assert(cooking.point[4] == 48 and firstAid.shown and firstAid.point[4] == 96 and not fishing.shown)
+assert(reminderBar.width == 132)
+foodBags = { 12404, 279981 }; Camp(cooking, "BAG_UPDATE_DELAYED"); Camp(firstAid, "BAG_UPDATE_DELAYED")
+assert(cooking.itemID == 279981 and not firstAid.shown and reminderBar.width == 84)
+-- Combat hides the switch with the icons; another icon's layout after combat
+-- does not show one still waiting for its own update.
+Weapon("PLAYER_REGEN_DISABLED"); Camp(cooking, "PLAYER_REGEN_DISABLED")
+assert(not pageSwitch.shown and not cooking.shown)
+Weapon("PLAYER_REGEN_ENABLED"); assert(pageSwitch.shown and not cooking.shown)
+Camp(cooking, "PLAYER_REGEN_ENABLED"); assert(cooking.shown)
+-- Ctrl-click resets the position and keeps the page.
+ScarletUI.db.global.remindersPosition = { "TOPLEFT", "TOPLEFT", 1, 2 }
+ctrl = true; pageSwitch.scripts.OnClick(); ctrl = false
+assert(ScarletUI.db.global.remindersPosition == nil and ScarletUI.db.global.remindersPage == "camp")
+-- Back to the buffs.
+pageSwitch.scripts.OnClick()
+assert(ScarletUI.db.global.remindersPage == nil and weaponIcon.shown and not cooking.shown)
+-- Its switch is the third on the Reminders page; off, the switch goes and the buffs stay.
+local campOption = ScarletUI:Options().args.remindersSettings.args.camp
+assert(not campOption.hidden() and campOption.order > weaponOption.order)
+pageSwitch.scripts.OnClick(); campOption.set(nil, false)
+assert(not pageSwitch.shown and weaponIcon.shown and weaponIcon.point[4] == 0 and not cooking.shown)
+campOption.set(nil, true); assert(pageSwitch.shown and cooking.shown and not weaponIcon.shown)
+ScarletUI.db.global.remindersPage = nil
 C_Timer, GetWeaponEnchantInfo, GetInventoryItemID, UnitClass = savedTimer, nil, nil, nil
 CreateFrame, IsControlKeyDown = savedCreateFrame, nil
 UnitLevel, C_Container, C_Item, C_UnitAuras, IsPlayerAtEffectiveMaxLevel = savedUnitLevel, nil, nil, nil, nil

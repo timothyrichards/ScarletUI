@@ -58,6 +58,12 @@ ScarletUI.defaults = {
             -- The enhancement picked for each hand, keyed by inventory slot.
             items = {},
         },
+        -- Forever's camp items, the second page of the reminders bar.
+        campReminderModule = {
+            enabled = true,
+            -- The camp item picked for each profession, keyed by its label.
+            items = {},
+        },
         statDisplay = {
             enabled = false,
             layout = "COMBINED",

@@ -16,6 +16,10 @@
 --
 -- Weapon enhancements, Era, TBC, and Forever: sharpening stones, weightstones,
 -- oils, and poisons, for a main- or off-hand weapon with no temporary enchant.
+--
+-- Camp items, Forever only: a second page of the bar, one icon per profession
+-- for the campfire kits and camp items in the bags. A switch at the front of
+-- the bar flips between the pages.
 local WELL_FED = {
     1248406, 1248420, 1248421, 1248422, 1248688, 1249519, 1249520,
     1249521, 1249523, 1249907, 1249926, 1249927, 1294007, 1319310,
@@ -120,6 +124,28 @@ local STONE_FITS = {
 local FISHING_POLE = 20
 local HANDS = { { slot = 16, name = "main hand" }, { slot = 17, name = "off hand" } }
 
+-- Forever's camp items by profession, lowest tier first; Cooking's are the
+-- campfire kits. The label is the icon's, so it is kept short.
+-- ponytail: hand-kept from wowsod.pro and wow-professions.com (November 2026),
+-- which give item IDs only for the kits, each profession's skill 20 item, the
+-- Alchemy Laboratory, and the Tanning Rack. The other skill 140 and 300 items
+-- are missing until their IDs are known; add them here.
+local CAMP_KIT = 279981
+local CAMP = {
+    { label = "Cooking", items = { CAMP_KIT, 279961, 279974 } }, -- Basic, Journeyman, Expert Campfire Kit
+    { label = "First Aid", items = { 279968 } },                 -- First Aid Kit
+    { label = "Fishing", items = { 279967 } },                   -- Fish Bowl
+    { label = "Alchemy", items = { 279956, 279990 } },           -- Mana Well, Alchemy Laboratory
+    { label = "Smithing", items = { 279944 } },                  -- Sharpening Wheel
+    { label = "Enchanting", items = { 279976 } },                -- Enchanted Lute
+    { label = "Engineer", items = { 279950 } },                  -- Reagent Bot
+    { label = "Leather", items = { 279978, 279941 } },           -- Camp Tent, Tanning Rack
+    { label = "Tailoring", items = { 279973, 279972 } },         -- Alliance or Horde Faction Banner
+    { label = "Herbalism", items = { 279962 } },                 -- Incense Candle
+    { label = "Mining", items = { 279960 } },                    -- Lodestone
+    { label = "Skinning", items = { 279979 } },                  -- Camp Chair
+}
+
 -- Only asked out of combat, where the player's own auras are readable; a
 -- secret answer counts as buffed so the reminder stays quiet. Forever's Well
 -- Fed spells are asked for by ID, any other by the name they all share.
@@ -193,6 +219,12 @@ end
 -- lays out out of combat.
 local BAR_GAP = 12 -- room for the labels under neighboring icons
 local bar, barIcons
+-- The page switch, set up with the camp items (Forever only).
+local toggle
+
+-- The page the bar shows: "buffs" or "camp" (saved as nil or "camp").
+local function CampOn() return toggle and ScarletUI.db.global.campReminderModule.enabled end
+local function Page() return CampOn() and ScarletUI.db.global.remindersPage or "buffs" end
 
 local function PlaceBar()
     if InCombatLockdown() then return end
@@ -207,8 +239,20 @@ end
 
 local function LayOutBar()
     if InCombatLockdown() then return end
-    local x = 0
+    local page, x, any = Page(), 0, false
+    for _, icon in ipairs(barIcons) do any = any or icon.active end
+    -- The switch leads the bar while either page has an icon to show.
+    if toggle then
+        toggle:SetShown(CampOn() and any)
+        if toggle:IsShown() then
+            toggle:ClearAllPoints()
+            toggle:SetPoint("LEFT", bar, "LEFT", 0, 0)
+            toggle.Draw()
+            x = ICON_SIZE + BAR_GAP
+        end
+    end
     for _, icon in ipairs(barIcons) do
+        icon:SetShown(icon.active and icon.page == page)
         if icon:IsShown() then
             icon:ClearAllPoints()
             icon:SetPoint("LEFT", bar, "LEFT", x, 0)
@@ -231,13 +275,60 @@ local function CreateBar()
     end
 end
 
+-- Dragging any icon on the bar moves it; Ctrl-click puts it back.
+local function MakeHandle(frame)
+    frame:RegisterForDrag("LeftButton")
+    frame:SetScript("OnDragStart", function() bar:StartMoving() end)
+    frame:SetScript("OnDragStop", function()
+        bar:StopMovingOrSizing()
+        local point, _, relativePoint, x, y = bar:GetPoint()
+        ScarletUI.db.global.remindersPosition = { point, relativePoint, x, y }
+    end)
+end
+
+local function ResetBar()
+    ScarletUI.db.global.remindersPosition = nil
+    PlaceBar()
+end
+
+-- A plain button: it only changes which secure icons LayOutBar shows, which
+-- waits for the end of combat. It shows the page a click switches to.
+local function CreateToggle()
+    toggle = ScarletUI:CreateIconButton(UIParent, ICON_SIZE, "ScarletUIRemindersPage")
+    toggle:Hide()
+    local label = toggle:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    label:SetPoint("TOP", toggle, "BOTTOM", 0, -4)
+    function toggle.Draw()
+        if Page() == "camp" then
+            label:SetText("Buffs")
+            toggle.texture:SetTexture(SpellTexture(WELL_FED_NAME))
+        else
+            label:SetText("Camp")
+            toggle.texture:SetTexture((select(5, GetItemInfoInstant(CAMP_KIT))))
+        end
+    end
+    MakeHandle(toggle)
+    toggle:RegisterForClicks("LeftButtonUp")
+    toggle:SetScript("OnClick", function()
+        if IsControlKeyDown() then return ResetBar() end
+        ScarletUI.db.global.remindersPage = Page() == "buffs" and "camp" or nil
+        LayOutBar()
+    end)
+    toggle:SetScript("OnEnter", function()
+        GameTooltip:SetOwner(toggle, "ANCHOR_RIGHT")
+        GameTooltip:SetText(Page() == "camp" and "Show buff reminders" or "Show camp items")
+        GameTooltip:AddLine("Drag to move the reminders. Ctrl-click to reset their position.", 0.6, 0.6, 0.6, true)
+        GameTooltip:Show()
+    end)
+end
+
 -- One reminder icon on the bar. `spec` has the frame `name`, the `label` under it,
 -- the tooltip lines `hint` and `pickHint`,
 -- `Settings()` returning its saved table (enabled), `Find(settings)`
 -- returning the usable items, the one to show, the macro that uses it, and
 -- optionally a hint for it, and `Pick(settings, itemID)` for a click in the
--- list. Optional: `events`, `unitEvents`, `OnEvent(event, ...)` returning true
--- when no update should follow, and `OnHide()`.
+-- list. Optional: `page` ("camp" for the camp page, "buffs" otherwise), `events`, `unitEvents`,
+-- `OnEvent(event, ...)` returning true when no update should follow, and `OnHide()`.
 -- The icon gets `Place()`, `Update()`, and `items`, the list as last drawn.
 local function CreateReminder(spec)
     -- An item's icon and stack count, with its item tooltip and hints below it.
@@ -292,21 +383,13 @@ local function CreateReminder(spec)
     end)
 
     icon.Place = PlaceBar
-    icon:RegisterForDrag("LeftButton")
-    icon:SetScript("OnDragStart", function() bar:StartMoving() end)
-    icon:SetScript("OnDragStop", function()
-        bar:StopMovingOrSizing()
-        local point, _, relativePoint, x, y = bar:GetPoint()
-        ScarletUI.db.global.remindersPosition = { point, relativePoint, x, y }
-    end)
+    icon.page = spec.page or "buffs"
+    icon.active = false
+    MakeHandle(icon)
     -- OnClick belongs to the secure template, so our clicks are read after it.
     icon:SetScript("PostClick", function(_, button)
         if button ~= "LeftButton" then return end
-        if IsControlKeyDown() then
-            ScarletUI.db.global.remindersPosition = nil
-            PlaceBar()
-            return
-        end
+        if IsControlKeyDown() then return ResetBar() end
         away = 0
         list:SetShown(not list:IsShown())
     end)
@@ -321,7 +404,8 @@ local function CreateReminder(spec)
             items, shown, macro, hint = spec.Find(settings)
         end
         icon.items = items or {}
-        icon:SetShown(shown ~= nil)
+        -- Whether it has something to show; LayOutBar shows it on its page.
+        icon.active = shown ~= nil
         LayOutBar()
         if not shown then
             list:Hide()
@@ -361,6 +445,9 @@ local function CreateReminder(spec)
             -- Fires before the combat lockdown, so the button can still hide.
             list:Hide()
             icon:Hide()
+            -- Not shown again by another icon's layout until its own update after combat.
+            icon.active = false
+            if toggle then toggle:Hide() end
             if spec.OnHide then spec.OnHide() end
             combat = true
             return
@@ -538,4 +625,44 @@ function ScarletUI:SetupWeaponReminder()
     function self:UpdateWeaponReminder() icon.Update() end
     icon.Place()
     icon.Update()
+end
+
+-- One icon per profession on the camp page, for its camp items in the bags.
+function ScarletUI:SetupCampReminders()
+    if self.campReminderFrames then
+        -- Setup reruns after a settings reset.
+        self:UpdateCampReminders()
+        return
+    end
+    if self:GetWoWVersion() ~= "FOREVER" then return end
+
+    CreateToggle()
+    local icons = {}
+    for _, profession in ipairs(CAMP) do
+        local tier = {}
+        for index, itemID in ipairs(profession.items) do tier[itemID] = index end
+        icons[#icons + 1] = CreateReminder({
+            name = "ScarletUICamp" .. profession.label:gsub("%W", ""),
+            label = profession.label,
+            page = "camp",
+            hint = "Right-click to use it. Left-click to choose another.",
+            pickHint = "Click to pick this. Click it again to show the best one.",
+            Settings = function() return self.db.global.campReminderModule end,
+            -- The highest tier in the bags first.
+            Find = function(settings)
+                local items, shown = FindItems(function(itemID) return tier[itemID] end, settings.items[profession.label])
+                return items, shown, shown and "/use item:" .. shown
+            end,
+            -- Picked per profession. Clicking the picked item again goes back to the best one.
+            Pick = function(settings, itemID)
+                settings.items[profession.label] = settings.items[profession.label] ~= itemID and itemID or nil
+            end,
+        })
+    end
+    self.campReminderFrames = icons
+
+    function self:UpdateCampReminders()
+        for _, icon in ipairs(icons) do icon.Update() end
+    end
+    self:UpdateCampReminders()
 end
