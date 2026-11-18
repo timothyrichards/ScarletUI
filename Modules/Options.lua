@@ -509,7 +509,11 @@ function ScarletUI:GetGimmicksSettingsPage(database, order)
         args = {
             sealSlots = {
                 name = "Seal Slots",
-                desc = "A slot machine for Unsealed Wrath: when a seal twist spends your stored seals, three reels spin and each lands on what its stack did. For a Retribution Paladin with the talent.\n\nHold Shift and drag the machine to move it; right-click it out of combat for your best spins. /sealslots test spins a made-up result.",
+                desc = function()
+                    return "A slot machine for Unsealed Wrath: when a seal twist spends your stored seals, three reels spin and each lands on what its stack did. For a Retribution Paladin with the talent."
+                        .. (self.sealSlotsStandalone and "\n\nThe separate SealSlots addon is running. Turning this on turns that addon off; /reload to switch, keeping your best spins." or "")
+                        .. "\n\nHold Shift and drag the machine to move it; right-click it out of combat for your best spins. /sealslots test spins a made-up result."
+                end,
                 type = "toggle",
                 hidden = function() return not self.sealSlotsSupported end,
                 width = 1.5,
@@ -517,7 +521,7 @@ function ScarletUI:GetGimmicksSettingsPage(database, order)
                 get = function(_) return database.gimmicks.sealSlots.enabled end,
                 set = function(_, val)
                     database.gimmicks.sealSlots.enabled = val
-                    self:UpdateSealSlots()
+                    self:UpdateSealSlots(val)
                 end,
             },
             sealSlotsShow = {

@@ -306,7 +306,9 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   - Seal Slots (`sealSlots`, `ScarletUISealSlots`, `/sealslots`), Forever
     only: a three-reel slot machine for the Unsealed Wrath stacks a seal twist
     spends. It was the standalone SealSlots addon; while that addon is loaded
-    this one stays out and copies its position and best spins once. Forever
+    this one stays out and copies its position and best spins once, and its
+    switch still shows: turning it on disables that addon for every character
+    from the next reload. Forever
     closes the combat log and hides the Echo buffs in combat, so the stacks are
     counted from seal casts and `PLAYER_SWING`, the reels land on the target's
     `UNIT_COMBAT` holy hits and misses, and out of combat the buffs resync the

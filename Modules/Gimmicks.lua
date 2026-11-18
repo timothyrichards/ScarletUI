@@ -1125,9 +1125,11 @@ function ScarletUI:SetupSealSlots()
     end
     -- Unsealed Wrath is a Forever talent.
     if self:GetWoWVersion() ~= "FOREVER" then return end
-    -- While the standalone addon is installed the machine is left to it; its
+    self.sealSlotsSupported = true
+    -- While the standalone addon is loaded the machine is left to it; its
     -- position and best spins are taken over once.
-    if self:IsAddOnLoaded("SealSlots") then
+    self.sealSlotsStandalone = self:IsAddOnLoaded("SealSlots")
+    if self.sealSlotsStandalone then
         local slots, old = Slots(), SealSlotsDB
         if type(old) == "table" and not slots.imported then
             slots.pos, slots.best, slots.tally, slots.imported = old.pos, old.best, old.tally, true
@@ -1135,7 +1137,6 @@ function ScarletUI:SetupSealSlots()
         end
         return
     end
-    self.sealSlotsSupported = true
     events = CreateFrame("Frame")
     events:SetScript("OnEvent", OnEvent)
     SLASH_SCARLETUISEALSLOTS1, SLASH_SCARLETUISEALSLOTS2 = "/sealslots", "/slots"
@@ -1143,8 +1144,17 @@ function ScarletUI:SetupSealSlots()
     self:UpdateSealSlots()
 end
 
-function ScarletUI:UpdateSealSlots()
+-- turnedOn: the player just switched it on, which also switches the
+-- standalone addon off from the next reload.
+function ScarletUI:UpdateSealSlots(turnedOn)
     if not self.sealSlotsSupported then return end
+    if self.sealSlotsStandalone then
+        if turnedOn then
+            (C_AddOns and C_AddOns.DisableAddOn or DisableAddOn)("SealSlots") -- for every character
+            Print("The SealSlots addon is now turned off. /reload to switch to Scarlet UI's slot machine.")
+        end
+        return
+    end
     local slots = Slots()
     if slots.enabled then
         if not ns.Spin then BuildMachine() end
