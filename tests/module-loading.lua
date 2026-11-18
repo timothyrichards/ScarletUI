@@ -1709,12 +1709,6 @@ do
     assert(ns.Tier(3, { hit, crit, hit }) == "JACKPOT")
     assert(ns.Tier(3, { crit, crit, crit }) == "MEGA")
 
-    -- Ready: a full set, still running, same seal.
-    local full = { seal = "A", stacks = 3, expires = 20 }
-    assert(ns.Ready(full, "A", 10))
-    assert(not ns.Ready(full, "B", 10) and not ns.Ready(full, "A", 20))
-    assert(not ns.Ready({ seal = "A", stacks = 2, expires = 20 }, "A", 10) and not ns.Ready({}, "A", 10))
-
     -- Record: most crits, then most hits, then newest; busts are only counted.
     local db = {}
     ns.Record(db, { crits = 0, hits = 2, id = "a" }, "WIN")

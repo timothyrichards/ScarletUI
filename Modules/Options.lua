@@ -512,7 +512,7 @@ function ScarletUI:GetGimmicksSettingsPage(database, order)
                 desc = function()
                     return "A slot machine for Unsealed Wrath: when a seal twist spends your stored seals, three reels spin and each lands on what its stack did. For a Retribution Paladin with the talent."
                         .. (self.sealSlotsStandalone and "\n\nThe separate SealSlots addon is running. Turning this on turns that addon off; /reload to switch, keeping your best spins." or "")
-                        .. "\n\nHold Shift and drag the machine to move it; right-click it out of combat for your best spins. /sealslots test spins a made-up result."
+                        .. "\n\nRight-click the machine out of combat for your best spins. /sealslots test spins a made-up result."
                 end,
                 type = "toggle",
                 hidden = function() return not self.sealSlotsSupported end,

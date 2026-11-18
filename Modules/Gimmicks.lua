@@ -137,11 +137,6 @@ function ns.Twist(state, seal, now)
     end
 end
 
--- Time to twist: a full set of stacks is stored and `seal` is still the one up.
-function ns.Ready(state, seal, now)
-    return (state.stacks or 0) >= ns.MAX_STACKS and now < state.expires and state.seal == seal
-end
-
 -- A swing landed. Returns what it spent, as Twist does.
 function ns.Swing(state, seal, now)
     if not seal then return end
@@ -229,13 +224,9 @@ end
 --                          secret = true when the amount is a secret value }
 --                          or { miss = "DODGE" } for an attack that was avoided
 --   ns.Miss()              calls the spin off: the swing was avoided, nothing was spent
---   ns.Rest()              back to idle: hidden, unless unlocked
+--   ns.Rest()              back to idle: hidden
 --   ns.Off()               hidden, Seal Slots was turned off
---   ns.Stacks(seal, count) the stacks stored so far, shown grayed out while unlocked
---   ns.Glow(on)            the outline that says a full set of stacks is ready to twist
 --   ns.Board()             opens or closes the board of best spins
---   ns.Place()             puts the machine at its saved position
---   ns.Preview(on)         unlocked: stays up to be dragged without Shift
 local SIZE, GAP, PAD = 44, 8, 12
 local SPEED = 900                  -- reel speed, pixels a second
 local MIN_SPIN = 0.7               -- seconds the reels turn at least; they all stop together
@@ -268,7 +259,7 @@ local function BuildMachine()
     -- the banner hang below it, as "Crit!" stands above it.
     frame:SetSize(3 * SIZE + 2 * GAP + 2 * PAD, SIZE + 2 * PAD)
     frame:SetFrameStrata("MEDIUM")
-    frame:SetClampedToScreen(true)
+    frame:SetPoint("CENTER", 0, -160)
     frame:Hide()
 
     local bg = frame:CreateTexture(nil, "BACKGROUND")
@@ -340,31 +331,6 @@ local function BuildMachine()
 
     local pool = {}     -- symbols a spinning reel shows
     local spin          -- the spin in progress: { seal, stacks, landed, procs, hideAt }
-    local preview = false
-
-    -- Time to twist: a gold outline pulses around the box. Each side is a line
-    -- with a faint wider one behind it, both centred on the box's edge.
-    local glow = CreateFrame("Frame", nil, frame)
-    glow:SetPoint("TOPLEFT", -2, 2)
-    glow:SetPoint("BOTTOMRIGHT", 2, -2)
-    glow:Hide()
-    for _, side in ipairs({ { "TOPLEFT", "TOPRIGHT" }, { "BOTTOMLEFT", "BOTTOMRIGHT" }, { "TOPLEFT", "BOTTOMLEFT" }, { "TOPRIGHT", "BOTTOMRIGHT" } }) do
-        for thick, alpha in pairs({ [2] = 1, [10] = 0.2 }) do
-            local line = glow:CreateTexture(nil, "OVERLAY")
-            line:SetColorTexture(GOLD[1], GOLD[2], GOLD[3], alpha)
-            line:SetBlendMode("ADD")
-            line:SetPoint("TOPLEFT", glow, side[1], -thick / 2, thick / 2)
-            line:SetPoint("BOTTOMRIGHT", glow, side[2], thick / 2, -thick / 2)
-        end
-    end
-    local glowPulse = Animate(glow, true)
-    glowPulse:SetLooping("BOUNCE")
-    Fade(glowPulse, 1, 0.3, 0.5)
-
-    function ns.Glow(on)
-        glow:SetShown(on)
-        if on then glowPulse:Play() else glowPulse:Stop() end
-    end
 
     -- The board: the best spins on record (ns.Record), opened by a right-click.
     local board = CreateFrame("Frame", "ScarletUISealSlotsBoard", UIParent)
@@ -460,31 +426,10 @@ local function BuildMachine()
         end
     end
 
-    -- Between spins each stored stack sits in its slot as its seal, grayed out.
-    local stored = {}
-    local function Stacked()
-        for i, reel in ipairs(reels) do
-            reel.a:SetPoint("TOPLEFT", 0, 0)
-            reel.a:SetTexture(i <= (stored.count or 0) and Icon(stored.seal) or nil)
-            reel.a:SetDesaturated(true)
-            reel.a:SetVertexColor(0.7, 0.7, 0.7)
-        end
-    end
-
-    function ns.Stacks(seal, count)
-        stored.seal, stored.count = seal, count
-        if not spin then Stacked() end
-    end
-
     function ns.Rest()
         spin = nil
         Reset()
-        Stacked()
-        if preview then
-            banner:SetText("Unlocked")
-            banner:SetTextColor(unpack(GRAY))
-        end
-        frame:SetShown(preview)
+        frame:Hide()
     end
 
     function ns.Miss()
@@ -609,7 +554,7 @@ local function BuildMachine()
                 end
             end
         end
-        if spin.hideAt and now >= spin.hideAt and not preview then
+        if spin.hideAt and now >= spin.hideAt then
             local left = 1 - (now - spin.hideAt) / FADE
             if left <= 0 then
                 ns.Rest()
@@ -654,72 +599,29 @@ local function BuildMachine()
         end
     end
 
-    function ns.Place()
-        local pos = Slots().pos
-        frame:ClearAllPoints()
-        frame:SetPoint(pos and pos[1] or "CENTER", UIParent, pos and pos[1] or "CENTER", pos and pos[2] or 0, pos and pos[3] or -160)
-    end
-
     -- Out of combat the box takes right-clicks, for the board, and lets left-clicks
-    -- through to the world behind it; in combat every click goes through. The
-    -- handle over it takes the mouse while Shift is held or it is unlocked
-    -- (/sealslots), to drag it. Should the client lack SetPassThroughButtons, only
-    -- the handle takes clicks: the board is then a Shift-right-click.
-    local handle = CreateFrame("Frame", nil, frame)
-    handle:SetAllPoints()
-    handle:EnableMouse(false)
-    frame:SetMovable(true)
-    local dragging, passing = false, false
+    -- through to the world behind it; in combat every click goes through. Should
+    -- the client lack SetPassThroughButtons it takes none: /sealslots best opens the board.
+    local passing = false
     local function Mouse(_, event)
         local fighting = event == "PLAYER_REGEN_DISABLED" or InCombatLockdown()
         if fighting then board:Hide() end
-        if dragging then return end -- Shift let go mid-drag: wait for the drop
         -- Which buttons pass through cannot be changed in combat, so it is set once.
         if not passing and not fighting and frame.SetPassThroughButtons then
             frame:SetPassThroughButtons("LeftButton")
             passing = true
         end
-        handle:EnableMouse(preview or IsShiftKeyDown())
         frame:EnableMouse(passing and not fighting)
     end
-
-    local function Click(_, button)
+    frame:SetScript("OnMouseUp", function(_, button)
         if button == "RightButton" then ns.Board() end
-    end
-    frame:SetScript("OnMouseUp", Click)
-    handle:SetScript("OnMouseUp", Click)
-
-    function ns.Preview(on)
-        preview = on
-        Mouse()
-        if on or not spin then
-            ns.Rest()
-        else
-            spin.hideAt = spin.hideAt and GetTime()
-        end
-    end
+    end)
 
     function ns.Off()
-        preview = false
-        Mouse()
         board:Hide()
-        ns.Glow(false)
         ns.Rest()
     end
 
-    handle:RegisterForDrag("LeftButton")
-    handle:SetScript("OnDragStart", function()
-        dragging = true
-        frame:StartMoving()
-    end)
-    handle:SetScript("OnDragStop", function()
-        frame:StopMovingOrSizing()
-        local point, _, _, x, y = frame:GetPoint()
-        Slots().pos = { point, x, y }
-        dragging = false
-        Mouse()
-    end)
-    frame:RegisterEvent("MODIFIER_STATE_CHANGED")
     frame:RegisterEvent("PLAYER_REGEN_DISABLED")
     frame:RegisterEvent("PLAYER_REGEN_ENABLED")
     frame:RegisterEvent("PLAYER_ENTERING_WORLD")
@@ -855,38 +757,13 @@ local function With(this)
     return list
 end
 
--- The unlocked machine shows the stacks stored so far, and its outline is lit
--- while a full set waits for a twist. Checked whenever the stacks or the seal
--- may have changed, and when they run out.
-local lit, shownSeal, shownCount, watching
-local function Ready()
-    if not Slots().enabled then return end -- a timer from before it was turned off
-    local now = GetTime()
-    local count = ns.Active() and state.expires and now < state.expires and state.stacks or 0
-    if count > 0 and state.expires ~= watching then
-        watching = state.expires
-        C_Timer.After(watching - now + 0.05, Ready)
-    end
-    if count ~= shownCount or state.seal ~= shownSeal then
-        shownCount, shownSeal = count, state.seal
-        ns.Stacks(state.seal, count)
-    end
-    local on = count > 0 and ns.Ready(state, activeSeal, now)
-    if on == lit then return end
-    lit = on
-    ns.Glow(on)
-end
-
 -- The swing's result is known: it landed (stores a stack, spends on a twist) or not.
 local function Settle(landed)
     local this = swing
     swing = nil
     Log("swing", landed and "landed" or "avoided", this.seal, "had", state.seal, state.stacks)
     -- Out of combat the buffs already say what is stored.
-    if landed and InCombatLockdown() then
-        ns.Swing(state, this.seal, this.t)
-        Ready()
-    end
+    if landed and InCombatLockdown() then ns.Swing(state, this.seal, this.t) end
     if not this.stacks then return end
     if not landed then
         ns.Miss()
@@ -1074,10 +951,8 @@ local function OnEvent(_, event, unit, ...)
             Anticipate() -- the fight ended under reels that were waiting for a swing
         end
     end
-    Ready()
 end
 
-local moving = false
 local function SealSlotsCommand(msg)
     if not Slots().enabled then
         Print("is off. Turn it on in /sui > Gimmicks.")
@@ -1100,15 +975,10 @@ local function SealSlotsCommand(msg)
         ns.Resolve(procs, nil, true)
     elseif msg == "best" then
         ns.Board()
-    elseif msg then
-        Print("Hold Shift and drag the machine to move it")
+    else
         Print("Right-click it out of combat, or /sealslots best, for your best spins")
-        Print("/sealslots - unlock it to drag without Shift, again to lock it")
         Print("/sealslots test - spin a made-up result")
         Print("/sealslots sound - gimmick sounds on or off")
-    else
-        moving = not moving
-        ns.Preview(moving)
     end
 end
 
@@ -1121,12 +991,12 @@ function ScarletUI:SetupSealSlots()
     if self:GetWoWVersion() ~= "FOREVER" then return end
     self.sealSlotsSupported = true
     -- While the standalone addon is loaded the machine is left to it; its
-    -- position and best spins are taken over once.
+    -- best spins are taken over once.
     self.sealSlotsStandalone = self:IsAddOnLoaded("SealSlots")
     if self.sealSlotsStandalone then
         local slots, old = Slots(), SealSlotsDB
         if type(old) == "table" and not slots.imported then
-            slots.pos, slots.best, slots.tally, slots.imported = old.pos, old.best, old.tally, true
+            slots.best, slots.tally, slots.imported = old.best, old.tally, true
         end
         return
     end
@@ -1156,16 +1026,13 @@ function ScarletUI:UpdateSealSlots(turnedOn)
         events:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
         events:RegisterUnitEvent("UNIT_COMBAT", "target")
         events:RegisterUnitEvent("UNIT_AURA", "player")
-        ns.Place()
         Gate()
         Resync()
         ns.Rest()
-        Ready()
     else
         events:UnregisterAllEvents()
         swing, rolling, wasActive = nil, nil, nil
         if ns.Off then ns.Off() end
-        lit, shownSeal, shownCount = nil, nil, nil
     end
 end
 
