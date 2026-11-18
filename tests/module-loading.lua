@@ -149,8 +149,8 @@ for _, variant in ipairs({ "STANDARD", "COMPACT", "ULTRAWIDE" }) do
     if variant == "COMPACT" then
         assert(anchors.raidFrame[1] == 196.6 and anchors.raidFrame[2] == -174)
     else
-        assert(anchors.raidFrame[1] == -712 and anchors.raidFrame[2] == 898)
-        assert(anchors.partyFrame[1] == -372 and anchors.partyFrame[2] == 698)
+        assert(anchors.raidFrame[1] == -798 and anchors.raidFrame[2] == 832)
+        assert(anchors.partyFrame[1] == -448 and anchors.partyFrame[2] == 628)
     end
     assert(anchors.swingTimerOffHand[4] == "swingTimerMainHand" and anchors.totemBar[4] == "multiBarBottomRight")
     assert(anchors.utilityCooldowns[3] == "BOTTOM" and anchors.utilityCooldowns[4] == "essentialCooldowns")
@@ -168,7 +168,7 @@ for _, variant in ipairs({ "STANDARD", "COMPACT", "ULTRAWIDE" }) do
         assert(anchors.focusFrame[4] == "multiBarBottomRight")
         assert(anchors.petFrame[4] == "multiBarBottomRight")
     end
-    assert(anchors.playerFrame[1] == (variant == "COMPACT" and -50 or -258))
+    assert(anchors.playerFrame[1] == (variant == "COMPACT" and -50 or -248))
     assert(anchors.playerFrame[3] == (variant == "COMPACT" and "TOPRIGHT" or "BOTTOM"))
     assert(anchors.chatFrame[1] == (variant == "ULTRAWIDE" and 24 or 33))
 end

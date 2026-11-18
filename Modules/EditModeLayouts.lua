@@ -1,4 +1,4 @@
-ScarletUI.editModeLayoutSchemaVersion = 21
+ScarletUI.editModeLayoutSchemaVersion = 22
 
 ScarletUI.editModeFrameCandidates = {
     -- MainActionBar is the Edit Mode system. MainMenuBar is the 1024px
@@ -177,14 +177,14 @@ local standardFrames = {
         },
     },
     playerFrame = {
-        point = "BOTTOM", relativePoint = "BOTTOM", x = -258, y = 236,
+        point = "BOTTOM", relativePoint = "BOTTOM", x = -248, y = 334,
         settings = {
             UnitFrameSetting("CastBarUnderneath", 0),
             UnitFrameSetting("FrameSize", 100),
         },
     },
     targetFrame = {
-        point = "BOTTOM", relativePoint = "BOTTOM", x = 258, y = 236,
+        point = "BOTTOM", relativePoint = "BOTTOM", x = 248, y = 334,
         settings = {
             UnitFrameSetting("BuffsOnTop", 1),
             UnitFrameSetting("FrameSize", 100),
@@ -328,7 +328,7 @@ local standardFrames = {
         settings = buffBarSettings,
     },
     partyFrame = {
-        point = "TOPLEFT", relativePoint = "BOTTOM", x = -372, y = 698,
+        point = "TOPLEFT", relativePoint = "BOTTOM", x = -448, y = 628,
         settings = GroupAuraSettings({
             UnitFrameSetting("UseRaidStylePartyFrames", 1),
             UnitFrameSetting("ShowPartyFrameBackground", 0),
@@ -341,7 +341,7 @@ local standardFrames = {
         }),
     },
     raidFrame = {
-        point = "TOPLEFT", relativePoint = "BOTTOM", x = -712, y = 898,
+        point = "TOPLEFT", relativePoint = "BOTTOM", x = -798, y = 832,
         settings = GroupAuraSettings({
             UnitFrameSetting("RaidGroupDisplayType", EnumValue("RaidGroupDisplayType", "SeparateGroupsHorizontal")),
             UnitFrameSetting("SortPlayersBy", EnumValue("SortPlayersBy", "Group")),
