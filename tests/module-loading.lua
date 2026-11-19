@@ -1837,6 +1837,32 @@ do
     ScarletUI.GetWoWVersion, ScarletUI.IsAddOnLoaded, C_AddOns = oldVersion, oldLoaded, oldAddOns
 end
 
+-- Transmog: a switch per saved outfit, through the calls behind /outfit.
+do
+    local oldRetail, changes = ScarletUI.retail, {}
+    C_TransmogOutfitInfo = {
+        GetOutfitsInfo = function() return {
+            { outfitID = 7, name = "Outfit 1", icon = 123, situationCategories = {}, playerFacingOutfitIndex = 1 },
+            { outfitID = 9, name = "Outfit 2", icon = 456, situationCategories = { "Mounted" }, playerFacingOutfitIndex = 2 },
+        } end,
+        GetActiveOutfitID = function() return 7 end,
+        ChangeToOutfit = function(index, allowRemove) changes[#changes + 1] = index .. " " .. tostring(allowRemove) end,
+        ClearOutfit = function() changes[#changes + 1] = "clear" end,
+    }
+    ScarletUI.retail = false
+    assert(ScarletUI:Options().args.transmogSettings.hidden)
+    ScarletUI.retail = true
+    local outfits = ScarletUI:Options().args.transmogSettings.args
+    assert(outfits.outfit7.get() and not outfits.outfit9.get())
+    assert(outfits.outfit7.desc == nil and outfits.outfit9.desc == "Situations: Mounted." and outfits.outfit9.name == "|T456:16|t Outfit 2")
+    outfits.outfit9.set(nil, true)
+    outfits.outfit7.set(nil, false)
+    assert(changes[1] == "2 false" and changes[2] == "clear")
+    C_TransmogOutfitInfo.GetOutfitsInfo = function() end
+    assert(ScarletUI:Options().args.transmogSettings.args.none)
+    ScarletUI.retail, C_TransmogOutfitInfo = oldRetail, nil
+end
+
 print("PASS: remaining settings, setup dispatcher, Era/TBC/Mists legacy modules, shared Era presets, and Edit Mode installation")
 
 -- Run last: the prompt regression loads real AceDB in its own addon setup.

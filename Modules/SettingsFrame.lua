@@ -25,6 +25,7 @@ local NAV = {
     { "fishingSettings" },
     { "remindersSettings", master = true },
     { "statDisplaySettings" },
+    { "transmogSettings" },
     { "gimmicksSettings", master = true },
     { "auctionSettings", master = true },
     { "nameplatesModuleSettings" },
@@ -861,6 +862,11 @@ local function Build()
     -- Combat changes which settings are disabled.
     frame:RegisterEvent("PLAYER_REGEN_DISABLED")
     frame:RegisterEvent("PLAYER_REGEN_ENABLED")
+    -- The Transmog page: an outfit switch lands after the click's own refresh.
+    if ScarletUI.retail and C_TransmogOutfitInfo then
+        frame:RegisterEvent("TRANSMOG_DISPLAYED_OUTFIT_CHANGED")
+        frame:RegisterEvent("TRANSMOG_OUTFITS_CHANGED")
+    end
     frame:SetScript("OnEvent", function() ScarletUI:RefreshSettings() end)
     -- Modules already announce changes to AceConfig; listen to the same call.
     LibStub("AceConfigRegistry-3.0").RegisterCallback(frame, "ConfigTableChange", function(_, app)

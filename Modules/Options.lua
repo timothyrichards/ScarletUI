@@ -20,6 +20,7 @@ function ScarletUI:Options()
             fishingSettings = self:GetFishingSettingsPage(database, 6),
             remindersSettings = self:GetRemindersSettingsPage(database, 6.1),
             statDisplaySettings = self:GetStatDisplaySettingsPage(database, 6.2),
+            transmogSettings = self:GetTransmogSettingsPage(6.25),
             gimmicksSettings = self:GetGimmicksSettingsPage(database, 6.3),
             auctionSettings = self:GetAuctionSettingsPage(database, 6.5),
             -- Nameplates only load on Era, TBC, and Mists.
@@ -564,6 +565,44 @@ function ScarletUI:GetGimmicksSettingsPage(database, order)
             },
         },
     }
+end
+
+-- A switch per transmog outfit saved at a Transmogrifier, Retail and Forever.
+-- These are the calls behind Blizzard's /outfit command, which work away from
+-- the vendor; turning the worn outfit off shows the equipped gear. The list is
+-- read again on every Options() call, so new or renamed outfits show up.
+function ScarletUI:GetTransmogSettingsPage(order)
+    local api = C_TransmogOutfitInfo
+    local page = {
+        name = "Transmog",
+        desc = "Switch between the outfits you saved at a Transmogrifier, from anywhere. Turning the outfit you wear off shows your equipped gear.",
+        type = "group",
+        hidden = not (self.retail and api and api.GetOutfitsInfo),
+        order = order,
+        args = {},
+    }
+    if page.hidden then return page end
+
+    for _, outfit in ipairs(api.GetOutfitsInfo() or {}) do
+        local situations = table.concat(outfit.situationCategories or {}, ", ")
+        page.args["outfit" .. outfit.outfitID] = {
+            name = "|T" .. outfit.icon .. ":16|t " .. outfit.name,
+            desc = situations ~= "" and ("Situations: " .. situations .. ".") or nil,
+            type = "toggle",
+            width = 1.5,
+            order = outfit.playerFacingOutfitIndex,
+            disabled = function() return outfit.isDisabled or self:InCombat() end,
+            get = function() return api.GetActiveOutfitID() == outfit.outfitID end,
+            set = function(_, on)
+                if on then api.ChangeToOutfit(outfit.playerFacingOutfitIndex, false) else api.ClearOutfit() end
+            end,
+        }
+    end
+    if not next(page.args) then
+        page.args.none = { type = "description", order = 0, fontSize = "medium",
+            name = "No outfits yet. Save one at a Transmogrifier and it shows up here." }
+    end
+    return page
 end
 
 -- Features that read Auctionator's prices. Without Auctionator the page is
