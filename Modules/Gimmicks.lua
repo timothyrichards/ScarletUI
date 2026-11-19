@@ -487,10 +487,6 @@ local function BuildMachine()
             if ok then damage[entry] = shown end
             ns.Record(Slots(), entry, tier)
             if board:IsShown() then Board() end
-            if tier == "MEGA" then
-                -- A keepsake, once the stamps have landed and the banner's flash is back at full.
-                C_Timer.After(0.6, Screenshot)
-            end
         end
         spin.hideAt = GetTime() + HOLD
     end
@@ -587,7 +583,7 @@ local function BuildMachine()
 
     -- dead: the target died, so reels with nothing to show land on a skull and
     -- say "Dead" instead of "Dud".
-    -- staged: a /sealslots test spin, which takes no screenshot and is not recorded.
+    -- staged: a /sealslots test spin, which is not recorded.
     function ns.Resolve(procs, dead, staged)
         if not spin then return end
         spin.procs, spin.dead, spin.staged = procs, dead, staged
