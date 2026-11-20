@@ -627,11 +627,11 @@ for text, expected in pairs({
     assert(PerMana() == expected, text)
 end
 -- Crate fill costs: every priced bundle gets its total, the cheapest turns green, once.
-local itemNames = { "Vision Dust", "Greater Mystic Essence" } -- the shard's name loads later
-local auctionPrices = { 100, 400, 9999 }
+local itemNames = { "Vision Dust", "Greater Mystic Essence", [4] = "Crafted Solid Shot" } -- the shard's name loads later
+local auctionPrices = { 100, 400, 9999, 10 }
 C_Item = { GetItemNameByID = function(id) return itemNames[id] end }
 GetMoneyString = function(copper) return copper .. "c" end
-Auctionator = { Database = { db = { ["1"] = {}, ["2"] = {}, ["3"] = {}, ["p:7"] = {} } }, API = { v1 = {
+Auctionator = { Database = { db = { ["1"] = {}, ["2"] = {}, ["3"] = {}, ["4"] = {}, ["p:7"] = {} } }, API = { v1 = {
     GetVendorPriceByItemID = function(_, id) return id == 3 and 500 or nil end,
     GetAuctionPriceByItemID = function(_, id) return auctionPrices[id] end,
 } } }
@@ -659,15 +659,48 @@ GameTooltipTextLeft2 = Line("- 20 Vision Dust")
 postCalls[3](GameTooltip)
 assert(GameTooltipTextLeft2:GetText() == "- 20 Vision Dust")
 ScarletUI.db.global.crateFillCosts = true
+-- Writ info: reputation (Diplomacy for Humans), what the requested items cost,
+-- and that per 100 reputation; nothing on other items or with the setting off.
+dofile("Modules/Writs.lua")
+do
+    local added, race = {}, 2
+    GameTooltip.AddDoubleLine = function(_, left, right) added[#added + 1] = left .. " = " .. right end
+    UnitFactionGroup = function() return race == 1 and "Alliance" or "Horde" end
+    UnitRace = function() return "", "", race end
+    GameTooltipTextLeft2, GameTooltipTextLeft3 = Line("Journeyman"), Line("A pending crafting order.")
+    local function Writ(id)
+        added = {}
+        postCalls[3](GameTooltip, { id = id })
+        return table.concat(added, "; ")
+    end
+    assert(Writ(264037) == "Durotar Supply and Logistics = +75; 200 Crafted Solid Shot = 2000c; "
+        .. "Per 100 reputation = 2666c", Writ(264037))
+    race = 1
+    assert(Writ(264037) == "Azeroth Commerce Authority = +82; 200 Crafted Solid Shot = 2000c; "
+        .. "Per 100 reputation = 2439c", Writ(264037))
+    assert(Writ(264160) == "Azeroth Commerce Authority = +220; Soul Pouch = No price", Writ(264160))
+    assert(Writ(1) == "")
+    ScarletUI.db.global.writInfo = false
+    assert(Writ(264037) == "")
+    ScarletUI.db.global.writInfo = true
+    -- Every writ has a tier with a reputation value and a requested item.
+    local count = 0
+    for _, writ in pairs(ScarletUI.WRITS) do
+        count = count + 1
+        assert(ScarletUI.WRIT_REPUTATION[writ[1]] and writ[2] ~= "")
+    end
+    assert(count == 150)
+end
 -- The crate setting sits on the Auction Prices page with Craft Profit (Forever only).
 local auctionPage = ScarletUI:Options().args.auctionSettings
 local crateOption = auctionPage.args.crateFillCosts
 assert(ScarletUI:Options().args.generalSettings.args.interface.args.crateFillCosts == nil)
 assert(not auctionPage.disabled() and crateOption.get() and not crateOption.desc():find("Requires"))
-assert(auctionPage.args.craftProfit.hidden() and auctionPage.args.craftProfit.get())
+assert(auctionPage.args.craftProfit.hidden() and auctionPage.args.craftProfit.get() and auctionPage.args.writInfo.get())
 Auctionator, C_Item = nil, nil
 -- Without Auctionator the page is grayed out, reads off, and says what it needs.
-assert(auctionPage.disabled() and not crateOption.get() and not auctionPage.args.craftProfit.get())
+assert(auctionPage.disabled() and not crateOption.get() and not auctionPage.args.craftProfit.get()
+    and not auctionPage.args.writInfo.get())
 assert(crateOption.desc():find("Requires the Auctionator addon") and auctionPage.desc():find("scan the auction house"))
 -- Craft Profit pricing rules; setup builds nothing without Auctionator.
 dofile("Modules/CraftProfit.lua")

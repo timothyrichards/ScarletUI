@@ -172,6 +172,17 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   has handled, so names are indexed from the item IDs in
   `Auctionator.Database.db` (internal, guarded); names not loaded yet are
   picked up on a later hover.
+  Craftsman's Writ tooltips (Forever) get the reputation the writ gives (+10%,
+  rounded down, for Humans' Diplomacy; assumed, unchecked in game), what its
+  requested items cost by the same name lookup, and that cost per 100
+  reputation (`db.global.writInfo`, on by default, toggle on the Auction Prices
+  page). The writs come from `Modules/Writs.lua`.
+- `Modules/Writs.lua`: `ScarletUI.WRITS`, the 150 Craftsman's Writs by item ID
+  (tier, requested item, count) and `WRIT_REPUTATION` per tier (75/125/200),
+  with its sources and their dates in the header. Requested items are only
+  readable in game once the writ's quest is accepted, so the table is the only
+  source. Regenerate it from Wowhead's Forever tooltip data
+  (`nether.wowhead.com/forever/tooltip/item/<id>` and `.../quest/<id>`).
 - `Modules/CraftProfit.lua`: Craft Profit (`db.global.craftProfit`), Forever
   only and only with Auctionator. Lists the recipes that make a profit, or break
   even while still giving a skill-up, as a side tab on `ProfessionsFrame` (a

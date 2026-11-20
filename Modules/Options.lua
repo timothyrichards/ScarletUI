@@ -647,6 +647,15 @@ function ScarletUI:GetAuctionSettingsPage(database, order)
                 get = function(_) return Auctionator ~= nil and database.crateFillCosts end,
                 set = function(_, val) database.crateFillCosts = val end,
             },
+            writInfo = {
+                name = "Craftsman's Writ Info in Tooltips",
+                desc = Desc("Show the reputation a Craftsman's Writ gives, what its requested items cost, and that cost per 100 reputation, to compare writs. Humans get the Diplomacy bonus. Scan the auction house again to refresh the prices."),
+                type = "toggle",
+                width = 1.5,
+                order = 2,
+                get = function(_) return Auctionator ~= nil and database.writInfo end,
+                set = function(_, val) database.writInfo = val end,
+            },
         }
     }
 end

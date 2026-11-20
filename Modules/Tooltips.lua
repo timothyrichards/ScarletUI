@@ -138,6 +138,13 @@ local function IndexItemNames()
     end
 end
 
+-- Vendor price first, as Auctionator does.
+local function Price(itemID)
+    local API = Auctionator.API.v1
+    return itemID and (API.GetVendorPriceByItemID("ScarletUI", itemID)
+        or API.GetAuctionPriceByItemID("ScarletUI", itemID))
+end
+
 local function AddCrateCosts(tooltip)
     if tooltip ~= GameTooltip or not ScarletUI.db.global.crateFillCosts or tooltip:IsForbidden()
         or not (Auctionator and Auctionator.API and Auctionator.API.v1) then
@@ -163,10 +170,9 @@ local function AddCrateCosts(tooltip)
             end
         end
     end
-    local API, costs, cheapest = Auctionator.API.v1, {}, nil
+    local costs, cheapest = {}, nil
     for row, bundle in pairs(bundles) do
-        local price = bundle.itemID and (API.GetVendorPriceByItemID("ScarletUI", bundle.itemID)
-            or API.GetAuctionPriceByItemID("ScarletUI", bundle.itemID))
+        local price = Price(bundle.itemID)
         if price then
             costs[row] = price * bundle.count
             cheapest = math.min(cheapest or costs[row], costs[row])
@@ -191,6 +197,44 @@ local function AddCrateCosts(tooltip)
     return true
 end
 
+-- Craftsman's Writs (Forever): the reputation a writ gives, what its requested
+-- items cost now, and that cost per 100 reputation, to compare writs. The
+-- requested items come from Modules/Writs.lua.
+local WRIT_FACTIONS = { Alliance = "Azeroth Commerce Authority", Horde = "Durotar Supply and Logistics" }
+local HUMAN_RACE_ID = 1
+
+local function AddWritInfo(tooltip, itemID)
+    local writ = itemID and ScarletUI.WRITS[itemID]
+    if not writ or tooltip ~= GameTooltip or not ScarletUI.db.global.writInfo or tooltip:IsForbidden() then
+        return
+    end
+    local name, count = writ[2], writ[3] or 1
+    local reputation = ScarletUI.WRIT_REPUTATION[writ[1]]
+    -- ponytail: Human Diplomacy (+10%) assumed to apply to writs and round down,
+    -- unchecked in game; Forever's Diplomat legacy talent is not counted.
+    if select(3, UnitRace("player")) == HUMAN_RACE_ID then
+        reputation = math.floor(reputation * 1.1)
+    end
+    tooltip:AddDoubleLine(WRIT_FACTIONS[UnitFactionGroup("player")] or "Reputation", "+" .. reputation,
+        1, 0.82, 0, 1, 1, 1)
+    if not itemIDByName[name] then
+        IndexItemNames()
+    end
+    local price = Price(itemIDByName[name])
+    tooltip:AddDoubleLine((count > 1 and count .. " " or "") .. name,
+        price and GetMoneyString(price * count, true) or "No price", 1, 0.82, 0, 1, 1, 1)
+    if price then
+        tooltip:AddDoubleLine("Per 100 reputation", GetMoneyString(math.floor(price * count * 100 / reputation), true),
+            1, 0.82, 0, 1, 1, 1)
+    end
+    return true
+end
+
+local function AddItemPrices(tooltip, itemID)
+    local crate = AddCrateCosts(tooltip)
+    return AddWritInfo(tooltip, itemID) or crate
+end
+
 function ScarletUI:SetupSpellCostPercent()
     if self.spellCostHooked or not GameTooltip then
         return
@@ -200,7 +244,9 @@ function ScarletUI:SetupSpellCostPercent()
     if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
         -- Setup runs at login, after every addon has loaded.
         if Auctionator then
-            TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, AddCrateCosts)
+            TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, function(tooltip, data)
+                AddItemPrices(tooltip, data and data.id)
+            end)
         end
         TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Spell, function(tooltip, data)
             AddManaPercent(tooltip, data.id)
@@ -217,7 +263,8 @@ function ScarletUI:SetupSpellCostPercent()
         end)
         if Auctionator then
             GameTooltip:HookScript("OnTooltipSetItem", function(tooltip)
-                if AddCrateCosts(tooltip) then
+                local _, link = tooltip:GetItem()
+                if AddItemPrices(tooltip, link and tonumber(link:match("item:(%d+)"))) then
                     tooltip:Show()
                 end
             end)
