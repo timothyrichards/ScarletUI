@@ -78,7 +78,6 @@ function ScarletUI:OnInitialize()
     self:RegisterChatCommand("sui", "SlashCommand")
 
     -- Register the options table
-    AceConfigDialog:SetDefaultSize("ScarletUI", 800, 525)
     AceConfig:RegisterOptionsTable("ScarletUI", function() return self:Options() end)
     AceConfigDialog:AddToBlizOptions("ScarletUI")
 
@@ -216,9 +215,6 @@ end
 function ScarletUI:SlashCommand(msg)
     if msg == "" then
         self:ToggleSettingsFrame()
-    elseif msg == "ace" then
-        -- The AceConfig panel, kept as a fallback for the new window.
-        AceConfigDialog:Open("ScarletUI")
     elseif msg == "move" then
         self:OpenEditMode()
     elseif msg == "debug" then
@@ -226,7 +222,6 @@ function ScarletUI:SlashCommand(msg)
     elseif msg == "help" then
         self:Print("Available commands:")
         self:Print("- /sui: Toggle the settings window.")
-        self:Print("- /sui ace: Open the old settings panel.")
         self:Print("- /sui move: Open Blizzard Edit Mode.")
         self:Print("- /sui debug: Toggle the debug frame.")
         self:Print("- /sui help: Display this message.")

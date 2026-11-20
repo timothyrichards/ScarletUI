@@ -61,8 +61,8 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   `TRANSMOG_DISPLAYED_OUTFIT_CHANGED` and `TRANSMOG_OUTFITS_CHANGED`.
 - `Modules/Helpers.lua`: client detection and shared helpers.
 - `Modules/SettingsFrame.lua`: the settings window (`ScarletUISettings`) that
-  `/sui`, the minimap icon, and the Esc menu button open. `/sui ace` and the
-  Blizzard AddOns settings entry still open the AceConfig panel. Settings come
+  `/sui`, the minimap icon, and the Esc menu button open. The Blizzard AddOns
+  settings entry still shows the AceConfig panel. Settings come
   from `ScarletUI:Options()`, so each is defined once (in AceConfig's table
   format), but navigation and layout are its own. `NAV` lists the left-hand
   pages under section headers, each page naming the option groups it shows by
@@ -452,7 +452,7 @@ behavior. After changes, verify every TOC entry exists and run `git diff --check
 Check login, `/sui`, `/sui move`, affected frames, and Lua errors in-game when possible.
 No separate build or lint tool is configured.
 
-Commands: `/sui` opens settings, `/sui ace` opens the old AceConfig panel,
+Commands: `/sui` opens settings,
 `/sui move` opens Blizzard Edit Mode,
 `/sui debug` toggles diagnostics, and `/sui help` lists commands.
 

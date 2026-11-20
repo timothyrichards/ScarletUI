@@ -100,7 +100,7 @@ LibStub:NewLibrary("AceAddon-3.0", 1).NewAddon = function()
 end
 LibStub:NewLibrary("AceConfig-3.0", 1).RegisterOptionsTable = noop
 local dialog = LibStub:NewLibrary("AceConfigDialog-3.0", 1)
-dialog.SetDefaultSize, dialog.AddToBlizOptions = noop, noop
+dialog.AddToBlizOptions = noop
 C_AddOns = { IsAddOnLoaded = function() return false end }
 ScarletUIDB = saved
 dofile("ScarletUI.lua")

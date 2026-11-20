@@ -141,7 +141,7 @@ end
 -- every select that has an OFF value) through its own setter, remembering
 -- what was on in db.global.settingsMasters[page.id]; on puts those back.
 -- ponytail: the modules know nothing of this, so a setting turned on elsewhere
--- (/sui ace) while a page is off stays on. Give modules a real per-category
+-- (the AddOns settings panel) while a page is off stays on. Give modules a real per-category
 -- flag if that ever matters.
 function ScarletUI:SetSettingsPageEnabled(page, on)
     local masters = self.db.global.settingsMasters or {}
