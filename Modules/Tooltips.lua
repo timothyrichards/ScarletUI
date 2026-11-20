@@ -117,6 +117,7 @@ end
 -- ponytail: one pass over the whole price database on the first crate hover,
 -- then only over IDs still unnamed; spread it over frames if it ever hitches.
 local GetItemName = C_Item and C_Item.GetItemNameByID or GetItemInfo
+local GetItemInfo = C_Item and C_Item.GetItemInfo or GetItemInfo -- no global on Mainline
 local CHEAPEST_COLOR = "|cff20ff20"
 local itemIDByName, unnamed = {}, nil
 

@@ -629,7 +629,11 @@ end
 -- Crate fill costs: every priced bundle gets its total, the cheapest turns green, once.
 local itemNames = { "Vision Dust", "Greater Mystic Essence", [4] = "Crafted Solid Shot" } -- the shard's name loads later
 local auctionPrices = { 100, 400, 9999, 10 }
-C_Item = { GetItemNameByID = function(id) return itemNames[id] end }
+local quality
+-- Mainline has no global GetItemInfo, only C_Item.GetItemInfo.
+C_Item = { GetItemNameByID = function(id) return itemNames[id] end,
+    GetItemInfo = function() return nil, nil, quality end }
+GetItemInfo = nil
 GetMoneyString = function(copper) return copper .. "c" end
 Auctionator = { Database = { db = { ["1"] = {}, ["2"] = {}, ["3"] = {}, ["4"] = {}, ["p:7"] = {} } }, API = { v1 = {
     GetVendorPriceByItemID = function(_, id) return id == 3 and 500 or nil end,
@@ -669,8 +673,6 @@ do
         added[#added + 1] = left .. " = " .. right
         colors[#colors + 1] = r .. "," .. g .. "," .. b
     end
-    local quality
-    GetItemInfo = function() return nil, nil, quality end
     ITEM_QUALITY_COLORS = { [3] = { r = 0, g = 0.5, b = 1 } }
     UnitFactionGroup = function() return race == 1 and "Alliance" or "Horde" end
     UnitRace = function() return "", "", race end
