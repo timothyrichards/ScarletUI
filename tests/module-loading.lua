@@ -660,24 +660,36 @@ postCalls[3](GameTooltip)
 assert(GameTooltipTextLeft2:GetText() == "- 20 Vision Dust")
 ScarletUI.db.global.crateFillCosts = true
 -- Writ info: reputation (Diplomacy for Humans), what the requested items cost,
--- and that per 100 reputation; nothing on other items or with the setting off.
+-- with reputation and quality colors; nothing on other items or with the setting off.
 dofile("Modules/Writs.lua")
 do
     local added, race = {}, 2
-    GameTooltip.AddDoubleLine = function(_, left, right) added[#added + 1] = left .. " = " .. right end
+    local colors = {}
+    GameTooltip.AddDoubleLine = function(_, left, right, r, g, b)
+        added[#added + 1] = left .. " = " .. right
+        colors[#colors + 1] = r .. "," .. g .. "," .. b
+    end
+    local quality
+    GetItemInfo = function() return nil, nil, quality end
+    ITEM_QUALITY_COLORS = { [3] = { r = 0, g = 0.5, b = 1 } }
     UnitFactionGroup = function() return race == 1 and "Alliance" or "Horde" end
     UnitRace = function() return "", "", race end
     GameTooltipTextLeft2, GameTooltipTextLeft3 = Line("Journeyman"), Line("A pending crafting order.")
     local function Writ(id)
-        added = {}
+        added, colors = {}, {}
         postCalls[3](GameTooltip, { id = id })
         return table.concat(added, "; ")
     end
-    assert(Writ(264037) == "Durotar Supply and Logistics = +75; 200 Crafted Solid Shot = 2000c; "
-        .. "Per 100 reputation = 2666c", Writ(264037))
+    assert(Writ(264037) == "Durotar Supply and Logistics = +75; 200 Crafted Solid Shot = 2000c", Writ(264037))
+    -- Light-blue fallback without ChatTypeInfo; white item until it is cached.
+    assert(colors[1] == "0.5,0.5,1" and colors[2] == "1,1,1", table.concat(colors, " "))
+    ChatTypeInfo = { COMBAT_FACTION_CHANGE = { r = 0.2, g = 0.3, b = 0.4 } }
+    quality = 3
+    Writ(264037)
+    assert(colors[1] == "0.2,0.3,0.4" and colors[2] == "0,0.5,1", table.concat(colors, " "))
+    quality = nil
     race = 1
-    assert(Writ(264037) == "Azeroth Commerce Authority = +82; 200 Crafted Solid Shot = 2000c; "
-        .. "Per 100 reputation = 2439c", Writ(264037))
+    assert(Writ(264037) == "Azeroth Commerce Authority = +82; 200 Crafted Solid Shot = 2000c", Writ(264037))
     assert(Writ(264160) == "Azeroth Commerce Authority = +220; Soul Pouch = No price", Writ(264160))
     assert(Writ(1) == "")
     ScarletUI.db.global.writInfo = false

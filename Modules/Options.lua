@@ -649,7 +649,7 @@ function ScarletUI:GetAuctionSettingsPage(database, order)
             },
             writInfo = {
                 name = "Craftsman's Writ Info in Tooltips",
-                desc = Desc("Show the reputation a Craftsman's Writ gives, what its requested items cost, and that cost per 100 reputation, to compare writs. Humans get the Diplomacy bonus. Scan the auction house again to refresh the prices."),
+                desc = Desc("Show the reputation a Craftsman's Writ gives and what its requested items cost, to compare writs. Humans get the Diplomacy bonus. Scan the auction house again to refresh the prices."),
                 type = "toggle",
                 width = 1.5,
                 order = 2,

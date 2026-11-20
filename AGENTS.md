@@ -174,8 +174,9 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   picked up on a later hover.
   Craftsman's Writ tooltips (Forever) get the reputation the writ gives (+10%,
   rounded down, for Humans' Diplomacy; assumed, unchecked in game), what its
-  requested items cost by the same name lookup, and that cost per 100
-  reputation (`db.global.writInfo`, on by default, toggle on the Auction Prices
+  requested items cost by the same name lookup (reputation line in the
+  `COMBAT_FACTION_CHANGE` chat color, light blue fallback; item name in its
+  quality color, white until cached) (`db.global.writInfo`, on by default, toggle on the Auction Prices
   page). The writs come from `Modules/Writs.lua`.
 - `Modules/Writs.lua`: `ScarletUI.WRITS`, the 150 Craftsman's Writs by item ID
   (tier, requested item, count) and `WRIT_REPUTATION` per tier (75/125/200),

@@ -198,8 +198,8 @@ local function AddCrateCosts(tooltip)
 end
 
 -- Craftsman's Writs (Forever): the reputation a writ gives, what its requested
--- items cost now, and that cost per 100 reputation, to compare writs. The
--- requested items come from Modules/Writs.lua.
+-- items cost now, to compare writs. The requested items come from
+-- Modules/Writs.lua.
 local WRIT_FACTIONS = { Alliance = "Azeroth Commerce Authority", Horde = "Durotar Supply and Logistics" }
 local HUMAN_RACE_ID = 1
 
@@ -215,18 +215,20 @@ local function AddWritInfo(tooltip, itemID)
     if select(3, UnitRace("player")) == HUMAN_RACE_ID then
         reputation = math.floor(reputation * 1.1)
     end
+    -- Blizzard's reputation-gain chat color; light blue if the client lacks it.
+    local rep = ChatTypeInfo and ChatTypeInfo.COMBAT_FACTION_CHANGE or { r = 0.5, g = 0.5, b = 1 }
     tooltip:AddDoubleLine(WRIT_FACTIONS[UnitFactionGroup("player")] or "Reputation", "+" .. reputation,
-        1, 0.82, 0, 1, 1, 1)
+        rep.r, rep.g, rep.b, rep.r, rep.g, rep.b)
     if not itemIDByName[name] then
         IndexItemNames()
     end
-    local price = Price(itemIDByName[name])
+    local itemID = itemIDByName[name]
+    -- Quality color once the item is cached; white until a later hover finds it, as with names.
+    local quality = itemID and select(3, GetItemInfo(itemID))
+    local color = quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality] or { r = 1, g = 1, b = 1 }
+    local price = Price(itemID)
     tooltip:AddDoubleLine((count > 1 and count .. " " or "") .. name,
-        price and GetMoneyString(price * count, true) or "No price", 1, 0.82, 0, 1, 1, 1)
-    if price then
-        tooltip:AddDoubleLine("Per 100 reputation", GetMoneyString(math.floor(price * count * 100 / reputation), true),
-            1, 0.82, 0, 1, 1, 1)
-    end
+        price and GetMoneyString(price * count, true) or "No price", color.r, color.g, color.b, 1, 1, 1)
     return true
 end
 
