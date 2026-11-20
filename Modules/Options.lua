@@ -568,9 +568,11 @@ function ScarletUI:GetGimmicksSettingsPage(database, order)
 end
 
 -- A switch per transmog outfit saved at a Transmogrifier, Retail and Forever.
--- These are the calls behind Blizzard's /outfit command, which work away from
--- the vendor; turning the worn outfit off shows the equipped gear. The list is
--- read again on every Options() call, so new or renamed outfits show up.
+-- Switching is protected (ClearOutfit is ADDON_ACTION_FORBIDDEN), so each
+-- option's `arg.secure` holds the attributes of Blizzard's "outfit" secure
+-- action, which the settings window lays over the row as a secure button. Its
+-- default action toggles: clicking the worn outfit shows the equipped gear.
+-- The list is read again on every Options() call, so new outfits show up.
 function ScarletUI:GetTransmogSettingsPage(order)
     local api = C_TransmogOutfitInfo
     local page = {
@@ -592,10 +594,10 @@ function ScarletUI:GetTransmogSettingsPage(order)
             width = 1.5,
             order = outfit.playerFacingOutfitIndex,
             disabled = function() return outfit.isDisabled or self:InCombat() end,
+            arg = { secure = { type = "outfit", ["outfit-index"] = outfit.playerFacingOutfitIndex } },
             get = function() return api.GetActiveOutfitID() == outfit.outfitID end,
-            set = function(_, on)
-                if on then api.ChangeToOutfit(outfit.playerFacingOutfitIndex, false) else api.ClearOutfit() end
-            end,
+            -- Only reached from the old AceConfig panel, which has no secure buttons.
+            set = function() self:Print("Switch outfits from /sui; the old settings panel cannot.") end,
         }
     end
     if not next(page.args) then

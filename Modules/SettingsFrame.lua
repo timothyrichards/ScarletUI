@@ -314,6 +314,42 @@ function Widgets.description(parent)
     return w
 end
 
+-- A toggle whose option has `arg.secure` makes a protected call (switching
+-- transmog outfits): a SecureActionButtonTemplate button with those
+-- attributes covers its row and takes the click. Overlays are only attached
+-- out of combat and come off in PLAYER_REGEN_DISABLED, before the lockdown,
+-- so the window never holds a protected frame it could not hide or redraw.
+local overlays = {}
+
+local function Detach(overlay)
+    overlay:Hide()
+    overlay:ClearAllPoints()
+    overlay:SetParent(nil)
+end
+
+local function SecureOverlay(row, attributes)
+    if InCombatLockdown() then return end
+    local overlay = row.overlay
+    if not attributes then
+        if overlay then Detach(overlay) end
+        return
+    end
+    if not overlay then
+        overlay = CreateFrame("Button", nil, nil, "SecureActionButtonTemplate")
+        overlay:RegisterForClicks("AnyUp")
+        overlay:SetScript("PostClick", function() PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON) end)
+        Hover(overlay)
+        Tooltip(overlay, row)
+        row.overlay = overlay
+        overlays[#overlays + 1] = overlay
+    end
+    for key, value in pairs(attributes) do overlay:SetAttribute(key, value) end
+    overlay:SetParent(row)
+    overlay:SetFrameLevel(row:GetFrameLevel() + 5) -- above the check button
+    overlay:SetAllPoints()
+    overlay:Show()
+end
+
 function Widgets.toggle(parent)
     local w = Row(parent)
     local check = CreateFrame("CheckButton", nil, w, "UICheckButtonTemplate")
@@ -331,6 +367,8 @@ function Widgets.toggle(parent)
         self:Base(item)
         check:SetChecked(item.option.get() and true or false)
         check:SetEnabled(not item.disabled)
+        local arg = item.option.arg
+        SecureOverlay(self, not item.disabled and type(arg) == "table" and arg.secure or nil)
     end
     return w
 end
@@ -867,7 +905,12 @@ local function Build()
         frame:RegisterEvent("TRANSMOG_DISPLAYED_OUTFIT_CHANGED")
         frame:RegisterEvent("TRANSMOG_OUTFITS_CHANGED")
     end
-    frame:SetScript("OnEvent", function() ScarletUI:RefreshSettings() end)
+    frame:SetScript("OnEvent", function(_, event)
+        if event == "PLAYER_REGEN_DISABLED" then
+            for _, overlay in ipairs(overlays) do Detach(overlay) end
+        end
+        ScarletUI:RefreshSettings()
+    end)
     -- Modules already announce changes to AceConfig; listen to the same call.
     LibStub("AceConfigRegistry-3.0").RegisterCallback(frame, "ConfigTableChange", function(_, app)
         if app == "ScarletUI" then ScarletUI:RefreshSettings() end

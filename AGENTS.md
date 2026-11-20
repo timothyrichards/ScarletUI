@@ -50,12 +50,15 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   Background, then Share Across Characters. AceConfig sorts negative `order` values last.
   The Transmog page (`GetTransmogSettingsPage`, Retail and Forever) has no
   switch or saved settings: a toggle per outfit from
-  `C_TransmogOutfitInfo.GetOutfitsInfo`, read on every `Options()` call. On
-  calls `ChangeToOutfit(playerFacingOutfitIndex, false)` and off `ClearOutfit()`,
-  the calls behind Blizzard's `/outfit` command, which work away from the
-  vendor (not verified in-game, nor whether they are protected). Disabled in
-  combat. The settings window refreshes on `TRANSMOG_DISPLAYED_OUTFIT_CHANGED`
-  and `TRANSMOG_OUTFITS_CHANGED`.
+  `C_TransmogOutfitInfo.GetOutfitsInfo`, read on every `Options()` call.
+  Switching is protected (`ClearOutfit` is `ADDON_ACTION_FORBIDDEN`), so each
+  option's `arg.secure` holds attributes for Blizzard's `outfit` secure action
+  (`type`, `outfit-index`; the default action toggles), and the settings window
+  covers that toggle's row with a `SecureActionButtonTemplate` overlay. Overlays
+  attach only out of combat and come off in `PLAYER_REGEN_DISABLED`, so the
+  window holds no protected frame in combat; the rows are disabled then. The old
+  AceConfig panel cannot switch. The window refreshes on
+  `TRANSMOG_DISPLAYED_OUTFIT_CHANGED` and `TRANSMOG_OUTFITS_CHANGED`.
 - `Modules/Helpers.lua`: client detection and shared helpers.
 - `Modules/SettingsFrame.lua`: the settings window (`ScarletUISettings`) that
   `/sui`, the minimap icon, and the Esc menu button open. `/sui ace` and the

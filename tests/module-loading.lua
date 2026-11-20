@@ -1837,17 +1837,18 @@ do
     ScarletUI.GetWoWVersion, ScarletUI.IsAddOnLoaded, C_AddOns = oldVersion, oldLoaded, oldAddOns
 end
 
--- Transmog: a switch per saved outfit, through the calls behind /outfit.
+-- Transmog: a switch per saved outfit. Switching is protected, so each row
+-- carries the attributes of Blizzard's "outfit" secure action instead.
 do
-    local oldRetail, changes = ScarletUI.retail, {}
+    local oldRetail, oldPrint, protected = ScarletUI.retail, ScarletUI.Print, false
     C_TransmogOutfitInfo = {
         GetOutfitsInfo = function() return {
             { outfitID = 7, name = "Outfit 1", icon = 123, situationCategories = {}, playerFacingOutfitIndex = 1 },
             { outfitID = 9, name = "Outfit 2", icon = 456, situationCategories = { "Mounted" }, playerFacingOutfitIndex = 2 },
         } end,
         GetActiveOutfitID = function() return 7 end,
-        ChangeToOutfit = function(index, allowRemove) changes[#changes + 1] = index .. " " .. tostring(allowRemove) end,
-        ClearOutfit = function() changes[#changes + 1] = "clear" end,
+        ChangeToOutfit = function() protected = true end,
+        ClearOutfit = function() protected = true end,
     }
     ScarletUI.retail = false
     assert(ScarletUI:Options().args.transmogSettings.hidden)
@@ -1855,9 +1856,12 @@ do
     local outfits = ScarletUI:Options().args.transmogSettings.args
     assert(outfits.outfit7.get() and not outfits.outfit9.get())
     assert(outfits.outfit7.desc == nil and outfits.outfit9.desc == "Situations: Mounted." and outfits.outfit9.name == "|T456:16|t Outfit 2")
+    local secure = outfits.outfit9.arg.secure
+    assert(secure.type == "outfit" and secure["outfit-index"] == 2 and secure.action == nil)
+    ScarletUI.Print = noop
     outfits.outfit9.set(nil, true)
-    outfits.outfit7.set(nil, false)
-    assert(changes[1] == "2 false" and changes[2] == "clear")
+    assert(not protected)
+    ScarletUI.Print = oldPrint
     C_TransmogOutfitInfo.GetOutfitsInfo = function() end
     assert(ScarletUI:Options().args.transmogSettings.args.none)
     ScarletUI.retail, C_TransmogOutfitInfo = oldRetail, nil
