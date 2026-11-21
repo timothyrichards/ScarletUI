@@ -268,7 +268,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                 args = {
                     minimapIcon = {
                         name = "Minimap Icon",
-                        desc = "Show the Scarlet UI button on the minimap. Left-click opens these settings; right-click opens Edit Mode.",
+                        desc = "Show the Scarlet UI button on the minimap. Left-click opens these settings; right-click toggles the saved bank; Shift-right-click opens Edit Mode.",
                         type = "toggle",
                         width = 1,
                         order = 0,

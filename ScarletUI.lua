@@ -144,6 +144,18 @@ function ScarletUI:Setup()
     self:SetupMinimapIcon()
 end
 
+function ScarletUI:MinimapClick(button)
+    if button ~= "RightButton" then
+        self:ToggleSettingsFrame()
+    elseif IsShiftKeyDown() then
+        self:OpenEditMode()
+    elseif self.db.global.bankCacheModule.enabled then
+        self:ToggleBankViewer()
+    else
+        self:Print("The cached bank is turned off. Turn on Cached Bank in /sui to use it.")
+    end
+end
+
 function ScarletUI:SetupMinimapIcon()
     local icon = LibStub("LibDBIcon-1.0")
     -- Setup reruns after a reset, which replaces the saved table.
@@ -154,17 +166,12 @@ function ScarletUI:SetupMinimapIcon()
     local launcher = LibStub("LibDataBroker-1.1"):NewDataObject("ScarletUI", {
         type = "launcher",
         icon = "Interface\\Icons\\INV_Misc_Gear_01",
-        OnClick = function(_, button)
-            if button == "RightButton" then
-                self:OpenEditMode()
-            else
-                self:ToggleSettingsFrame()
-            end
-        end,
+        OnClick = function(_, button) self:MinimapClick(button) end,
         OnTooltipShow = function(tooltip)
             tooltip:AddLine("Scarlet UI")
             tooltip:AddLine("|cffffd100Left-click|r to toggle settings.", 1, 1, 1)
-            tooltip:AddLine("|cffffd100Right-click|r to open Edit Mode.", 1, 1, 1)
+            tooltip:AddLine("|cffffd100Right-click|r to toggle the saved bank.", 1, 1, 1)
+            tooltip:AddLine("|cffffd100Shift-right-click|r to open Edit Mode.", 1, 1, 1)
         end,
     })
     icon:Register("ScarletUI", launcher, self.db.global.minimapIcon)
