@@ -150,4 +150,21 @@ client = "RETAIL"
 assert(ScarletUI:GetNameplatesModuleSettingsPage(ScarletUI.db.global, ScarletUI.defaults.global.nameplatesModule, 7).hidden())
 client, ScarletUI.lightWeightMode, hooksecurefunc, CompactUnitFrame_UpdateHealthColor, issecretvalue = "VANILLA", nil, nil, nil, nil
 
+-- Non-nameplate tokens (targettarget etc.) must never reach GetNamePlateForUnit, which errors on them.
+local badLookups = 0
+C_NamePlate = { GetNamePlateForUnit = function(unit)
+    if not unit:match("^nameplate%d+$") then badLookups = badLookups + 1 end
+    return plates[unit]
+end }
+module.debuffTracker.track, module.buffTracker.track = true, true
+names = { player = "Me", targettarget = "Boss", target = "Boss", nameplate1 = "Boss" }
+plates = { nameplate1 = Plate() }
+ScarletUI:UpdateNameplate("targettarget")
+ScarletUI:CheckUnitAuras("targettarget")
+ScarletUI:CheckUnitAuras("player")
+if handlers.UNIT_AURA then handlers.UNIT_AURA(nil, "targettarget") end
+handlers.UNIT_THREAT_LIST_UPDATE(nil, "targettarget")
+handlers.UNIT_THREAT_LIST_UPDATE(nil, "target")
+assert(badLookups == 0, "non-nameplate token reached GetNamePlateForUnit")
+
 print("PASS: nameplate raid threat lead, main tank detection, missing frames, aura toggles, and Forever threat numbers")

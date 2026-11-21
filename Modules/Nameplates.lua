@@ -127,6 +127,11 @@ local function AnchorThreatText(nameplate)
     end
 end
 
+-- GetNamePlateForUnit errors on tokens like "targettarget", so only pass real nameplate tokens.
+local function IsNameplateToken(unitId)
+    return type(unitId) == "string" and unitId:match("^nameplate%d+$") ~= nil
+end
+
 -- Threat throttle: batch UNIT_THREAT_LIST_UPDATE into 0.1s intervals
 local dirtyThreatUnits = {}
 local threatThrottleFrame = CreateFrame("Frame")
@@ -455,7 +460,7 @@ end
 
 function ScarletUI:UpdateNameplate(unitId)
     local nameplatesModule = self.db.global.nameplatesModule
-    if not unitId or not UnitExists(unitId) then
+    if not IsNameplateToken(unitId) or not UnitExists(unitId) then
         return
     end
 
@@ -769,7 +774,7 @@ function ScarletUI:SetupNameplates()
 
         self:RegisterEventHandler("UNIT_THREAT_LIST_UPDATE", function(_, unitId)
             if ScarletUI.pauseEvents then return end
-            if unitId and not IsSecret(unitId) then
+            if unitId and not IsSecret(unitId) and IsNameplateToken(unitId) then
                 dirtyThreatUnits[unitId] = true
             end
         end)
@@ -790,7 +795,7 @@ end
 
 function ScarletUI:CheckUnitDebuffs(unitId)
     local settings = self.db.global.nameplatesModule.debuffTracker
-    local nameplate = unitId and C_NamePlate.GetNamePlateForUnit(unitId)
+    local nameplate = IsNameplateToken(unitId) and C_NamePlate.GetNamePlateForUnit(unitId)
     if not nameplate then
         return
     elseif not settings.track then
@@ -855,7 +860,7 @@ end
 
 function ScarletUI:CheckUnitBuffs(unitId)
     local settings = self.db.global.nameplatesModule.buffTracker
-    local nameplate = unitId and C_NamePlate.GetNamePlateForUnit(unitId)
+    local nameplate = IsNameplateToken(unitId) and C_NamePlate.GetNamePlateForUnit(unitId)
     if not nameplate then
         return
     elseif not settings.track then
