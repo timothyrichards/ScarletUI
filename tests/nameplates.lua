@@ -2,10 +2,13 @@
 local function noop() end
 local handlers = {}
 local client = "VANILLA"
+-- The module keeps its own reference to issecretvalue, so later secrets are added to this set.
 local SECRET = {}
-issecretvalue = function(v) return v == SECRET end
+local secretSet = { [SECRET] = true }
+issecretvalue = function(v) return secretSet[v] == true end
 LibStub = function() return { NotifyChange = noop } end
-CreateFrame = function() return { SetScript = noop } end
+local onUpdate
+CreateFrame = function() return { SetScript = function(_, script, fn) if script == "OnUpdate" then onUpdate = onUpdate or fn end end } end
 ScarletUI = {
     defaults = { global = {}, char = {} },
     originalUIDefaults = { global = {}, char = {} },
@@ -32,8 +35,10 @@ UnitIsTapDenied = function() return false end
 GetPartyAssignment = function(_, name) return assignments[name] end
 UnitDetailedThreatSituation = function(unit)
     local value = threat[names[unit]]
-    if value then return value.tanking, value.status, nil, nil, value.amount end
+    if value then return value.tanking, value.status, nil, value.raw, value.amount end
 end
+UnitThreatSituation = function(unit) local value = threat[names[unit]] return value and value.situation end
+UnitThreatPercentageOfLead = function(unit) local value = threat[names[unit]] return value and value.lead end
 UnitDebuff, UnitBuff = noop, noop
 AbbreviateNumbers = tostring
 Round = function(v) return math.floor(v + 0.5) end
@@ -47,9 +52,11 @@ local function Plate()
     plate.threatAmountText = {
         SetTextColor = noop, ClearAllPoints = noop, SetFont = noop,
         Show = function(self) self.shown = true end,
+        IsShown = function(self) return self.shown end,
         Hide = function(self) self.shown = false end,
         SetPoint = function(self, _, relativeTo) self.relativeTo = relativeTo end,
         SetText = function(self, text) self.text = text end,
+        SetFormattedText = function(self, fmt, value) self.format, self.text = fmt, value end,
     }
     return plate
 end
@@ -132,13 +139,83 @@ ScarletUI:UpdateNameplate("nameplate1")
 assert(not plate.threatAmountText.shown, "threat text came back after it was turned off")
 module.threatAmountText.show = true
 
--- Restricted (secret) threat hides the number instead of erroring on comparisons.
-threat.Me.amount = SECRET
+-- Restricted (secret) threat can't be compared or subtracted (SECRET errors if it is), so the
+-- number falls back to the game's own percentage, passed straight to the font string.
+local secretMeta = { __lt = function() error("compared a secret") end, __le = function() error("compared a secret") end,
+    __sub = function() error("subtracted a secret") end, __eq = function() error("compared a secret") end }
+setmetatable(SECRET, secretMeta)
+local function Percent(expected, message)
+    plate.threatAmountText.text, plate.threatAmountText.shown = nil, nil
+    ScarletUI:UpdateNameplate("nameplate1")
+    assert(plate.threatAmountText.shown and plate.threatAmountText.format == "%.0f%%", message)
+    assert(rawequal(plate.threatAmountText.text, expected), message)
+end
+local secretRaw, secretLead = setmetatable({}, secretMeta), setmetatable({}, secretMeta)
+secretSet[secretRaw], secretSet[secretLead] = true, true
+-- Everything secret: no tanking status to go on, so the raw percent of the tank's threat.
+threat.Me = { tanking = SECRET, status = SECRET, raw = secretRaw, amount = SECRET, situation = SECRET, lead = secretLead }
+Percent(secretRaw, "all-secret threat didn't show the raw percent")
+-- A readable threat situation says we're tanking: show the lead percent instead.
+threat.Me.situation = 3
+Percent(secretLead, "secret tank threat didn't show the lead percent")
+threat.Me.situation = 1
+Percent(secretRaw, "secret non-tank threat didn't show the raw percent")
+-- Not on the threat list at all.
+threat.Me.situation = nil
 ScarletUI:UpdateNameplate("nameplate1")
-assert(not plate.threatAmountText.shown, "secret threat left the number shown")
-threat.Me.amount, threat.Other.amount = 10000, SECRET
+assert(not plate.threatAmountText.shown, "number shown for a unit we're not on the threat list of")
+-- Only other members' threat is secret: the lead can't be worked out, so use the percent.
+threat.Me = { tanking = true, status = 3, raw = 100, amount = 10000, lead = 167 }
+threat.Other.amount = SECRET
+Percent(167, "another member's secret threat didn't fall back to the lead percent")
+threat.Me.tanking, threat.Me.status = false, 1
+Percent(100, "another member's secret threat didn't fall back to the raw percent")
+threat.Me.raw = 0
 ScarletUI:UpdateNameplate("nameplate1")
-assert(plate.threatAmountText.shown, "another member's secret threat hid the player's number")
+assert(not plate.threatAmountText.shown, "0% threat was shown")
+threat.Me, threat.Other.amount = { tanking = true, status = 3, amount = 10000 }, 6000
+ScarletUI:UpdateNameplate("nameplate1")
+assert(plate.threatAmountText.text == "40", "readable threat lost the lead amount")
+
+-- Secret unit tokens on threat events refresh every plate, and Forever also refreshes on a timer.
+local updated = {}
+local realUpdate = ScarletUI.UpdateNameplate
+ScarletUI.UpdateNameplate = function(_, unitId) updated[unitId] = (updated[unitId] or 0) + 1 end
+handlers.UNIT_THREAT_LIST_UPDATE(nil, SECRET)
+onUpdate(nil, 0.11)
+assert(updated.nameplate1 == 1, "secret threat event didn't refresh the plates")
+updated = {}
+for _ = 1, 5 do onUpdate(nil, 0.11) end
+assert(updated.nameplate1 == 1, "Forever plates weren't refreshed on the timer")
+ScarletUI.UpdateNameplate = realUpdate
+
+-- A removed plate drops its number so the next unit on it doesn't inherit it.
+plate.threatAmountText:Show()
+handlers.NAME_PLATE_UNIT_REMOVED(nil, "nameplate1")
+assert(not plate.threatAmountText.shown, "removed plate kept its threat number")
+
+-- If our NAME_PLATE_UNIT_ADDED runs before Blizzard hands out a UnitFrame, the text is made on the next update.
+local late = Plate()
+local lateText = late.threatAmountText
+late.threatAmountText, late.CreateFontString = nil, function() return lateText end
+local lateFrame = late.UnitFrame
+late.UnitFrame = nil
+lateFrame.healthBar.color = { 1, 1, 1 }
+plates = { nameplate1 = late }
+handlers.NAME_PLATE_UNIT_ADDED(nil, "nameplate1")
+late.UnitFrame = lateFrame
+ScarletUI:UpdateNameplate("nameplate1")
+assert(late.threatAmountText and late.threatAmountText.shown and late.threatAmountText.text == "40", "late UnitFrame never got a number")
+plates = { nameplate1 = plate }
+setmetatable(SECRET, nil)
+
+-- /sui threatdebug prints without erroring on secrets.
+local printed = {}
+ScarletUI.Print = function(_, line) printed[#printed + 1] = line end
+threat.Me = { tanking = SECRET, status = SECRET, raw = SECRET, amount = SECRET, situation = SECRET }
+ScarletUI:PrintThreatDebug()
+assert(#printed >= 2 and table.concat(printed, " "):find("SECRET"), "threatdebug output missing")
+threat.Me = { tanking = true, status = 3, amount = 10000 }
 
 -- Forever's settings page keeps only the switch and threat text.
 page = ScarletUI:GetNameplatesModuleSettingsPage(ScarletUI.db.global, ScarletUI.defaults.global.nameplatesModule, 7)

@@ -127,6 +127,18 @@ local function AnchorThreatText(nameplate)
     end
 end
 
+-- Created on first use, so it doesn't matter whether Blizzard has given the plate its UnitFrame
+-- by the time NAME_PLATE_UNIT_ADDED reaches us.
+local function EnsureThreatText(nameplate)
+    if not nameplate.threatAmountText then
+        local text = nameplate:CreateFontString(nil, "OVERLAY", "GameFontWhite")
+        text:SetFont("Fonts\\FRIZQT__.TTF", ScarletUI.db.global.nameplatesModule.threatAmountText.fontSize, "OUTLINE")
+        nameplate.threatAmountText = text
+    end
+    AnchorThreatText(nameplate)
+    return nameplate.threatAmountText
+end
+
 -- GetNamePlateForUnit errors on tokens like "targettarget", so only pass real nameplate tokens.
 local function IsNameplateToken(unitId)
     return type(unitId) == "string" and unitId:match("^nameplate%d+$") ~= nil
@@ -134,12 +146,38 @@ end
 
 -- Threat throttle: batch UNIT_THREAT_LIST_UPDATE into 0.1s intervals
 local dirtyThreatUnits = {}
+local refreshAllThreat = false
+local threatEventCount, secretThreatEventCount = 0, 0  -- For /sui threatdebug.
 local threatThrottleFrame = CreateFrame("Frame")
 local threatThrottleTicker = 0
+local threatRefreshTicker = 0
+local THREAT_REFRESH_INTERVAL = 0.5
+
+local function UpdateAllNameplates()
+    for i = 1, 40 do
+        local unitId = "nameplate" .. i
+        if UnitExists(unitId) then
+            ScarletUI:UpdateNameplate(unitId)
+        end
+    end
+end
+
 threatThrottleFrame:SetScript("OnUpdate", function(_, dt)
     threatThrottleTicker = threatThrottleTicker + dt
     if threatThrottleTicker < 0.1 then return end
+    threatRefreshTicker = threatRefreshTicker + threatThrottleTicker
     threatThrottleTicker = 0
+
+    -- Forever may send secret unit tokens or skip threat events, so its numbers are also refreshed on a timer.
+    if ThreatOnly() and threatRefreshTicker >= THREAT_REFRESH_INTERVAL then
+        refreshAllThreat = true
+    end
+    if refreshAllThreat then
+        refreshAllThreat, threatRefreshTicker = false, 0
+        wipe(dirtyThreatUnits)
+        UpdateAllNameplates()
+        return
+    end
 
     local hasDirty = false
     for unitId in pairs(dirtyThreatUnits) do
@@ -231,13 +269,15 @@ local function ThreatFunc(unit)
 
     local firstUnit, secondUnit
     local firstThreat, secondThreat = -1, -1  -- Initialize with values less than zero
-    local threat, pet
+    local threat, pet, anySecret
 
     for member in IterateGroupMembers() do
         threat = select(5, UnitDetailedThreatSituation(member, unit))
 
         -- Restricted threat is secret on Forever and can't be compared.
-        if threat and not IsSecret(threat) then
+        if IsSecret(threat) then
+            anySecret = true
+        elseif threat then
             if threat > firstThreat then
                 secondUnit = firstUnit
                 secondThreat = firstThreat
@@ -253,7 +293,9 @@ local function ThreatFunc(unit)
         if UnitExists(pet) then
             threat = select(5, UnitDetailedThreatSituation(pet, unit))
 
-            if threat and not IsSecret(threat) then
+            if IsSecret(threat) then
+                anySecret = true
+            elseif threat then
                 if threat > firstThreat then
                     secondUnit = firstUnit
                     secondThreat = firstThreat
@@ -267,7 +309,7 @@ local function ThreatFunc(unit)
         end
     end
 
-    return firstUnit, firstThreat, secondUnit, secondThreat
+    return firstUnit, firstThreat, secondUnit, secondThreat, anySecret
 end
 
 local function IsPet(unitId)
@@ -340,16 +382,52 @@ local function HideTargetArrows()
     end
 end
 
+-- Fallback for restricted threat, matching Blizzard's numeric target threat: a tank sees how far
+-- ahead of second place they are, anyone else sees their threat as a percent of the tank's.
+-- Secret values may only be passed to the font string, never compared or added.
+local function ShowThreatPercent(nameplate, unitId, isTanking, rawPercent)
+    local module = ScarletUI.db.global.nameplatesModule
+    local healthBar = nameplate.UnitFrame and nameplate.UnitFrame.healthBar
+    if not module.threatAmountText.show or not healthBar then
+        if nameplate.threatAmountText then nameplate.threatAmountText:Hide() end
+        return
+    end
+    local text = EnsureThreatText(nameplate)
+
+    local tanking = isTanking
+    if IsSecret(tanking) then
+        tanking = nil
+        local status = UnitThreatSituation and UnitThreatSituation("player", unitId)
+        if not IsSecret(status) then
+            if status == nil then
+                text:Hide()  -- Not on this unit's threat list.
+                return
+            end
+            tanking = status >= 2
+        end
+    end
+
+    local value = rawPercent
+    if tanking and UnitThreatPercentageOfLead then
+        value = UnitThreatPercentageOfLead("player", unitId)
+    end
+    if not IsSecret(value) and (not value or value <= 0) then
+        text:Hide()
+        return
+    end
+
+    text:SetTextColor(healthBar:GetStatusBarColor())
+    text:SetFormattedText("%.0f%%", value)
+    text:Show()
+end
+
 local function SetupNameplate(nameplate)
     local module = ScarletUI.db.global.nameplatesModule
 
     local healthBar = nameplate.UnitFrame and nameplate.UnitFrame.healthBar
     if module.threatAmountText.show and healthBar then
-        if not nameplate.threatAmountText then
-            nameplate.threatAmountText = nameplate:CreateFontString(nil, "OVERLAY", "GameFontWhite")
-        end
+        EnsureThreatText(nameplate)
         nameplate.threatAmountText:SetFont("Fonts\\FRIZQT__.TTF", module.threatAmountText.fontSize, "OUTLINE")
-        AnchorThreatText(nameplate)
     elseif nameplate.threatAmountText then
         nameplate.threatAmountText:Hide()
     end
@@ -482,14 +560,16 @@ function ScarletUI:UpdateNameplate(unitId)
         end
     end
 
-    local isTanking, threatStatus, _, _, threatValue = UnitDetailedThreatSituation("player", unitId)
-    if IsSecret(threatValue) or IsSecret(isTanking) then
-        if nameplate.threatAmountText then
-            nameplate.threatAmountText:Hide()
-        end
-        return
+    local isTanking, threatStatus, _, rawPercent, threatValue = UnitDetailedThreatSituation("player", unitId)
+    local firstUnit, firstThreat, secondThreat, anySecret
+    if not IsSecret(threatValue) and not IsSecret(isTanking) then
+        firstUnit, firstThreat, _, secondThreat, anySecret = ThreatFunc(unitId)
     end
-    local firstUnit, firstThreat, _, secondThreat = ThreatFunc(unitId)
+    -- Restricted (secret) threat can't be subtracted, so show the game's own percentage instead.
+    if anySecret or IsSecret(threatValue) or IsSecret(isTanking) then
+        ShowThreatPercent(nameplate, unitId, isTanking, rawPercent)
+        return true
+    end
 
     local displayValue
 
@@ -548,6 +628,9 @@ function ScarletUI:UpdateNameplate(unitId)
     end
 
     -- Update the threat amount text
+    if nameplatesModule.threatAmountText.show and nameplate.UnitFrame and nameplate.UnitFrame.healthBar then
+        EnsureThreatText(nameplate)
+    end
     if nameplate.UnitFrame and nameplate.threatAmountText then
         if threatValue and threatValue > 0 and nameplatesModule.threatAmountText.show then
             AnchorThreatText(nameplate)
@@ -563,6 +646,57 @@ function ScarletUI:UpdateNameplate(unitId)
     end
 
     return true
+end
+
+-- TEMPORARY: /sui threatdebug, to see what Forever's threat calls return per nameplate.
+local function Describe(...)
+    local out = {}
+    for i = 1, select("#", ...) do
+        local v = select(i, ...)
+        out[i] = IsSecret(v) and "SECRET" or tostring(v)
+    end
+    return #out > 0 and table.concat(out, ", ") or "(nothing)"
+end
+
+local function DescribeCall(ok, ...)
+    if not ok then return "error: " .. Describe((...)) end
+    return Describe(...)
+end
+
+local function SafeCall(fn, ...)
+    if not fn then return "n/a" end
+    return DescribeCall(pcall(fn, ...))
+end
+
+function ScarletUI:PrintThreatDebug()
+    local restricted = C_RestrictedActions and C_RestrictedActions.IsAddOnRestrictionActive
+    local types = Enum and Enum.AddOnRestrictionType
+    self:Print(("threatdebug: client=%s combat=%s restriction(combat)=%s restriction(encounter)=%s threatEvents=%d secretToken=%d"):format(
+        tostring(self:GetWoWVersion()), tostring(InCombatLockdown and InCombatLockdown()),
+        types and SafeCall(restricted, types.Combat) or "n/a", types and SafeCall(restricted, types.Encounter) or "n/a",
+        threatEventCount, secretThreatEventCount))
+    local secrets = C_Secrets or {}
+    local found = false
+    for i = 1, 40 do
+        local unitId = "nameplate" .. i
+        if UnitExists(unitId) then
+            found = true
+            local plate = C_NamePlate.GetNamePlateForUnit(unitId)
+            local text = plate and plate.threatAmountText
+            self:Print(("%s name=%s | valuesSecret=%s stateSecret=%s"):format(unitId, SafeCall(UnitName, unitId),
+                SafeCall(secrets.ShouldUnitThreatValuesBeSecret, "player", unitId),
+                SafeCall(secrets.ShouldUnitThreatStateBeSecret, "player", unitId)))
+            self:Print("  detailed(tanking, status, scaled%, raw%, raw) = " .. SafeCall(UnitDetailedThreatSituation, "player", unitId))
+            self:Print(("  situation=%s lead=%s pctOfLead=%s"):format(SafeCall(UnitThreatSituation, "player", unitId),
+                SafeCall(UnitThreatLeadSituation, "player", unitId), SafeCall(UnitThreatPercentageOfLead, "player", unitId)))
+            self:Print(("  plate=%s unitFrame=%s healthBar=%s text=%s shown=%s"):format(tostring(plate ~= nil),
+                tostring(plate and plate.UnitFrame ~= nil), tostring(plate and plate.UnitFrame and plate.UnitFrame.healthBar ~= nil),
+                tostring(text ~= nil), tostring(text and text:IsShown())))
+        end
+    end
+    if not found then
+        self:Print("threatdebug: no nameplates are shown.")
+    end
 end
 
 function ScarletUI:UpdateTargetArrows()
@@ -766,15 +900,26 @@ function ScarletUI:SetupNameplates()
 
         self:RegisterEventHandler("NAME_PLATE_UNIT_REMOVED", function(_, unitId)
             if ScarletUI.pauseEvents then return end
-            if not threatOnly then
-                ScarletUI:CheckUnitAuras(unitId)
+            if threatOnly then
+                -- The plate is going away; don't leave a number on it for the next unit.
+                local nameplate = IsNameplateToken(unitId) and C_NamePlate.GetNamePlateForUnit(unitId)
+                if nameplate and nameplate.threatAmountText then
+                    nameplate.threatAmountText:Hide()
+                end
+                return
             end
+            ScarletUI:CheckUnitAuras(unitId)
             ScarletUI:UpdateNameplate(unitId)
         end)
 
         self:RegisterEventHandler("UNIT_THREAT_LIST_UPDATE", function(_, unitId)
             if ScarletUI.pauseEvents then return end
-            if unitId and not IsSecret(unitId) and IsNameplateToken(unitId) then
+            threatEventCount = threatEventCount + 1
+            if IsSecret(unitId) then
+                -- Can't tell which plate it is, so refresh them all.
+                secretThreatEventCount = secretThreatEventCount + 1
+                refreshAllThreat = true
+            elseif IsNameplateToken(unitId) then
                 dirtyThreatUnits[unitId] = true
             end
         end)

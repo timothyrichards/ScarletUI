@@ -219,11 +219,14 @@ function ScarletUI:SlashCommand(msg)
         self:OpenEditMode()
     elseif msg == "debug" then
         self.debugContainer:SetShown(not self.debugContainer:IsShown())
+    elseif msg == "threatdebug" and self.PrintThreatDebug then
+        self:PrintThreatDebug()
     elseif msg == "help" then
         self:Print("Available commands:")
         self:Print("- /sui: Toggle the settings window.")
         self:Print("- /sui move: Open Blizzard Edit Mode.")
         self:Print("- /sui debug: Toggle the debug frame.")
+        self:Print("- /sui threatdebug: Print what the threat calls return for each nameplate.")
         self:Print("- /sui help: Display this message.")
         self:Print("- /cp: Toggle the Craft Profit window (Forever, with Auctionator).")
     else
