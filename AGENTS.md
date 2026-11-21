@@ -386,9 +386,14 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   only; states 1 and 2 share lowThreat as in Blizzard), and keeps Blizzard's color
   when the state is secret, nil, or solo. A tank's lead 0 also means no threat, so
   it only counts as a safe lead while `UnitThreatSituation` is 3. On
-  `colorHealthWithExtendedColors` plates the `selectionHighlight` gets the color too. The settings page keeps the switch, the
-  Threat Text group, and Threat Colors without pet/tank colors or Tank Names, plus
-  Reset Colors. The number takes the health bar color. Forever pools
+  `colorHealthWithExtendedColors` plates the `selectionHighlight` gets the color too.
+  When the player's own `UnitThreatSituation` is readable and below 2, a group pet
+  or another tank (role, Main Tank/Assist, or Tank Names) whose own readable
+  situation is 2 or 3 gets the `pet`/`tank` color (`OtherAggroKey`); secrecy is
+  per unit and mob (`C_Secrets.ShouldUnitThreatStateBeSecret(unit, mob)`), so a
+  secret answer just counts as no. The settings page keeps the switch, the
+  Threat Text group, and Threat Colors with all five pickers per role, Tank
+  Names, and Reset Colors. The number takes the health bar color. Forever pools
   nameplate UnitFrames, so `AnchorThreatText` re-anchors to the current
   `healthBar`. Forever can return threat values as secrets
   (`C_Secrets.ShouldUnitThreatValuesBeSecret`). A secret value from another group
