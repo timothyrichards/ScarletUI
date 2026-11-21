@@ -14,6 +14,7 @@ embeds.xml
 ScarletUI.lua
 Modules\ActionBars.lua
 Modules\BagSort.lua
+Modules\BankCache.lua
 Modules\Chat.lua
 Modules\CheapestItem.lua
 Modules\CVars.lua

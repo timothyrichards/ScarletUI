@@ -1,0 +1,294 @@
+-- Cached bank: the client only shows bank contents while the bank is open, so
+-- each character's bank is saved when seen (db.global.bankCache, keyed by
+-- AceDB's character key) and shown later in a viewer (/sui bank) and as bank
+-- counts on item tooltips. Retail and Forever keep the bank in purchased tabs
+-- (C_Bank.FetchPurchasedBankTabIDs; Forever's are bank bags); Era, TBC, and
+-- Mists in the bank container and bank bags. The Warband/account bank is not
+-- saved. Only add-on data is written; tooltips get post-hooked lines.
+local BankCache = {}
+ScarletUI.BankCache = BankCache
+
+local IsSecret = issecretvalue or function() return false end
+local COLUMNS, SIZE, GAP = 12, 34, 4
+local TOOLTIP_COLOR = { r = 0.5, g = 0.75, b = 1 }
+
+local function NumSlots(bag)
+    local GetNumSlots = C_Container and C_Container.GetContainerNumSlots or GetContainerNumSlots
+    return GetNumSlots and GetNumSlots(bag) or 0
+end
+
+local function ItemID(link)
+    return type(link) == "string" and tonumber(link:match("item:(%-?%d+)")) or nil
+end
+
+-- link, count, icon, item ID of a filled slot.
+local function SlotItem(bag, slot)
+    if C_Container and C_Container.GetContainerItemInfo then
+        local info = C_Container.GetContainerItemInfo(bag, slot)
+        if info then return info.hyperlink, info.stackCount, info.iconFileID, info.itemID end
+    elseif GetContainerItemInfo then
+        local icon, count, _, _, _, _, link, _, _, itemID = GetContainerItemInfo(bag, slot)
+        if icon or link then return link, count, icon, itemID end
+    end
+end
+
+-- The bag IDs holding the character's bank, or nil when it cannot be viewed.
+function BankCache.Containers()
+    if C_Bank and C_Bank.FetchPurchasedBankTabIDs and Enum and Enum.BankType then
+        local character = Enum.BankType.Character
+        -- Retail opens the bank frame for Warband-only bankers too.
+        if C_Bank.CanViewBank and not C_Bank.CanViewBank(character) then return end
+        local list = {}
+        for _, bag in ipairs(C_Bank.FetchPurchasedBankTabIDs(character) or {}) do list[#list + 1] = bag end
+        return list
+    end
+    local bagIndex = Enum and Enum.BagIndex or {}
+    local list = { bagIndex.Bank or BANK_CONTAINER or -1 }
+    local first = (NUM_BAG_SLOTS or 4) + 1
+    for bag = first, first + (NUM_BANKBAGSLOTS or 0) - 1 do list[#list + 1] = bag end
+    -- No current client has one; kept for clients with a reagent bank.
+    if IsReagentBankUnlocked and IsReagentBankUnlocked() then
+        list[#list + 1] = bagIndex.Reagentbank or REAGENTBANK_CONTAINER or -3
+    end
+    return list
+end
+
+-- What the open bank holds: items in bank order and the total per item ID.
+-- Nil while it has no slots, which means it has not loaded or cannot be seen.
+function BankCache.Read()
+    local containers = BankCache.Containers()
+    if not containers then return end
+    local items, counts, size = {}, {}, 0
+    for _, bag in ipairs(containers) do
+        local slots = NumSlots(bag)
+        size = size + slots
+        for slot = 1, slots do
+            local link, count, icon, itemID = SlotItem(bag, slot)
+            itemID = itemID or ItemID(link)
+            if itemID and not IsSecret(itemID) then
+                count = count or 1
+                items[#items + 1] = { link = link or ("item:" .. itemID), count = count, icon = icon }
+                counts[itemID] = (counts[itemID] or 0) + count
+            end
+        end
+    end
+    if size == 0 then return end
+    return { items = items, counts = counts, size = size }
+end
+
+-- The name shown for a saved character: its key without " - Realm". Forever's
+-- keys are first name and surname, which already tell same-named ones apart.
+function BankCache.Label(key, realm)
+    local suffix = " - " .. tostring(realm)
+    return key:sub(-#suffix) == suffix and key:sub(1, -#suffix - 1) or key
+end
+
+-- Saved characters on `realm` (AceDB's realm key), `current` first, then by name.
+function BankCache.Characters(cache, realm, current)
+    local list = {}
+    for key, entry in pairs(cache or {}) do
+        if entry.realm == realm then
+            list[#list + 1] = { key = key, label = BankCache.Label(key, realm), entry = entry }
+        end
+    end
+    table.sort(list, function(a, b)
+        if (a.key == current) ~= (b.key == current) then return a.key == current end
+        return a.label < b.label
+    end)
+    return list
+end
+
+-- { key, label, count } per character on `realm` whose bank holds itemID.
+function BankCache.Counts(cache, realm, itemID, current)
+    local list = {}
+    for _, character in ipairs(BankCache.Characters(cache, realm, current)) do
+        local count = character.entry.counts and character.entry.counts[itemID]
+        if count and count > 0 then
+            list[#list + 1] = { key = character.key, label = character.label, count = count }
+        end
+    end
+    return list
+end
+
+local bankOpen, pending, viewer
+
+function ScarletUI:SnapshotBank()
+    local settings = self.db.global.bankCacheModule
+    if not (bankOpen and settings.enabled) then return end
+    local snapshot = BankCache.Read()
+    if not snapshot then return end
+    snapshot.realm = self.db.keys.realm
+    snapshot.class = select(2, UnitClass("player"))
+    snapshot.time = time()
+    self.db.global.bankCache = self.db.global.bankCache or {}
+    self.db.global.bankCache[self.db.keys.char] = snapshot
+    if viewer and viewer:IsShown() then viewer:Refresh() end
+end
+
+-- Bag and bank updates come in bursts; one snapshot after each.
+function ScarletUI:ScheduleBankSnapshot()
+    if pending then return end
+    pending = true
+    C_Timer.After(0.2, function()
+        pending = false
+        self:SnapshotBank()
+    end)
+end
+
+local function AddBankCounts(tooltip, itemID)
+    local self = ScarletUI
+    local settings = self.db.global.bankCacheModule
+    if not (settings.enabled and settings.tooltip) or not itemID or IsSecret(itemID)
+        or (tooltip.IsForbidden and tooltip:IsForbidden()) then
+        return
+    end
+    local current = self.db.keys.char
+    local counts = BankCache.Counts(self.db.global.bankCache, self.db.keys.realm, itemID, current)
+    for _, character in ipairs(counts) do
+        local label = character.key == current and "Bank" or "Bank (" .. character.label .. ")"
+        tooltip:AddLine(label .. ": " .. character.count, TOOLTIP_COLOR.r, TOOLTIP_COLOR.g, TOOLTIP_COLOR.b)
+    end
+    return #counts > 0
+end
+
+local function HookTooltips()
+    if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall and Enum and Enum.TooltipDataType then
+        TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, function(tooltip, data)
+            AddBankCounts(tooltip, data and data.id)
+        end)
+        return
+    end
+    for _, tooltip in ipairs({ GameTooltip, ItemRefTooltip }) do
+        tooltip:HookScript("OnTooltipSetItem", function(self)
+            local _, link = self:GetItem()
+            if AddBankCounts(self, ItemID(link)) then self:Show() end -- resize; no Show after hooks here
+        end)
+    end
+end
+
+function ScarletUI:SetupBankCache()
+    if self.bankCacheHooked then return end
+    self.bankCacheHooked = true
+    local function Update(event)
+        if event == "BANKFRAME_OPENED" then
+            bankOpen = true
+        elseif event == "BANKFRAME_CLOSED" then
+            bankOpen = false
+        end
+        if bankOpen then self:ScheduleBankSnapshot() end
+    end
+    for _, event in ipairs({ "BANKFRAME_OPENED", "BANKFRAME_CLOSED", "BAG_UPDATE", "PLAYERBANKSLOTS_CHANGED" }) do
+        self:RegisterEventHandler(event, Update)
+    end
+    if C_Bank and C_Bank.FetchPurchasedBankTabIDs then
+        self:RegisterEventHandler("BANK_TABS_CHANGED", Update)
+    end
+    HookTooltips()
+end
+
+-- Viewer: the saved bank of a character on this realm, as item icons.
+local function BuildViewer()
+    viewer = CreateFrame("Frame", "ScarletUIBank", UIParent, "BasicFrameTemplateWithInset")
+    viewer:SetSize(COLUMNS * (SIZE + GAP) + 44, 440)
+    viewer:SetPoint("CENTER")
+    viewer:SetFrameStrata("HIGH")
+    viewer:SetToplevel(true)
+    viewer:SetClampedToScreen(true)
+    viewer:SetMovable(true)
+    viewer:EnableMouse(true)
+    viewer:RegisterForDrag("LeftButton")
+    viewer:SetScript("OnDragStart", viewer.StartMoving)
+    viewer:SetScript("OnDragStop", viewer.StopMovingOrSizing)
+    viewer:Hide()
+    tinsert(UISpecialFrames, "ScarletUIBank")
+    -- The template's X calls HideUIPanel, which refuses addon code in combat.
+    if viewer.CloseButton then viewer.CloseButton:SetScript("OnClick", function() viewer:Hide() end) end
+    local title = viewer:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    title:SetPoint("TOP", 0, -5)
+    title:SetText("Scarlet UI Bank")
+
+    local selected
+    local dropdown = CreateFrame("DropdownButton", nil, viewer, "WowStyle1DropdownTemplate")
+    dropdown:SetPoint("TOPLEFT", 12, -30)
+    dropdown:SetWidth(180)
+    dropdown:SetDefaultText("No banks saved")
+    local lastSeen = viewer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    lastSeen:SetPoint("LEFT", dropdown, "RIGHT", 10, 0)
+    local empty = viewer:CreateFontString(nil, "OVERLAY", "GameFontDisable")
+    empty:SetPoint("CENTER", 0, -20)
+
+    -- ScrollFrameTemplate has the thin modern bar; older clients lack it.
+    local ok, scroll = pcall(CreateFrame, "ScrollFrame", nil, viewer, "ScrollFrameTemplate")
+    if not ok then scroll = CreateFrame("ScrollFrame", nil, viewer, "UIPanelScrollFrameTemplate") end
+    scroll:SetPoint("TOPLEFT", 14, -66)
+    scroll:SetPoint("BOTTOMRIGHT", -30, 10)
+    local content = CreateFrame("Frame", nil, scroll)
+    content:SetSize(COLUMNS * (SIZE + GAP), 1)
+    scroll:SetScrollChild(content)
+
+    local buttons = {}
+    local function Button(i)
+        local button = buttons[i]
+        if button then return button end
+        button = ScarletUI:CreateIconButton(content, SIZE)
+        button.count = button:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
+        button.count:SetPoint("BOTTOMRIGHT", -2, 2)
+        button:SetPoint("TOPLEFT", ((i - 1) % COLUMNS) * (SIZE + GAP) + 4, -math.floor((i - 1) / COLUMNS) * (SIZE + GAP) - 4)
+        button:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetHyperlink(self.link)
+            GameTooltip:Show()
+        end)
+        -- Shift-click links the item in chat, as from the bags.
+        button:SetScript("OnClick", function(self)
+            if HandleModifiedItemClick then HandleModifiedItemClick(self.link) end
+        end)
+        buttons[i] = button
+        return button
+    end
+
+    function viewer:Refresh()
+        local db = ScarletUI.db
+        local characters = BankCache.Characters(db.global.bankCache, db.keys.realm, db.keys.char)
+        local character
+        for _, c in ipairs(characters) do
+            if c.key == selected then character = c end
+        end
+        character = character or characters[1]
+        selected = character and character.key
+        dropdown:SetupMenu(function(_, root)
+            for _, c in ipairs(characters) do
+                root:CreateRadio(c.label, function() return c.key == selected end, function()
+                    selected = c.key
+                    viewer:Refresh()
+                end)
+            end
+        end)
+        local entry = character and character.entry
+        local items = entry and entry.items or {}
+        lastSeen:SetText(entry and ("Last seen: " .. date("%Y-%m-%d %H:%M", entry.time)) or "")
+        empty:SetText(not entry and "No bank saved yet. Open your bank to save it."
+            or #items == 0 and "This bank was empty." or "")
+        for i, item in ipairs(items) do
+            local button = Button(i)
+            button.link = item.link
+            button.texture:SetTexture(item.icon or 134400) -- question mark
+            button.count:SetText(item.count > 1 and item.count or "")
+            button:Show()
+        end
+        for i = #items + 1, #buttons do buttons[i]:Hide() end
+        content:SetHeight(math.ceil(#items / COLUMNS) * (SIZE + GAP) + 8)
+    end
+    viewer:SetScript("OnShow", function(self)
+        PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN)
+        self:Refresh()
+    end)
+end
+
+-- `show` forces it open or closed; nil toggles.
+function ScarletUI:ToggleBankViewer(show)
+    if not viewer then BuildViewer() end
+    if show == nil then show = not viewer:IsShown() end
+    viewer:SetShown(show)
+    if show then viewer:Raise() end
+end

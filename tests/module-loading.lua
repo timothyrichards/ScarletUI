@@ -98,7 +98,7 @@ end
 
 -- Exercise the real setup dispatcher with only the remaining module methods.
 local calls = {}
-local setupMethods = { "SetupDebugFrame", "SetupActionBarToggles", "SetupBagSort", "SetupTracking", "SetupChat", "SetupCVars",
+local setupMethods = { "SetupDebugFrame", "SetupActionBarToggles", "SetupBagSort", "SetupBankCache", "SetupTracking", "SetupChat", "SetupCVars",
     "SetupItemLevels",
     "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupFiveSecondRule", "SetupQuestXPBar", "SetupFishing", "SetupXPFood", "SetupWeaponReminder", "SetupCampReminders","SetupSpecGearSets", "SetupStatDisplay", "SetupSealSlots", "SetupWindfury", "SetupCraftProfit", "SetupExpandCharacterInfo", "SetupGameMenuButtons",
     "SetupFrameTweaks", "SetupMinimapIcon" }
@@ -1927,3 +1927,6 @@ dofile("tests/cvars.lua")
 
 -- Replaces the ScarletUI global, so it runs after everything else.
 dofile("tests/nameplates.lua")
+
+-- Also replaces the ScarletUI global.
+dofile("tests/bank-cache.lua")

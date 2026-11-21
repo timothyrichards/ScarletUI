@@ -34,6 +34,11 @@ ScarletUI.defaults = {
             enabled = true,
             sortBagsRightToLeft = true,
         },
+        -- Saved banks live in bankCache, keyed by character; these are the switches.
+        bankCacheModule = {
+            enabled = true,
+            tooltip = true,
+        },
         -- Off by default: /sui and the minimap icon are the usual ways in.
         gameMenuButtons = {
             sui = false,

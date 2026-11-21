@@ -107,6 +107,26 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   Era, TBC, and Mists only have the insert setting. Its toggles go on the Bags
   page: a standalone page on Retail and Forever, and a Sorting group on the
   `Bag.lua` page elsewhere.
+- `Modules/BankCache.lua`: cached bank (`db.global.bankCacheModule`: `enabled`
+  and `tooltip`, both on by default, its own Bank settings page). The client only
+  shows bank contents while the bank is open, so a snapshot (items in bank order
+  as link, count, and icon; `counts` per item ID; `size`; `time`; AceDB `realm`
+  key; class) is saved in `db.global.bankCache[db.keys.char]` on
+  `BANKFRAME_OPENED` and on `BAG_UPDATE`, `PLAYERBANKSLOTS_CHANGED`, and
+  `BANK_TABS_CHANGED` while it is open, debounced 0.2s. A read with no slots
+  (tabs still loading, or a Warband-only banker: `C_Bank.CanViewBank`) saves
+  nothing. Retail and Forever read the purchased character bank tabs
+  (`C_Bank.FetchPurchasedBankTabIDs`; Forever's tabs are bank bags, and it has
+  no -1 bank container: -1 is its keyring); Era, TBC, and Mists the -1 bank
+  container and bags `NUM_BAG_SLOTS + 1` to `NUM_BAG_SLOTS + NUM_BANKBAGSLOTS`,
+  plus the reagent bank where `IsReagentBankUnlocked` exists (no current
+  client). The Warband/account bank is not saved. `/sui bank` and the page's
+  button open `ScarletUIBank` (`BasicFrameTemplateWithInset`, icons from
+  `CreateIconButton`) with a dropdown of the characters saved under this AceDB
+  realm key (on Forever the ruleset). Item tooltips get "Bank: N" and
+  "Bank (Name): N" lines from a `TooltipDataProcessor` post-call, or
+  `OnTooltipSetItem` on older clients. The rules (`ScarletUI.BankCache`) are
+  tested in `tests/bank-cache.lua`, run by the module-loading check.
 - `Modules/Tracking.lua`: shares minimap tracking menu checkboxes across
   characters via `db.global.trackingModule.states`, keyed by entry name and
   merged on logout so entries a character lacks keep their shared state.

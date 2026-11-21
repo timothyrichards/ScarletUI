@@ -113,6 +113,7 @@ function ScarletUI:Setup()
     -- Setup frames
     self:SetupActionBarToggles()
     self:SetupBagSort()
+    self:SetupBankCache()
     self:SetupTracking()
     self:SetupChat()
     self:SetupCVars()
@@ -215,6 +216,8 @@ end
 function ScarletUI:SlashCommand(msg)
     if msg == "" then
         self:ToggleSettingsFrame()
+    elseif msg == "bank" then
+        self:ToggleBankViewer()
     elseif msg == "move" then
         self:OpenEditMode()
     elseif msg == "debug" then
@@ -224,6 +227,7 @@ function ScarletUI:SlashCommand(msg)
     elseif msg == "help" then
         self:Print("Available commands:")
         self:Print("- /sui: Toggle the settings window.")
+        self:Print("- /sui bank: Toggle the saved bank of each character on this realm.")
         self:Print("- /sui move: Open Blizzard Edit Mode.")
         self:Print("- /sui debug: Toggle the debug frame.")
         self:Print("- /sui threatdebug: Print what the threat calls return for each nameplate.")
