@@ -353,6 +353,40 @@ module.threatColored = true
 ApplyColors(nil)
 ApplyColors({ displayThreatHealthBarColor = true, displayedUnit = "nameplate1", optionTable = frame.optionTable })
 
+-- A pet or another tank with aggro: each unit's own threat situation, with nothing compared.
+threat.Me.situation = 1
+names.playerpet, threat.Pet = "Pet", { situation = 3 }
+ExpectColor(frame, "nonTankThreatColors", "pet", "a pet with aggro didn't get the pet color")
+isTank, threat.Me.leadSituation = true, 3
+ExpectColor(frame, "tankThreatColors", "pet", "a pet with aggro didn't get the tank's pet color")
+threat.Pet.situation = secretState
+ExpectColor(frame, "tankThreatColors", "noThreat", "a secret pet situation didn't fall back")
+names.playerpet, threat.Pet = nil, nil
+threat.Other.situation = 3
+ExpectColor(frame, "tankThreatColors", "noThreat", "a non-tank with aggro got the tank color")
+local roles = { party1 = "TANK" }
+UnitGroupRolesAssigned = function(unit) return roles[unit] end
+ExpectColor(frame, "tankThreatColors", "tank", "another tank (role) with aggro didn't get the tank color")
+isTank = false
+ExpectColor(frame, "nonTankThreatColors", "tank", "another tank with aggro didn't get the DPS tank color")
+roles.party1, assignments.party1 = nil, true
+ExpectColor(frame, "nonTankThreatColors", "tank", "a main tank with aggro didn't get the tank color")
+assignments.party1, ScarletUI.tanks = nil, { Other = true }
+ExpectColor(frame, "nonTankThreatColors", "tank", "a Tank Names player with aggro didn't get the tank color")
+threat.Other.situation = secretState
+ExpectColor(frame, "nonTankThreatColors", "lowThreat", "a secret tank situation didn't fall back")
+threat.Other.situation, roles.party1, ScarletUI.tanks = 3, secretState, {}
+ExpectColor(frame, "nonTankThreatColors", "lowThreat", "a secret role counted as a tank")
+roles.party1 = "TANK"
+-- The player's own aggro comes first, and a secret one might be aggro, so it isn't overridden.
+threat.Me.situation = 2
+ExpectColor(frame, "nonTankThreatColors", "lowThreat", "another tank's aggro beat the player's own")
+isTank, threat.Me.situation, threat.Me.leadSituation = true, 3, 1
+ExpectColor(frame, "tankThreatColors", "lowThreat", "another tank's aggro beat the tank player's own")
+isTank, threat.Me.situation = false, secretState
+ExpectBlizzard(frame, "a secret player situation was painted with another tank's color")
+roles, threat.Other.situation, threat.Me.situation = {}, nil, 3
+
 -- ScarletUI's own threat refresh repaints too, since Blizzard skips some threat changes.
 plate.UnitFrame = frame
 frame.healthBar.color = { 0.5, 0.5, 0.5 }
@@ -363,12 +397,21 @@ assert(SameColor(frame.healthBar.color, module.nonTankThreatColors.threat), "thr
 C_NamePlate.GetNamePlates = function() return { plate } end
 page = ScarletUI:GetNameplatesModuleSettingsPage(ScarletUI.db.global, pristineDefaults, 7)
 local colors = page.args.threatColors.args
-assert(colors.threatColored and colors.resetColors and not colors.tankNames, "Forever threat color settings missing")
+assert(colors.threatColored and colors.resetColors and colors.tankNames, "Forever threat color settings missing")
 for _, group in ipairs({ "nonTank", "tank" }) do
     local groupArgs = colors[group].args
     assert(groupArgs.noThreat.name == "No Threat" and groupArgs.lowThreat.name == "Low Threat" and groupArgs.threat.name == "Have Threat")
-    assert(not groupArgs.pet and not groupArgs.tank, "Forever kept pet or tank threat colors it can't work out")
+    assert(groupArgs.pet.name == "Pet Threat" and groupArgs.tank.name == "Tank Threat", "Forever lost pet or tank threat colors")
+    assert(groupArgs.pet.desc:find("Only in a group") and groupArgs.tank.desc, "Forever pet or tank threat colors have no tooltip")
 end
+-- Tank Names saves, and the plates repaint with the new tanks.
+names.party1, threat.Other.situation, threat.Me.situation = "Other", 3, 1
+colors.tankNames.set(nil, "Other")
+assert(module.tankNames == "Other" and ScarletUI.tanks.Other, "Tank Names didn't save")
+assert(SameColor(frame.healthBar.color, module.nonTankThreatColors.tank), "Tank Names didn't repaint the plates")
+colors.tankNames.set(nil, "")
+threat.Other.situation, threat.Me.situation = nil, 3
+colors.nonTank.args.pet.set(nil, 0, 0, 0, 1)
 assert(SameColor({ colors.nonTank.args.threat.get() }, pristineDefaults.nonTankThreatColors.threat))
 colors.nonTank.args.threat.set(nil, 0.2, 0.4, 0.6, 1)
 assert(SameColor(module.nonTankThreatColors.threat, { 0.2, 0.4, 0.6, 1 }), "color picker didn't save")
@@ -393,7 +436,7 @@ module.threatColored = true
 client = "RETAIL"
 assert(ScarletUI:GetNameplatesModuleSettingsPage(ScarletUI.db.global, ScarletUI.defaults.global.nameplatesModule, 7).hidden())
 client, ScarletUI.lightWeightMode, hooksecurefunc, CompactUnitFrame_UpdateHealthColor, issecretvalue = "VANILLA", nil, nil, nil, nil
-UnitInParty, PlayerUtil, UnitThreatLeadSituation, C_NamePlate.GetNamePlates = nil, nil, nil, nil
+UnitInParty, PlayerUtil, UnitThreatLeadSituation, C_NamePlate.GetNamePlates, UnitGroupRolesAssigned = nil, nil, nil, nil, nil
 
 -- Non-nameplate tokens (targettarget etc.) must never reach GetNamePlateForUnit, which errors on them.
 local badLookups = 0

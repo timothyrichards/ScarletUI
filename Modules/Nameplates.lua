@@ -462,8 +462,42 @@ local FOREVER_THREAT_KEYS = {
     tankThreatColors = { [0] = "threat", "lowThreat", "lowThreat", "noThreat" },
 }
 
+-- Whether a unit has aggro on the mob (threat situation 2 or 3). A secret situation counts as no.
+-- The game decides secrecy per unit and mob, so each unit is checked on its own.
+local function HasAggro(unit, mob)
+    local situation = UnitThreatSituation(unit, mob)
+    return not IsSecret(situation) and situation ~= nil and situation >= 2
+end
+
+-- Whether a group member counts as a tank: tank role, Main Tank or Main Assist, or Tank Names.
+-- Any of these can be secret on Forever, and a secret answer counts as no.
+local function IsGroupTank(unit)
+    local role = UnitGroupRolesAssigned and UnitGroupRolesAssigned(unit)
+    if not IsSecret(role) and role == "TANK" then return true end
+    for _, assignment in ipairs({ "MAINTANK", "MAINASSIST" }) do
+        local assigned = GetPartyAssignment and GetPartyAssignment(assignment, unit)
+        if not IsSecret(assigned) and assigned then return true end
+    end
+    local name = UnitName(unit)
+    return not IsSecret(name) and name ~= nil and ScarletUI.tanks[name] == true
+end
+
+-- "pet" if a group pet has aggro on the mob, "tank" if another tank does, else nil. Each unit's own
+-- threat situation says this without comparing anyone's threat. The caller has already checked the
+-- player hasn't got aggro, so the player's own raidN entry never matches.
+local function OtherAggroKey(mob)
+    RebuildPetUnitStrings()
+    for member in IterateGroupMembers() do
+        if HasAggro(petUnitStrings[member] or (member .. "pet"), mob) then return "pet" end
+        if member ~= "player" and HasAggro(member, mob) then
+            return IsGroupTank(member) and "tank" or nil
+        end
+    end
+end
+
 -- The color for a Forever nameplate UnitFrame, or nil to keep Blizzard's. Mirrors Blizzard's
--- GetAggroHighlightThreatSituation, but also colors state 0, as the old module did.
+-- GetAggroHighlightThreatSituation, but also colors state 0, as the old module did, and a group
+-- pet or another tank holding aggro.
 local function ForeverThreatColor(frame)
     local module = ScarletUI.db.global.nameplatesModule
     if not (module.enabled and module.threatColored and frame and frame.displayThreatHealthBarColor) then
@@ -472,6 +506,7 @@ local function ForeverThreatColor(frame)
 
     local isTank = PlayerUtil and PlayerUtil.IsPlayerEffectivelyTank and PlayerUtil.IsPlayerEffectivelyTank()
     if IsSecret(isTank) then return end
+    local group = isTank and "tankThreatColors" or "nonTankThreatColors"
     local status = frame.explicitThreatSituation  -- Blizzard's nameplate preview in the options.
     if status == nil then
         local unit = frame.displayedUnit
@@ -480,21 +515,25 @@ local function ForeverThreatColor(frame)
             or IsSecret(unit) or IsSecret(inParty) or inParty == false or not IsNameplateToken(unit) then
             return
         end
+        local situation = UnitThreatSituation("player", unit)
+        -- The player's own aggro comes first; a secret situation might be aggro, so skip the others.
+        if not IsSecret(situation) and (situation == nil or situation < 2) then
+            local key = OtherAggroKey(unit)
+            if key then return module[group][key] end
+        end
         if isTank then
             status = UnitThreatLeadSituation("player", unit)
             -- A lead of 0 also means no threat at all, so only call it a safe lead while tanking.
-            if not IsSecret(status) and status == 0 then
-                local situation = UnitThreatSituation("player", unit)
-                if IsSecret(situation) or situation ~= 3 then return end
+            if not IsSecret(status) and status == 0 and (IsSecret(situation) or situation ~= 3) then
+                return
             end
         else
-            status = UnitThreatSituation("player", unit)
+            status = situation
         end
     end
     -- Restricted threat state is secret and can't be looked up, so Blizzard's color stays.
     if IsSecret(status) or status == nil then return end
 
-    local group = isTank and "tankThreatColors" or "nonTankThreatColors"
     local key = FOREVER_THREAT_KEYS[group][status]
     return key and module[group][key]
 end
@@ -1554,11 +1593,14 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
         args.classColored, args.auras, args.targetIndicator, args.specialUnits = nil
         text.healthBarText, text.castBarText = nil
 
-        -- Threat colors repaint Blizzard's own threat health bar colors. Pet and tank threat need
-        -- every member's threat compared, which is secret in combat, and Tank Names only fed those.
+        -- Threat colors repaint Blizzard's own threat health bar colors.
         local colors = args.threatColors
         local Refresh = function() self:RefreshForeverThreatColors() end
-        colors.args.tankNames = nil
+        local setTankNames = colors.args.tankNames.set
+        colors.args.tankNames.set = function(info, value)
+            setTankNames(info, value)
+            Refresh()
+        end
         colors.args.threatColored.desc = "Use the colors below when Blizzard colors an enemy nameplate's health bar by threat. "
             .. "Blizzard's nameplate threat display setting must include the health bar color. "
             .. "In combat the game may hide threat from add-ons; Blizzard's colors show until it doesn't."
@@ -1571,16 +1613,19 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                 noThreat = "On the threat list, well behind the tank.",
                 lowThreat = "About to pull threat, or tanking while someone else has more threat.",
                 threat = "You have aggro.",
+                pet = "A pet in your group has aggro. Only in a group: Blizzard shows no threat colors solo.",
+                tank = "Another tank in your group has aggro (see Tank Names).",
             },
             tank = {
                 noThreat = "Someone else has aggro.",
                 lowThreat = "You have aggro, but someone is catching up.",
                 threat = "You have aggro with a safe lead.",
+                pet = "A pet in your group has aggro. Only in a group: Blizzard shows no threat colors solo.",
+                tank = "Another tank in your group has aggro (see Tank Names).",
             },
         }
         for group, groupDescs in pairs(descs) do
             local groupArgs = colors.args[group].args
-            groupArgs.pet, groupArgs.tank = nil
             for key, desc in pairs(groupDescs) do groupArgs[key].desc = desc end
         end
         colors.args.tank.desc = "Used when the game counts you as a tank: tank role, tank specialization, or a tanking form or aura."
@@ -1588,7 +1633,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
             name = "Reset Colors",
             desc = "Put both sets of threat colors back to ScarletUI's defaults.",
             type = "execute",
-            order = 3,
+            order = 4,
             func = function()
                 for _, settings in ipairs({ "nonTankThreatColors", "tankThreatColors" }) do
                     for key, color in pairs(defaults[settings]) do
