@@ -9,7 +9,7 @@ local BankCache = {}
 ScarletUI.BankCache = BankCache
 
 local IsSecret = issecretvalue or function() return false end
-local COLUMNS, SIZE, GAP = 12, 34, 4
+local COLUMNS, SIZE, GAP, DIM_ALPHA = 12, 34, 4, 0.25
 local TOOLTIP_COLOR = { r = 0.5, g = 0.75, b = 1 }
 
 local function NumSlots(bag)
@@ -110,6 +110,26 @@ function BankCache.Counts(cache, realm, itemID, current)
     return list
 end
 
+-- Item name from a saved link or "item:ID": the client's item data, else the
+-- [Name] saved inside the link, else nil while the client has not loaded it.
+function BankCache.ItemName(link)
+    local GetItemInfo = C_Item and C_Item.GetItemInfo or GetItemInfo
+    local name = GetItemInfo and GetItemInfo(link)
+    return name or link:match("%[(.-)%]")
+end
+
+-- Whether the item's name contains `query`, ignoring case and surrounding
+-- spaces; an empty query matches everything. Unknown names do not match.
+-- Second result: the name is not loaded yet, so asking again later may differ.
+-- ponytail: lower() folds ASCII only; accented capitals need a UTF-8 aware fold.
+function BankCache.Matches(link, query)
+    query = query:match("^%s*(.-)%s*$"):lower()
+    if query == "" then return true end
+    local name = BankCache.ItemName(link)
+    if not name then return false, true end
+    return name:lower():find(query, 1, true) ~= nil
+end
+
 local bankOpen, pending, viewer
 
 function ScarletUI:SnapshotBank()
@@ -189,7 +209,8 @@ function ScarletUI:SetupBankCache()
     HookTooltips()
 end
 
--- Viewer: the saved bank of a character on this realm, as item icons.
+-- Viewer: the saved bank of a character on this realm, as item icons. The
+-- search box dims items whose name does not match; the grid keeps its places.
 local function BuildViewer()
     viewer = CreateFrame("Frame", "ScarletUIBank", UIParent, "BasicFrameTemplateWithInset")
     viewer:SetSize(COLUMNS * (SIZE + GAP) + 44, 440)
@@ -210,9 +231,38 @@ local function BuildViewer()
     title:SetPoint("TOP", 0, -5)
     title:SetText("Scarlet UI Bank")
 
-    local selected
+    local selected, query, shown, waiting = nil, "", {}, false
+    -- Dim non-matches; items without loaded data wait for GET_ITEM_INFO_RECEIVED.
+    local buttons = {}
+    local function ApplyFilter()
+        waiting = false
+        for i, item in ipairs(shown) do
+            local match, unknown = BankCache.Matches(item.link, query)
+            waiting = waiting or unknown
+            buttons[i]:SetAlpha(match and 1 or DIM_ALPHA)
+        end
+    end
+
+    -- SearchBoxTemplate has the clear button and placeholder; older clients lack it.
+    local ok, search = pcall(CreateFrame, "EditBox", nil, viewer, "SearchBoxTemplate")
+    if not ok then search = CreateFrame("EditBox", nil, viewer, "InputBoxTemplate") end
+    search:SetAutoFocus(false)
+    search:SetHeight(20)
+    search:SetPoint("TOPLEFT", 18, -28)
+    search:SetPoint("TOPRIGHT", -14, -28)
+    search:HookScript("OnTextChanged", function(self)
+        query = self:GetText()
+        ApplyFilter()
+    end)
+    -- Escape clears the search first, then closes the frame.
+    search:SetScript("OnEscapePressed", function(self)
+        local hadText = self:GetText() ~= ""
+        self:SetText("")
+        self:ClearFocus()
+        if not hadText then viewer:Hide() end
+    end)
     local dropdown = CreateFrame("DropdownButton", nil, viewer, "WowStyle1DropdownTemplate")
-    dropdown:SetPoint("TOPLEFT", 12, -30)
+    dropdown:SetPoint("TOPLEFT", 12, -54)
     dropdown:SetWidth(180)
     dropdown:SetDefaultText("No banks saved")
     local lastSeen = viewer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -223,13 +273,12 @@ local function BuildViewer()
     -- ScrollFrameTemplate has the thin modern bar; older clients lack it.
     local ok, scroll = pcall(CreateFrame, "ScrollFrame", nil, viewer, "ScrollFrameTemplate")
     if not ok then scroll = CreateFrame("ScrollFrame", nil, viewer, "UIPanelScrollFrameTemplate") end
-    scroll:SetPoint("TOPLEFT", 14, -66)
+    scroll:SetPoint("TOPLEFT", 14, -90)
     scroll:SetPoint("BOTTOMRIGHT", -30, 10)
     local content = CreateFrame("Frame", nil, scroll)
     content:SetSize(COLUMNS * (SIZE + GAP), 1)
     scroll:SetScrollChild(content)
 
-    local buttons = {}
     local function Button(i)
         local button = buttons[i]
         if button then return button end
@@ -272,6 +321,7 @@ local function BuildViewer()
         lastSeen:SetText(entry and ("Last seen: " .. date("%Y-%m-%d %H:%M", entry.time)) or "")
         empty:SetText(not entry and "No bank saved yet. Open your bank to save it."
             or #items == 0 and "This bank was empty." or "")
+        shown = items
         for i, item in ipairs(items) do
             local button = Button(i)
             button.link = item.link
@@ -281,10 +331,23 @@ local function BuildViewer()
         end
         for i = #items + 1, #buttons do buttons[i]:Hide() end
         content:SetHeight(math.ceil(#items / COLUMNS) * (SIZE + GAP) + 8)
+        ApplyFilter()
     end
     viewer:SetScript("OnShow", function(self)
         PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN)
         self:Refresh()
+    end)
+    -- Closing by any route (X, Escape unfocused) starts the next opening unfiltered.
+    viewer:SetScript("OnHide", function() search:SetText("") end)
+    viewer:RegisterEvent("GET_ITEM_INFO_RECEIVED")
+    local queued
+    viewer:SetScript("OnEvent", function(self)
+        if not (waiting and self:IsShown()) or queued then return end
+        queued = true
+        C_Timer.After(0.1, function() -- item data arrives in bursts
+            queued = false
+            ApplyFilter()
+        end)
     end)
 end
 

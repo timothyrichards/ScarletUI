@@ -201,5 +201,30 @@ lines = {}
 scripts.game(GameTooltip)
 assert(#lines == 2 and lines[1] == "Bank (Alt): 1" and lines[2] == "Bank (Bank): 3" and scripts.ref)
 
+-- Search: names come from C_Item.GetItemInfo, else the global one, else the
+-- [Name] in the link; matching ignores case and surrounding spaces.
+local names = { [2589] = "Linen Cloth", [2592] = "Wool Cloth" }
+local function idOf(link) return tonumber(tostring(link):match("item:(%-?%d+)")) end
+C_Item = { GetItemInfo = function(link) return names[idOf(link)] end }
+assert(BankCache.ItemName("item:2589") == "Linen Cloth")
+assert(BankCache.Matches("item:2589", "linen") and BankCache.Matches("item:2589", "  LINEN CL "))
+assert(BankCache.Matches("item:2592", "cloth") and not BankCache.Matches("item:2592", "linen"))
+assert(BankCache.Matches("item:2589", "") and BankCache.Matches("item:2589", "   "))
+assert(BankCache.Matches("item:2589", "n.n") == false) -- plain text, not a pattern
+assert(BankCache.Matches("item:2589", "(") == false)
+-- Not loaded: no match, and flagged so the viewer asks again on GET_ITEM_INFO_RECEIVED.
+local match, unknown = BankCache.Matches("item:4306", "silk")
+assert(match == false and unknown == true)
+assert(select(2, BankCache.Matches("item:4306", "")) == nil) -- empty query needs no name
+names[4306] = "Silk Cloth"
+assert(BankCache.Matches("item:4306", "silk") == true and select(2, BankCache.Matches("item:4306", "silk")) == nil)
+-- The link's own [Name] covers items the client has not loaded.
+assert(BankCache.Matches(Link(9999), "item 9999") and not select(2, BankCache.Matches(Link(9999), "x")))
+-- Clients without C_Item use the global GetItemInfo.
+C_Item = nil
+GetItemInfo = function(link) return names[idOf(link)] end
+assert(BankCache.Matches("item:2589", "LINEN") and not BankCache.Matches("item:2589", "wool"))
+GetItemInfo = nil
+
 C_Bank, C_Container, TooltipDataProcessor, GameTooltip, ItemRefTooltip = nil, nil, nil, nil, nil
-print("PASS: cached bank snapshots on Classic, Retail, and Forever bank layouts, debounced updates, counts, and tooltips")
+print("PASS: cached bank snapshots on Classic, Retail, and Forever bank layouts, debounced updates, counts, tooltips, and name search")
