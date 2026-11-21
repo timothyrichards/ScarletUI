@@ -382,6 +382,27 @@ local function HideTargetArrows()
     end
 end
 
+-- A tank's lead is 0 when nobody is in second place (solo, or before the group engages). Blizzard
+-- hides a 0 lead, but add-ons can't compare a secret 0, so check whether any other group member or
+-- pet is on the unit's threat list. A secret threat situation might mean they are, so it counts.
+-- Units outside the group can't be found this way and are treated as absent.
+local function OthersOnThreatList(unitId)
+    RebuildPetUnitStrings()
+    local status, pet
+    for member in IterateGroupMembers() do
+        if not UnitIsUnit(member, "player") then
+            status = UnitThreatSituation(member, unitId)
+            if IsSecret(status) or status ~= nil then return true end
+        end
+        pet = petUnitStrings[member] or (member .. "pet")
+        if UnitExists(pet) then
+            status = UnitThreatSituation(pet, unitId)
+            if IsSecret(status) or status ~= nil then return true end
+        end
+    end
+    return false
+end
+
 -- Fallback for restricted threat, matching Blizzard's numeric target threat: a tank sees how far
 -- ahead of second place they are, anyone else sees their threat as a percent of the tank's.
 -- Secret values may only be passed to the font string, never compared or added.
@@ -409,6 +430,10 @@ local function ShowThreatPercent(nameplate, unitId, isTanking, rawPercent)
 
     local value = rawPercent
     if tanking and UnitThreatPercentageOfLead then
+        if not OthersOnThreatList(unitId) then
+            text:Hide()  -- No second place, so no lead to show.
+            return
+        end
         value = UnitThreatPercentageOfLead("player", unitId)
     end
     if not IsSecret(value) and (not value or value <= 0) then

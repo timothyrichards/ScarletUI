@@ -112,7 +112,7 @@ assert(not handlers.UNIT_AURA and not handlers.PLAYER_TARGET_CHANGED, "Forever r
 
 raid, members, assignments = false, 2, {}
 names = { player = "Me", Player = "Me", party1 = "Other", nameplate1 = "Boss" }
-threat = { Me = { tanking = true, status = 3, amount = 10000 }, Other = { amount = 6000 } }
+threat = { Me = { tanking = true, status = 3, amount = 10000 }, Other = { amount = 6000, situation = 0 } }
 local plate = Plate()
 plate.UnitFrame.healthBar.color = { 0.1, 0.2, 0.3 }
 local createdText = plate.threatAmountText
@@ -160,6 +160,26 @@ threat.Me.situation = 3
 Percent(secretLead, "secret tank threat didn't show the lead percent")
 threat.Me.situation = 1
 Percent(secretRaw, "secret non-tank threat didn't show the raw percent")
+-- A tank's lead is 0 with no second place, so nothing shows until someone else is on the threat list.
+threat.Me.situation, threat.Other.situation = 3, nil
+ScarletUI:UpdateNameplate("nameplate1")
+assert(not plate.threatAmountText.shown, "grouped tank alone on the threat list showed a lead")
+members, names.party1 = 1, nil
+now = now + 10
+ScarletUI:UpdateNameplate("nameplate1")
+assert(not plate.threatAmountText.shown, "solo tank showed a lead")
+names.playerpet, threat.Pet = "Pet", { situation = 0 }
+Percent(secretLead, "pet on the threat list didn't give a lead")
+threat.Pet.situation = nil
+ScarletUI:UpdateNameplate("nameplate1")
+assert(not plate.threatAmountText.shown, "pet off the threat list still gave a lead")
+names.playerpet, threat.Pet = nil, nil
+members, names.party1 = 2, "Other"
+now = now + 10
+threat.Other.situation = SECRET
+Percent(secretLead, "a member's secret threat situation hid the lead")
+threat.Other.situation = 0
+Percent(secretLead, "a member on the threat list didn't give a lead")
 -- Not on the threat list at all.
 threat.Me.situation = nil
 ScarletUI:UpdateNameplate("nameplate1")
