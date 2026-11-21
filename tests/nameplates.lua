@@ -1,12 +1,16 @@
 -- Run from the addon root: lua tests/nameplates.lua
 local function noop() end
 local handlers = {}
+local client = "VANILLA"
+local SECRET = {}
+issecretvalue = function(v) return v == SECRET end
 LibStub = function() return { NotifyChange = noop } end
 CreateFrame = function() return { SetScript = noop } end
 ScarletUI = {
     defaults = { global = {}, char = {} },
     originalUIDefaults = { global = {}, char = {} },
     RegisterEventHandler = function(_, event, fn) handlers[event] = fn end,
+    GetWoWVersion = function() return client end,
 }
 dofile("Modules/Nameplates.lua")
 ScarletUI.db = { global = { nameplatesModule = ScarletUI.defaults.global.nameplatesModule }, char = { priorityDebuffs = "" } }
@@ -41,7 +45,10 @@ local function Plate()
         GetStatusBarColor = function(self) return unpack(self.color) end,
     } } }
     plate.threatAmountText = {
-        SetTextColor = noop, Show = noop, Hide = noop,
+        SetTextColor = noop, ClearAllPoints = noop, SetFont = noop,
+        Show = function(self) self.shown = true end,
+        Hide = function(self) self.shown = false end,
+        SetPoint = function(self, _, relativeTo) self.relativeTo = relativeTo end,
         SetText = function(self, text) self.text = text end,
     }
     return plate
@@ -83,4 +90,64 @@ module.debuffTracker.track, module.buffTracker.track = false, false
 ScarletUI:CheckUnitAuras("nameplate1")
 assert(hidden == 2 and next(plates.nameplate1.myDebuffIcons) == nil, "aura icons stayed after tracking was disabled")
 
-print("PASS: nameplate raid threat lead, main tank detection, missing frames, and aura toggles")
+-- Classic keeps every settings tab.
+local page = ScarletUI:GetNameplatesModuleSettingsPage(ScarletUI.db.global, ScarletUI.defaults.global.nameplatesModule, 7)
+assert(page.args.auras and page.args.threatColors and page.args.text.args.healthBarText)
+
+-- Forever (lightweight mode) only adds the threat numbers, beside Blizzard's own colors.
+client, ScarletUI.lightWeightMode, ScarletUI.nameplateEventsRegistered, handlers = "FOREVER", true, nil, {}
+module.healthBarText.show, module.castBarText.show, module.threatColored = true, true, false
+CompactUnitFrame_UpdateHealthColor = noop
+hooksecurefunc = function() error("Forever must not hook Blizzard's health colors") end
+ScarletUI:SetupNameplates()
+assert(handlers.NAME_PLATE_UNIT_ADDED and handlers.UNIT_THREAT_LIST_UPDATE)
+assert(not handlers.UNIT_AURA and not handlers.PLAYER_TARGET_CHANGED, "Forever registered aura or arrow events")
+
+raid, members, assignments = false, 2, {}
+names = { player = "Me", Player = "Me", party1 = "Other", nameplate1 = "Boss" }
+threat = { Me = { tanking = true, status = 3, amount = 10000 }, Other = { amount = 6000 } }
+local plate = Plate()
+plate.UnitFrame.healthBar.color = { 0.1, 0.2, 0.3 }
+local createdText = plate.threatAmountText
+plate.threatAmountText = nil
+plate.CreateFontString = function() return createdText end
+plate.UnitFrame.healthBar.CreateFontString = function() error("Forever added health text") end
+plates = { nameplate1 = plate }
+now = now + 10
+handlers.NAME_PLATE_UNIT_ADDED(nil, "nameplate1")
+assert(plate.threatAmountText.text == "40" and plate.threatAmountText.shown, "Forever threat number missing")
+assert(plate.UnitFrame.healthBar.color[1] == 0.1, "Forever recolored Blizzard's health bar")
+assert(plate.threatAmountText.relativeTo == plate.UnitFrame.healthBar)
+
+-- Blizzard moves pooled UnitFrames between nameplates; the number follows the current health bar.
+local oldBar = plate.UnitFrame.healthBar
+plate.UnitFrame = Plate().UnitFrame
+plate.UnitFrame.healthBar.color = { 1, 0, 0 }
+ScarletUI:UpdateNameplate("nameplate1")
+assert(plate.threatAmountText.relativeTo == plate.UnitFrame.healthBar and plate.UnitFrame.healthBar ~= oldBar)
+
+-- Turning the threat text off keeps it hidden through later threat updates.
+module.threatAmountText.show = false
+ScarletUI:UpdateNameplate("nameplate1")
+assert(not plate.threatAmountText.shown, "threat text came back after it was turned off")
+module.threatAmountText.show = true
+
+-- Restricted (secret) threat hides the number instead of erroring on comparisons.
+threat.Me.amount = SECRET
+ScarletUI:UpdateNameplate("nameplate1")
+assert(not plate.threatAmountText.shown, "secret threat left the number shown")
+threat.Me.amount, threat.Other.amount = 10000, SECRET
+ScarletUI:UpdateNameplate("nameplate1")
+assert(plate.threatAmountText.shown, "another member's secret threat hid the player's number")
+
+-- Forever's settings page keeps only the switch and threat text.
+page = ScarletUI:GetNameplatesModuleSettingsPage(ScarletUI.db.global, ScarletUI.defaults.global.nameplatesModule, 7)
+assert(not page.hidden() and page.args.enabled and page.args.text.args.threatAmountText)
+assert(not page.args.auras and not page.args.threatColors and not page.args.specialUnits and not page.args.targetIndicator)
+assert(not page.args.classColored and not page.args.text.args.healthBarText and not page.args.text.args.castBarText)
+-- Retail stays hidden if the file ever loads there.
+client = "RETAIL"
+assert(ScarletUI:GetNameplatesModuleSettingsPage(ScarletUI.db.global, ScarletUI.defaults.global.nameplatesModule, 7).hidden())
+client, ScarletUI.lightWeightMode, hooksecurefunc, CompactUnitFrame_UpdateHealthColor, issecretvalue = "VANILLA", nil, nil, nil, nil
+
+print("PASS: nameplate raid threat lead, main tank detection, missing frames, aura toggles, and Forever threat numbers")

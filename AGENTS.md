@@ -6,7 +6,8 @@ this checkout; the TOCs and source are authoritative when client versions change
 ## Clients and loading
 
 All manifests load the same addon files in the same order, except that Vanilla,
-TBC, and Mists append `Modules\Bag.lua` and `Modules\Nameplates.lua`:
+TBC, and Mists append `Modules\Bag.lua` and `Modules\Nameplates.lua`, and Forever
+appends only `Modules\Nameplates.lua`:
 
 | Manifest | Client | Interface |
 | --- | --- | --- |
@@ -364,16 +365,27 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
     and Retail take a `UNIT_SPELLCAST_SUCCEEDED` of a Windfury spell the player
     does not know, unverified, and show no damage.
 - `Modules/Bag.lua`, `Modules/Nameplates.lua`: custom bag/bank frames and
-  nameplate threat colors, auras, and text. Classic UI clients only: listed in
-  just those three manifests so Retail and Forever never load them. Each file adds its
+  nameplate threat colors, auras, and text. Retail never loads either. Bag.lua is
+  in the Vanilla, TBC, and Mists manifests only; Nameplates.lua is also in the
+  Forever manifest. Each file adds its
   own AceDB defaults (`bagModule`, `nameplatesModule`, `char.priorityDebuffs`)
   and settings page; the parent checks `self.SetupBags`, `self.SetupNameplates`,
   and the `Get*SettingsPage` methods before using them.
+  On Forever (`ThreatOnly()` in Nameplates.lua) only the threat amount text runs:
+  `NAME_PLATE_UNIT_ADDED`/`REMOVED` and `UNIT_THREAT_LIST_UPDATE`. No health
+  colors, `CompactUnitFrame_UpdateHealthColor` hook, auras, target arrows, or
+  health/cast text, and the settings page keeps only the switch and the Threat
+  Text group. The number takes Blizzard's health bar color. Forever pools
+  nameplate UnitFrames, so `AnchorThreatText` re-anchors to the current
+  `healthBar`. Forever can return threat values as secrets
+  (`C_Secrets.ShouldUnitThreatValuesBeSecret`). A secret value from another group
+  member is left out of the lead, and a secret value for the player hides the number.
 - `embeds.xml`: bundled library loading; `.pkgmeta`: CurseForge packaging and
   external Ace3, LibStub, serialization, and LibEditModeOverride dependencies.
 
 The actionbar, movers, unit-frame, and raid-frame modules have been removed.
-Blizzard handles those frames, and bags and nameplates on Retail and Forever. Keep native bag/bank
+Blizzard handles those frames, bags on Retail and Forever, and nameplates on Retail
+(and on Forever apart from the threat numbers). Keep native bag/bank
 item-level overlays and the independent CVar controls when changing related code.
 
 Raid display CVars are managed by `Modules/CVars.lua` with defaults in

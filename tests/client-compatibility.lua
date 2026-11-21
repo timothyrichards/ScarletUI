@@ -65,10 +65,11 @@ for _, client in ipairs({ "Mainline", "Camelot", "Vanilla", "TBC", "Mists" }) do
     file:close()
     assert(contents:match("## LoadSavedVariablesFirst: 1[\r\n]"), client .. " must load saved settings first")
 end
--- Era, TBC, and Mists append the Classic-UI-only modules so Retail and Forever never load them.
+-- Era, TBC, and Mists append the Classic-UI-only modules so Retail never loads them.
+-- Forever adds only Nameplates.lua, for its threat numbers.
 local modern = manifestFiles("ScarletUI-Mainline.toc")
 local classic = modern .. "\nModules\\Bag.lua\nModules\\Nameplates.lua"
-for client, expected in pairs({ Camelot = { 16001, modern }, Vanilla = { 11509, classic }, TBC = { 20506, classic },
+for client, expected in pairs({ Camelot = { 16001, modern .. "\nModules\\Nameplates.lua" }, Vanilla = { 11509, classic }, TBC = { 20506, classic },
     Mists = { 50504, classic } }) do
     local path = "ScarletUI-" .. client .. ".toc"
     local manifest = assert(io.open(path, "r"))

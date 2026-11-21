@@ -39,3 +39,6 @@ Modules\TidyIcons.lua
 Modules\Tooltips.lua
 Modules\Writs.lua
 Modules\ZoneLevels.lua
+
+# Forever: nameplate threat numbers only
+Modules\Nameplates.lua

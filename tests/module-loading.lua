@@ -85,7 +85,7 @@ for _, oldSettings in ipairs({ false, true }) do
     for _ in pairs(bagPage.args) do bagGroups = bagGroups + 1 end
     assert(bagPage.name == "Bags" and bagPage.args.sortSettings and bagPage.args.highlightSettings and bagGroups == 3)
     assert(options.args.editModeSettings and options.args.actionBarTogglesSettings)
-    -- Retail and Forever never load Bag.lua or Nameplates.lua, so their toggles do not exist.
+    -- Retail never loads Bag.lua or Nameplates.lua, and Forever never loads Bag.lua, so these toggles do not exist.
     assert(bagPage.args.enabled == nil and bagPage.args.shareSorting.order < bagPage.args.sortSettings.order)
     assert(options.args.toggleMovers == nil and options.args.resetPositions == nil)
     assert(options.args.generalSettings.args.interface.args.clampMovers == nil)
@@ -1699,6 +1699,9 @@ assert(ScarletUI.defaults.char.priorityDebuffs == "" and StaticPopupDialogs.SCAR
 ScarletUI.db.global.bagModule = ScarletUI.defaults.global.bagModule
 ScarletUI.db.global.nameplatesModule = ScarletUI.defaults.global.nameplatesModule
 ScarletUI.lightWeightMode = false
+-- These tests run as Forever, which only gets the threat numbers; check the Classic page here.
+local foreverVersion = ScarletUI.GetWoWVersion
+ScarletUI.GetWoWVersion = function() return "VANILLA", 11509 end
 local legacyOptions = ScarletUI:Options()
 assert(legacyOptions.args.bagModuleSettings and legacyOptions.args.nameplatesModuleSettings)
 -- Sorting joins the Classic Bag page and stays visible when ElvUI hides the custom bag groups.
@@ -1714,6 +1717,7 @@ ScarletUI.ReapplySettingsToAuraIcons = noop
 auraOptions.debuffs.args.track.set(nil, false)
 assert(not ScarletUI.db.global.nameplatesModule.debuffTracker.track and ScarletUI.db.global.nameplatesModule.buffTracker.track)
 auraOptions.debuffs.args.track.set(nil, true)
+ScarletUI.GetWoWVersion = foreverVersion
 calls = {}
 local legacyMethods = { "SetupBags", "SetupBank", "SetupNameplates" }
 for _, name in ipairs(setupMethods) do ScarletUI[name] = noop end

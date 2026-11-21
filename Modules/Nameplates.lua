@@ -1,5 +1,6 @@
--- Classic UI clients only: listed in the Vanilla, TBC, and Mists manifests, so
--- Retail and Forever never load it.
+-- Listed in the Vanilla, TBC, Mists, and Forever manifests; Retail never loads it.
+-- Forever only gets the threat numbers: Blizzard keeps its own nameplate colors,
+-- auras, and text there.
 ScarletUI.defaults.global.nameplatesModule = {
     enabled = true,
     classColored = true,
@@ -108,7 +109,23 @@ ScarletUI.defaults.char.priorityDebuffs = ""
 ScarletUI.originalUIDefaults.char.priorityDebuffs = ""
 
 local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
+local IsSecret = issecretvalue or function() return false end
 local lastNameplate
+
+local function ThreatOnly()
+    return ScarletUI:GetWoWVersion() == "FOREVER"
+end
+
+-- Forever hands each nameplate a pooled UnitFrame, so follow the current health bar.
+local function AnchorThreatText(nameplate)
+    local healthBar = nameplate.UnitFrame and nameplate.UnitFrame.healthBar
+    local text = nameplate.threatAmountText
+    if text and healthBar and text.anchoredTo ~= healthBar then
+        text:ClearAllPoints()
+        text:SetPoint("RIGHT", healthBar, "LEFT", -30, 0)
+        text.anchoredTo = healthBar
+    end
+end
 
 -- Threat throttle: batch UNIT_THREAT_LIST_UPDATE into 0.1s intervals
 local dirtyThreatUnits = {}
@@ -214,7 +231,8 @@ local function ThreatFunc(unit)
     for member in IterateGroupMembers() do
         threat = select(5, UnitDetailedThreatSituation(member, unit))
 
-        if threat then
+        -- Restricted threat is secret on Forever and can't be compared.
+        if threat and not IsSecret(threat) then
             if threat > firstThreat then
                 secondUnit = firstUnit
                 secondThreat = firstThreat
@@ -230,7 +248,7 @@ local function ThreatFunc(unit)
         if UnitExists(pet) then
             threat = select(5, UnitDetailedThreatSituation(pet, unit))
 
-            if threat then
+            if threat and not IsSecret(threat) then
                 if threat > firstThreat then
                     secondUnit = firstUnit
                     secondThreat = firstThreat
@@ -321,6 +339,20 @@ local function SetupNameplate(nameplate)
     local module = ScarletUI.db.global.nameplatesModule
 
     local healthBar = nameplate.UnitFrame and nameplate.UnitFrame.healthBar
+    if module.threatAmountText.show and healthBar then
+        if not nameplate.threatAmountText then
+            nameplate.threatAmountText = nameplate:CreateFontString(nil, "OVERLAY", "GameFontWhite")
+        end
+        nameplate.threatAmountText:SetFont("Fonts\\FRIZQT__.TTF", module.threatAmountText.fontSize, "OUTLINE")
+        AnchorThreatText(nameplate)
+    elseif nameplate.threatAmountText then
+        nameplate.threatAmountText:Hide()
+    end
+
+    if ThreatOnly() then
+        return
+    end
+
     if module.healthBarText.show then
         if healthBar then
             if not healthBar.healthBarText then
@@ -342,18 +374,6 @@ local function SetupNameplate(nameplate)
         end
     elseif healthBar and healthBar.healthBarText then
         healthBar.healthBarText:Hide()
-    end
-
-    if module.threatAmountText.show and healthBar then
-        if not nameplate.threatAmountText then
-            nameplate.threatAmountText = nameplate:CreateFontString(nil, "OVERLAY", "GameFontWhite")
-            nameplate.threatAmountText:SetPoint("RIGHT", healthBar, "LEFT", -30, 0)
-            nameplate.threatAmountText:SetFont("Fonts\\FRIZQT__.TTF", module.threatAmountText.fontSize, "OUTLINE")
-        else
-            nameplate.threatAmountText:SetFont("Fonts\\FRIZQT__.TTF", module.threatAmountText.fontSize, "OUTLINE")
-        end
-    elseif nameplate.threatAmountText then
-        nameplate.threatAmountText:Hide()
     end
 
     local castBar = nameplate.UnitFrame and (nameplate.UnitFrame.CastBar or nameplate.UnitFrame.castBar)
@@ -443,24 +463,33 @@ function ScarletUI:UpdateNameplate(unitId)
     if not nameplate then
         return
     end
-    local unitName, _ = UnitName(unitId)
+    local threatOnly = ThreatOnly()
+    if not threatOnly then
+        local unitName, _ = UnitName(unitId)
 
-    if nameplatesModule.specialUnitsColored and self.specialUnits[unitName] and nameplate.UnitFrame then
-        nameplate.UnitFrame.healthBar:SetStatusBarColor(unpack(nameplatesModule.specialUnitColor))
-        return
-    end
+        if nameplatesModule.specialUnitsColored and self.specialUnits[unitName] and nameplate.UnitFrame then
+            nameplate.UnitFrame.healthBar:SetStatusBarColor(unpack(nameplatesModule.specialUnitColor))
+            return
+        end
 
-    if not nameplatesModule.threatColored then
-        return
+        if not nameplatesModule.threatColored then
+            return
+        end
     end
 
     local isTanking, threatStatus, _, _, threatValue = UnitDetailedThreatSituation("player", unitId)
+    if IsSecret(threatValue) or IsSecret(isTanking) then
+        if nameplate.threatAmountText then
+            nameplate.threatAmountText:Hide()
+        end
+        return
+    end
     local firstUnit, firstThreat, _, secondThreat = ThreatFunc(unitId)
 
     local displayValue
 
     local threatColorGroup = nameplatesModule.nonTankThreatColors
-    if IsTank(UnitName("Player")) then
+    if not threatOnly and IsTank(UnitName("Player")) then
         threatColorGroup = nameplatesModule.tankThreatColors
     end
 
@@ -468,11 +497,11 @@ function ScarletUI:UpdateNameplate(unitId)
         threatStatus = 4
     end
 
-    if firstUnit and IsTank(UnitName(firstUnit)) and not UnitIsUnit(firstUnit, "Player") then
+    if not threatOnly and firstUnit and IsTank(UnitName(firstUnit)) and not UnitIsUnit(firstUnit, "Player") then
         threatStatus = 5
     end
 
-    if nameplate.UnitFrame then
+    if nameplate.UnitFrame and not threatOnly then
         if UnitIsPlayer(unitId) and nameplatesModule.classColored then
             local _, class = UnitClass(unitId)
             local color = RAID_CLASS_COLORS[class]
@@ -508,14 +537,15 @@ function ScarletUI:UpdateNameplate(unitId)
     else
         displayValue = threatValue - firstThreat
 
-        if firstUnit and not UnitIsUnit(firstUnit, "Player") and self.tanks[UnitName(firstUnit)] then
+        if not threatOnly and firstUnit and not UnitIsUnit(firstUnit, "Player") and self.tanks[UnitName(firstUnit)] then
             threatStatus = 4
         end
     end
 
     -- Update the threat amount text
     if nameplate.UnitFrame and nameplate.threatAmountText then
-        if threatValue and threatValue > 0 then
+        if threatValue and threatValue > 0 and nameplatesModule.threatAmountText.show then
+            AnchorThreatText(nameplate)
             local r, g, b = nameplate.UnitFrame.healthBar:GetStatusBarColor()
             nameplate.threatAmountText:SetTextColor(r, g, b)
 
@@ -675,7 +705,8 @@ end
 
 function ScarletUI:SetupNameplates()
     local nameplatesModule = self.db.global.nameplatesModule
-    if not nameplatesModule.enabled or self.lightWeightMode then
+    local threatOnly = ThreatOnly()
+    if not nameplatesModule.enabled or (self.lightWeightMode and not threatOnly) then
         return
     end
 
@@ -688,7 +719,7 @@ function ScarletUI:SetupNameplates()
         self.nameplateEventsRegistered = true
 
         -- Hook Blizzard's health color update so our threat colors aren't overwritten
-        if CompactUnitFrame_UpdateHealthColor then
+        if CompactUnitFrame_UpdateHealthColor and not threatOnly then
             hooksecurefunc("CompactUnitFrame_UpdateHealthColor", function(frame)
                 if frame and frame.unit and strmatch(frame.unit, "^nameplate") then
                     ScarletUI:UpdateNameplate(frame.unit)
@@ -696,18 +727,28 @@ function ScarletUI:SetupNameplates()
             end)
         end
 
-        self:RegisterEventHandler("PLAYER_TARGET_CHANGED", function()
-            if ScarletUI.pauseEvents then return end
-            ScarletUI:UpdateTargetArrows()
-        end)
+        if not threatOnly then
+            self:RegisterEventHandler("PLAYER_TARGET_CHANGED", function()
+                if ScarletUI.pauseEvents then return end
+                ScarletUI:UpdateTargetArrows()
+            end)
 
-        self:RegisterEventHandler("UNIT_AURA", function(_, unitId)
-            if ScarletUI.pauseEvents then return end
-            ScarletUI:CheckUnitAuras(unitId)
-        end)
+            self:RegisterEventHandler("UNIT_AURA", function(_, unitId)
+                if ScarletUI.pauseEvents then return end
+                ScarletUI:CheckUnitAuras(unitId)
+            end)
+        end
 
         self:RegisterEventHandler("NAME_PLATE_UNIT_ADDED", function(_, unitId)
             if ScarletUI.pauseEvents then return end
+            if threatOnly then
+                local nameplate = C_NamePlate.GetNamePlateForUnit(unitId)
+                if nameplate then
+                    SetupNameplate(nameplate)
+                end
+                ScarletUI:UpdateNameplate(unitId)
+                return
+            end
             ScarletUI:CheckUnitAuras(unitId)
             ScarletUI:UpdateNameplate(unitId)
             ScarletUI:UpdateTargetArrows()
@@ -720,13 +761,15 @@ function ScarletUI:SetupNameplates()
 
         self:RegisterEventHandler("NAME_PLATE_UNIT_REMOVED", function(_, unitId)
             if ScarletUI.pauseEvents then return end
-            ScarletUI:CheckUnitAuras(unitId)
+            if not threatOnly then
+                ScarletUI:CheckUnitAuras(unitId)
+            end
             ScarletUI:UpdateNameplate(unitId)
         end)
 
         self:RegisterEventHandler("UNIT_THREAT_LIST_UPDATE", function(_, unitId)
             if ScarletUI.pauseEvents then return end
-            if unitId then
+            if unitId and not IsSecret(unitId) then
                 dirtyThreatUnits[unitId] = true
             end
         end)
@@ -998,6 +1041,7 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
     local characterDatabase = self.db.char;
 
     local function ModuleOff() return ScarletUI:SettingDisabled(module.enabled, true) end
+    local threatOnly = ThreatOnly()
 
     local function Toggle(name, desc, toggleOrder, settings, key, apply, width)
         return {
@@ -1109,13 +1153,13 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
         end,
     }
 
-    return {
+    local page = {
         name = "Nameplates",
         desc = "Nameplate threat colors, auras, and text.",
         type = "group",
         childGroups = "tab",
         order = order,
-        hidden = function() return self.lightWeightMode end,
+        hidden = function() return self.lightWeightMode and not threatOnly end,
         args = {
             enabled = {
                 name = "Enable Nameplates",
@@ -1246,4 +1290,14 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
             }
         }
     }
+
+    -- Forever only has the threat numbers.
+    if threatOnly then
+        local args, text = page.args, page.args.text.args
+        page.desc = "Threat numbers beside Blizzard's nameplates."
+        args.enabled.desc = "Show how far you lead or trail on threat beside each nameplate. Turning this off reloads the UI."
+        args.classColored, args.auras, args.targetIndicator, args.threatColors, args.specialUnits = nil
+        text.healthBarText, text.castBarText = nil
+    end
+    return page
 end
