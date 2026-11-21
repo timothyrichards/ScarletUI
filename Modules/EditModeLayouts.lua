@@ -1,4 +1,4 @@
-ScarletUI.editModeLayoutSchemaVersion = 22
+ScarletUI.editModeLayoutSchemaVersion = 23
 
 ScarletUI.editModeFrameCandidates = {
     -- MainActionBar is the Edit Mode system. MainMenuBar is the 1024px
@@ -123,9 +123,9 @@ local swingTimerSettings = {
 
 -- Frames with relativeTo snap to another layout key, matching Blizzard's
 -- stacked-bar anchors. Screen anchors use the nearest screen edge so they
--- hold across UI scales. The group frames, Essential cooldowns, and swing timers
--- line up with the bottom-center unit frames, so they anchor to the bottom
--- center too; offsets were captured on a 2133x1200 UIParent (1440p).
+-- hold across UI scales. The Essential cooldowns and swing timers line up with
+-- the bottom-center unit frames, so they anchor to the bottom center too; the
+-- group frames hang from the top-left corner. Offsets were captured on a 2133x1200 UIParent (1440p).
 -- A fallback is the screen anchor used when the relativeTo frame is missing.
 local standardFrames = {
     mainMenuBar = {
@@ -337,7 +337,7 @@ local standardFrames = {
         settings = buffBarSettings,
     },
     partyFrame = {
-        point = "TOPLEFT", relativePoint = "BOTTOM", x = -448, y = 628,
+        point = "TOPLEFT", relativePoint = "TOPLEFT", x = 614.7, y = -472,
         settings = GroupAuraSettings({
             UnitFrameSetting("UseRaidStylePartyFrames", 1),
             UnitFrameSetting("ShowPartyFrameBackground", 0),
@@ -350,7 +350,7 @@ local standardFrames = {
         }),
     },
     raidFrame = {
-        point = "TOPLEFT", relativePoint = "BOTTOM", x = -798, y = 832,
+        point = "TOPLEFT", relativePoint = "TOPLEFT", x = 264.7, y = -268,
         settings = GroupAuraSettings({
             UnitFrameSetting("RaidGroupDisplayType", EnumValue("RaidGroupDisplayType", "SeparateGroupsHorizontal")),
             UnitFrameSetting("SortPlayersBy", EnumValue("SortPlayersBy", "Group")),

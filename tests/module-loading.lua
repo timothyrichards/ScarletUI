@@ -149,8 +149,8 @@ for _, variant in ipairs({ "STANDARD", "COMPACT", "ULTRAWIDE" }) do
     if variant == "COMPACT" then
         assert(anchors.raidFrame[1] == 196.6 and anchors.raidFrame[2] == -174)
     else
-        assert(anchors.raidFrame[1] == -798 and anchors.raidFrame[2] == 832)
-        assert(anchors.partyFrame[1] == -448 and anchors.partyFrame[2] == 628)
+        assert(anchors.raidFrame[1] == 264.7 and anchors.raidFrame[2] == -268)
+        assert(anchors.partyFrame[1] == 614.7 and anchors.partyFrame[2] == -472)
     end
     assert(anchors.swingTimerOffHand[4] == "swingTimerMainHand" and anchors.totemBar[4] == "multiBarBottomRight")
     assert(anchors.utilityCooldowns[3] == "BOTTOM" and anchors.utilityCooldowns[4] == "essentialCooldowns")
