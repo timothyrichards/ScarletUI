@@ -127,17 +127,25 @@ Fire("BAG_UPDATE", 7)
 RunTimers()
 saved = ScarletUI.db.global.bankCache["Scarlet - Realm"]
 assert(saved.time == 2000 and saved.counts[2589] == 200)
--- A burst that ends with the bank closing keeps the last snapshot.
+-- A change just before closing is saved at the close, while still readable.
+now = 2500
+bags[6][2][1] = { 2589, 150 }
 Fire("BAG_UPDATE", 6)
 Fire("BANKFRAME_CLOSED")
+saved = ScarletUI.db.global.bankCache["Scarlet - Realm"]
+assert(saved.time == 2500 and saved.counts[2589] == 150)
+-- The queued timer then finds the bank closed and saves nothing more.
 bags[6][2][1] = nil
 RunTimers()
-assert(ScarletUI.db.global.bankCache["Scarlet - Realm"].counts[2589] == 200)
+assert(ScarletUI.db.global.bankCache["Scarlet - Realm"].counts[2589] == 150)
+-- Closing with nothing queued reads nothing.
+Fire("BANKFRAME_CLOSED")
+assert(ScarletUI.db.global.bankCache["Scarlet - Realm"].counts[2589] == 150)
 -- Switched off, it stops saving.
 ScarletUI.db.global.bankCacheModule.enabled = false
 Fire("BANKFRAME_OPENED")
 RunTimers()
-assert(ScarletUI.db.global.bankCache["Scarlet - Realm"].counts[2589] == 200)
+assert(ScarletUI.db.global.bankCache["Scarlet - Realm"].counts[2589] == 150)
 ScarletUI.db.global.bankCacheModule.enabled = true
 Fire("BANKFRAME_CLOSED")
 

@@ -173,6 +173,9 @@ function ScarletUI:SetupBankCache()
         if event == "BANKFRAME_OPENED" then
             bankOpen = true
         elseif event == "BANKFRAME_CLOSED" then
+            -- The bank is still readable now; save a change made just before
+            -- closing. The queued timer then finds the bank closed.
+            if pending then self:SnapshotBank() end
             bankOpen = false
         end
         if bankOpen then self:ScheduleBankSnapshot() end
