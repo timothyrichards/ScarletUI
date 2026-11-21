@@ -384,7 +384,9 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   (`ApplyForeverThreatColor`, also run on each threat refresh) repaints the bar
   with `nonTankThreatColors`/`tankThreatColors` (noThreat, lowThreat, threat
   only; states 1 and 2 share lowThreat as in Blizzard), and keeps Blizzard's color
-  when the state is secret, nil, or solo. The settings page keeps the switch, the
+  when the state is secret, nil, or solo. A tank's lead 0 also means no threat, so
+  it only counts as a safe lead while `UnitThreatSituation` is 3. On
+  `colorHealthWithExtendedColors` plates the `selectionHighlight` gets the color too. The settings page keeps the switch, the
   Threat Text group, and Threat Colors without pet/tank colors or Tank Names, plus
   Reset Colors. The number takes the health bar color. Forever pools
   nameplate UnitFrames, so `AnchorThreatText` re-anchors to the current

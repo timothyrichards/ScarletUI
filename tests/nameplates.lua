@@ -294,7 +294,7 @@ for situation, key in pairs({ [0] = "noThreat", "lowThreat", "lowThreat", "threa
     threat.Me.situation = situation
     ExpectColor(frame, "nonTankThreatColors", key, "DPS threat situation " .. situation .. " didn't use " .. key)
 end
-isTank = true
+isTank, threat.Me.situation = true, 3
 for lead, key in pairs({ [0] = "threat", "lowThreat", "lowThreat", "noThreat" }) do
     threat.Me.leadSituation = lead
     ExpectColor(frame, "tankThreatColors", key, "tank lead situation " .. lead .. " didn't use " .. key)
@@ -302,8 +302,27 @@ end
 -- Blizzard's color stays whenever it isn't coloring by threat, or the state can't be read.
 threat.Me.leadSituation = nil
 ExpectBlizzard(frame, "tank off the threat list was recolored")
+-- A lead of 0 is also "no threat": idle mobs a grouped tank isn't on keep Blizzard's color.
+threat.Me.leadSituation, threat.Me.situation = 0, nil
+ExpectBlizzard(frame, "tank lead 0 off the threat list was painted as a safe lead")
+threat.Me.situation = 1
+ExpectBlizzard(frame, "tank lead 0 without aggro was painted as a safe lead")
 local secretState = setmetatable({}, secretMeta)
 secretSet[secretState] = true
+threat.Me.situation = secretState
+ExpectBlizzard(frame, "tank lead 0 with a secret threat situation was recolored")
+threat.Me.situation = 3
+ExpectColor(frame, "tankThreatColors", "threat", "tank holding aggro lost the safe lead color")
+-- Blizzard tints the target highlight to the bar color on extended-color plates, so it follows ours.
+frame.selectionHighlight = { SetVertexColor = function(self, ...) self.color = { ... } end }
+frame.optionTable.colorHealthWithExtendedColors = true
+ExpectColor(frame, "tankThreatColors", "threat", "tank holding aggro lost the safe lead color")
+local threatColor = module.tankThreatColors.threat
+assert(frame.selectionHighlight.color[1] == threatColor[1] and frame.selectionHighlight.color[2] == threatColor[2]
+    and frame.selectionHighlight.color[3] == threatColor[3], "target highlight kept Blizzard's threat color")
+frame.selectionHighlight.color, frame.optionTable.colorHealthWithExtendedColors = nil, nil
+ApplyColors(frame)
+assert(frame.selectionHighlight.color == nil, "target highlight tinted without extended colors")
 threat.Me.leadSituation = secretState
 ExpectBlizzard(frame, "secret tank threat state was recolored")
 isTank = SECRET

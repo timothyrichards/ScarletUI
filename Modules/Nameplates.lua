@@ -482,6 +482,11 @@ local function ForeverThreatColor(frame)
         end
         if isTank then
             status = UnitThreatLeadSituation("player", unit)
+            -- A lead of 0 also means no threat at all, so only call it a safe lead while tanking.
+            if not IsSecret(status) and status == 0 then
+                local situation = UnitThreatSituation("player", unit)
+                if IsSecret(situation) or situation ~= 3 then return end
+            end
         else
             status = UnitThreatSituation("player", unit)
         end
@@ -498,6 +503,10 @@ local function ApplyForeverThreatColor(frame)
     local color = ForeverThreatColor(frame)
     if color and frame.healthBar then
         frame.healthBar:SetStatusBarColor(unpack(color))
+        -- Blizzard tints the target highlight to match the bar on these plates.
+        if frame.selectionHighlight and frame.optionTable and frame.optionTable.colorHealthWithExtendedColors then
+            frame.selectionHighlight:SetVertexColor(color[1], color[2], color[3])
+        end
     end
 end
 
