@@ -16,6 +16,13 @@ ScarletUI = {
     GetWoWVersion = function() return client end,
 }
 dofile("Modules/Nameplates.lua")
+local function DeepCopy(t)
+    if type(t) ~= "table" then return t end
+    local copy = {}
+    for k, v in pairs(t) do copy[k] = DeepCopy(v) end
+    return copy
+end
+local pristineDefaults = DeepCopy(ScarletUI.defaults.global.nameplatesModule)
 ScarletUI.db = { global = { nameplatesModule = ScarletUI.defaults.global.nameplatesModule }, char = { priorityDebuffs = "" } }
 local module = ScarletUI.db.global.nameplatesModule
 ScarletUI:SetupNameplates()
@@ -100,13 +107,22 @@ assert(hidden == 2 and next(plates.nameplate1.myDebuffIcons) == nil, "aura icons
 -- Classic keeps every settings tab.
 local page = ScarletUI:GetNameplatesModuleSettingsPage(ScarletUI.db.global, ScarletUI.defaults.global.nameplatesModule, 7)
 assert(page.args.auras and page.args.threatColors and page.args.text.args.healthBarText)
+local classicColors = page.args.threatColors.args
+assert(classicColors.nonTank.args.pet and classicColors.tank.args.tank and classicColors.tankNames, "Classic lost threat color settings")
+assert(not classicColors.resetColors and not classicColors.nonTank.args.noThreat.desc, "Classic got Forever's threat color settings")
+local classicColor = module.nonTankThreatColors.noThreat
+classicColors.nonTank.args.noThreat.set(nil, 0.1, 0.2, 0.3, 1)  -- No Forever repaint, so no GetNamePlates call.
+assert(module.nonTankThreatColors.noThreat[1] == 0.1)
+module.nonTankThreatColors.noThreat = classicColor
 
 -- Forever (lightweight mode) only adds the threat numbers, beside Blizzard's own colors.
 client, ScarletUI.lightWeightMode, ScarletUI.nameplateEventsRegistered, handlers = "FOREVER", true, nil, {}
 module.healthBarText.show, module.castBarText.show, module.threatColored = true, true, false
 CompactUnitFrame_UpdateHealthColor = noop
-hooksecurefunc = function() error("Forever must not hook Blizzard's health colors") end
+local hooked = {}
+hooksecurefunc = function(name, fn) assert(not hooked[name], "hooked twice") hooked[name] = fn end
 ScarletUI:SetupNameplates()
+assert(hooked.CompactUnitFrame_UpdateHealthColor, "Forever didn't post-hook Blizzard's health colors")
 assert(handlers.NAME_PLATE_UNIT_ADDED and handlers.UNIT_THREAT_LIST_UPDATE)
 assert(not handlers.UNIT_AURA and not handlers.PLAYER_TARGET_CHANGED, "Forever registered aura or arrow events")
 
@@ -240,12 +256,125 @@ threat.Me = { tanking = true, status = 3, amount = 10000 }
 -- Forever's settings page keeps only the switch and threat text.
 page = ScarletUI:GetNameplatesModuleSettingsPage(ScarletUI.db.global, ScarletUI.defaults.global.nameplatesModule, 7)
 assert(not page.hidden() and page.args.enabled and page.args.text.args.threatAmountText)
-assert(not page.args.auras and not page.args.threatColors and not page.args.specialUnits and not page.args.targetIndicator)
+assert(not page.args.auras and not page.args.specialUnits and not page.args.targetIndicator)
 assert(not page.args.classColored and not page.args.text.args.healthBarText and not page.args.text.args.castBarText)
+
+-- Forever paints its own threat colors over Blizzard's, from the post-hook, in Blizzard's threat states.
+local ApplyColors = hooked.CompactUnitFrame_UpdateHealthColor
+local inParty, isTank = true, false
+UnitInParty = function() return inParty end
+PlayerUtil = { IsPlayerEffectivelyTank = function() return isTank end }
+UnitThreatLeadSituation = function(unit) local value = threat[names[unit]] return value and value.leadSituation end
+local function ThreatFrame()
+    local frame = Plate().UnitFrame
+    frame.unit, frame.displayedUnit, frame.displayThreatHealthBarColor = "nameplate1", "nameplate1", true
+    frame.optionTable = { usePlayerForAggroHighlightThreat = true }
+    frame.healthBar.color = { 0.5, 0.5, 0.5 }
+    return frame
+end
+local function SameColor(actual, expected)
+    for i = 1, 4 do if actual[i] ~= expected[i] then return false end end
+    return true
+end
+local function ExpectColor(frame, group, key, message)
+    frame.healthBar.color = { 0.5, 0.5, 0.5 }
+    ApplyColors(frame)
+    assert(SameColor(frame.healthBar.color, module[group][key]), message)
+end
+local function ExpectBlizzard(frame, message)
+    frame.healthBar.color = { 0.5, 0.5, 0.5 }
+    ApplyColors(frame)
+    assert(frame.healthBar.color[1] == 0.5, message)
+end
+module.threatColored = true
+names = { player = "Me", Player = "Me", party1 = "Other", nameplate1 = "Boss" }
+threat = { Me = {}, Other = { amount = 6000 } }
+local frame = ThreatFrame()
+for situation, key in pairs({ [0] = "noThreat", "lowThreat", "lowThreat", "threat" }) do
+    threat.Me.situation = situation
+    ExpectColor(frame, "nonTankThreatColors", key, "DPS threat situation " .. situation .. " didn't use " .. key)
+end
+isTank = true
+for lead, key in pairs({ [0] = "threat", "lowThreat", "lowThreat", "noThreat" }) do
+    threat.Me.leadSituation = lead
+    ExpectColor(frame, "tankThreatColors", key, "tank lead situation " .. lead .. " didn't use " .. key)
+end
+-- Blizzard's color stays whenever it isn't coloring by threat, or the state can't be read.
+threat.Me.leadSituation = nil
+ExpectBlizzard(frame, "tank off the threat list was recolored")
+local secretState = setmetatable({}, secretMeta)
+secretSet[secretState] = true
+threat.Me.leadSituation = secretState
+ExpectBlizzard(frame, "secret tank threat state was recolored")
+isTank = SECRET
+threat.Me.leadSituation, threat.Me.situation = 3, 3
+ExpectBlizzard(frame, "a secret tank check picked a color")
+isTank = false
+ExpectColor(frame, "nonTankThreatColors", "threat", "readable threat lost its color")
+threat.Me.situation = secretState
+ExpectBlizzard(frame, "secret DPS threat state was recolored")
+threat.Me.situation = 3
+frame.displayedUnit = SECRET
+ExpectBlizzard(frame, "secret unit token was looked up")
+frame.displayedUnit = "nameplate1"
+frame.displayThreatHealthBarColor = false
+ExpectBlizzard(frame, "recolored with Blizzard's threat health bar color off")
+frame.displayThreatHealthBarColor = true
+inParty = false
+ExpectBlizzard(frame, "recolored solo, where Blizzard shows no threat")
+frame.explicitThreatSituation = 0
+ExpectColor(frame, "nonTankThreatColors", "noThreat", "Blizzard's nameplate preview didn't get the colors")
+frame.explicitThreatSituation, inParty = nil, true
+frame.optionTable.usePlayerForAggroHighlightThreat = false
+ExpectBlizzard(frame, "a party or raid frame was recolored")
+frame.optionTable.usePlayerForAggroHighlightThreat = true
+module.threatColored = false
+ExpectBlizzard(frame, "recolored with Color by Threat off")
+module.threatColored = true
+ApplyColors(nil)
+ApplyColors({ displayThreatHealthBarColor = true, displayedUnit = "nameplate1", optionTable = frame.optionTable })
+
+-- ScarletUI's own threat refresh repaints too, since Blizzard skips some threat changes.
+plate.UnitFrame = frame
+frame.healthBar.color = { 0.5, 0.5, 0.5 }
+ScarletUI:UpdateNameplate("nameplate1")
+assert(SameColor(frame.healthBar.color, module.nonTankThreatColors.threat), "threat refresh didn't repaint the plate")
+
+-- Forever's threat color settings: the old pickers Blizzard has states for, live repaint, and a reset.
+C_NamePlate.GetNamePlates = function() return { plate } end
+page = ScarletUI:GetNameplatesModuleSettingsPage(ScarletUI.db.global, pristineDefaults, 7)
+local colors = page.args.threatColors.args
+assert(colors.threatColored and colors.resetColors and not colors.tankNames, "Forever threat color settings missing")
+for _, group in ipairs({ "nonTank", "tank" }) do
+    local groupArgs = colors[group].args
+    assert(groupArgs.noThreat.name == "No Threat" and groupArgs.lowThreat.name == "Low Threat" and groupArgs.threat.name == "Have Threat")
+    assert(not groupArgs.pet and not groupArgs.tank, "Forever kept pet or tank threat colors it can't work out")
+end
+assert(SameColor({ colors.nonTank.args.threat.get() }, pristineDefaults.nonTankThreatColors.threat))
+colors.nonTank.args.threat.set(nil, 0.2, 0.4, 0.6, 1)
+assert(SameColor(module.nonTankThreatColors.threat, { 0.2, 0.4, 0.6, 1 }), "color picker didn't save")
+assert(SameColor(frame.healthBar.color, { 0.2, 0.4, 0.6, 1 }), "color picker didn't repaint the plates")
+colors.tank.args.noThreat.set(nil, 0, 0, 0, 1)
+colors.resetColors.func()
+for _, group in ipairs({ "nonTankThreatColors", "tankThreatColors" }) do
+    for key, color in pairs(pristineDefaults[group]) do
+        assert(SameColor(module[group][key], color), group .. "." .. key .. " wasn't reset")
+        assert(module[group][key] ~= color, "reset shared the defaults table")
+    end
+end
+assert(SameColor(frame.healthBar.color, pristineDefaults.nonTankThreatColors.threat), "reset didn't repaint the plates")
+-- The defaults are the old Classic module's colors.
+assert(SameColor(pristineDefaults.nonTankThreatColors.noThreat, { 0.0824, 1, 0, 1 }))
+assert(SameColor(pristineDefaults.tankThreatColors.noThreat, { 1, 0.0353, 0, 1 }))
+assert(SameColor(pristineDefaults.tankThreatColors.threat, { 0.0824, 1, 0, 1 }))
+colors.threatColored.set(nil, false)
+assert(module.threatColored == false)
+module.threatColored = true
 -- Retail stays hidden if the file ever loads there.
 client = "RETAIL"
 assert(ScarletUI:GetNameplatesModuleSettingsPage(ScarletUI.db.global, ScarletUI.defaults.global.nameplatesModule, 7).hidden())
 client, ScarletUI.lightWeightMode, hooksecurefunc, CompactUnitFrame_UpdateHealthColor, issecretvalue = "VANILLA", nil, nil, nil, nil
+UnitInParty, PlayerUtil, UnitThreatLeadSituation, C_NamePlate.GetNamePlates = nil, nil, nil, nil
 
 -- Non-nameplate tokens (targettarget etc.) must never reach GetNamePlateForUnit, which errors on them.
 local badLookups = 0
@@ -264,4 +393,4 @@ handlers.UNIT_THREAT_LIST_UPDATE(nil, "targettarget")
 handlers.UNIT_THREAT_LIST_UPDATE(nil, "target")
 assert(badLookups == 0, "non-nameplate token reached GetNamePlateForUnit")
 
-print("PASS: nameplate raid threat lead, main tank detection, missing frames, aura toggles, and Forever threat numbers")
+print("PASS: nameplate raid threat lead, main tank detection, missing frames, aura toggles, Forever threat numbers, and Forever threat colors")

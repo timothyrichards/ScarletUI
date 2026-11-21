@@ -23,7 +23,7 @@ function ScarletUI:Options()
             transmogSettings = self:GetTransmogSettingsPage(6.25),
             gimmicksSettings = self:GetGimmicksSettingsPage(database, 6.3),
             auctionSettings = self:GetAuctionSettingsPage(database, 6.5),
-            -- Nameplates load on Era, TBC, Mists, and Forever (threat numbers only).
+            -- Nameplates load on Era, TBC, Mists, and Forever (threat numbers and colors only).
             nameplatesModuleSettings = self.GetNameplatesModuleSettingsPage and self:GetNameplatesModuleSettingsPage(database, defaults.nameplatesModule, 7),
             CVarModuleSettings = self:GetCVarModuleSettingsPage(database, 8),
         }

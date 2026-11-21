@@ -1,6 +1,6 @@
 -- Listed in the Vanilla, TBC, Mists, and Forever manifests; Retail never loads it.
--- Forever only gets the threat numbers: Blizzard keeps its own nameplate colors,
--- auras, and text there.
+-- Forever only gets the threat numbers and threat colors: Blizzard keeps its own nameplate
+-- auras and text there, and its own colors outside threat.
 ScarletUI.defaults.global.nameplatesModule = {
     enabled = true,
     classColored = true,
@@ -446,6 +446,68 @@ local function ShowThreatPercent(nameplate, unitId, isTanking, rawPercent)
     text:Show()
 end
 
+-- Forever's CompactUnitFrame_UpdateHealthColor colors an enemy plate by threat when the
+-- nameplateThreatDisplay CVar has its HealthBarColor bit (frame.displayThreatHealthBarColor).
+-- It reads UnitThreatSituation for DPS and healers and UnitThreatLeadSituation for tanks, and
+-- takes the color from a local table holding the global NO/GAINING/HIGH_THREAT_COLOR objects.
+-- Writing those objects would taint Blizzard's color code, which then can't compare the secret
+-- threat state, so a secure post-hook paints over the bar instead. Never call Blizzard's
+-- function from here for the same reason: run tainted, it errors on secret threat.
+--
+-- Blizzard's threat state (0-3) to the old module's color keys. Blizzard shows 1 and 2 alike.
+local FOREVER_THREAT_KEYS = {
+    -- UnitThreatSituation: 0 on the list, 1 above the tank, 2 tanking insecurely, 3 tanking.
+    nonTankThreatColors = { [0] = "noThreat", "lowThreat", "lowThreat", "threat" },
+    -- UnitThreatLeadSituation: 0 a safe lead, 1-2 the lead is shrinking, 3 someone else has aggro.
+    tankThreatColors = { [0] = "threat", "lowThreat", "lowThreat", "noThreat" },
+}
+
+-- The color for a Forever nameplate UnitFrame, or nil to keep Blizzard's. Mirrors Blizzard's
+-- GetAggroHighlightThreatSituation, but also colors state 0, as the old module did.
+local function ForeverThreatColor(frame)
+    local module = ScarletUI.db.global.nameplatesModule
+    if not (module.enabled and module.threatColored and frame and frame.displayThreatHealthBarColor) then
+        return
+    end
+
+    local isTank = PlayerUtil and PlayerUtil.IsPlayerEffectivelyTank and PlayerUtil.IsPlayerEffectivelyTank()
+    if IsSecret(isTank) then return end
+    local status = frame.explicitThreatSituation  -- Blizzard's nameplate preview in the options.
+    if status == nil then
+        local unit = frame.displayedUnit
+        local inParty = UnitInParty("player")
+        if not (frame.optionTable and frame.optionTable.usePlayerForAggroHighlightThreat)
+            or IsSecret(unit) or IsSecret(inParty) or inParty == false or not IsNameplateToken(unit) then
+            return
+        end
+        if isTank then
+            status = UnitThreatLeadSituation("player", unit)
+        else
+            status = UnitThreatSituation("player", unit)
+        end
+    end
+    -- Restricted threat state is secret and can't be looked up, so Blizzard's color stays.
+    if IsSecret(status) or status == nil then return end
+
+    local group = isTank and "tankThreatColors" or "nonTankThreatColors"
+    local key = FOREVER_THREAT_KEYS[group][status]
+    return key and module[group][key]
+end
+
+local function ApplyForeverThreatColor(frame)
+    local color = ForeverThreatColor(frame)
+    if color and frame.healthBar then
+        frame.healthBar:SetStatusBarColor(unpack(color))
+    end
+end
+
+-- After a settings change; Blizzard's own colors come back at its next health color update.
+function ScarletUI:RefreshForeverThreatColors()
+    for _, nameplate in ipairs(C_NamePlate.GetNamePlates()) do
+        ApplyForeverThreatColor(nameplate.UnitFrame)
+    end
+end
+
 local function SetupNameplate(nameplate)
     local module = ScarletUI.db.global.nameplatesModule
 
@@ -583,6 +645,9 @@ function ScarletUI:UpdateNameplate(unitId)
         if not nameplatesModule.threatColored then
             return
         end
+    else
+        -- Blizzard doesn't recolor on every threat change (a tank's shrinking lead, for one).
+        ApplyForeverThreatColor(nameplate.UnitFrame)
     end
 
     local isTanking, threatStatus, _, rawPercent, threatValue = UnitDetailedThreatSituation("player", unitId)
@@ -889,6 +954,9 @@ function ScarletUI:SetupNameplates()
                     ScarletUI:UpdateNameplate(frame.unit)
                 end
             end)
+        elseif CompactUnitFrame_UpdateHealthColor and threatOnly then
+            -- A post-hook runs after Blizzard's secure code and leaves it untainted.
+            hooksecurefunc("CompactUnitFrame_UpdateHealthColor", ApplyForeverThreatColor)
         end
 
         if not threatOnly then
@@ -1259,7 +1327,10 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
             hasAlpha = true,
             order = colorOrder,
             get = function(_) return unpack(module[settings][key]) end,
-            set = function(_, r, g, b, a) module[settings][key] = { r, g, b, a } end,
+            set = function(_, r, g, b, a)
+                module[settings][key] = { r, g, b, a }
+                if threatOnly then self:RefreshForeverThreatColors() end
+            end,
         }
     end
 
@@ -1469,10 +1540,55 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
     -- Forever only has the threat numbers.
     if threatOnly then
         local args, text = page.args, page.args.text.args
-        page.desc = "Threat numbers beside Blizzard's nameplates."
+        page.desc = "Threat numbers and threat colors on Blizzard's nameplates."
         args.enabled.desc = "Show how far you lead or trail on threat beside each nameplate. Turning this off reloads the UI."
-        args.classColored, args.auras, args.targetIndicator, args.threatColors, args.specialUnits = nil
+        args.classColored, args.auras, args.targetIndicator, args.specialUnits = nil
         text.healthBarText, text.castBarText = nil
+
+        -- Threat colors repaint Blizzard's own threat health bar colors. Pet and tank threat need
+        -- every member's threat compared, which is secret in combat, and Tank Names only fed those.
+        local colors = args.threatColors
+        local Refresh = function() self:RefreshForeverThreatColors() end
+        colors.args.tankNames = nil
+        colors.args.threatColored.desc = "Use the colors below when Blizzard colors an enemy nameplate's health bar by threat. "
+            .. "Blizzard's nameplate threat display setting must include the health bar color. "
+            .. "In combat the game may hide threat from add-ons; Blizzard's colors show until it doesn't."
+        colors.args.threatColored.set = function(_, val)
+            module.threatColored = val
+            Refresh()
+        end
+        local descs = {
+            nonTank = {
+                noThreat = "On the threat list, well behind the tank.",
+                lowThreat = "About to pull threat, or tanking while someone else has more threat.",
+                threat = "You have aggro.",
+            },
+            tank = {
+                noThreat = "Someone else has aggro.",
+                lowThreat = "You have aggro, but someone is catching up.",
+                threat = "You have aggro with a safe lead.",
+            },
+        }
+        for group, groupDescs in pairs(descs) do
+            local groupArgs = colors.args[group].args
+            groupArgs.pet, groupArgs.tank = nil
+            for key, desc in pairs(groupDescs) do groupArgs[key].desc = desc end
+        end
+        colors.args.tank.desc = "Used when the game counts you as a tank: tank role, tank specialization, or a tanking form or aura."
+        colors.args.resetColors = {
+            name = "Reset Colors",
+            desc = "Put both sets of threat colors back to ScarletUI's defaults.",
+            type = "execute",
+            order = 3,
+            func = function()
+                for _, settings in ipairs({ "nonTankThreatColors", "tankThreatColors" }) do
+                    for key, color in pairs(defaults[settings]) do
+                        module[settings][key] = { unpack(color) }
+                    end
+                end
+                Refresh()
+            end,
+        }
     end
     return page
 end

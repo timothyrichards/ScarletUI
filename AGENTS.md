@@ -371,11 +371,22 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   own AceDB defaults (`bagModule`, `nameplatesModule`, `char.priorityDebuffs`)
   and settings page; the parent checks `self.SetupBags`, `self.SetupNameplates`,
   and the `Get*SettingsPage` methods before using them.
-  On Forever (`ThreatOnly()` in Nameplates.lua) only the threat amount text runs:
-  `NAME_PLATE_UNIT_ADDED`/`REMOVED` and `UNIT_THREAT_LIST_UPDATE`. No health
-  colors, `CompactUnitFrame_UpdateHealthColor` hook, auras, target arrows, or
-  health/cast text, and the settings page keeps only the switch and the Threat
-  Text group. The number takes Blizzard's health bar color. Forever pools
+  On Forever (`ThreatOnly()` in Nameplates.lua) only the threat amount text and
+  threat colors run: `NAME_PLATE_UNIT_ADDED`/`REMOVED` and `UNIT_THREAT_LIST_UPDATE`.
+  No Classic health colors, auras, target arrows, or health/cast text. Blizzard's
+  own `CompactUnitFrame_UpdateHealthColor` colors enemy plates by
+  `UnitThreatSituation` (DPS/healer) or `UnitThreatLeadSituation` (tank,
+  `PlayerUtil.IsPlayerEffectivelyTank`) when `frame.displayThreatHealthBarColor`
+  (the `nameplateThreatDisplay` CVar's HealthBarColor bit) is set, from a local
+  table of the global `NO/GAINING/HIGH_THREAT_COLOR` objects. Don't write those
+  objects or call Blizzard's function from add-on code: it would run tainted and
+  error on the secret threat state. Instead a `hooksecurefunc` post-hook
+  (`ApplyForeverThreatColor`, also run on each threat refresh) repaints the bar
+  with `nonTankThreatColors`/`tankThreatColors` (noThreat, lowThreat, threat
+  only; states 1 and 2 share lowThreat as in Blizzard), and keeps Blizzard's color
+  when the state is secret, nil, or solo. The settings page keeps the switch, the
+  Threat Text group, and Threat Colors without pet/tank colors or Tank Names, plus
+  Reset Colors. The number takes the health bar color. Forever pools
   nameplate UnitFrames, so `AnchorThreatText` re-anchors to the current
   `healthBar`. Forever can return threat values as secrets
   (`C_Secrets.ShouldUnitThreatValuesBeSecret`). A secret value from another group
@@ -385,7 +396,7 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
 
 The actionbar, movers, unit-frame, and raid-frame modules have been removed.
 Blizzard handles those frames, bags on Retail and Forever, and nameplates on Retail
-(and on Forever apart from the threat numbers). Keep native bag/bank
+(and on Forever apart from the threat numbers and threat colors). Keep native bag/bank
 item-level overlays and the independent CVar controls when changing related code.
 
 Raid display CVars are managed by `Modules/CVars.lua` with defaults in
