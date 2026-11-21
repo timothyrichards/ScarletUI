@@ -1613,14 +1613,14 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                 noThreat = "On the threat list, well behind the tank.",
                 lowThreat = "About to pull threat, or tanking while someone else has more threat.",
                 threat = "You have aggro.",
-                pet = "A pet in your group has aggro.",
+                pet = "A pet in your group has aggro. Only in a group: Blizzard shows no threat colors solo.",
                 tank = "Another tank in your group has aggro (see Tank Names).",
             },
             tank = {
                 noThreat = "Someone else has aggro.",
                 lowThreat = "You have aggro, but someone is catching up.",
                 threat = "You have aggro with a safe lead.",
-                pet = "A pet in your group has aggro.",
+                pet = "A pet in your group has aggro. Only in a group: Blizzard shows no threat colors solo.",
                 tank = "Another tank in your group has aggro (see Tank Names).",
             },
         }

@@ -402,7 +402,7 @@ for _, group in ipairs({ "nonTank", "tank" }) do
     local groupArgs = colors[group].args
     assert(groupArgs.noThreat.name == "No Threat" and groupArgs.lowThreat.name == "Low Threat" and groupArgs.threat.name == "Have Threat")
     assert(groupArgs.pet.name == "Pet Threat" and groupArgs.tank.name == "Tank Threat", "Forever lost pet or tank threat colors")
-    assert(groupArgs.pet.desc and groupArgs.tank.desc, "Forever pet or tank threat colors have no tooltip")
+    assert(groupArgs.pet.desc:find("Only in a group") and groupArgs.tank.desc, "Forever pet or tank threat colors have no tooltip")
 end
 -- Tank Names saves, and the plates repaint with the new tanks.
 names.party1, threat.Other.situation, threat.Me.situation = "Other", 3, 1
