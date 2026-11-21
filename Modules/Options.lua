@@ -16,6 +16,7 @@ function ScarletUI:Options()
             editModeSettings = self:GetEditModeSettingsPage(2),
             actionBarTogglesSettings = self:GetActionBarTogglesSettingsPage(database, 3),
             bagModuleSettings = self:GetBagSettingsPage(database, defaults, 4),
+            bankCacheSettings = self:GetBankCacheSettingsPage(database, 4.5),
             chatModuleSettings = self:GetChatModuleSettingsPage(database, defaults.chatModule, 5),
             fishingSettings = self:GetFishingSettingsPage(database, 6),
             remindersSettings = self:GetRemindersSettingsPage(database, 6.1),
@@ -792,6 +793,50 @@ function ScarletUI:GetBagSettingsPage(database, defaults, order)
         },
     }
     return page
+end
+
+function ScarletUI:GetBankCacheSettingsPage(database, order)
+    local settings = database.bankCacheModule
+    local function Off() return not settings.enabled end
+    return {
+        name = "Bank",
+        desc = "Remember each character's bank, to look through it away from the banker.",
+        type = "group",
+        order = order,
+        args = {
+            enabled = {
+                name = "Cached Bank",
+                desc = "Save this character's bank each time you open it. /sui bank, or the button below, then shows the saved bank of any character on this realm.",
+                type = "toggle",
+                width = 1.5,
+                order = 0,
+                get = function(_) return settings.enabled end,
+                set = function(_, val)
+                    settings.enabled = val
+                    self:ScheduleBankSnapshot()
+                end,
+            },
+            tooltip = {
+                name = "Bank Counts in Tooltips",
+                desc = "Add how many of an item your bank holds to its tooltip, with a line for each other character on this realm whose bank holds some.",
+                type = "toggle",
+                width = 1.5,
+                order = 1,
+                disabled = Off,
+                get = function(_) return settings.tooltip end,
+                set = function(_, val) settings.tooltip = val end,
+            },
+            open = {
+                name = "Open Bank Viewer",
+                desc = "Show the saved bank of a character on this realm. Same as /sui bank.",
+                type = "execute",
+                width = 1,
+                order = 2,
+                disabled = Off,
+                func = function() self:ToggleBankViewer(true) end,
+            },
+        },
+    }
 end
 
 function ScarletUI:GetChatModuleSettingsPage(database, defaults, order)

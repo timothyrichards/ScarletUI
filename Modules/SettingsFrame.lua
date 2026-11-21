@@ -19,6 +19,7 @@ local NAV = {
     { "generalSettings.interface", master = true, desc = "Small interface tweaks and reminders." },
     { "generalSettings.itemLevel", master = true, desc = "Show item levels on equipment and in bags." },
     { "bagModuleSettings", master = true },
+    { "bankCacheSettings" },
     { "chatModuleSettings" },
     { "actionBarTogglesSettings", master = true },
     { "generalSettings.tracking", master = true, desc = "Share minimap tracking across characters and keep gathering tracking on." },
