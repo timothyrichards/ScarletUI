@@ -149,7 +149,13 @@ function ScarletUI:MinimapClick(button)
         self:ToggleSettingsFrame()
     elseif IsShiftKeyDown() then
         self:OpenEditMode()
-    elseif self.db.global.bankCacheModule.enabled then
+    else
+        self:ToggleBankFromUI()
+    end
+end
+
+function ScarletUI:ToggleBankFromUI()
+    if self.db.global.bankCacheModule.enabled then
         self:ToggleBankViewer()
     else
         self:Print("The cached bank is turned off. Turn on Cached Bank in /sui to use it.")
