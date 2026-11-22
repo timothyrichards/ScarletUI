@@ -100,7 +100,7 @@ end
 local calls = {}
 local setupMethods = { "SetupDebugFrame", "SetupActionBarToggles", "SetupBagSort", "SetupBankCache", "SetupTracking", "SetupChat", "SetupCVars",
     "SetupItemLevels",
-    "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupFiveSecondRule", "SetupQuestXPBar", "SetupFishing", "SetupXPFood", "SetupWeaponReminder", "SetupCampReminders","SetupSpecGearSets", "SetupStatDisplay", "SetupSealSlots", "SetupWindfury", "SetupCraftProfit", "SetupExpandCharacterInfo", "SetupGameMenuButtons",
+    "SetupTidyIcons", "SetupSpellCostPercent", "SetupZoneLevels", "SetupFiveSecondRule", "SetupQuestXPBar", "SetupXPPerHour", "SetupFishing", "SetupXPFood", "SetupWeaponReminder", "SetupCampReminders","SetupSpecGearSets", "SetupStatDisplay", "SetupSealSlots", "SetupWindfury", "SetupCraftProfit", "SetupExpandCharacterInfo", "SetupGameMenuButtons",
     "SetupFrameTweaks", "SetupMinimapIcon" }
 for _, name in ipairs(setupMethods) do
     ScarletUI[name] = function() calls[name] = true end
@@ -861,6 +861,71 @@ do
     assert(shown and width == 40)
     C_QuestLog = savedQuestLog
     assert(not ScarletUI:Options().args.generalSettings.args.interface.args.questXPBar.hidden())
+end
+-- XP per hour: session average from PLAYER_XP_UPDATE deltas, level-ups add back
+-- the previous level's max, hidden until XP is gained and at max level.
+do
+    local savedXP, savedMax, savedTime, savedLevel = UnitXP, UnitXPMax, GetTime, UnitLevel
+    local savedSecret, savedFrame, savedTrack = issecretvalue, CreateFrame, StatusTrackingBarManager
+    local xp, max, clock, level = 100, 1000, 0, 10
+    UnitXP = function() return xp end
+    UnitXPMax = function() return max end
+    UnitLevel = function() return level end
+    GetTime = function() return clock end
+    GetMaxPlayerLevel = function() return 60 end
+    StatusTrackingBarManager = {}
+    local fontText, shown, size
+    local scripts, eventScripts = {}, {}
+    local fontString = {
+        SetPoint = noop, SetJustifyH = noop, GetFont = function() return "font", 10 end, SetFont = noop,
+        SetText = function(_, value) fontText = value end,
+        GetStringWidth = function() return 50 end, GetStringHeight = function() return 10 end,
+    }
+    local first = true
+    CreateFrame = function()
+        local f = { RegisterEvent = noop, SetFrameStrata = noop, SetPoint = noop, EnableMouse = noop,
+            CreateFontString = function() return fontString end,
+            SetScript = function(_, name, fn) (first and scripts or eventScripts)[name] = fn end,
+            SetSize = function(_, w) size = w end, Hide = function() shown = false end,
+            Show = function() shown = true end, GetScript = function() return noop end }
+        first = false
+        return f
+    end
+    local secret = false
+    issecretvalue = function() return secret end -- captured when the module loads
+    dofile("Modules/XPPerHour.lua")
+    ScarletUI:SetupXPPerHour()
+    CreateFrame = savedFrame
+    assert(shown == false) -- nothing gained yet: no "0 xp/hr"
+    clock, xp = 3600, 600 -- 500 XP in an hour, 400 left
+    eventScripts.OnEvent(nil, "PLAYER_XP_UPDATE", "player")
+    assert(shown and fontText == "500 xp/hr  TTL 48m", fontText)
+    -- Level-up: 600/1000 -> 300 into a 2000 XP level: 400 + 300 more, 1200 total.
+    xp, max, level = 300, 2000, 11
+    eventScripts.OnEvent(nil, "PLAYER_XP_UPDATE", "player")
+    assert(fontText == "1200 xp/hr  TTL 1h 25m", fontText)
+    -- Seconds from login are floored at a minute.
+    ScarletUI.ResetXPPerHour()
+    assert(shown == false)
+    clock, xp = 3610, 400
+    eventScripts.OnEvent(nil, "PLAYER_XP_UPDATE", "player")
+    assert(fontText:find("^6000 xp/hr"), fontText) -- 100 XP over the 60 second floor
+    -- Secret XP is skipped, not counted.
+    secret = true
+    xp = 99999
+    eventScripts.OnEvent(nil, "PLAYER_XP_UPDATE", "player")
+    secret, issecretvalue = false, savedSecret
+    assert(fontText:find("^6000 xp/hr"), fontText)
+    -- Toggle off hides it; max level hides it.
+    ScarletUI.Print = noop
+    ScarletUI:ToggleXPPerHour()
+    assert(ScarletUI.db.global.xpPerHour == false and shown == false)
+    ScarletUI:ToggleXPPerHour()
+    assert(shown)
+    level = 60; ScarletUI.UpdateXPPerHour()
+    assert(shown == false)
+    assert(not ScarletUI:Options().args.generalSettings.args.interface.args.xpPerHour.hidden())
+    UnitXP, UnitXPMax, GetTime, UnitLevel, StatusTrackingBarManager = savedXP, savedMax, savedTime, savedLevel, savedTrack
 end
 -- Fishing mode: with a pole equipped the key clicks our button, and during the
 -- Fishing cast it is Interact With Target with soft targeting widened.

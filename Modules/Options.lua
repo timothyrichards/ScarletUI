@@ -114,6 +114,19 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                             self:UpdateQuestXPBar()
                         end,
                     },
+                    xpPerHour = {
+                        name = "XP per Hour Readout",
+                        desc = "Show your experience per hour and time to level above the experience bar. Hover it for session details; right-click it to reset the session. Also toggled by /sui xp.",
+                        type = "toggle",
+                        hidden = function() return not self.xpPerHourFrame end,
+                        width = 1.5,
+                        order = 9,
+                        get = function(_) return database.xpPerHour end,
+                        set = function(_, val)
+                            database.xpPerHour = val
+                            self.UpdateXPPerHour()
+                        end,
+                    },
                     expandCharacterInfo = {
                         name = "Auto Expand Character Info",
                         desc = "Open the character window with its side panel (stats, titles, and equipment manager) already expanded.",

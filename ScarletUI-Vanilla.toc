@@ -25,6 +25,7 @@ Modules\EditModeLayouts.lua
 Modules\EditMode.lua
 Modules\FiveSecondRule.lua
 Modules\QuestXPBar.lua
+Modules\XPPerHour.lua
 Modules\Fishing.lua
 Modules\Reminders.lua
 Modules\Gimmicks.lua

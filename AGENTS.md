@@ -239,6 +239,14 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   `StatusTrackingBarManager.barContainers`, anchored to the fill texture. Set up
   wherever `GetQuestLogRewardXP` exists; Blizzard's Era and TBC quest log shows
   no XP reward, and whether the function returns any there is unverified.
+- `Modules/XPPerHour.lua`: a readout above `StatusTrackingBarManager` ("12.4k
+  xp/hr  TTL 1h 12m", `db.global.xpPerHour`, default on, Interface group on the
+  General page and `/sui xp`). Session average (XP since login or reset over
+  elapsed time, divisor floored at 60 s), chosen over a rolling window because
+  kill-sized XP lumps make a window jump. `PLAYER_XP_UPDATE` deltas; a drop in XP
+  is a level-up and adds back the previous level's max. Hidden at max level, with
+  XP disabled, and before the first XP. Hover shows session details, right-click
+  resets. Skips updates when `UnitXP` is a secret value.
 - `Modules/Fishing.lua`: fishing mode (`db.global.fishingModule`, its own
   Fishing settings page), every client but Retail. While a fishing pole is in the
   main hand, a priority override binding puts the fishing key (Space by default)
