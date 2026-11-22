@@ -873,17 +873,24 @@ do
     UnitLevel = function() return level end
     GetTime = function() return clock end
     GetMaxPlayerLevel = function() return 60 end
-    StatusTrackingBarManager = {}
+    local barRight, anchor = 300, nil
+    local xpBar = { GetRight = function() return barRight end }
+    StatusTrackingBarManager = { barContainers = { { bars = { {}, { isExpBar = true, StatusBar = xpBar } } } } }
+    local savedUIParent, savedAFK = UIParent, UnitIsAFK
+    UIParent = { GetRight = function() return 1000 end }
+    local afk = false
+    UnitIsAFK = function() return afk end
     local fontText, shown, size
     local scripts, eventScripts = {}, {}
     local fontString = {
-        SetPoint = noop, SetJustifyH = noop, GetFont = function() return "font", 10 end, SetFont = noop,
+        SetPoint = noop, GetFont = function() return "font", 10 end, SetFont = noop,
         SetText = function(_, value) fontText = value end,
         GetStringWidth = function() return 50 end, GetStringHeight = function() return 10 end,
     }
     local first = true
     CreateFrame = function()
-        local f = { RegisterEvent = noop, SetFrameStrata = noop, SetPoint = noop, EnableMouse = noop,
+        local f = { RegisterEvent = noop, SetFrameStrata = noop, SetPoint = function(_, point, rel, relPoint, x) if rel == xpBar then anchor = { point, relPoint, x } end end,
+            ClearAllPoints = function() anchor = nil end, EnableMouse = noop,
             CreateFontString = function() return fontString end,
             SetScript = function(_, name, fn) (first and scripts or eventScripts)[name] = fn end,
             SetSize = function(_, w) size = w end, Hide = function() shown = false end,
@@ -900,6 +907,18 @@ do
     clock, xp = 3600, 600 -- 500 XP in an hour, 400 left
     eventScripts.OnEvent(nil, "PLAYER_XP_UPDATE", "player")
     assert(shown and fontText == "500 xp/hr  TTL 48m", fontText)
+    -- Placed just right of the XP bar; inside its end when that would run off screen.
+    assert(anchor[1] == "LEFT" and anchor[2] == "RIGHT" and anchor[3] == 6)
+    barRight = 990; ScarletUI.UpdateXPPerHour()
+    assert(anchor[1] == "RIGHT" and anchor[2] == "RIGHT" and anchor[3] == -6)
+    barRight = 300; ScarletUI.UpdateXPPerHour()
+    -- AFK pauses the clock: an hour away doesn't dilute the rate.
+    afk = true; eventScripts.OnEvent(nil, "PLAYER_FLAGS_CHANGED", "player")
+    assert(fontText == "500 xp/hr  TTL 48m (paused)", fontText)
+    clock = 7200; ScarletUI.UpdateXPPerHour()
+    assert(fontText == "500 xp/hr  TTL 48m (paused)", fontText)
+    afk = false; eventScripts.OnEvent(nil, "PLAYER_FLAGS_CHANGED", "player")
+    assert(fontText == "500 xp/hr  TTL 48m", fontText)
     -- Level-up: 600/1000 -> 300 into a 2000 XP level: 400 + 300 more, 1200 total.
     xp, max, level = 300, 2000, 11
     eventScripts.OnEvent(nil, "PLAYER_XP_UPDATE", "player")
@@ -907,7 +926,7 @@ do
     -- Seconds from login are floored at a minute.
     ScarletUI.ResetXPPerHour()
     assert(shown == false)
-    clock, xp = 3610, 400
+    clock, xp = 7210, 400
     eventScripts.OnEvent(nil, "PLAYER_XP_UPDATE", "player")
     assert(fontText:find("^6000 xp/hr"), fontText) -- 100 XP over the 60 second floor
     -- Secret XP is skipped, not counted.
@@ -926,6 +945,7 @@ do
     assert(shown == false)
     assert(not ScarletUI:Options().args.generalSettings.args.interface.args.xpPerHour.hidden())
     UnitXP, UnitXPMax, GetTime, UnitLevel, StatusTrackingBarManager = savedXP, savedMax, savedTime, savedLevel, savedTrack
+    UIParent, UnitIsAFK = savedUIParent, savedAFK
 end
 -- Fishing mode: with a pole equipped the key clicks our button, and during the
 -- Fishing cast it is Interact With Target with soft targeting widened.
