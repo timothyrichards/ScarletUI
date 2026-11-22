@@ -77,8 +77,30 @@ function ScarletUI:SetupXPPerHour()
         end
     end
 
+    -- UnitIsAFK returns a secret boolean on some clients (1.60.1), which can't
+    -- be tested. Then AFK comes from the "You are now AFK" system messages.
+    local chatAFK = false
+    local function AFKPattern(global)
+        if type(global) ~= "string" or IsSecret(global) then return end
+        return "^" .. global:gsub("%p", "%%%0"):gsub("%%%%s", ".*") .. "$"
+    end
+    local markedPatterns = { AFKPattern(MARKED_AFK), AFKPattern(MARKED_AFK_MESSAGE) }
+    local clearedPattern = AFKPattern(CLEARED_AFK)
+
+    local function OnSystemMessage(msg)
+        if type(msg) ~= "string" or IsSecret(msg) then return end
+        if clearedPattern and msg:find(clearedPattern) then
+            chatAFK = false
+        else
+            for _, pattern in pairs(markedPatterns) do
+                if msg:find(pattern) then chatAFK = true end
+            end
+        end
+    end
+
     local function SyncAFK()
         local afk = UnitIsAFK and UnitIsAFK("player")
+        if IsSecret(afk) then afk = chatAFK end
         if afk and not pausedAt then
             pausedAt = GetTime()
         elseif not afk and pausedAt then
@@ -162,7 +184,9 @@ function ScarletUI:SetupXPPerHour()
     events:RegisterEvent("PLAYER_XP_UPDATE")
     events:RegisterEvent("PLAYER_ENTERING_WORLD")
     events:RegisterEvent("PLAYER_FLAGS_CHANGED")
+    events:RegisterEvent("CHAT_MSG_SYSTEM")
     events:SetScript("OnEvent", function(_, event, unit)
+        if event == "CHAT_MSG_SYSTEM" then OnSystemMessage(unit) end
         if event == "PLAYER_XP_UPDATE" and (unit == nil or unit == "player") then
             OnXP()
         else

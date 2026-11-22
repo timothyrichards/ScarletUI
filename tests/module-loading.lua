@@ -899,7 +899,9 @@ do
         return f
     end
     local secret = false
-    issecretvalue = function() return secret end -- captured when the module loads
+    local secretAFK = {}
+    issecretvalue = function(v) return secret or v == secretAFK end -- captured when the module loads
+    MARKED_AFK, MARKED_AFK_MESSAGE, CLEARED_AFK = "You are now AFK: %s.", "You are now AFK: %s", "You are no longer AFK."
     dofile("Modules/XPPerHour.lua")
     ScarletUI:SetupXPPerHour()
     CreateFrame = savedFrame
@@ -919,6 +921,14 @@ do
     assert(fontText == "500 xp/hr  TTL 48m (paused)", fontText)
     afk = false; eventScripts.OnEvent(nil, "PLAYER_FLAGS_CHANGED", "player")
     assert(fontText == "500 xp/hr  TTL 48m", fontText)
+    -- A secret UnitIsAFK result isn't tested; AFK comes from the system messages.
+    UnitIsAFK = function() return secretAFK end
+    local mark = function(msg) eventScripts.OnEvent(nil, "CHAT_MSG_SYSTEM", msg) end
+    clock = 7200; mark("You are now AFK: Away from Keyboard")
+    assert(fontText == "500 xp/hr  TTL 48m (paused)", fontText)
+    clock = 9000; mark("You are no longer AFK.")
+    assert(fontText == "500 xp/hr  TTL 48m", fontText)
+    UnitIsAFK = function() return afk end
     -- Level-up: 600/1000 -> 300 into a 2000 XP level: 400 + 300 more, 1200 total.
     xp, max, level = 300, 2000, 11
     eventScripts.OnEvent(nil, "PLAYER_XP_UPDATE", "player")
