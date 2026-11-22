@@ -82,26 +82,45 @@ function ScarletUI:SetupBuffCollapse()
     end
 end
 
--- Right-click on a bag's portrait opens the cached bank. HookScript only: Blizzard's
--- dropdown opens its bag menu on any mouse button, so a right-click closes it again.
+-- Right-click on a bag's portrait opens the cached bank. The portrait is a
+-- DropdownButton, which registers only for left-button mouse events, so a hook
+-- on it never sees a right-click. A child overlay takes the right-click and
+-- passes left-clicks and mouse motion through, so Blizzard's bag menu and
+-- tooltip still work and none of their code runs from ours.
+local function AddPortraitOverlay(portrait)
+    local overlay = CreateFrame("Button", nil, portrait)
+    overlay:SetAllPoints(portrait)
+    overlay:RegisterForClicks("RightButtonUp")
+    overlay:SetPassThroughButtons("LeftButton")
+    overlay:SetPropagateMouseMotion(true)
+    overlay:SetScript("OnClick", function(_, mouse)
+        if ScarletUI.debugContainer and ScarletUI.debugContainer:IsShown() then
+            ScarletUI:Print("Bag portrait click: " .. tostring(mouse))
+        end
+        if mouse == "RightButton" then ScarletUI:ToggleBankFromUI() end
+    end)
+    portrait:HookScript("OnEnter", function()
+        GameTooltip:AddLine("Right-click: open bank")
+        GameTooltip:Show()
+    end)
+end
+
 function ScarletUI:SetupBagPortraitHooks()
     if self.bagPortraitsHooked then return end
+    -- The pass-through setters are protected; wait for combat to end.
+    if InCombatLockdown() then
+        if not self.bagPortraitsWaiting then
+            self.bagPortraitsWaiting = true
+            self:RegisterEventHandler("PLAYER_REGEN_ENABLED", function() self:SetupBagPortraitHooks() end)
+        end
+        return
+    end
     self.bagPortraitsHooked = true
     local frames = { ContainerFrameCombinedBags }
     for i = 1, 13 do frames[#frames + 1] = _G["ContainerFrame" .. i] end
     for _, frame in pairs(frames) do
         local portrait = frame.PortraitButton
-        if portrait then
-            portrait:HookScript("OnMouseDown", function(button, mouse)
-                if mouse ~= "RightButton" then return end
-                if button.CloseMenu then button:CloseMenu() end
-                self:ToggleBankFromUI()
-            end)
-            portrait:HookScript("OnEnter", function()
-                GameTooltip:AddLine("Right-click: open bank")
-                GameTooltip:Show()
-            end)
-        end
+        if portrait and portrait.SetPassThroughButtons then AddPortraitOverlay(portrait) end
     end
 end
 
