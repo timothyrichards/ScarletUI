@@ -40,3 +40,19 @@ launcher.OnTooltipShow({ AddLine = function(_, text) lines[#lines + 1] = text en
 assert(lines[3]:find("Right%-click") and lines[3]:find("bank"))
 assert(lines[4]:find("Shift%-right%-click") and lines[4]:find("Edit Mode"))
 print("minimap-click ok")
+
+-- Bag portrait: right-click closes Blizzard's menu and toggles the bank; left-click is untouched.
+dofile("Modules/FrameTweaks.lua")
+local hooks, closed, tip = {}, 0, {}
+GameTooltip = { AddLine = function(_, t) tip[#tip + 1] = t end, Show = function() end }
+local portrait = { HookScript = function(_, s, f) hooks[s] = f end, CloseMenu = function() closed = closed + 1 end }
+ContainerFrameCombinedBags = { PortraitButton = portrait }
+ScarletUI.db.global.bankCacheModule.enabled = true
+ScarletUI:SetupBagPortraitHooks()
+log = {}
+hooks.OnMouseDown(portrait, "LeftButton")
+assert(#log == 0 and closed == 0)
+hooks.OnMouseDown(portrait, "RightButton")
+assert(table.concat(log, ",") == "bank" and closed == 1)
+hooks.OnEnter()
+assert(tip[1] == "Right-click: open bank")

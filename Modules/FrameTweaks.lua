@@ -82,9 +82,33 @@ function ScarletUI:SetupBuffCollapse()
     end
 end
 
+-- Right-click on a bag's portrait opens the cached bank. HookScript only: Blizzard's
+-- dropdown opens its bag menu on any mouse button, so a right-click closes it again.
+function ScarletUI:SetupBagPortraitHooks()
+    if self.bagPortraitsHooked then return end
+    self.bagPortraitsHooked = true
+    local frames = { ContainerFrameCombinedBags }
+    for i = 1, 13 do frames[#frames + 1] = _G["ContainerFrame" .. i] end
+    for _, frame in pairs(frames) do
+        local portrait = frame.PortraitButton
+        if portrait then
+            portrait:HookScript("OnMouseDown", function(button, mouse)
+                if mouse ~= "RightButton" then return end
+                if button.CloseMenu then button:CloseMenu() end
+                self:ToggleBankFromUI()
+            end)
+            portrait:HookScript("OnEnter", function()
+                GameTooltip:AddLine("Right-click: open bank")
+                GameTooltip:Show()
+            end)
+        end
+    end
+end
+
 function ScarletUI:SetupFrameTweaks()
     self:SetupMicroMenuArt()
     self:SetupBuffCollapse()
+    self:SetupBagPortraitHooks()
     if self.gamepadBagBarHooked or not (GamepadBagBar and InputUtil and ContainerFrameCombinedBags) then return end
     self.gamepadBagBarHooked = true
     UpdateGamepadBagBar()
