@@ -6,6 +6,7 @@ function ScarletUI:SetupChat()
 
     self:FixChatBug()
     self:SetupChatTabs()
+    self:GuardChatEditBoxes()
 
     if not self.chatEventRegistered then
         self.chatEventRegistered = true
@@ -119,4 +120,35 @@ function ScarletUI:ChatTabExists(table, value)
     end
 
     return false
+end
+
+local SENDABLE = {
+    SAY = true, YELL = true, PARTY = true, RAID = true, INSTANCE_CHAT = true, GUILD = true,
+    OFFICER = true, WHISPER = true, BN_WHISPER = true, CHANNEL = true, EMOTE = true,
+}
+
+-- Blizzard's UpdateDefaultChatTarget makes a tab with a single message group (our Loot
+-- tab) default its edit box to that group, so chatType becomes "LOOT" and every send
+-- fails. Reset it when the box opens or gains focus. Only HookScript and SetAttribute:
+-- no Blizzard function is replaced, so secure chat sending stays untainted.
+function ScarletUI:GuardChatEditBoxes()
+    for i = 1, _G.NUM_CHAT_WINDOWS or 10 do
+        local box = _G["ChatFrame" .. i .. "EditBox"]
+        if box and not box.scarletChatGuard then
+            box.scarletChatGuard = true
+            local function fix()
+                if not SENDABLE[box:GetAttribute("chatType")] then
+                    local sticky = box:GetAttribute("stickyType")
+                    if not SENDABLE[sticky] then
+                        sticky = "SAY"
+                        box:SetAttribute("stickyType", sticky)
+                    end
+                    box:SetAttribute("chatType", sticky)
+                    if box.UpdateHeader then box:UpdateHeader() end
+                end
+            end
+            box:HookScript("OnShow", fix)
+            box:HookScript("OnEditFocusGained", fix)
+        end
+    end
 end
