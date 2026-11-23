@@ -249,5 +249,54 @@ assert(BankCache.Decorate(slot, "item:9") == true) -- not loaded: plain until GE
 assert(not slot.IconBorder.shown and not slot.junkCoin.shown and levelCalls[4][3] == true)
 C_Item, ITEM_QUALITY_COLORS = nil, nil
 
+-- Viewer placement: beside the open backpack; a drag holds until the backpack
+-- opens again. Frames are mocks; any other field is a stub that can be called
+-- or indexed (viewer.CloseButton:SetScript) and returns a new frame.
+local Frame, Stub
+Stub = setmetatable({}, { __call = function() return Frame() end, __index = function() return Stub end })
+function Frame()
+    local f = { shown = false, scripts = {}, hooks = {} }
+    local function Run(self, name)
+        if self.scripts[name] then self.scripts[name](self) end
+        for _, fn in ipairs(self.hooks[name] or {}) do fn(self) end
+    end
+    function f:SetScript(name, fn) self.scripts[name] = fn end
+    function f:HookScript(name, fn) self.hooks[name] = self.hooks[name] or {}; table.insert(self.hooks[name], fn) end
+    function f:Show() if not self.shown then self.shown = true; Run(self, "OnShow") end end
+    function f:Hide() if self.shown then self.shown = false; Run(self, "OnHide") end end
+    function f:SetShown(v) if v then self:Show() else self:Hide() end end
+    function f:IsShown() return self.shown end
+    function f:SetPoint(point, relative) self.point, self.relative = point, relative end
+    function f:ClearAllPoints() self.point, self.relative = nil, nil end
+    function f:GetText() return "" end
+    return setmetatable(f, { __index = function() return Stub end })
+end
+local named = {}
+CreateFrame = function(_, name) local f = Frame(); if name then named[name] = f end; return f end
+UISpecialFrames, SOUNDKIT, PlaySound, date, tinsert = {}, {}, noop, function() return "" end, table.insert
+local bag = Frame()
+ContainerFrameCombinedBags = bag
+bag:Show()
+ScarletUI:ToggleBankViewer(true)
+local view = named.ScarletUIBank
+assert(view.shown and view.point == "TOPRIGHT" and view.relative == bag)
+-- Dragged away: it stays put while closed and reopened.
+view:SetPoint("CENTER")
+view.scripts.OnDragStop(view)
+ScarletUI:ToggleBankViewer(false)
+ScarletUI:ToggleBankViewer(true)
+assert(view.point == "CENTER")
+-- Reopening the backpack puts it back beside it, once hooked only.
+bag:Hide()
+bag:Show()
+assert(view.point == "TOPRIGHT" and view.relative == bag and #bag.hooks.OnShow == 1)
+-- With no backpack open it keeps its place.
+bag:Hide()
+view:SetPoint("CENTER")
+ScarletUI:ToggleBankViewer(false)
+ScarletUI:ToggleBankViewer(true)
+assert(view.point == "CENTER")
+ContainerFrameCombinedBags, CreateFrame, UISpecialFrames, SOUNDKIT, PlaySound, date, tinsert = nil, nil, nil, nil, nil, nil, nil
+
 C_Bank, C_Container, TooltipDataProcessor, GameTooltip, ItemRefTooltip = nil, nil, nil, nil, nil
-print("PASS: cached bank snapshots on Classic, Retail, and Forever bank layouts, debounced updates, counts, tooltips, name search, and bag-style slots")
+print("PASS: cached bank snapshots on Classic, Retail, and Forever bank layouts, debounced updates, counts, tooltips, name search, bag-style slots, and viewer placement beside the backpack")

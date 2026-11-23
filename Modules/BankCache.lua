@@ -9,7 +9,8 @@ local BankCache = {}
 ScarletUI.BankCache = BankCache
 
 local IsSecret = issecretvalue or function() return false end
-local COLUMNS, SIZE, GAP, DIM_ALPHA = 12, 34, 4, 0.25
+local COLUMNS, SIZE, GAP, DIM_ALPHA = 12, 37, 5, 0.25 -- the bags' slot size and spacing
+local PORTRAIT = "Interface\\Icons\\INV_Box_02" -- a chest
 local TOOLTIP_COLOR = { r = 0.5, g = 0.75, b = 1 }
 
 local function NumSlots(bag)
@@ -226,9 +227,19 @@ end
 
 -- Viewer: the saved bank of a character on this realm, as item icons. The
 -- search box dims items whose name does not match; the grid keeps its places.
+-- The open backpack the viewer sits beside: Bag.lua's frame, Blizzard's
+-- combined bags, or the separate backpack.
+local function OpenBag()
+    for _, bag in ipairs({ ScarletUI_BagFrame or false, ContainerFrameCombinedBags or false, ContainerFrame1 or false }) do
+        if bag and bag:IsShown() then return bag end
+    end
+end
+
+-- In the bags' frame and slots (PortraitFrameTemplate, ItemButtonTemplate). It
+-- opens beside the backpack; a drag moves it until the backpack opens again.
 local function BuildViewer()
-    viewer = CreateFrame("Frame", "ScarletUIBank", UIParent, "BasicFrameTemplateWithInset")
-    viewer:SetSize(COLUMNS * (SIZE + GAP) + 44, 440)
+    viewer = CreateFrame("Frame", "ScarletUIBank", UIParent, "PortraitFrameTemplate")
+    viewer:SetSize(COLUMNS * (SIZE + GAP) + 44, 450)
     viewer:SetPoint("CENTER")
     viewer:SetFrameStrata("HIGH")
     viewer:SetToplevel(true)
@@ -236,15 +247,36 @@ local function BuildViewer()
     viewer:SetMovable(true)
     viewer:EnableMouse(true)
     viewer:RegisterForDrag("LeftButton")
+    local moved
     viewer:SetScript("OnDragStart", viewer.StartMoving)
-    viewer:SetScript("OnDragStop", viewer.StopMovingOrSizing)
+    viewer:SetScript("OnDragStop", function(self)
+        self:StopMovingOrSizing()
+        moved = true
+    end)
+    local function Anchor()
+        local bag = OpenBag()
+        if not bag then return end
+        viewer:ClearAllPoints()
+        viewer:SetPoint("TOPRIGHT", bag, "TOPLEFT", -14, 0)
+    end
+    local hooked = {}
+    local function HookBags() -- Bag.lua builds its frame late, so this reruns on each opening
+        for _, bag in ipairs({ ScarletUI_BagFrame or false, ContainerFrameCombinedBags or false, ContainerFrame1 or false }) do
+            if bag and not hooked[bag] then
+                hooked[bag] = true
+                bag:HookScript("OnShow", function()
+                    moved = false
+                    if viewer:IsShown() then Anchor() end
+                end)
+            end
+        end
+    end
     viewer:Hide()
     tinsert(UISpecialFrames, "ScarletUIBank")
     -- The template's X calls HideUIPanel, which refuses addon code in combat.
     if viewer.CloseButton then viewer.CloseButton:SetScript("OnClick", function() viewer:Hide() end) end
-    local title = viewer:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    title:SetPoint("TOP", 0, -5)
-    title:SetText("Scarlet UI Bank")
+    if viewer.SetTitle then viewer:SetTitle("Scarlet UI Bank") else viewer.TitleText:SetText("Scarlet UI Bank") end
+    if viewer.SetPortraitToAsset then viewer:SetPortraitToAsset(PORTRAIT) else SetPortraitToTexture(viewer.portrait, PORTRAIT) end
 
     local selected, query, shown, waiting = nil, "", {}, false
     -- Dress each slot and dim non-matches; items without loaded data wait for
@@ -264,8 +296,8 @@ local function BuildViewer()
     if not ok then search = CreateFrame("EditBox", nil, viewer, "InputBoxTemplate") end
     search:SetAutoFocus(false)
     search:SetHeight(20)
-    search:SetPoint("TOPLEFT", 18, -28)
-    search:SetPoint("TOPRIGHT", -14, -28)
+    search:SetPoint("TOPLEFT", 72, -33) -- right of the portrait
+    search:SetPoint("TOPRIGHT", -14, -33)
     search:HookScript("OnTextChanged", function(self)
         query = self:GetText()
         ApplyFilter()
@@ -278,7 +310,7 @@ local function BuildViewer()
         if not hadText then viewer:Hide() end
     end)
     local dropdown = CreateFrame("DropdownButton", nil, viewer, "WowStyle1DropdownTemplate")
-    dropdown:SetPoint("TOPLEFT", 12, -54)
+    dropdown:SetPoint("TOPLEFT", 66, -60)
     dropdown:SetWidth(180)
     dropdown:SetDefaultText("No banks saved")
     local lastSeen = viewer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -289,7 +321,7 @@ local function BuildViewer()
     -- ScrollFrameTemplate has the thin modern bar; older clients lack it.
     local ok, scroll = pcall(CreateFrame, "ScrollFrame", nil, viewer, "ScrollFrameTemplate")
     if not ok then scroll = CreateFrame("ScrollFrame", nil, viewer, "UIPanelScrollFrameTemplate") end
-    scroll:SetPoint("TOPLEFT", 14, -90)
+    scroll:SetPoint("TOPLEFT", 14, -96)
     scroll:SetPoint("BOTTOMRIGHT", -30, 10)
     local content = CreateFrame("Frame", nil, scroll)
     content:SetSize(COLUMNS * (SIZE + GAP), 1)
@@ -298,23 +330,22 @@ local function BuildViewer()
     local function Button(i)
         local button = buttons[i]
         if button then return button end
-        button = ScarletUI:CreateIconButton(content, SIZE)
-        -- The bag slot's quality border and junk coin, for Decorate.
-        button.IconBorder = button:CreateTexture(nil, "OVERLAY")
-        button.IconBorder:SetTexture("Interface\\Common\\WhiteIconFrame")
-        button.IconBorder:SetAllPoints()
+        -- The bags' slot (Bag.lua makes its own the same way); Decorate adds
+        -- the quality border, junk coin and item level.
+        button = CreateFrame("ItemButton", nil, content, "ItemButtonTemplate")
+        button:SetSize(SIZE, SIZE)
+        button.texture = button.icon
         button.junkCoin = button:CreateTexture(nil, "OVERLAY")
         button.junkCoin:SetSize(14, 14)
         button.junkCoin:SetPoint("TOPLEFT", 1, -1)
         button.junkCoin:SetTexture("Interface\\MoneyFrame\\UI-GoldIcon")
-        button.count =button:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
-        button.count:SetPoint("BOTTOMRIGHT", -2, 2)
         button:SetPoint("TOPLEFT", ((i - 1) % COLUMNS) * (SIZE + GAP) + 4, -math.floor((i - 1) / COLUMNS) * (SIZE + GAP) - 4)
         button:SetScript("OnEnter", function(self)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
             GameTooltip:SetHyperlink(self.link)
             GameTooltip:Show()
         end)
+        button:SetScript("OnLeave", function() GameTooltip:Hide() end)
         -- Shift-click links the item in chat, as from the bags.
         button:SetScript("OnClick", function(self)
             if HandleModifiedItemClick then HandleModifiedItemClick(self.link) end
@@ -349,8 +380,8 @@ local function BuildViewer()
         for i, item in ipairs(items) do
             local button = Button(i)
             button.link = item.link
-            button.texture:SetTexture(item.icon or 134400) -- question mark
-            button.count:SetText(item.count > 1 and item.count or "")
+            SetItemButtonTexture(button, item.icon or 134400) -- question mark
+            SetItemButtonCount(button, item.count)
             button:Show()
         end
         for i = #items + 1, #buttons do buttons[i]:Hide() end
@@ -359,6 +390,8 @@ local function BuildViewer()
     end
     viewer:SetScript("OnShow", function(self)
         PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN)
+        HookBags()
+        if not moved then Anchor() end
         self:Refresh()
     end)
     -- Closing by any route (X, Escape unfocused) starts the next opening unfiltered.
