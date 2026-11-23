@@ -80,6 +80,7 @@ local function ItemLevelText(itemLink, itemLocation, itemButton, hide)
         itemButton.itemLevel:Hide()
     end
 end
+ScarletUI.ItemLevelText = ItemLevelText -- also labels the cached bank viewer (BankCache.lua)
 
 local function calculateUnitItemLevel(unit)
     local totalItemLevel = 0

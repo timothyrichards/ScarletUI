@@ -130,6 +130,21 @@ function BankCache.Matches(link, query)
     return name:lower():find(query, 1, true) ~= nil
 end
 
+-- A viewer slot dressed as a bag slot: the item level on gear (the bags'
+-- setting), a quality-coloured border from Common up, and junk greyed with a
+-- coin. Returns true while the item's data has not loaded.
+function BankCache.Decorate(button, link)
+    local GetItemInfo = C_Item and C_Item.GetItemInfo or GetItemInfo
+    local quality = select(3, GetItemInfo(link))
+    local color = quality and quality >= 1 and (BAG_ITEM_QUALITY_COLORS or ITEM_QUALITY_COLORS)[quality]
+    if color then button.IconBorder:SetVertexColor(color.r, color.g, color.b) end
+    button.IconBorder:SetShown(color and true or false)
+    button.texture:SetDesaturated(quality == 0)
+    button.junkCoin:SetShown(quality == 0)
+    ScarletUI.ItemLevelText(link, nil, button, not ScarletUI.db.global.itemLevelBag)
+    return quality == nil
+end
+
 local bankOpen, pending, viewer
 
 function ScarletUI:SnapshotBank()
@@ -232,13 +247,14 @@ local function BuildViewer()
     title:SetText("Scarlet UI Bank")
 
     local selected, query, shown, waiting = nil, "", {}, false
-    -- Dim non-matches; items without loaded data wait for GET_ITEM_INFO_RECEIVED.
+    -- Dress each slot and dim non-matches; items without loaded data wait for
+    -- GET_ITEM_INFO_RECEIVED.
     local buttons = {}
     local function ApplyFilter()
         waiting = false
         for i, item in ipairs(shown) do
             local match, unknown = BankCache.Matches(item.link, query)
-            waiting = waiting or unknown
+            waiting = BankCache.Decorate(buttons[i], item.link) or waiting or unknown
             buttons[i]:SetAlpha(match and 1 or DIM_ALPHA)
         end
     end
@@ -283,7 +299,15 @@ local function BuildViewer()
         local button = buttons[i]
         if button then return button end
         button = ScarletUI:CreateIconButton(content, SIZE)
-        button.count = button:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
+        -- The bag slot's quality border and junk coin, for Decorate.
+        button.IconBorder = button:CreateTexture(nil, "OVERLAY")
+        button.IconBorder:SetTexture("Interface\\Common\\WhiteIconFrame")
+        button.IconBorder:SetAllPoints()
+        button.junkCoin = button:CreateTexture(nil, "OVERLAY")
+        button.junkCoin:SetSize(14, 14)
+        button.junkCoin:SetPoint("TOPLEFT", 1, -1)
+        button.junkCoin:SetTexture("Interface\\MoneyFrame\\UI-GoldIcon")
+        button.count =button:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
         button.count:SetPoint("BOTTOMRIGHT", -2, 2)
         button:SetPoint("TOPLEFT", ((i - 1) % COLUMNS) * (SIZE + GAP) + 4, -math.floor((i - 1) / COLUMNS) * (SIZE + GAP) - 4)
         button:SetScript("OnEnter", function(self)

@@ -123,7 +123,9 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   client). The Warband/account bank is not saved. `/sui bank` and the page's
   button open `ScarletUIBank` (`BasicFrameTemplateWithInset`, icons from
   `CreateIconButton`) with a dropdown of the characters saved under this AceDB
-  realm key (on Forever the ruleset). Item tooltips get "Bank: N" and
+  realm key (on Forever the ruleset). Its slots look like bag slots (`BankCache.Decorate`):
+  item level per the bags' `itemLevelBag` setting (`ScarletUI.ItemLevelText`, from
+  `ItemLevel.lua`), a quality border from Common up, and junk greyed with a coin. Item tooltips get "Bank: N" and
   "Bank (Name): N" lines from a `TooltipDataProcessor` post-call, or
   `OnTooltipSetItem` on older clients. The rules (`ScarletUI.BankCache`) are
   tested in `tests/bank-cache.lua`, run by the module-loading check.

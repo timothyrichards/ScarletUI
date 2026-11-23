@@ -226,5 +226,28 @@ GetItemInfo = function(link) return names[idOf(link)] end
 assert(BankCache.Matches("item:2589", "LINEN") and not BankCache.Matches("item:2589", "wool"))
 GetItemInfo = nil
 
+-- Viewer slots dressed as bag slots: quality border from Common up, junk
+-- greyed with a coin, the item level per the bags' setting.
+local quality = { [1] = 0, [2] = 1, [3] = 4 }
+C_Item = { GetItemInfo = function(link) return "Item", link, quality[idOf(link)] end }
+ITEM_QUALITY_COLORS = { [0] = { r = .6, g = .6, b = .6 }, [1] = { r = 1, g = 1, b = 1 }, [4] = { r = .6, g = .2, b = 1 } }
+local levelCalls = {}
+ScarletUI.ItemLevelText = function(link, location, button, hide) levelCalls[#levelCalls + 1] = { link, location, hide } end
+ScarletUI.db.global.itemLevelBag = true
+local function Part() return { SetShown = function(self, v) self.shown = v end, SetVertexColor = function(self, r) self.r = r end,
+    SetDesaturated = function(self, v) self.grey = v end } end
+local slot = { IconBorder = Part(), junkCoin = Part(), texture = Part() }
+assert(BankCache.Decorate(slot, "item:3") == false)
+assert(slot.IconBorder.shown and slot.IconBorder.r == .6 and not slot.texture.grey and not slot.junkCoin.shown)
+assert(levelCalls[1][1] == "item:3" and levelCalls[1][2] == nil and levelCalls[1][3] == false)
+BankCache.Decorate(slot, "item:1") -- junk
+assert(not slot.IconBorder.shown and slot.texture.grey and slot.junkCoin.shown)
+BankCache.Decorate(slot, "item:2") -- common: white border
+assert(slot.IconBorder.shown and slot.IconBorder.r == 1 and not slot.texture.grey)
+ScarletUI.db.global.itemLevelBag = false
+assert(BankCache.Decorate(slot, "item:9") == true) -- not loaded: plain until GET_ITEM_INFO_RECEIVED
+assert(not slot.IconBorder.shown and not slot.junkCoin.shown and levelCalls[4][3] == true)
+C_Item, ITEM_QUALITY_COLORS = nil, nil
+
 C_Bank, C_Container, TooltipDataProcessor, GameTooltip, ItemRefTooltip = nil, nil, nil, nil, nil
-print("PASS: cached bank snapshots on Classic, Retail, and Forever bank layouts, debounced updates, counts, tooltips, and name search")
+print("PASS: cached bank snapshots on Classic, Retail, and Forever bank layouts, debounced updates, counts, tooltips, name search, and bag-style slots")
