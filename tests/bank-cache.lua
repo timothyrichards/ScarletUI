@@ -59,6 +59,43 @@ local read = BankCache.Read()
 assert(read.size == 24 + 16 + 6 and #read.items == 4)
 assert(read.counts[2589] == 27 and read.counts[2592] == 5 and read.counts[4306] == 1 and read.counts[9999] == nil)
 assert(read.items[1].link == Link(2589) and read.items[1].count == 20 and read.items[1].icon == 2689)
+-- Equipment sets: an exact bank location marks that slot only; an unreadable
+-- location falls back to the item ID; no C_EquipmentSet means no set data.
+assert(read.items[1].sets == nil)
+C_EquipmentSet = {
+    GetEquipmentSetIDs = function() return { 1, 2 } end,
+    GetEquipmentSetInfo = function(id) return id == 1 and "Tank" or "Ret" end,
+    GetItemIDs = function(id) return id == 1 and { [1] = 2589, [2] = 4306 } or { [1] = 2589, [2] = 2592, [3] = 9 } end,
+    -- Tank: 2589 at bank slot 1, 4306 elsewhere (equipped, location 1 = missing). Ret: 2589 in bag 5 slot 2.
+    GetItemLocations = function(id)
+        return id == 1 and { [1] = 1000 + 1, [2] = 1 } or { [1] = 1000 + 52, [2] = 5, [3] = 0 }
+    end,
+}
+EquipmentManager_UnpackLocation = function(loc)
+    if loc == 1001 then return false, true, false, false, 1, -1 end
+    if loc == 1052 then return false, false, true, false, 2, 5 end
+    return true, false, false, false, 1, nil -- equipped
+end
+read = BankCache.Read()
+assert(table.concat(read.items[1].sets, ",") == "Tank") -- bag -1 slot 1
+assert(read.items[3].sets and table.concat(read.items[3].sets, ",") == "Ret") -- bag 5 slot 2 (2589)
+assert(read.items[2].sets == nil and read.items[4].sets == nil) -- 2592 slot 3, 4306: not in a bank location
+-- Without the unpack helper every banked copy of a set's item ID is marked.
+EquipmentManager_UnpackLocation = nil
+read = BankCache.Read()
+assert(table.concat(read.items[1].sets, ",") == "Ret,Tank" and table.concat(read.items[3].sets, ",") == "Ret,Tank")
+assert(table.concat(read.items[2].sets, ",") == "Ret" and table.concat(read.items[4].sets, ",") == "Tank")
+C_EquipmentSet = nil
+assert(BankCache.Read().items[1].sets == nil)
+
+-- Search: a set name or "set:name" matches that set's items; "set:" any set item.
+local tank = { "Ret", "Tank" }
+assert(BankCache.Matches("item:2589", "tank", tank) and BankCache.Matches("item:2589", "set:ret", tank))
+assert(BankCache.Matches("item:2589", "set: TA", tank) and BankCache.Matches("item:2589", "set:", tank))
+assert(not BankCache.Matches("item:2589", "set:tank", { "Ret" }) and not BankCache.Matches("item:2589", "set:", nil))
+assert(not BankCache.Matches("item:2589", "set:linen", tank)) -- set: ignores item names
+assert(BankCache.Matches("item:9999", "ret", tank) and not select(2, BankCache.Matches("item:9999", "ret", tank)))
+
 -- A reagent bank is read where the client has one and it is bought.
 IsReagentBankUnlocked = function() return true end
 Enum.BagIndex.Reagentbank = -3
@@ -392,8 +429,8 @@ assert(#headers == 2 and headers[1]:find(H .. "Scarlet", 1, true) and headers[2]
     and headers[1]:find("Scarlet", 1, true) and headers[1]:find("Updated just now", 1, true))
 assert(headers[2]:find("Alt", 1, true) and headers[2]:find("Updated 3h ago", 1, true))
 assert(named.ScarletUIBankSlot3.link == Link(2589) and named.ScarletUIBankSlot3.shown and not named.ScarletUIBankSlot4)
-assert(named.ScarletUIBankSlot1.args[2] == -24 and named.ScarletUIBankSlot2.args[2] == -92) -- Alt's header sits between
-assert(named.ScarletUIBankSlot2.args[1] == 4 and named.ScarletUIBankSlot3.args[1] == 46)
+assert(named.ScarletUIBankSlot1.args[2] == -24 and named.ScarletUIBankSlot2.args[2] == -91) -- Alt's header sits between
+assert(named.ScarletUIBankSlot2.args[1] == 4 and named.ScarletUIBankSlot3.args[1] == 45)
 -- The search dims across every group.
 local search
 for _, f in ipairs(frames) do if f.hooks.OnTextChanged then search = f end end
@@ -414,6 +451,25 @@ assert(#tip.lines == 2 and tip.lines[1] == "Bank: Scarlet x5 (just now)" and tip
 ScarletUI.db.global.bankCacheModule.tooltip = true
 named.ScarletUIBankSlot2.scripts.OnEnter(named.ScarletUIBankSlot2)
 assert(#tip.lines == 1 and tip.lines[1] == "Bank: Alt x1 (3h ago)")
+-- Sets: the corner marker shows on set items only, the tooltip names the sets,
+-- and a set search dims everything else across every group.
+ScarletUI.db.global.bankCache["Alt - Realm"].items[2].sets = { "Ret", "Tank" }
+radios[1].pick() -- refresh
+assert(named.ScarletUIBankSlot2.setMark ~= nil)
+ScarletUI:ToggleBankViewer(false)
+ScarletUI:ToggleBankViewer(true)
+named.ScarletUIBankSlot3.scripts.OnEnter(named.ScarletUIBankSlot3)
+assert(tip.lines[#tip.lines] == "Set: Ret, Tank" and named.ScarletUIBankSlot3.setMark.shown)
+named.ScarletUIBankSlot2.scripts.OnEnter(named.ScarletUIBankSlot2)
+assert(tip.lines[#tip.lines] ~= "Set: Ret, Tank" and not named.ScarletUIBankSlot2.setMark.shown)
+search:SetText("set:ret")
+for _, fn in ipairs(search.hooks.OnTextChanged) do fn(search) end
+assert(named.ScarletUIBankSlot1.alpha == 0.25 and named.ScarletUIBankSlot2.alpha == 0.25 and named.ScarletUIBankSlot3.alpha == 1)
+search:SetText("tank")
+for _, fn in ipairs(search.hooks.OnTextChanged) do fn(search) end
+assert(named.ScarletUIBankSlot3.alpha == 1 and named.ScarletUIBankSlot1.alpha == 0.25)
+search:SetText("")
+for _, fn in ipairs(search.hooks.OnTextChanged) do fn(search) end
 -- The choice is remembered across closing and reopening.
 ScarletUI:ToggleBankViewer(false)
 ScarletUI:ToggleBankViewer(true)

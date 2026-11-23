@@ -9,7 +9,7 @@ local BankCache = {}
 ScarletUI.BankCache = BankCache
 
 local IsSecret = issecretvalue or function() return false end
-local COLUMNS, SIZE, GAP, DIM_ALPHA = 12, 37, 5, 0.25 -- the bags' slot size and spacing
+local COLUMNS, SIZE, GAP, DIM_ALPHA = 10, 37, 4, 0.25 -- the bags' slots per row, size and spacing
 local PORTRAIT = "Interface\\Icons\\INV_Box_02" -- a chest
 local TOOLTIP_COLOR = { r = 0.5, g = 0.75, b = 1 }
 
@@ -54,12 +54,53 @@ function BankCache.Containers()
     return list
 end
 
+-- Equipment Manager sets of banked items: { exact = { ["bag:slot"] = names },
+-- byID = { [itemID] = names } }, or nil on clients without sets. A set slot
+-- whose location is a bank/bag slot marks exactly that slot; one whose
+-- location cannot be read marks every banked copy of its item ID instead.
+local function SetNames(list, name)
+    for _, have in ipairs(list) do if have == name then return end end
+    list[#list + 1] = name
+end
+local function EquipmentSets()
+    if not (C_EquipmentSet and C_EquipmentSet.GetEquipmentSetIDs) then return end
+    local exact, byID = {}, {}
+    for _, setID in ipairs(C_EquipmentSet.GetEquipmentSetIDs() or {}) do
+        local name = C_EquipmentSet.GetEquipmentSetInfo(setID)
+        local ids = C_EquipmentSet.GetItemIDs and C_EquipmentSet.GetItemIDs(setID) or {}
+        local locations = C_EquipmentSet.GetItemLocations and C_EquipmentSet.GetItemLocations(setID)
+        local UnpackLocation = EquipmentManager_UnpackLocation
+        if name then
+            for slot, itemID in pairs(ids) do
+                local location = locations and locations[slot]
+                if itemID and itemID ~= 0 then
+                    if location and UnpackLocation then
+                        if location > 1 then -- 0, 1: empty, missing, or ignored slot
+                            local _, bank, bags, _, bagSlot, bag = UnpackLocation(location)
+                            if (bank or bags) and bag then
+                                local key = bag .. ":" .. bagSlot
+                                exact[key] = exact[key] or {}
+                                SetNames(exact[key], name)
+                            end -- else equipped, or a bank slot without a bag: not matched
+                        end
+                    else
+                        byID[itemID] = byID[itemID] or {}
+                        SetNames(byID[itemID], name)
+                    end
+                end
+            end
+        end
+    end
+    return { exact = exact, byID = byID }
+end
+
 -- What the open bank holds: items in bank order and the total per item ID.
 -- Nil while it has no slots, which means it has not loaded or cannot be seen.
 function BankCache.Read()
     local containers = BankCache.Containers()
     if not containers then return end
     local items, counts, size = {}, {}, 0
+    local sets = EquipmentSets()
     for _, bag in ipairs(containers) do
         local slots = NumSlots(bag)
         size = size + slots
@@ -68,7 +109,13 @@ function BankCache.Read()
             itemID = itemID or ItemID(link)
             if itemID and not IsSecret(itemID) then
                 count = count or 1
-                items[#items + 1] = { link = link or ("item:" .. itemID), count = count, icon = icon }
+                local item = { link = link or ("item:" .. itemID), count = count, icon = icon }
+                local names = sets and (sets.exact[bag .. ":" .. slot] or sets.byID[itemID])
+                if names then
+                    item.sets = { unpack(names) }
+                    table.sort(item.sets)
+                end
+                items[#items + 1] = item
                 counts[itemID] = (counts[itemID] or 0) + count
             end
         end
@@ -138,13 +185,20 @@ function BankCache.ItemName(link)
     return name or link:match("%[(.-)%]")
 end
 
--- Whether the item's name contains `query`, ignoring case and surrounding
--- spaces; an empty query matches everything. Unknown names do not match.
+-- Whether the item's name or one of its set names (`sets`, saved with the
+-- item) contains `query`, ignoring case and surrounding spaces; "set:Ret"
+-- looks at set names only, and bare "set:" takes any set item. An empty query
+-- matches everything. Unknown names do not match.
 -- Second result: the name is not loaded yet, so asking again later may differ.
 -- ponytail: lower() folds ASCII only; accented capitals need a UTF-8 aware fold.
-function BankCache.Matches(link, query)
+function BankCache.Matches(link, query, sets)
     query = query:match("^%s*(.-)%s*$"):lower()
     if query == "" then return true end
+    local setQuery = query:match("^set:%s*(.-)$")
+    for _, set in ipairs(sets or {}) do
+        if set:lower():find(setQuery or query, 1, true) then return true end
+    end
+    if setQuery then return false end
     local name = BankCache.ItemName(link)
     if not name then return false, true end
     return name:lower():find(query, 1, true) ~= nil
@@ -316,9 +370,10 @@ local function BuildViewer()
         waiting = false
         for i, item in ipairs(shown) do
             if not buttons[i] then break end -- Refresh failed partway
-            local match, unknown = BankCache.Matches(item.link, query)
+            local match, unknown = BankCache.Matches(item.link, query, item.sets)
             waiting = BankCache.Decorate(buttons[i], item.link) or waiting or unknown
             buttons[i]:SetAlpha(match and 1 or DIM_ALPHA)
+            buttons[i].setMark:SetShown(item.sets ~= nil)
         end
     end
 
@@ -374,6 +429,11 @@ local function BuildViewer()
         button.junkCoin:SetSize(14, 14)
         button.junkCoin:SetPoint("TOPLEFT", 1, -1)
         button.junkCoin:SetTexture("Interface\\MoneyFrame\\UI-GoldIcon")
+        -- Blizzard's bags mark set items with a small Equipment Manager icon.
+        button.setMark = button:CreateTexture(nil, "OVERLAY")
+        button.setMark:SetSize(14, 14)
+        button.setMark:SetPoint("BOTTOMLEFT", 2, 2)
+        if button.setMark.SetAtlas then button.setMark:SetAtlas("bags-icon-equipmentmanager") end
         button:SetScript("OnEnter", function(self)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
             -- All mode: one line per character holding the item, instead of
@@ -387,6 +447,9 @@ local function BuildViewer()
                     GameTooltip:AddLine(("Bank: %s x%d (%s)"):format(c.label, c.count, BankCache.Age(c.time, time())),
                         TOOLTIP_COLOR.r, TOOLTIP_COLOR.g, TOOLTIP_COLOR.b)
                 end
+            end
+            if self.sets then
+                GameTooltip:AddLine("Set: " .. table.concat(self.sets, ", "), TOOLTIP_COLOR.r, TOOLTIP_COLOR.g, TOOLTIP_COLOR.b)
             end
             GameTooltip:Show()
         end)
@@ -458,7 +521,7 @@ local function BuildViewer()
             for k, item in ipairs(group.items) do
                 n = n + 1
                 local button = Button(n)
-                button.link = item.link
+                button.link, button.sets = item.link, item.sets or false
                 button.texture:SetTexture(item.icon or 134400) -- question mark
                 button.Count:SetText((item.count or 1) > 1 and item.count or "")
                 button:ClearAllPoints()
