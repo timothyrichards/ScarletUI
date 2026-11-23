@@ -20,6 +20,7 @@ end
 C_Timer = { After = function(_, fn) table.insert(timers, fn) end }
 time = function() return now end
 UnitClass = function() return "Paladin", "PALADIN" end
+UnitFactionGroup = function() return "Horde" end
 issecretvalue = nil
 
 -- bags[bagID] = { size, { [slot] = { itemID, count } } }
@@ -119,7 +120,7 @@ Fire("PLAYERBANKSLOTS_CHANGED", 3)
 assert(#timers == 1)
 RunTimers()
 local saved = ScarletUI.db.global.bankCache["Scarlet - Realm"]
-assert(saved.time == 1000 and saved.realm == "Realm" and saved.class == "PALADIN" and saved.counts[2589] == 250)
+assert(saved.time == 1000 and saved.realm == "Realm" and saved.class == "PALADIN" and saved.faction == "Horde" and saved.counts[2589] == 250)
 -- A withdrawal while open replaces the snapshot.
 now = 2000
 bags[7][2][10] = nil
@@ -167,6 +168,12 @@ assert(#characters == 3 and characters[1].label == "Scarlet" and characters[2].l
 -- Forever's keys are first name and surname, with the ruleset as realm.
 assert(BankCache.Label("Scarlet Bubbles", "PvE") == "Scarlet Bubbles")
 assert(BankCache.Label("Scarlet - Azjol-Nerub", "Azjol-Nerub") == "Scarlet")
+
+-- Age: compact, rounded down; minutes, then hours, then days.
+assert(BankCache.Age(nil, 5000) == "" and BankCache.Age(5000, 5000) == "just now" and BankCache.Age(5100, 5000) == "just now")
+assert(BankCache.Age(4941, 5000) == "just now" and BankCache.Age(4940, 5000) == "1m ago" and BankCache.Age(5000 - 3599, 5000) == "59m ago")
+assert(BankCache.Age(5000 - 3600, 5000) == "1h ago" and BankCache.Age(5000 - 3 * 3600 - 59, 5000) == "3h ago")
+assert(BankCache.Age(5000 - 86399, 5000) == "23h ago" and BankCache.Age(5000 - 2 * 86400, 5000) == "2d ago")
 
 -- Tooltips: "Bank: N" for this character, then the others on the realm.
 ScarletUI.db.global.bankCache = cache
@@ -252,7 +259,8 @@ C_Item, ITEM_QUALITY_COLORS = nil, nil
 -- Viewer placement: beside the open backpack; a drag holds until the backpack
 -- opens again. Frames are mocks; any other field is a stub that can be called
 -- or indexed (viewer.CloseButton:SetScript) and returns a new frame.
-local Frame, Stub
+local Frame, Stub, menu
+local frames, texts = {}, {}
 Stub = setmetatable({}, { __call = function() return Frame() end, __index = function() return Stub end })
 function Frame()
     local f = { shown = false, scripts = {}, hooks = {} }
@@ -266,14 +274,19 @@ function Frame()
     function f:Hide() if self.shown then self.shown = false; Run(self, "OnHide") end end
     function f:SetShown(v) if v then self:Show() else self:Hide() end end
     function f:IsShown() return self.shown end
-    function f:SetPoint(point, relative) self.point, self.relative = point, relative end
-    function f:ClearAllPoints() self.point, self.relative = nil, nil end
-    function f:GetText() return "" end
+    function f:SetPoint(point, relative, ...) self.point, self.relative, self.args = point, relative, { relative, ... } end
+    function f:ClearAllPoints() self.point, self.relative, self.args = nil, nil, nil end
+    function f:SetText(text) self.text = text end
+    function f:GetText() return self.text or "" end
+    function f:SetAlpha(alpha) self.alpha = alpha end
+    function f:SetupMenu(fn) menu = fn end
+    function f:CreateFontString() local fs = Frame(); texts[#texts + 1] = fs; return fs end
     return setmetatable(f, { __index = function() return Stub end })
 end
 local named = {}
-CreateFrame = function(_, name) local f = Frame(); if name then named[name] = f end; return f end
+CreateFrame = function(_, name) local f = Frame(); if name then named[name] = f end; frames[#frames + 1] = f; return f end
 UISpecialFrames, SOUNDKIT, PlaySound, date, tinsert = {}, {}, noop, function() return "" end, table.insert
+ContainerFrame1, ScarletUI_BagFrame = nil, nil -- left by other suites in a shared runtime
 local bag = Frame()
 ContainerFrameCombinedBags = bag
 bag:Show()
@@ -292,10 +305,134 @@ bag:Show()
 assert(view.point == "TOPRIGHT" and view.relative == bag and #bag.hooks.OnShow == 1)
 -- With no backpack open it keeps its place.
 bag:Hide()
+RunTimers() -- the viewer closes with the backpack; reopen it with the bags closed
+ScarletUI:ToggleBankViewer(true)
+assert(view.shown)
 view:SetPoint("CENTER")
 ScarletUI:ToggleBankViewer(false)
 ScarletUI:ToggleBankViewer(true)
 assert(view.point == "CENTER")
+RunTimers()
+assert(view.shown) -- opening it with the bags closed does not close it
+
+-- Closing the backpack closes the viewer; a swap to another bag frame does not.
+local single = Frame()
+ContainerFrame1 = single
+bag:Show()
+ScarletUI:ToggleBankViewer(false)
+ScarletUI:ToggleBankViewer(true) -- hooks ContainerFrame1 too
+assert(#single.hooks.OnHide == 1 and #bag.hooks.OnHide == 1)
+bag:Hide()
+single:Show() -- the swap: one hides as the other opens
+RunTimers()
+assert(view.shown)
+single:Hide()
+assert(view.shown) -- not before the check runs
+RunTimers()
+assert(not view.shown)
+-- Reopened from the minimap with the bags closed, it stays until a bag closes.
+ScarletUI:ToggleBankViewer(true)
+RunTimers()
+assert(view.shown)
+bag:Show()
+bag:Hide()
+RunTimers()
+assert(not view.shown)
+ContainerFrameCombinedBags, ContainerFrame1 = nil, nil
+
+-- All characters: the first menu entry, grouped under name headers with ages,
+-- the choice remembered, one tooltip line per character.
+local function Radios()
+    local radios = {}
+    menu(nil, { CreateRadio = function(_, label, isSelected, onSelect)
+        radios[#radios + 1] = { label = label, selected = isSelected, pick = onSelect }
+    end })
+    return radios
+end
+local function HeaderTexts()
+    local list = {}
+    for _, fs in ipairs(texts) do if fs.shown and fs.text and fs.text:find("Updated") and fs.args then list[#list + 1] = fs.text end end
+    return list
+end
+local quality2 = {}
+C_Item = { GetItemInfo = function(link) return names[idOf(link)], link, quality2[idOf(link)] end }
+ScarletUI.CreateIconButton = function(_, _, _, name)
+    local button = Frame()
+    button.texture, button.IconBorder, button.junkCoin = Frame(), Frame(), Frame()
+    button.CreateTexture = function() return Frame() end
+    button.CreateFontString = function() return Frame() end
+    named[name] = button
+    return button
+end
+now = 1000 + 3 * 3600
+local item = function(id, count) return { link = Link(id), count = count, icon = id } end
+ScarletUI.db.global.bankCache = {
+    ["Scarlet - Realm"] = { realm = "Realm", faction = "Horde", time = 1000 + 3 * 3600 - 10, counts = { [2589] = 5 }, items = { item(2589, 5) } },
+    ["Alt - Realm"] = { realm = "Realm", faction = "Alliance", time = 1000, counts = { [2589] = 12, [2592] = 1 }, items = { item(2592, 1), item(2589, 12) } },
+    ["Empty - Realm"] = { realm = "Realm", time = 1000, counts = {}, items = {} },
+    ["Far - Other"] = { realm = "Other", counts = { [2589] = 99 }, items = { item(2589, 99) } },
+}
+names[2589], names[2592] = "Linen Cloth", "Wool Cloth"
+ScarletUI:ToggleBankViewer(false)
+ScarletUI:ToggleBankViewer(true)
+local radios = Radios()
+-- Default: the current character, no header, "Updated" beside the menu.
+assert(#radios == 4 and radios[1].label == "All characters")
+-- The faction icon leads the name; no faction recorded yet (older saves) means no icon.
+local H, A = "|TInterface\\FriendsFrame\\PlusManz-Horde:14|t ", "|TInterface\\FriendsFrame\\PlusManz-Alliance:14|t "
+assert(radios[2].label == H .. "Scarlet" and radios[3].label == A .. "Alt" and radios[4].label == "Empty")
+assert(BankCache.Named("Bob", "Neutral") == "Bob" and BankCache.Named("Bob") == "Bob")
+assert(radios[2].selected() and not radios[1].selected() and #HeaderTexts() == 0)
+assert(named.ScarletUIBankSlot1.link == Link(2589) and not named.ScarletUIBankSlot2)
+-- Picking All saves the choice and groups the slots, a header each.
+radios[1].pick()
+assert(ScarletUI.db.global.bankCacheModule.viewerChoice == "ALL" and Radios()[1].selected())
+local headers = HeaderTexts()
+assert(#headers == 2 and headers[1]:find(H .. "Scarlet", 1, true) and headers[2]:find(A .. "Alt", 1, true)
+    and headers[1]:find("Scarlet", 1, true) and headers[1]:find("Updated just now", 1, true))
+assert(headers[2]:find("Alt", 1, true) and headers[2]:find("Updated 3h ago", 1, true))
+assert(named.ScarletUIBankSlot3.link == Link(2589) and named.ScarletUIBankSlot3.shown and not named.ScarletUIBankSlot4)
+assert(named.ScarletUIBankSlot1.args[2] == -24 and named.ScarletUIBankSlot2.args[2] == -92) -- Alt's header sits between
+assert(named.ScarletUIBankSlot2.args[1] == 4 and named.ScarletUIBankSlot3.args[1] == 46)
+-- The search dims across every group.
+local search
+for _, f in ipairs(frames) do if f.hooks.OnTextChanged then search = f end end
+search:SetText("wool")
+for _, fn in ipairs(search.hooks.OnTextChanged) do fn(search) end
+assert(named.ScarletUIBankSlot1.alpha == 0.25 and named.ScarletUIBankSlot2.alpha == 1 and named.ScarletUIBankSlot3.alpha == 0.25)
+search:SetText("")
+-- Tooltips: the viewer's own line per character, not the hook's, and with the hook off too.
+local tip = { lines = {} }
+function tip:SetOwner() self.lines = {} end
+function tip:SetHyperlink(link) postCalls[0](self, { id = idOf(link) }) end
+function tip:AddLine(text) self.lines[#self.lines + 1] = text end
+function tip:Show() end
+GameTooltip = tip
+ScarletUI.db.global.bankCacheModule.tooltip = false
+named.ScarletUIBankSlot3.scripts.OnEnter(named.ScarletUIBankSlot3)
+assert(#tip.lines == 2 and tip.lines[1] == "Bank: Scarlet x5 (just now)" and tip.lines[2] == "Bank: Alt x12 (3h ago)")
+ScarletUI.db.global.bankCacheModule.tooltip = true
+named.ScarletUIBankSlot2.scripts.OnEnter(named.ScarletUIBankSlot2)
+assert(#tip.lines == 1 and tip.lines[1] == "Bank: Alt x1 (3h ago)")
+-- The choice is remembered across closing and reopening.
+ScarletUI:ToggleBankViewer(false)
+ScarletUI:ToggleBankViewer(true)
+assert(Radios()[1].selected() and HeaderTexts()[1])
+-- One character: its own grid, with its age beside the menu; the tooltip is the hook's again.
+Radios()[3].pick()
+assert(ScarletUI.db.global.bankCacheModule.viewerChoice == "Alt - Realm" and #HeaderTexts() == 0)
+local seen
+for _, fs in ipairs(texts) do if fs.text == "Updated 3h ago" then seen = true end end
+assert(seen and named.ScarletUIBankSlot1.link == Link(2592) and not named.ScarletUIBankSlot3.shown)
+named.ScarletUIBankSlot1.scripts.OnEnter(named.ScarletUIBankSlot1)
+assert(#tip.lines == 1 and tip.lines[1] == "Bank (Alt): 1")
+-- A character that is gone falls back to the current one.
+ScarletUI.db.global.bankCacheModule.viewerChoice = "Gone - Realm"
+ScarletUI:ToggleBankViewer(false)
+ScarletUI:ToggleBankViewer(true)
+assert(Radios()[2].selected())
+ScarletUI:ToggleBankViewer(false)
+C_Item, GameTooltip = nil, nil
 ContainerFrameCombinedBags, CreateFrame, UISpecialFrames, SOUNDKIT, PlaySound, date, tinsert = nil, nil, nil, nil, nil, nil, nil
 
 C_Bank, C_Container, TooltipDataProcessor, GameTooltip, ItemRefTooltip = nil, nil, nil, nil, nil

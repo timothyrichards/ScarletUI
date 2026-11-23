@@ -128,7 +128,13 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   item level per the bags' `itemLevelBag` setting (`ScarletUI.ItemLevelText`, from
   `ItemLevel.lua`), a quality border from Common up, and junk greyed with a coin. Item tooltips get "Bank: N" and
   "Bank (Name): N" lines from a `TooltipDataProcessor` post-call, or
-  `OnTooltipSetItem` on older clients. The rules (`ScarletUI.BankCache`) are
+  `OnTooltipSetItem` on older clients. The dropdown starts with "All characters"
+  (every saved bank on the realm, grouped under a name header with its age, and a
+  tooltip line "Bank: Name xN (age)" per character instead of the hook's); the choice is
+  kept in `bankCacheModule.viewerChoice`. Ages show as "Updated 3h ago" (`BankCache.Age`),
+  not dates. Snapshots record `faction` (`UnitFactionGroup`), shown as a `PlusManz-Horde`/
+  `-Alliance` icon before the name (none for older saves). The viewer closes when the
+  backpack frames hide (checked a tick later, so a swap of frames keeps it). The rules (`ScarletUI.BankCache`) are
   tested in `tests/bank-cache.lua`, run by the module-loading check.
 - `Modules/Tracking.lua`: shares minimap tracking menu checkboxes across
   characters via `db.global.trackingModule.states`, keyed by entry name and

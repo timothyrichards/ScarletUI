@@ -84,6 +84,14 @@ function BankCache.Label(key, realm)
     return key:sub(-#suffix) == suffix and key:sub(1, -#suffix - 1) or key
 end
 
+-- A character's name with its faction icon before it; banks saved before the
+-- faction was recorded have none until they are seen again.
+local FACTION_ICONS = { Horde = "PlusManz-Horde", Alliance = "PlusManz-Alliance" }
+function BankCache.Named(label, faction)
+    local icon = FACTION_ICONS[faction]
+    return icon and ("|TInterface\\FriendsFrame\\" .. icon .. ":14|t " .. label) or label
+end
+
 -- Saved characters on `realm` (AceDB's realm key), `current` first, then by name.
 function BankCache.Characters(cache, realm, current)
     local list = {}
@@ -99,16 +107,27 @@ function BankCache.Characters(cache, realm, current)
     return list
 end
 
--- { key, label, count } per character on `realm` whose bank holds itemID.
+-- { key, label, count, time } per character on `realm` whose bank holds itemID.
 function BankCache.Counts(cache, realm, itemID, current)
     local list = {}
     for _, character in ipairs(BankCache.Characters(cache, realm, current)) do
         local count = character.entry.counts and character.entry.counts[itemID]
         if count and count > 0 then
-            list[#list + 1] = { key = character.key, label = character.label, count = count }
+            list[#list + 1] = { key = character.key, label = character.label, count = count, time = character.entry.time }
         end
     end
     return list
+end
+
+-- How old a snapshot is, compactly: "just now", "5m ago", "3h ago", "2d ago".
+-- Minutes under an hour, hours under a day, then days, each rounded down.
+function BankCache.Age(saved, now)
+    if not saved then return "" end
+    local seconds = math.max(0, now - saved)
+    if seconds < 60 then return "just now" end
+    if seconds < 3600 then return math.floor(seconds / 60) .. "m ago" end
+    if seconds < 86400 then return math.floor(seconds / 3600) .. "h ago" end
+    return math.floor(seconds / 86400) .. "d ago"
 end
 
 -- Item name from a saved link or "item:ID": the client's item data, else the
@@ -146,7 +165,8 @@ function BankCache.Decorate(button, link)
     return quality == nil
 end
 
-local bankOpen, pending, viewer
+local bankOpen, pending, viewer, viewerTip
+local ALL = "ALL" -- the viewer's "All characters" choice
 
 function ScarletUI:SnapshotBank()
     local settings = self.db.global.bankCacheModule
@@ -155,6 +175,7 @@ function ScarletUI:SnapshotBank()
     if not snapshot then return end
     snapshot.realm = self.db.keys.realm
     snapshot.class = select(2, UnitClass("player"))
+    snapshot.faction = UnitFactionGroup("player")
     snapshot.time = time()
     self.db.global.bankCache = self.db.global.bankCache or {}
     self.db.global.bankCache[self.db.keys.char] = snapshot
@@ -174,7 +195,7 @@ end
 local function AddBankCounts(tooltip, itemID)
     local self = ScarletUI
     local settings = self.db.global.bankCacheModule
-    if not (settings.enabled and settings.tooltip) or not itemID or IsSecret(itemID)
+    if viewerTip or not (settings.enabled and settings.tooltip) or not itemID or IsSecret(itemID)
         or (tooltip.IsForbidden and tooltip:IsForbidden()) then
         return
     end
@@ -236,7 +257,8 @@ local function OpenBag()
 end
 
 -- In the bags' frame and slots (PortraitFrameTemplate, the bag slot art). It
--- opens beside the backpack; a drag moves it until the backpack opens again.
+-- opens beside the backpack and closes with it; a drag moves it until the
+-- backpack opens again.
 local function BuildViewer()
     viewer = CreateFrame("Frame", "ScarletUIBank", UIParent, "PortraitFrameTemplate")
     viewer:SetSize(COLUMNS * (SIZE + GAP) + 44, 450)
@@ -268,6 +290,13 @@ local function BuildViewer()
                     moved = false
                     if viewer:IsShown() then Anchor() end
                 end)
+                -- Closing the backpack closes the viewer. The check waits a tick:
+                -- a rebuild or swap of the bag frames hides one just as another opens.
+                bag:HookScript("OnHide", function()
+                    C_Timer.After(0, function()
+                        if viewer:IsShown() and not OpenBag() then viewer:Hide() end
+                    end)
+                end)
             end
         end
     end
@@ -279,6 +308,7 @@ local function BuildViewer()
     if viewer.SetPortraitToAsset then viewer:SetPortraitToAsset(PORTRAIT) else SetPortraitToTexture(viewer.portrait, PORTRAIT) end
 
     local selected, query, shown, waiting = nil, "", {}, false
+    local allMode -- the grid shows every character, so slots name their owner on hover
     -- Dress each slot and dim non-matches; items without loaded data wait for
     -- GET_ITEM_INFO_RECEIVED.
     local buttons = {}
@@ -344,10 +374,20 @@ local function BuildViewer()
         button.junkCoin:SetSize(14, 14)
         button.junkCoin:SetPoint("TOPLEFT", 1, -1)
         button.junkCoin:SetTexture("Interface\\MoneyFrame\\UI-GoldIcon")
-        button:SetPoint("TOPLEFT", ((i - 1) % COLUMNS) * (SIZE + GAP) + 4, -math.floor((i - 1) / COLUMNS) * (SIZE + GAP) - 4)
         button:SetScript("OnEnter", function(self)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            -- All mode: one line per character holding the item, instead of
+            -- the tooltip hook's, so it shows even with that setting off.
+            viewerTip = allMode
             GameTooltip:SetHyperlink(self.link)
+            viewerTip = nil
+            if allMode then
+                local db = ScarletUI.db
+                for _, c in ipairs(BankCache.Counts(db.global.bankCache, db.keys.realm, ItemID(self.link), db.keys.char)) do
+                    GameTooltip:AddLine(("Bank: %s x%d (%s)"):format(c.label, c.count, BankCache.Age(c.time, time())),
+                        TOOLTIP_COLOR.r, TOOLTIP_COLOR.g, TOOLTIP_COLOR.b)
+                end
+            end
             GameTooltip:Show()
         end)
         button:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -359,38 +399,78 @@ local function BuildViewer()
         return button
     end
 
+    local headers = {}
+    local function Header(i)
+        headers[i] = headers[i] or content:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        return headers[i]
+    end
+
+    -- The choice is saved: "All characters" or a character key; a character
+    -- that is gone falls back to the first (the current one).
     function viewer:Refresh()
         local db = ScarletUI.db
+        local settings = db.global.bankCacheModule
         local characters = BankCache.Characters(db.global.bankCache, db.keys.realm, db.keys.char)
         local character
         for _, c in ipairs(characters) do
-            if c.key == selected then character = c end
+            if c.key == settings.viewerChoice then character = c end
         end
         character = character or characters[1]
-        selected = character and character.key
-        dropdown:SetupMenu(function(_, root)
-            for _, c in ipairs(characters) do
-                root:CreateRadio(c.label, function() return c.key == selected end, function()
-                    selected = c.key
-                    viewer:Refresh()
-                end)
+        selected = #characters > 0 and (settings.viewerChoice == ALL and ALL or character.key) or nil
+        allMode = selected == ALL
+        local function Pick(key)
+            return function() return key == selected end, function()
+                settings.viewerChoice = key
+                viewer:Refresh()
             end
-        end)
-        local entry = character and character.entry
-        local items = entry and entry.items or {}
-        lastSeen:SetText(entry and ("Last seen: " .. date("%Y-%m-%d %H:%M", entry.time)) or "")
-        empty:SetText(not entry and "No bank saved yet. Open your bank to save it."
-            or #items == 0 and "This bank was empty." or "")
-        for i, item in ipairs(items) do
-            local button = Button(i)
-            button.link = item.link
-            button.texture:SetTexture(item.icon or 134400) -- question mark
-            button.Count:SetText((item.count or 1) > 1 and item.count or "")
-            button:Show()
         end
-        for i = #items + 1, #buttons do buttons[i]:Hide() end
-        shown = items
-        content:SetHeight(math.ceil(#items / COLUMNS) * (SIZE + GAP) + 8)
+        dropdown:SetupMenu(function(_, root)
+            root:CreateRadio("All characters", Pick(ALL))
+            for _, c in ipairs(characters) do root:CreateRadio(BankCache.Named(c.label, c.entry.faction), Pick(c.key)) end
+        end)
+        -- Groups of slots; All mode puts a header with the age on each character's.
+        local groups, now = {}, time()
+        if allMode then
+            for _, c in ipairs(characters) do
+                if c.entry.items and #c.entry.items > 0 then
+                    groups[#groups + 1] = { header = BankCache.Named(c.label, c.entry.faction) .. "  |cff888888Updated " .. BankCache.Age(c.entry.time, now) .. "|r", items = c.entry.items }
+                end
+            end
+        elseif character then
+            groups[1] = { items = character.entry.items or {} }
+        end
+        local entry = character and character.entry
+        lastSeen:SetText(entry and not allMode and ("Updated " .. BankCache.Age(entry.time, now)) or "")
+        empty:SetText(not entry and "No bank saved yet. Open your bank to save it."
+            or #groups == 0 and (allMode and "Every saved bank is empty." or "This bank was empty.") or "")
+        local n, y, h = 0, 4, 0
+        shown = {}
+        for _, group in ipairs(groups) do
+            if group.header then
+                h = h + 1
+                local header = Header(h)
+                header:ClearAllPoints()
+                header:SetPoint("TOPLEFT", 4, -y)
+                header:SetText(group.header)
+                header:Show()
+                y = y + 20
+            end
+            for k, item in ipairs(group.items) do
+                n = n + 1
+                local button = Button(n)
+                button.link = item.link
+                button.texture:SetTexture(item.icon or 134400) -- question mark
+                button.Count:SetText((item.count or 1) > 1 and item.count or "")
+                button:ClearAllPoints()
+                button:SetPoint("TOPLEFT", ((k - 1) % COLUMNS) * (SIZE + GAP) + 4, -(y + math.floor((k - 1) / COLUMNS) * (SIZE + GAP)))
+                button:Show()
+                shown[n] = item
+            end
+            y = y + math.ceil(#group.items / COLUMNS) * (SIZE + GAP) + (group.header and 6 or 0)
+        end
+        for i = n + 1, #buttons do buttons[i]:Hide() end
+        for i = h + 1, #headers do headers[i]:Hide() end
+        content:SetHeight(y + 4)
         ApplyFilter()
     end
     viewer:SetScript("OnShow", function(self)
