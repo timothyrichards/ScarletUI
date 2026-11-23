@@ -285,6 +285,7 @@ local function BuildViewer()
     local function ApplyFilter()
         waiting = false
         for i, item in ipairs(shown) do
+            if not buttons[i] then break end -- Refresh failed partway
             local match, unknown = BankCache.Matches(item.link, query)
             waiting = BankCache.Decorate(buttons[i], item.link) or waiting or unknown
             buttons[i]:SetAlpha(match and 1 or DIM_ALPHA)
@@ -330,9 +331,10 @@ local function BuildViewer()
     local function Button(i)
         local button = buttons[i]
         if button then return button end
-        -- The bags' slot (Bag.lua makes its own the same way); Decorate adds
-        -- the quality border, junk coin and item level.
-        button = CreateFrame("ItemButton", nil, content, "ItemButtonTemplate")
+        -- The bags' slot, named as Bag.lua names its own: some clients'
+        -- SetItemButtonTexture/Count find the icon and count by name. Decorate
+        -- adds the quality border, junk coin and item level.
+        button = CreateFrame("ItemButton", "ScarletUIBankSlot" .. i, content, "ItemButtonTemplate")
         button:SetSize(SIZE, SIZE)
         button.texture = button.icon
         button.junkCoin = button:CreateTexture(nil, "OVERLAY")
@@ -376,7 +378,6 @@ local function BuildViewer()
         lastSeen:SetText(entry and ("Last seen: " .. date("%Y-%m-%d %H:%M", entry.time)) or "")
         empty:SetText(not entry and "No bank saved yet. Open your bank to save it."
             or #items == 0 and "This bank was empty." or "")
-        shown = items
         for i, item in ipairs(items) do
             local button = Button(i)
             button.link = item.link
@@ -385,6 +386,7 @@ local function BuildViewer()
             button:Show()
         end
         for i = #items + 1, #buttons do buttons[i]:Hide() end
+        shown = items
         content:SetHeight(math.ceil(#items / COLUMNS) * (SIZE + GAP) + 8)
         ApplyFilter()
     end
