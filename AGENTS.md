@@ -122,7 +122,7 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   plus the reagent bank where `IsReagentBankUnlocked` exists (no current
   client). The Warband/account bank is not saved. `/sui bank` and the page's
   button open `ScarletUIBank` (the bags' `PortraitFrameTemplate` and
-  `ItemButtonTemplate` slots; it opens left of the open backpack, and a drag
+  plain `CreateIconButton` slots, since Forever lacks `ItemButtonTemplate`; it opens left of the open backpack, and a drag
   holds until the backpack opens again) with a dropdown of the characters saved under this AceDB
   realm key (on Forever the ruleset). Its slots look like bag slots (`BankCache.Decorate`):
   item level per the bags' `itemLevelBag` setting (`ScarletUI.ItemLevelText`, from

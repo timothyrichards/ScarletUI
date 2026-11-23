@@ -235,7 +235,7 @@ local function OpenBag()
     end
 end
 
--- In the bags' frame and slots (PortraitFrameTemplate, ItemButtonTemplate). It
+-- In the bags' frame and slots (PortraitFrameTemplate, the bag slot art). It
 -- opens beside the backpack; a drag moves it until the backpack opens again.
 local function BuildViewer()
     viewer = CreateFrame("Frame", "ScarletUIBank", UIParent, "PortraitFrameTemplate")
@@ -331,12 +331,15 @@ local function BuildViewer()
     local function Button(i)
         local button = buttons[i]
         if button then return button end
-        -- The bags' slot, named as Bag.lua names its own: some clients'
-        -- SetItemButtonTexture/Count find the icon and count by name. Decorate
-        -- adds the quality border, junk coin and item level.
-        button = CreateFrame("ItemButton", "ScarletUIBankSlot" .. i, content, "ItemButtonTemplate")
-        button:SetSize(SIZE, SIZE)
-        button.texture = button.icon
+        -- A plain slot in the bags' art: ItemButtonTemplate is missing on
+        -- Forever, and ContainerFrameItemButtonTemplate is secure. Decorate
+        -- colours the quality border and adds the junk coin and item level.
+        button = ScarletUI:CreateIconButton(content, SIZE, "ScarletUIBankSlot" .. i)
+        button.IconBorder = button:CreateTexture(nil, "OVERLAY")
+        button.IconBorder:SetAllPoints()
+        button.IconBorder:SetTexture("Interface\\Common\\WhiteIconFrame")
+        button.Count = button:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
+        button.Count:SetPoint("BOTTOMRIGHT", -5, 2)
         button.junkCoin = button:CreateTexture(nil, "OVERLAY")
         button.junkCoin:SetSize(14, 14)
         button.junkCoin:SetPoint("TOPLEFT", 1, -1)
@@ -381,8 +384,8 @@ local function BuildViewer()
         for i, item in ipairs(items) do
             local button = Button(i)
             button.link = item.link
-            SetItemButtonTexture(button, item.icon or 134400) -- question mark
-            SetItemButtonCount(button, item.count)
+            button.texture:SetTexture(item.icon or 134400) -- question mark
+            button.Count:SetText((item.count or 1) > 1 and item.count or "")
             button:Show()
         end
         for i = #items + 1, #buttons do buttons[i]:Hide() end
