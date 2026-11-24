@@ -329,7 +329,7 @@ ContainerFrameCombinedBags = bag
 bag:Show()
 ScarletUI:ToggleBankViewer(true)
 local view = named.ScarletUIBank
-assert(view.shown and view.point == "TOPRIGHT" and view.relative == bag)
+assert(view.shown and view.point == "BOTTOMRIGHT" and view.relative == bag)
 -- Dragged away: it stays put while closed and reopened.
 view:SetPoint("CENTER")
 view.scripts.OnDragStop(view)
@@ -339,7 +339,7 @@ assert(view.point == "CENTER")
 -- Reopening the backpack puts it back beside it, once hooked only.
 bag:Hide()
 bag:Show()
-assert(view.point == "TOPRIGHT" and view.relative == bag and #bag.hooks.OnShow == 1)
+assert(view.point == "BOTTOMRIGHT" and view.relative == bag and #bag.hooks.OnShow == 1)
 -- With no backpack open it keeps its place.
 bag:Hide()
 RunTimers() -- the viewer closes with the backpack; reopen it with the bags closed
