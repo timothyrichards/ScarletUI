@@ -333,7 +333,7 @@ local function BuildViewer()
         local bag = OpenBag()
         if not bag then return end
         viewer:ClearAllPoints()
-        viewer:SetPoint("TOPRIGHT", bag, "TOPLEFT", -14, 0)
+        viewer:SetPoint("BOTTOMRIGHT", bag, "BOTTOMLEFT", -14, 0)
     end
     local hooked = {}
     local function HookBags() -- Bag.lua builds its frame late, so this reruns on each opening
