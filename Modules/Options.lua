@@ -844,7 +844,10 @@ function ScarletUI:GetCheapestExclusionOptions(exclusions)
         -- Uncached items show their ID until the client loads them.
         items[#items + 1] = { id = id, sort = name or "", label = (icon and "|T" .. icon .. ":16|t " or "") .. (link or ("Item " .. id)) }
     end
-    table.sort(items, function(a, b) return a.sort ~= b.sort and a.sort < b.sort or a.id < b.id end)
+    table.sort(items, function(a, b)
+        if a.sort ~= b.sort then return a.sort < b.sort end
+        return a.id < b.id
+    end)
     local args = {}
     for i, item in ipairs(items) do
         args["item" .. item.id] = {

@@ -431,6 +431,11 @@ local function InsertItemLink(link)
     for _, edit in ipairs(itemInputs) do
         if edit.items and edit:IsVisible() and edit:HasFocus() then
             AddItem(edit, link)
+            -- A post-hook can't report the link as taken, so the bag click goes
+            -- on to open the stack split for a stack; close it once it has.
+            C_Timer.After(0, function()
+                if StackSplitFrame and StackSplitFrame:IsShown() then StackSplitFrame:Hide() end
+            end)
             return
         end
     end

@@ -445,6 +445,23 @@ local row = highlights.excluded.args.item2589
 assert(not highlights.excluded.hidden() and row.name:find("Linen Cloth", 1, true) and row.arg.button, "Excluded item not listed")
 row.func()
 assert(next(ScarletUI.db.global.cheapestItemExclusions) == nil, "Remove did not drop the exclusion")
+-- The list is by name, then ID for shared names; name order runs against ID order here.
+local itemNames = {}
+for id = 1, 40 do
+    itemNames[id] = string.char(string.byte("a") + (40 - id) % 7) .. (id % 3)
+    ScarletUI.db.global.cheapestItemExclusions[id] = true
+end
+C_Item.GetItemInfo = function(id) return itemNames[id], "|Hitem:" .. id .. "|h[" .. itemNames[id] .. "]|h" end
+local listed = {}
+for _, option in pairs(ScarletUI:Options().args.bagModuleSettings.args.highlightSettings.args.excluded.args) do
+    listed[option.order] = tonumber(option.name:match("item:(%d+)"))
+end
+assert(#listed == 40, "Excluded items missing from the list")
+for i = 2, #listed do
+    local a, b = listed[i - 1], listed[i]
+    assert(itemNames[a] < itemNames[b] or itemNames[a] == itemNames[b] and a < b, "Excluded items out of order")
+end
+ScarletUI.db.global.cheapestItemExclusions = {}
 C_Item, ScarletUI.db.global.highlightCheapestItem = savedItem, highlight
 C_Container = nil
 assert(#shutdown == 0 and shutdown["ScarletUI-ActionBars"] and shutdown["ScarletUI-Tracking"])
