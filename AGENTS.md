@@ -189,7 +189,13 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   and a hand-kept item ID list for Classic tools that have no class to match.
   Items saved in an Equipment Manager set are skipped by item ID; Era and TBC
   have no Equipment Manager, so `EQUIPMENT_SETS_CHANGED` is registered only
-  when `C_EquipmentSet` exists.
+  when `C_EquipmentSet` exists. Players exclude items by ID in
+  `db.global.cheapestItemExclusions` (`ExcludeCheapestItem` takes a link, ID, or
+  cached name): the Exclude Item input under the toggle (`arg.items`) and an Excluded
+  Items group of Remove buttons (`arg.button` labels an execute row's button). In
+  the settings window an `arg.items` input adds an item dropped on it, or one
+  Shift-clicked while it has focus (a post-hook on `ChatFrameUtil.InsertLink`, or
+  `ChatEdit_InsertLink`, as AceGUI's edit box uses in the old panel).
 - `Modules/TidyIcons.lua`: icon adjustments.
 - `Modules/Tooltips.lua`: appends percent of max mana to GameTooltip spell cost
   lines via post-hooks only (`TooltipDataProcessor` or `OnTooltipSetSpell`).

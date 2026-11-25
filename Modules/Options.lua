@@ -793,7 +793,7 @@ function ScarletUI:GetBagSettingsPage(database, defaults, order)
         args = {
             highlightCheapestItem = {
                 name = "Highlight Cheapest Item",
-                desc = "Outline the item or stack in your bags with the lowest total vendor value, so you know what to sell or destroy when your bags are full. Unsellable items, consumables, quest items, profession tools, and items in equipment sets are ignored.",
+                desc = "Outline the item or stack in your bags with the lowest total vendor value, so you know what to sell or destroy when your bags are full. Unsellable items, consumables, quest items, profession tools, items in equipment sets, and items you exclude below are ignored.",
                 type = "toggle",
                 width = 1.5,
                 order = 0,
@@ -803,9 +803,63 @@ function ScarletUI:GetBagSettingsPage(database, defaults, order)
                     self:UpdateCheapestItem()
                 end,
             },
+            excludeItem = {
+                name = "Exclude Item",
+                desc = "Drop an item here, or click in the box and Shift-click an item in your bags, to keep it from being highlighted. You can also type an item's name or paste its link and press Enter. Excluded items are listed below.",
+                type = "input",
+                width = 1.5,
+                order = 1,
+                arg = { items = true },
+                disabled = function() return not database.highlightCheapestItem end,
+                get = function() return "" end,
+                set = function(_, val)
+                    if self:ExcludeCheapestItem(val) then
+                        AceConfigRegistry:NotifyChange("ScarletUI")
+                    elseif strtrim(val or "") ~= "" then
+                        self:Print("|cffff4444" .. val .. "|r is not an item in your bags or item cache. Drop or Shift-click it instead.")
+                    end
+                end,
+            },
+            excluded = {
+                name = "Excluded Items",
+                type = "group",
+                inline = true,
+                order = 2,
+                hidden = function() return next(database.cheapestItemExclusions) == nil end,
+                args = self:GetCheapestExclusionOptions(database.cheapestItemExclusions),
+            },
         },
     }
     return page
+end
+
+-- One Remove button per excluded item, by name.
+function ScarletUI:GetCheapestExclusionOptions(exclusions)
+    local GetItemInfo = C_Item and C_Item.GetItemInfo or GetItemInfo
+    local GetItemInfoInstant = C_Item and C_Item.GetItemInfoInstant or GetItemInfoInstant
+    local items = {}
+    for id in pairs(exclusions) do
+        local name, link = GetItemInfo(id)
+        local icon = select(5, GetItemInfoInstant(id))
+        -- Uncached items show their ID until the client loads them.
+        items[#items + 1] = { id = id, sort = name or "", label = (icon and "|T" .. icon .. ":16|t " or "") .. (link or ("Item " .. id)) }
+    end
+    table.sort(items, function(a, b) return a.sort ~= b.sort and a.sort < b.sort or a.id < b.id end)
+    local args = {}
+    for i, item in ipairs(items) do
+        args["item" .. item.id] = {
+            name = item.label,
+            type = "execute",
+            order = i,
+            width = "full",
+            arg = { button = REMOVE or "Remove" },
+            func = function()
+                self:IncludeCheapestItem(item.id)
+                AceConfigRegistry:NotifyChange("ScarletUI")
+            end,
+        }
+    end
+    return args
 end
 
 function ScarletUI:GetBankCacheSettingsPage(database, order)

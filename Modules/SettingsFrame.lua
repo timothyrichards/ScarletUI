@@ -387,7 +387,9 @@ function Widgets.execute(parent)
     Tooltip(button, w)
     function w:Apply(item)
         self:Base(item)
-        button:SetText(self.name)
+        -- `arg.button` labels the button when the row's name is something else (an excluded item).
+        local arg = item.option.arg
+        button:SetText(type(arg) == "table" and arg.button or self.name)
         button:SetEnabled(not item.disabled)
     end
     return w
@@ -415,6 +417,25 @@ local function EditBox(parent, width)
     return edit
 end
 
+-- Inputs whose option has `arg.items` take an item link: an item dropped on
+-- them, or Shift-clicked while they have focus. Shift-click goes through the
+-- chat link call, post-hooked once (as AceGUI's edit box does).
+local itemInputs = {}
+local function AddItem(edit, link)
+    edit:ClearFocus()
+    Set(edit.option, link)
+end
+
+local function InsertItemLink(link)
+    if type(link) ~= "string" or not link:find("|Hitem:") then return end
+    for _, edit in ipairs(itemInputs) do
+        if edit.items and edit:IsVisible() and edit:HasFocus() then
+            AddItem(edit, link)
+            return
+        end
+    end
+end
+
 function Widgets.input(parent)
     local w = Row(parent)
     local edit = EditBox(w, 190)
@@ -424,9 +445,27 @@ function Widgets.input(parent)
         self:ClearFocus()
         Set(w.option, text)
     end)
+    local function Drop(self)
+        local kind, _, link = GetCursorInfo()
+        if not (self.items and self:IsEnabled() and kind == "item") then return end
+        ClearCursor()
+        AddItem(self, link)
+    end
+    edit:SetScript("OnReceiveDrag", Drop)
+    edit:SetScript("OnMouseDown", Drop)
+    if #itemInputs == 0 then
+        if ChatFrameUtil and ChatFrameUtil.InsertLink then
+            hooksecurefunc(ChatFrameUtil, "InsertLink", InsertItemLink)
+        elseif ChatEdit_InsertLink then
+            hooksecurefunc("ChatEdit_InsertLink", InsertItemLink)
+        end
+    end
+    itemInputs[#itemInputs + 1] = edit
     Tooltip(edit, w)
     function w:Apply(item)
         self:Base(item)
+        local arg = item.option.arg
+        edit.option, edit.items = item.option, type(arg) == "table" and arg.items
         edit:Update(item.option.get(), item.disabled)
     end
     return w

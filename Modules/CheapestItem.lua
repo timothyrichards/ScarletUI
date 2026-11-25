@@ -1,4 +1,5 @@
 local GetItemInfo = C_Item.GetItemInfo or GetItemInfo
+local GetItemInfoInstant = C_Item.GetItemInfoInstant or GetItemInfoInstant
 
 -- Enum.ItemClass values (Profession is Retail only) and Enum.ItemWeaponSubclass.Fishingpole
 local CONSUMABLE, WEAPON, REAGENT, TRADESKILL, QUEST, PROFESSION, FISHING_POLE = 0, 2, 5, 7, 12, 19, 20
@@ -61,16 +62,42 @@ local function GetEquipmentSetItems()
     return items
 end
 
+-- The item ID in an item link, an item ID, or the name of an item the client
+-- has cached (everything in the bags is); nil if none matches.
+function ScarletUI:ParseItemID(text)
+    text = tostring(text or ""):match("^%s*(.-)%s*$")
+    if text == "" then return end
+    local id = tonumber(text:match("item:(%d+)") or text)
+    return id or GetItemInfoInstant(text)
+end
+
+-- Exclusions are item IDs in db.global.cheapestItemExclusions, never highlighted.
+function ScarletUI:ExcludeCheapestItem(text)
+    local id = self:ParseItemID(text)
+    if id then
+        self.db.global.cheapestItemExclusions[id] = true
+        self:UpdateCheapestItem()
+    end
+    return id
+end
+
+function ScarletUI:IncludeCheapestItem(id)
+    self.db.global.cheapestItemExclusions[id] = nil
+    self:UpdateCheapestItem()
+end
+
 -- Bag and slot of the stack with the lowest vendor value (sell price x count).
--- Unsellable items, consumables, spell and crafting reagents, quest items, profession tools, and equipment set items are ignored.
+-- Unsellable items, consumables, spell and crafting reagents, quest items, profession tools, equipment set items,
+-- and the player's exclusions are ignored.
 -- ponytail: uncached items are skipped until the next bag update; listen to GET_ITEM_INFO_RECEIVED if that shows up.
 function ScarletUI:FindCheapestBagItem()
     local cheapestBag, cheapestSlot, cheapestValue
     local setItems = GetEquipmentSetItems()
+    local excluded = self.db.global.cheapestItemExclusions
     for bag = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
         for slot = 1, C_Container.GetContainerNumSlots(bag) do
             local info = C_Container.GetContainerItemInfo(bag, slot)
-            if info and not setItems[info.itemID] then
+            if info and not setItems[info.itemID] and not excluded[info.itemID] then
                 local sellPrice, classID, subclassID, _, _, _, isCraftingReagent = select(11, GetItemInfo(info.itemID))
                 if sellPrice and sellPrice > 0
                     and not IsIgnored(bag, slot, info.itemID, classID, subclassID, isCraftingReagent) then

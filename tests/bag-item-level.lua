@@ -105,12 +105,21 @@ ContainerFrameCombinedBags = { EnumerateValidItems = function()
     return function(_, i) if i < 3 then return i + 1, enumerated[i + 1] end end, nil, 0
 end }
 ContainerFrame1Item1, ContainerFrame1Item2 = cheap, pricey
-ScarletUI = { db = { global = { highlightCheapestItem = true } }, bagSlots = { [2] = custom } }
+ScarletUI = { db = { global = { highlightCheapestItem = true, cheapestItemExclusions = {} } }, bagSlots = { [2] = custom } }
+C_Item.GetItemInfoInstant = function(name) if name == "Linen Cloth" then return 2589 end end
 dofile("Modules/CheapestItem.lua")
 -- No C_EquipmentSet yet: Era and TBC have no Equipment Manager.
 ScarletUI:UpdateCheapestItem()
 assert(cheap.cheapestGlow.shown and custom.cheapestGlow.shown, "Cheapest stack not highlighted")
 assert(not pricey.cheapestGlow, "Stack worth more in total was highlighted")
+-- An excluded item is skipped, so the next cheapest is highlighted; removing it brings it back.
+assert(ScarletUI:ExcludeCheapestItem("|cffffffff|Hitem:2::::::::60:::::|h[Junk]|h|r") == 2)
+assert(pricey.cheapestGlow.shown and not cheap.cheapestGlow.shown, "Excluded item was highlighted")
+ScarletUI:IncludeCheapestItem(2)
+assert(cheap.cheapestGlow.shown and not pricey.cheapestGlow.shown, "Removed exclusion still skipped")
+assert(ScarletUI:ParseItemID(" 1234 ") == 1234 and ScarletUI:ParseItemID("Linen Cloth") == 2589, "Item ID or name not parsed")
+assert(ScarletUI:ExcludeCheapestItem("Nonexistent Item") == nil and ScarletUI:ExcludeCheapestItem("") == nil)
+assert(next(ScarletUI.db.global.cheapestItemExclusions) == nil, "Unknown item was excluded")
 -- Set item lists are keyed by equipment slot and can have holes.
 C_EquipmentSet = {
     GetEquipmentSetIDs = function() return { 0 } end,

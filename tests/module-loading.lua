@@ -431,6 +431,21 @@ C_Container.GetSortBagsRightToLeft, C_Container.SetSortBagsRightToLeft = nil, ni
 ScarletUI:SetupBagSort()
 assert(sort.InsertItemsLeftToRight == true and sorting.sortBagsRightToLeft.hidden())
 assert(not sorting.insertItemsLeftToRight.hidden())
+-- Cheapest-item exclusions: an item typed or dropped in is listed with a Remove button.
+local savedItem, highlight = C_Item, ScarletUI.db.global.highlightCheapestItem
+C_Item = { GetItemInfo = function(id) return "Linen Cloth", "|Hitem:" .. id .. "|h[Linen Cloth]|h" end,
+    GetItemInfoInstant = function(id) return id, nil, nil, nil, 134 end }
+ScarletUI.db.global.highlightCheapestItem = false
+dofile("Modules/CheapestItem.lua")
+local highlights = ScarletUI:Options().args.bagModuleSettings.args.highlightSettings.args
+assert(highlights.excluded.hidden(), "Empty exclusion list shown")
+highlights.excludeItem.set(nil, "|cffffffff|Hitem:2589::::::::60:::::|h[Linen Cloth]|h|r")
+highlights = ScarletUI:Options().args.bagModuleSettings.args.highlightSettings.args
+local row = highlights.excluded.args.item2589
+assert(not highlights.excluded.hidden() and row.name:find("Linen Cloth", 1, true) and row.arg.button, "Excluded item not listed")
+row.func()
+assert(next(ScarletUI.db.global.cheapestItemExclusions) == nil, "Remove did not drop the exclusion")
+C_Item, ScarletUI.db.global.highlightCheapestItem = savedItem, highlight
 C_Container = nil
 assert(#shutdown == 0 and shutdown["ScarletUI-ActionBars"] and shutdown["ScarletUI-Tracking"])
 ScarletUI.eventHandlers, ScarletUI.frame = originalHandlers, originalFrame

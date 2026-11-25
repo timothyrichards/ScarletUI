@@ -17,6 +17,8 @@ ScarletUI.defaults = {
         itemLevelColorOverride = false,
         itemLevelColor = { r = 1, g = 1, b = 1 },
         highlightCheapestItem = true,
+        -- Item IDs the cheapest-item highlight never picks.
+        cheapestItemExclusions = {},
         expandCharacterInfo = true,
         hideMicroMenuArt = true,
         collapseInactiveBuffs = "OFF",
