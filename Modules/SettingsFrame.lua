@@ -888,6 +888,22 @@ function Render()
     Layout(items)
 end
 
+-- The TOC version. Clients have C_AddOns.GetAddOnMetadata, the older global,
+-- or both; try each with this addon's folder name, then the usual one.
+local ADDON_NAME = ...
+local function AddOnVersion()
+    local lookups = { C_AddOns and C_AddOns.GetAddOnMetadata, GetAddOnMetadata }
+    for _, name in ipairs({ ADDON_NAME, "ScarletUI" }) do
+        for i = 1, 2 do
+            local get = lookups[i]
+            if type(name) == "string" and get then
+                local ok, v = pcall(get, name, "Version")
+                if ok and type(v) == "string" and v ~= "" then return v end
+            end
+        end
+    end
+end
+
 local function Build()
     frame = CreateFrame("Frame", "ScarletUISettings", UIParent, "PortraitFrameTemplate")
     frame:SetSize(820, 540)
@@ -906,11 +922,18 @@ local function Build()
     if frame.CloseButton then frame.CloseButton:SetScript("OnClick", function() frame:Hide() end) end
 
     if frame.SetTitle then frame:SetTitle("Scarlet UI") else frame.TitleText:SetText("Scarlet UI") end
-    local getMeta = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
-    local version = getMeta and getMeta("ScarletUI", "Version")
+    -- The version sits at the right of the search row, level with the search
+    -- box and right-aligned with the content panel. It is on its own child
+    -- frame, raised above the template's border and title bar.
+    local version = AddOnVersion()
     if version then
-        local text = frame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-        text:SetPoint("RIGHT", frame.CloseButton, "LEFT", -2, 0)
+        local holder = CreateFrame("Frame", nil, frame)
+        holder:SetAllPoints()
+        holder:SetFrameLevel(frame:GetFrameLevel() + 20)
+        local text = holder:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        text:SetPoint("RIGHT", frame, "TOPRIGHT", -12, -43)
+        text:SetJustifyH("RIGHT")
+        text:SetTextColor(0.6, 0.6, 0.6)
         text:SetText("v" .. version)
     end
     if frame.SetPortraitToAsset then frame:SetPortraitToAsset(ICON) else SetPortraitToTexture(frame.portrait, ICON) end
