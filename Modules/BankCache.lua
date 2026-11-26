@@ -464,8 +464,9 @@ function ScarletUI:SetupBankCache()
         self:RegisterEventHandler(event, Character)
     end
     -- No timer runs at logout; this save sets the time and resting state the
-    -- rested projection counts from.
-    self:RegisterEventHandler("PLAYER_LOGOUT", function() self:SnapshotCharacter() end)
+    -- rested projection counts from. AceDB strips default-only tables (such as
+    -- bankCacheModule) on PLAYER_LOGOUT before our handlers run; this fires first.
+    self.db.RegisterCallback("ScarletUI-BankCache", "OnDatabaseShutdown", function() self:SnapshotCharacter() end)
     Character()
 end
 
