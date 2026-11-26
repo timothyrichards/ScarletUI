@@ -1272,3 +1272,90 @@ function ScarletUI:UpdateWindfury()
         wfEvents:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
     end
 end
+
+---------------------------------------------------------------------------
+-- ponytail: temporary Windfury probe (/sui wfprobe). While on it records the
+-- player's events that could mark a proc into ScarletUIDB
+-- (global.wfProbe, the last WFP_LINES lines). Remove once Forever's Windfury
+-- signal is found.
+---------------------------------------------------------------------------
+local WFP_LINES = 300
+local wfpFrame
+
+local function WfpText(value)
+    if IsSecret(value) then return "SECRET" end
+    return tostring(value)
+end
+
+local function WfpLog(...)
+    local log = ScarletUI.db.global.wfProbe
+    local parts = { string.format("%.3f", GetTime()) }
+    for i = 1, select("#", ...) do parts[#parts + 1] = WfpText((select(i, ...))) end
+    if #log >= WFP_LINES then table.remove(log, 1) end
+    log[#log + 1] = table.concat(parts, " ")
+end
+
+local function WfpSpellName(spellID)
+    if IsSecret(spellID) then return "SECRET" end
+    local ok, name = pcall(C_Spell.GetSpellName, spellID)
+    if not ok then return "ERR" end
+    local okKnown, known = pcall(IsPlayerSpell, spellID)
+    return WfpText(name) .. " known=" .. (okKnown and WfpText(known) or "ERR")
+end
+
+local function WfpEvent(_, event, ...)
+    if event == "UNIT_SPELLCAST_SUCCEEDED" or event == "UNIT_SPELLCAST_START" then
+        local unit, castGUID, spellID = ...
+        local name = WfpSpellName(spellID)
+        -- Other units only when it is a Windfury spell.
+        if IsSecret(unit) or unit == "player" or name:find("Windfury") then
+            WfpLog(event, unit, castGUID, spellID, name)
+        end
+    elseif event == "UNIT_AURA" then
+        local unit, info = ...
+        local parts = {}
+        local ok = pcall(function()
+            for _, aura in ipairs(info and info.addedAuras or {}) do
+                parts[#parts + 1] = "+" .. WfpText(aura.spellId) .. ":" .. WfpText(aura.name)
+            end
+        end)
+        if #parts > 0 or not ok then WfpLog(event, unit, ok, unpack(parts)) end
+    elseif event == "COMBAT_LOG_EVENT_UNFILTERED" then
+        local ok, err = pcall(function()
+            local info = { CombatLogGetCurrentEventInfo() }
+            if info[4] ~= UnitGUID("player") then return end
+            WfpLog(event, unpack(info, 1, 21))
+        end)
+        if not ok then WfpLog(event, "ERR", err) end
+    else -- PLAYER_SWING, UNIT_COMBAT
+        WfpLog(event, ...)
+    end
+end
+
+local function WindfuryProbe()
+    local db = ScarletUI.db.global
+    if wfpFrame and wfpFrame.on then
+        wfpFrame:UnregisterAllEvents()
+        wfpFrame.on = false
+        WfpLog("STOP")
+        ScarletUI:Print("Windfury probe off, " .. #db.wfProbe .. " lines. /reload to save them.")
+        return
+    end
+    wfpFrame = wfpFrame or CreateFrame("Frame")
+    wfpFrame:SetScript("OnEvent", WfpEvent)
+    db.wfProbe = {}
+    WfpLog("START", ScarletUI:GetWoWVersion(), (select(4, GetBuildInfo())), ScarletUI.retail)
+    local function Try(register, ...)
+        local ok, err = pcall(register, wfpFrame, ...)
+        WfpLog("register", ..., ok, err)
+    end
+    Try(wfpFrame.RegisterEvent, "UNIT_SPELLCAST_SUCCEEDED")
+    Try(wfpFrame.RegisterUnitEvent, "UNIT_SPELLCAST_START", "player")
+    Try(wfpFrame.RegisterEvent, "PLAYER_SWING")
+    Try(wfpFrame.RegisterUnitEvent, "UNIT_AURA", "player")
+    Try(wfpFrame.RegisterUnitEvent, "UNIT_COMBAT", "target")
+    Try(wfpFrame.RegisterEvent, "COMBAT_LOG_EVENT_UNFILTERED")
+    wfpFrame.on = true
+    ScarletUI:Print("Windfury probe on. Fight until Windfury procs, then /sui wfprobe again and /reload.")
+end
+ScarletUI.WindfuryProbe = WindfuryProbe

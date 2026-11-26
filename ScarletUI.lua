@@ -245,6 +245,8 @@ function ScarletUI:SlashCommand(msg)
         self:OpenEditMode()
     elseif msg == "debug" then
         self.debugContainer:SetShown(not self.debugContainer:IsShown())
+    elseif msg == "wfprobe" and self.WindfuryProbe then
+        self.WindfuryProbe()
     elseif msg == "threatdebug" and self.PrintThreatDebug then
         self:PrintThreatDebug()
     elseif msg == "help" then
