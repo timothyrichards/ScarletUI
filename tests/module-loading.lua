@@ -1230,8 +1230,9 @@ end
 -- left-click opens a list of the usable foods to pick which one that is.
 do
 local foodWidgets = {}
-local function FoodWidget(kind, name, _, template)
-    local widget = { kind = kind, name = name, template = template, scripts = {}, attributes = {}, shown = true }
+local function FoodWidget(kind, name, parent, template)
+    local widget = { kind = kind, name = name, parent = parent, template = template, scripts = {}, attributes = {}, shown = true }
+    widget.SetParent = function(self, newParent) self.parent = newParent end
     widget.SetScript = function(self, script, fn) self.scripts[script] = fn end
     widget.SetAttribute = function(self, attribute, value) self.attributes[attribute] = value end
     widget.Show = function(self) self.shown = true end
@@ -1376,9 +1377,36 @@ eatingAura = nil; Food("UNIT_AURA"); assert(not foodTimer.shown and foodIcon.sho
 Eat(); clock = clock + 10; foodTimer.scripts.OnUpdate(); assert(not foodTimer.shown)
 Eat(); foodAura = {}; Food("UNIT_AURA"); assert(not foodTimer.shown and not foodIcon.shown)
 foodAura = nil; Food("UNIT_AURA")
-Eat(); Food("PLAYER_REGEN_DISABLED"); assert(not foodTimer.shown)
-Eat(); assert(not foodTimer.shown) -- nothing starts in combat
-Food("PLAYER_REGEN_ENABLED"); assert(foodIcon.shown and not foodTimer.shown)
+-- Seen on screen: shown, and on a shown icon or on UIParent.
+local function Counting()
+    return foodTimer.shown and (foodTimer.parent == UIParent or foodTimer.parent == foodIcon and foodIcon.shown)
+end
+local savedUIParent = UIParent
+UIParent = {}
+assert(foodTimer.parent == foodIcon)
+-- Combat mid-meal hides the secure icon but the countdown keeps showing.
+Eat(); Food("PLAYER_REGEN_DISABLED")
+assert(not foodIcon.shown and Counting() and foodTimer.parent == UIParent)
+clock = clock + 4; foodTimer.scripts.OnUpdate(); assert(foodTimer.text.text == 6)
+-- A secret Food aura in combat changes nothing; standing up still ends it.
+eatingAura = {}; Food("UNIT_AURA"); assert(Counting())
+eatingAura = SECRET_AURA
+Food("UNIT_AURA"); assert(Counting())
+eatingAura = nil; Food("UNIT_AURA"); assert(not Counting() and foodTimer.parent == foodIcon)
+Food("PLAYER_REGEN_ENABLED"); assert(foodIcon.shown and not Counting())
+-- Or it runs until Well Fed, through combat.
+Eat(); Food("PLAYER_REGEN_DISABLED")
+clock = clock + 10; foodTimer.scripts.OnUpdate(); assert(not Counting() and not foodIcon.shown)
+Food("PLAYER_REGEN_ENABLED")
+-- A meal still going when combat ends is back on the icon.
+Eat(); Food("PLAYER_REGEN_DISABLED"); Food("PLAYER_REGEN_ENABLED")
+assert(foodIcon.shown and Counting() and foodTimer.parent == foodIcon)
+clock = clock + 10; foodTimer.scripts.OnUpdate(); assert(not Counting())
+-- The plain reminder still hides in combat, and nothing starts there.
+Food("PLAYER_REGEN_DISABLED"); assert(not foodIcon.shown and not Counting())
+Eat(); assert(not Counting())
+Food("PLAYER_REGEN_ENABLED"); assert(foodIcon.shown and not Counting())
+UIParent = savedUIParent
 -- A higher level unlocks the better food; food that is too high or absent hides the icon.
 foodLevel = 30; Food("PLAYER_LEVEL_UP"); assert(foodIcon.shown and foodIcon.itemID == 8364 and Eats() == "/use item:8364")
 foodBags = { 267341, 6529 }; Food("BAG_UPDATE_DELAYED"); assert(not foodIcon.shown) -- level 55 jam, a lure

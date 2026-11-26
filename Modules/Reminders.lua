@@ -7,7 +7,7 @@
 --
 -- Food buff, every client: a food that leaves the character Well Fed, while
 -- that buff is missing. While a food is being eaten the icon counts down the
--- seconds to Well Fed instead.
+-- seconds to Well Fed instead, and keeps counting through combat.
 -- On Forever cooked food and brewed drinks also grant Well Fed XP Boost, 5% more
 -- experience from kills for 15 minutes. That bonus (spell 1243969) is a hidden
 -- aura addons cannot see, so the buff is read from the visible Well Fed auras
@@ -183,12 +183,14 @@ end
 
 -- The use spell's own aura is hidden, but it also applies the ordinary Food
 -- (433) or Drink (430) aura, which ends when the player stands up. Every rank
--- shares the name.
+-- shares the name. Nothing when an answer is secret (in combat on Forever).
 local function HasEatingAura()
     local byName = C_UnitAuras.GetAuraDataBySpellName
     for _, spellID in ipairs({ 433, 430 }) do
         local name = byName and C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(spellID)
-        if name and byName("player", name) ~= nil then return true end
+        local aura = name and byName("player", name)
+        if IsSecret(aura) then return nil end
+        if aura ~= nil then return true end
     end
     return false
 end
@@ -328,7 +330,8 @@ end
 -- returning the usable items, the one to show, the macro that uses it, and
 -- optionally a hint for it, and `Pick(settings, itemID)` for a click in the
 -- list. Optional: `page` ("camp" for the camp page, "buffs" otherwise), `events`, `unitEvents`,
--- `OnEvent(event, ...)` returning true when no update should follow, and `OnHide()`.
+-- `OnEvent(event, ...)` returning true when no update should follow, and
+-- `OnHide(combat)`, combat true when it hides for combat.
 -- The icon gets `Place()`, `Update()`, and `items`, the list as last drawn.
 local function CreateReminder(spec)
     -- An item's icon and stack count, with its item tooltip and hints below it.
@@ -448,7 +451,7 @@ local function CreateReminder(spec)
             -- Not shown again by another icon's layout until its own update after combat.
             icon.active = false
             if toggle then toggle:Hide() end
-            if spec.OnHide then spec.OnHide() end
+            if spec.OnHide then spec.OnHide(true) end
             combat = true
             return
         elseif event == "PLAYER_REGEN_ENABLED" then
@@ -482,6 +485,7 @@ function ScarletUI:SetupXPFood()
     local function StopEating()
         wellFedAt, sawEating = nil, nil
         timer:Hide()
+        timer:SetParent(icon)
     end
 
     icon = CreateReminder({
@@ -492,6 +496,8 @@ function ScarletUI:SetupXPFood()
         Settings = function() return self.db.global.xpFoodModule end,
         -- The buff foods the character can eat, highest required level first.
         Find = function(settings)
+            -- Out of combat the countdown rides on the icon again.
+            timer:SetParent(icon)
             if HasBuff() then return end
             local level = UnitLevel("player")
             local foods, shown = FindItems(function(itemID)
@@ -519,19 +525,27 @@ function ScarletUI:SetupXPFood()
                 end
                 return true
             elseif event == "UNIT_AURA" and wellFedAt then
-                if HasEatingAura() then
+                -- A secret answer leaves it as it was; the countdown still ends at Well Fed.
+                local eating = HasEatingAura()
+                if eating then
                     sawEating = true
-                elseif sawEating then
+                elseif eating == false and sawEating then
                     StopEating()
                 end
             end
         end,
-        OnHide = StopEating,
+        -- A meal under way keeps counting through combat, on UIParent while the
+        -- secure icon is hidden; anchored to the icon, it stays where it was.
+        OnHide = function(combat)
+            if combat and wellFedAt then return timer:SetParent(UIParent) end
+            StopEating()
+        end,
     })
     self.xpFoodFrame = icon
 
     -- While a food is being eaten, the Well Fed icon counting down to the
-    -- buff covers the food. Not a secure frame, so it may show and hide at any time.
+    -- buff covers the food. Not a secure frame, so it may show, hide, and change
+    -- parent at any time.
     timer = CreateFrame("Frame", nil, icon)
     timer:SetAllPoints(icon)
     timer:Hide()
