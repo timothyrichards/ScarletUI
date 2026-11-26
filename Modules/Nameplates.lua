@@ -339,6 +339,15 @@ local partyAssignmentCache = {}
 local lastPartyAssignmentCheck = 0
 local PARTY_ASSIGNMENT_CACHE_DURATION = 1 -- Cache for 1 second
 
+-- The player's own set group role overrides spec both ways: TANK is a tank, DAMAGER or HEALER isn't.
+-- nil when no role is set (NONE, nil or secret), so the caller falls back to its own checks.
+local function PlayerRoleIsTank()
+    local role = UnitGroupRolesAssigned and UnitGroupRolesAssigned("player")
+    if IsSecret(role) then return nil end
+    if role == "TANK" then return true end
+    if role == "DAMAGER" or role == "HEALER" then return false end
+end
+
 local function IsTank(playerName)
     local currentTime = GetTime()
 
@@ -504,8 +513,12 @@ local function ForeverThreatColor(frame)
         return
     end
 
-    local isTank = PlayerUtil and PlayerUtil.IsPlayerEffectivelyTank and PlayerUtil.IsPlayerEffectivelyTank()
-    if IsSecret(isTank) then return end
+    -- The set role decides; without one, spec or Main Tank / Main Assist / Tank Names. Secret counts as no.
+    local isTank = PlayerRoleIsTank()
+    if isTank == nil then
+        local specTank = PlayerUtil and PlayerUtil.IsPlayerEffectivelyTank and PlayerUtil.IsPlayerEffectivelyTank()
+        isTank = (not IsSecret(specTank) and specTank) or IsGroupTank("player")
+    end
     local group = isTank and "tankThreatColors" or "nonTankThreatColors"
     local status = frame.explicitThreatSituation  -- Blizzard's nameplate preview in the options.
     if status == nil then
@@ -712,7 +725,9 @@ function ScarletUI:UpdateNameplate(unitId)
     local displayValue
 
     local threatColorGroup = nameplatesModule.nonTankThreatColors
-    if not threatOnly and IsTank(UnitName("Player")) then
+    local playerTank = PlayerRoleIsTank()
+    if playerTank == nil then playerTank = IsTank(UnitName("Player")) end
+    if not threatOnly and playerTank then
         threatColorGroup = nameplatesModule.tankThreatColors
     end
 

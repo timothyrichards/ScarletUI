@@ -327,7 +327,7 @@ threat.Me.leadSituation = secretState
 ExpectBlizzard(frame, "secret tank threat state was recolored")
 isTank = SECRET
 threat.Me.leadSituation, threat.Me.situation = 3, 3
-ExpectBlizzard(frame, "a secret tank check picked a color")
+ExpectColor(frame, "nonTankThreatColors", "threat", "a secret tank check didn't count as no")
 isTank = false
 ExpectColor(frame, "nonTankThreatColors", "threat", "readable threat lost its color")
 threat.Me.situation = secretState
@@ -386,6 +386,22 @@ ExpectColor(frame, "tankThreatColors", "lowThreat", "another tank's aggro beat t
 isTank, threat.Me.situation = false, secretState
 ExpectBlizzard(frame, "a secret player situation was painted with another tank's color")
 roles, threat.Other.situation, threat.Me.situation = {}, nil, 3
+
+-- The player's own set role overrides spec both ways; without one, spec decides.
+isTank, threat.Me.leadSituation, roles.player = false, 1, "TANK"
+ExpectColor(frame, "tankThreatColors", "lowThreat", "Arms spec with the TANK role didn't get tank colors")
+isTank, roles.player = true, "DAMAGER"
+ExpectColor(frame, "nonTankThreatColors", "threat", "tank spec with the DAMAGER role got tank colors")
+roles.player = "HEALER"
+ExpectColor(frame, "nonTankThreatColors", "threat", "tank spec with the HEALER role got tank colors")
+isTank, roles.player = false, nil
+ExpectColor(frame, "nonTankThreatColors", "threat", "DPS spec with no role didn't get non-tank colors")
+roles.player = "NONE"
+assignments.player = true
+ExpectColor(frame, "tankThreatColors", "lowThreat", "Main Tank without a role didn't get tank colors")
+assignments.player, isTank, roles.player = nil, true, secretState
+ExpectColor(frame, "tankThreatColors", "lowThreat", "a secret role didn't fall back to spec")
+isTank, roles.player = false, nil
 
 -- ScarletUI's own threat refresh repaints too, since Blizzard skips some threat changes.
 plate.UnitFrame = frame
