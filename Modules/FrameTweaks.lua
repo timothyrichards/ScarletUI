@@ -165,7 +165,7 @@ function ScarletUI:SetupAutoShotDeadzone()
     frame:RegisterUnitEvent("UNIT_INVENTORY_CHANGED", "player")
     frame:SetScript("OnEvent", function(_, event, duration, swingType)
         if event == "PLAYER_SWING" then
-            if swingType ~= Enum.PlayerSwingType.Ranged then return end
+            if IsSecret(swingType) or swingType ~= 2 then return end -- ranged
             swing = duration
         else
             swing = select(3, UnitAttackSpeed("player"))
@@ -178,13 +178,15 @@ function ScarletUI:SetupAutoShotDeadzone()
 end
 
 function ScarletUI:SetupFrameTweaks()
-    self:SetupAutoShotDeadzone()
     self:SetupMicroMenuArt()
     self:SetupBuffCollapse()
     self:SetupBagPortraitHooks()
-    if self.gamepadBagBarHooked or not (GamepadBagBar and InputUtil and ContainerFrameCombinedBags) then return end
-    self.gamepadBagBarHooked = true
-    UpdateGamepadBagBar()
-    -- No event fires when Gamepad UI is toggled, so check whenever the bags open.
-    ContainerFrameCombinedBags:HookScript("OnShow", UpdateGamepadBagBar)
+    if not self.gamepadBagBarHooked and GamepadBagBar and InputUtil and ContainerFrameCombinedBags then
+        self.gamepadBagBarHooked = true
+        UpdateGamepadBagBar()
+        -- No event fires when Gamepad UI is toggled, so check whenever the bags open.
+        ContainerFrameCombinedBags:HookScript("OnShow", UpdateGamepadBagBar)
+    end
+    -- Last, so a failure in the newest tweak can't block the others.
+    self:SetupAutoShotDeadzone()
 end
