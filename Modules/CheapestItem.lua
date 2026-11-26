@@ -79,11 +79,13 @@ local function ExclusionsChanged(self, id, message)
     self:Print((select(2, GetItemInfo(id)) or ("Item " .. id)) .. message)
 end
 
-function ScarletUI:ExcludeCheapestItem(text)
+-- `undo` tells the player how to take it back; the settings input's items may not be in the bags.
+function ScarletUI:ExcludeCheapestItem(text, undo)
     local id = self:ParseItemID(text)
     if id then
         self.db.global.cheapestItemExclusions[id] = true
-        ExclusionsChanged(self, id, " will not be highlighted as your cheapest item. Ctrl+Alt+Click it again to undo.")
+        ExclusionsChanged(self, id, " will not be highlighted as your cheapest item. "
+            .. (undo or "Remove it under Excluded Items in /sui to undo."))
     end
     return id
 end
@@ -101,7 +103,7 @@ function ScarletUI:ToggleCheapestItem(bag, slot)
         self:IncludeCheapestItem(info.itemID)
         return false
     end
-    return self:ExcludeCheapestItem(info.itemID) ~= nil
+    return self:ExcludeCheapestItem(info.itemID, "Ctrl+Alt+Click it again to undo.") ~= nil
 end
 
 -- Ctrl+Alt+left-click on a bag item toggles its exclusion. Blizzard binds Shift (link, split),

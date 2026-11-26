@@ -126,6 +126,7 @@ assert(cheap.cheapestGlow.shown and custom.cheapestGlow.shown, "Cheapest stack n
 assert(not pricey.cheapestGlow, "Stack worth more in total was highlighted")
 -- An excluded item is skipped, so the next cheapest is highlighted; removing it brings it back.
 assert(ScarletUI:ExcludeCheapestItem("|cffffffff|Hitem:2::::::::60:::::|h[Junk]|h|r") == 2)
+assert(printed[#printed]:find("Remove it under Excluded Items", 1, true), "Settings exclusion gave the bag undo hint")
 assert(pricey.cheapestGlow.shown and not cheap.cheapestGlow.shown, "Excluded item was highlighted")
 ScarletUI:IncludeCheapestItem(2)
 assert(cheap.cheapestGlow.shown and not pricey.cheapestGlow.shown, "Removed exclusion still skipped")
