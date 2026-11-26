@@ -602,14 +602,15 @@ local function BuildViewer()
         if button.setMark.SetAtlas then button.setMark:SetAtlas("bags-icon-equipmentmanager") end
         button:SetScript("OnEnter", function(self)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            -- All mode: one line per character holding the item, instead of
-            -- the tooltip hook's, so it shows even with that setting off.
-            viewerTip = allMode
+            -- One line per saved character holding the item (the same set the
+            -- hook's Total counts), instead of the hook's, so it shows even
+            -- with that setting off.
+            viewerTip = true
             GameTooltip:SetHyperlink(self.link)
             viewerTip = nil
-            if allMode then
-                AddLines(GameTooltip, BankCache.ItemLines(listed, ItemID(self.link), ScarletUI.db.keys.realm, time()))
-            end
+            local db = ScarletUI.db
+            local characters = BankCache.Characters(db.global.bankCache, db.keys.realm, db.keys.char, db.global.characterCache, true)
+            AddLines(GameTooltip, BankCache.ItemLines(characters, ItemID(self.link), db.keys.realm, time()))
             if self.sets then
                 GameTooltip:AddLine("Set: " .. table.concat(self.sets, ", "), TOOLTIP_COLOR.r, TOOLTIP_COLOR.g, TOOLTIP_COLOR.b)
             end
