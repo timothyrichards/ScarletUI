@@ -124,7 +124,7 @@ function ScarletUI:SetupBagPortraitHooks()
     end
 end
 
--- Auto Shot deadzone (Forever, hunters): the last 0.5s of each ranged swing
+-- Auto Shot clipping window (Forever, hunters): the last 0.5s of each ranged swing
 -- is Auto Shot's windup, and moving then cancels the shot. Forever's Auto Shot
 -- (spell 75) data matches Classic Era's, where that windup is server-side.
 -- A band over the end of Blizzard's ranged swing timer (our own texture on its
@@ -135,16 +135,16 @@ local IsSecret = issecretvalue or function() return false end
 -- The share of a ranged swing of `swing` seconds that the windup takes, with
 -- `haste` percent ranged haste shortening the windup.
 -- ponytail: haste scaling of the windup is assumed from Classic, unchecked in game.
-function ScarletUI.AutoShotDeadzone(swing, haste)
+function ScarletUI.AutoShotClip(swing, haste)
     if not swing or swing <= 0 then return 0 end
     return math.min(1, AUTO_SHOT_WINDUP / (1 + (haste or 0) / 100) / swing)
 end
 
-function ScarletUI:SetupAutoShotDeadzone()
+function ScarletUI:SetupAutoShotClip()
     local bar = SwingTimerRangedFrame and SwingTimerRangedFrame.StatusBar
-    if self.autoShotDeadzoneBand or not bar or select(2, UnitClass("player")) ~= "HUNTER" then return end
+    if self.autoShotClipBand or not bar or select(2, UnitClass("player")) ~= "HUNTER" then return end
     local band = bar:CreateTexture(nil, "OVERLAY", nil, -1) -- under the pip and labels
-    self.autoShotDeadzoneBand = band
+    self.autoShotClipBand = band
     band:SetColorTexture(1, 0.1, 0.1, 0.35)
     band:SetPoint("TOPRIGHT")
     band:SetPoint("BOTTOMRIGHT")
@@ -152,11 +152,11 @@ function ScarletUI:SetupAutoShotDeadzone()
     local function Update()
         local haste, quiver = GetRangedHaste()
         if IsSecret(swing) or IsSecret(haste) or IsSecret(quiver) then return end
-        local share = ScarletUI.AutoShotDeadzone(swing, (haste or 0) + (quiver or 0))
+        local share = ScarletUI.AutoShotClip(swing, (haste or 0) + (quiver or 0))
         band:SetWidth(math.max(1, bar:GetWidth() * share))
-        band:SetShown(ScarletUI.db.global.autoShotDeadzone and share > 0)
+        band:SetShown(ScarletUI.db.global.autoShotClip and share > 0)
     end
-    self.UpdateAutoShotDeadzone = Update
+    self.UpdateAutoShotClip = Update
     local frame = CreateFrame("Frame")
     frame:RegisterEvent("PLAYER_ENTERING_WORLD")
     frame:RegisterEvent("PLAYER_SWING")
@@ -177,6 +177,74 @@ function ScarletUI:SetupAutoShotDeadzone()
     Update()
 end
 
+-- Hunter dead zone (Forever): the target is out of melee range but inside Auto
+-- Shot's 8 yd minimum. Auto Shot (spell 75, 8-35 yd) reads out of range there
+-- and past 35 yd alike; the trade interact distance (index 2: 11 yd on Classic,
+-- 8 on Retail) tells the two apart. Melee range is the main-hand swing check,
+-- or Raptor Strike's range without a melee weapon. The ranged swing timer gets
+-- a red tint and a label, on our own frame so the bar's out-of-range dimming
+-- (on its StatusBar) doesn't fade it. Polled only while the target is hostile.
+local DEAD_ZONE_POLL = 0.1
+local AUTO_SHOT, RAPTOR_STRIKE, TRADE_DISTANCE = 75, 2973, 2
+
+local function Known(value)
+    if IsSecret(value) then return nil end
+    return value
+end
+
+local function HostileTarget()
+    return Known(UnitCanAttack("player", "target")) and not Known(UnitIsDeadOrGhost("target"))
+end
+
+function ScarletUI.TargetInDeadZone()
+    if not HostileTarget() then return false end
+    local melee = C_SwingTimer and Known(C_SwingTimer.IsTargetWithinSwingRange(0)) -- main hand
+    if melee == nil then
+        local name = C_Spell.GetSpellName(RAPTOR_STRIKE) -- the rank the player knows
+        melee = name and Known(C_Spell.IsSpellInRange(name, "target"))
+    end
+    local shot = Known(C_Spell.IsSpellInRange(AUTO_SHOT, "target"))
+    -- Unknown readings (nil, secret) never count as out of range.
+    if melee ~= false or shot ~= false then return false end
+    return Known(CheckInteractDistance("target", TRADE_DISTANCE)) == true
+end
+
+function ScarletUI:SetupHunterDeadZone()
+    local timer = SwingTimerRangedFrame
+    local bar = timer and timer.StatusBar
+    if self.hunterDeadZoneOverlay or not bar or select(2, UnitClass("player")) ~= "HUNTER" then return end
+    local overlay = CreateFrame("Frame", nil, timer)
+    self.hunterDeadZoneOverlay = overlay
+    overlay:SetAllPoints(bar)
+    overlay:SetFrameLevel(bar:GetFrameLevel() + 5)
+    overlay:Hide()
+    local tint = overlay:CreateTexture(nil, "ARTWORK")
+    tint:SetAllPoints()
+    tint:SetColorTexture(1, 0.1, 0.1, 0.55)
+    local label = overlay:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    label:SetPoint("CENTER")
+    label:SetText("Dead zone")
+
+    local poll, waited = CreateFrame("Frame"), 0
+    local function Check() overlay:SetShown(ScarletUI.TargetInDeadZone()) end
+    local function OnUpdate(_, elapsed)
+        waited = waited + elapsed
+        if waited < DEAD_ZONE_POLL then return end
+        waited = 0
+        Check()
+    end
+    local function Update()
+        local on = ScarletUI.db.global.hunterDeadZone and HostileTarget()
+        poll:SetScript("OnUpdate", on and OnUpdate or nil)
+        if on then Check() else overlay:Hide() end
+    end
+    self.UpdateHunterDeadZone = Update
+    poll:RegisterEvent("PLAYER_TARGET_CHANGED")
+    poll:RegisterUnitEvent("UNIT_FACTION", "target")
+    poll:SetScript("OnEvent", Update)
+    Update()
+end
+
 function ScarletUI:SetupFrameTweaks()
     self:SetupMicroMenuArt()
     self:SetupBuffCollapse()
@@ -188,5 +256,6 @@ function ScarletUI:SetupFrameTweaks()
         ContainerFrameCombinedBags:HookScript("OnShow", UpdateGamepadBagBar)
     end
     -- Last, so a failure in the newest tweak can't block the others.
-    self:SetupAutoShotDeadzone()
+    self:SetupAutoShotClip()
+    self:SetupHunterDeadZone()
 end

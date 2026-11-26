@@ -102,10 +102,12 @@ LibStub:NewLibrary("AceConfig-3.0", 1).RegisterOptionsTable = noop
 local dialog = LibStub:NewLibrary("AceConfigDialog-3.0", 1)
 dialog.AddToBlizOptions = noop
 C_AddOns = { IsAddOnLoaded = function() return false end }
+saved.global.autoShotDeadzone = false -- the clipping band's first saved name
 ScarletUIDB = saved
 dofile("ScarletUI.lua")
 dofile("Modules/Database.lua")
 ScarletUI:OnInitialize()
 assert(ScarletUI.db.sv == saved)
 assert(ScarletUI.db.global.editMode.suppressPrompts, "Startup must retain the restored opt-out")
-print("PASS: Keep Current persists through AceDB logout/reload, suppresses all automatic prompts, and allows manual switching")
+assert(ScarletUI.db.global.autoShotClip == false and saved.global.autoShotDeadzone == nil)
+print("PASS: Keep Current persists through AceDB logout/reload, suppresses all automatic prompts, and allows manual switching; autoShotDeadzone moves to autoShotClip")

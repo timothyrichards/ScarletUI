@@ -510,17 +510,30 @@ function ScarletUI:GetEditModeSettingsPage(order)
                 func = function() self:OpenEditMode() end,
                 order = 4,
             },
-            autoShotDeadzone = {
-                name = "Auto Shot Deadzone",
+            autoShotClip = {
+                name = "Auto Shot Clipping Window",
                 desc = "Shade the end of the ranged swing timer: Auto Shot's half-second windup, when moving cancels the shot. Shorter with ranged haste.",
                 type = "toggle",
-                hidden = function() return not self.autoShotDeadzoneBand end,
+                hidden = function() return not self.autoShotClipBand end,
                 width = 1.5,
                 order = 5,
-                get = function(_) return self.db.global.autoShotDeadzone end,
+                get = function(_) return self.db.global.autoShotClip end,
                 set = function(_, val)
-                    self.db.global.autoShotDeadzone = val
-                    self.UpdateAutoShotDeadzone()
+                    self.db.global.autoShotClip = val
+                    self.UpdateAutoShotClip()
+                end,
+            },
+            hunterDeadZone = {
+                name = "Hunter Dead Zone",
+                desc = "Tint the ranged swing timer red and label it while your hostile target is too far for melee but inside Auto Shot's 8 yard minimum range.",
+                type = "toggle",
+                hidden = function() return not self.hunterDeadZoneOverlay end,
+                width = 1.5,
+                order = 6,
+                get = function(_) return self.db.global.hunterDeadZone end,
+                set = function(_, val)
+                    self.db.global.hunterDeadZone = val
+                    self.UpdateHunterDeadZone()
                 end,
             },
         },

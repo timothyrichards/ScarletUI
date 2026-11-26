@@ -59,6 +59,13 @@ function ScarletUI:OnInitialize()
         self.db.global.CVarModule.CVars = nil
     end
 
+    -- The Auto Shot windup band was first saved as autoShotDeadzone; "dead zone" now
+    -- means the range gap between melee and Auto Shot (hunterDeadZone).
+    if self.db.global.autoShotDeadzone ~= nil then
+        self.db.global.autoShotClip = self.db.global.autoShotDeadzone
+        self.db.global.autoShotDeadzone = nil
+    end
+
     -- Seed the default mouseover casting override on clients that support it.
     local CVarModule = self.db.global.CVarModule
     if CVarModule.enabled and CVarModule.overrides.enableMouseoverCast == nil

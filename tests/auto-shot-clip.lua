@@ -1,8 +1,8 @@
--- Run from the addon root: lua tests/auto-shot-deadzone.lua
--- Auto Shot deadzone: the band's share of the ranged swing timer and its width.
-ScarletUI = { db = { global = { autoShotDeadzone = true } } }
+-- Run from the addon root: lua tests/auto-shot-clip.lua
+-- Auto Shot clipping window: the band's share of the ranged swing timer and its width.
+ScarletUI = { db = { global = { autoShotClip = true } } }
 dofile("Modules/FrameTweaks.lua")
-local Share = ScarletUI.AutoShotDeadzone
+local Share = ScarletUI.AutoShotClip
 local function Near(a, b) return math.abs(a - b) < 1e-9 end
 
 assert(Near(Share(2.0, 0), 0.25))            -- 0.5s of a 2.0s swing
@@ -37,7 +37,7 @@ CreateFrame = function()
     function f.SetScript(_, name, fn) scripts[name] = fn end
     return f
 end
-ScarletUI:SetupAutoShotDeadzone()
+ScarletUI:SetupAutoShotClip()
 assert(band.width == 100 and band.shown)
 scripts.OnEvent(nil, "PLAYER_SWING", 1.6, Enum.PlayerSwingType.MainHand) -- melee swings are ignored
 assert(band.width == 100)
@@ -46,19 +46,19 @@ assert(band.width == 80)
 ranged, haste = 1.5, 50
 scripts.OnEvent(nil, "UNIT_ATTACK_SPEED", "player")
 assert(Near(band.width, 400 * 0.5 / 1.5 / 1.5))
-ScarletUI.db.global.autoShotDeadzone = false
+ScarletUI.db.global.autoShotClip = false
 hooks.OnSizeChanged()
 assert(not band.shown)
-ScarletUI.db.global.autoShotDeadzone = true
+ScarletUI.db.global.autoShotClip = true
 ranged = nil -- ranged weapon unequipped
 scripts.OnEvent(nil, "UNIT_INVENTORY_CHANGED", "player")
 assert(not band.shown)
 
 -- Only hunters get the band.
-ScarletUI.autoShotDeadzoneBand = nil
+ScarletUI.autoShotClipBand = nil
 UnitClass = function() return "Mage", "MAGE" end
-ScarletUI:SetupAutoShotDeadzone()
-assert(ScarletUI.autoShotDeadzoneBand == nil)
+ScarletUI:SetupAutoShotClip()
+assert(ScarletUI.autoShotClipBand == nil)
 
 SwingTimerRangedFrame, UnitAttackSpeed, GetRangedHaste = nil, nil, nil
-print("PASS: Auto Shot deadzone share of the ranged swing, band width, toggle, and hunters only")
+print("PASS: Auto Shot clipping window share of the ranged swing, band width, toggle, and hunters only")

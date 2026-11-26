@@ -198,11 +198,23 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   item `OnShow`/`OnHide`. Keep its state in locals, never on Blizzard's frames.
   On Forever, for hunters, it shades the end of Blizzard's ranged swing timer
   (`SwingTimerRangedFrame.StatusBar`, our own texture) with Auto Shot's 0.5s
-  windup, when moving cancels the shot (`db.global.autoShotDeadzone`, on by
+  windup, when moving cancels the shot (`db.global.autoShotClip`, on by
   default, toggle on the Edit Mode Profile page). Its width is
-  `ScarletUI.AutoShotDeadzone(swing, haste)` of the bar: the windup shortened by
+  `ScarletUI.AutoShotClip(swing, haste)` of the bar: the windup shortened by
   `GetRangedHaste` (assumed, unchecked in game) over the ranged swing from
-  `PLAYER_SWING` or `UnitAttackSpeed`. Tested in `tests/auto-shot-deadzone.lua`.
+  `PLAYER_SWING` or `UnitAttackSpeed`. Tested in `tests/auto-shot-clip.lua`. The saved
+  setting was first `autoShotDeadzone`; `OnInitialize` moves it over.
+  For hunters it also tints that bar red with a "Dead zone" label (our own frame
+  on `SwingTimerRangedFrame`, so the bar's out-of-range dimming doesn't fade it)
+  while the hostile target is out of melee but inside Auto Shot's 8 yd minimum
+  (`db.global.hunterDeadZone`, on by default, toggle on the Edit Mode Profile
+  page). `ScarletUI.TargetInDeadZone()` needs melee out of range
+  (`C_SwingTimer.IsTargetWithinSwingRange(0)`, or Raptor Strike's range with no
+  melee weapon), Auto Shot (75) out of range, and `CheckInteractDistance(target, 2)`
+  (trade, 8-11 yd) true, since Auto Shot also reads out of range past 35 yd. Nil
+  or secret readings never count. A 0.1s `OnUpdate` runs only while the target is
+  attackable (`PLAYER_TARGET_CHANGED`, `UNIT_FACTION`). Tested in
+  `tests/hunter-dead-zone.lua`.
 - `Modules/Chat.lua`: chat tabs and font size. It reruns on every
   `UPDATE_FLOATING_CHAT_WINDOWS`, so don't call dock, tab, or edit-box functions
   (`FCFDock_SelectWindow`, voice transcription updates) there unless something
