@@ -2076,3 +2076,6 @@ dofile("tests/nameplates.lua")
 
 -- Also replaces the ScarletUI global.
 dofile("tests/bank-cache.lua")
+
+-- Also replaces the ScarletUI global.
+dofile("tests/auto-shot-deadzone.lua")

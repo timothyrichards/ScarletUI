@@ -510,6 +510,19 @@ function ScarletUI:GetEditModeSettingsPage(order)
                 func = function() self:OpenEditMode() end,
                 order = 4,
             },
+            autoShotDeadzone = {
+                name = "Auto Shot Deadzone",
+                desc = "Shade the end of the ranged swing timer: Auto Shot's half-second windup, when moving cancels the shot. Shorter with ranged haste.",
+                type = "toggle",
+                hidden = function() return not self.autoShotDeadzoneBand end,
+                width = 1.5,
+                order = 5,
+                get = function(_) return self.db.global.autoShotDeadzone end,
+                set = function(_, val)
+                    self.db.global.autoShotDeadzone = val
+                    self.UpdateAutoShotDeadzone()
+                end,
+            },
         },
     }
 end

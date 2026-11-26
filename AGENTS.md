@@ -196,6 +196,13 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   its slot; a post-hook on each buff viewer's `Layout` records the slot anchors,
   then shown items are re-anchored into the slots at one end, again on every
   item `OnShow`/`OnHide`. Keep its state in locals, never on Blizzard's frames.
+  On Forever, for hunters, it shades the end of Blizzard's ranged swing timer
+  (`SwingTimerRangedFrame.StatusBar`, our own texture) with Auto Shot's 0.5s
+  windup, when moving cancels the shot (`db.global.autoShotDeadzone`, on by
+  default, toggle on the Edit Mode Profile page). Its width is
+  `ScarletUI.AutoShotDeadzone(swing, haste)` of the bar: the windup shortened by
+  `GetRangedHaste` (assumed, unchecked in game) over the ranged swing from
+  `PLAYER_SWING` or `UnitAttackSpeed`. Tested in `tests/auto-shot-deadzone.lua`.
 - `Modules/Chat.lua`: chat tabs and font size. It reruns on every
   `UPDATE_FLOATING_CHAT_WINDOWS`, so don't call dock, tab, or edit-box functions
   (`FCFDock_SelectWindow`, voice transcription updates) there unless something

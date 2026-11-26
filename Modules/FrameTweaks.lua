@@ -124,7 +124,61 @@ function ScarletUI:SetupBagPortraitHooks()
     end
 end
 
+-- Auto Shot deadzone (Forever, hunters): the last 0.5s of each ranged swing
+-- is Auto Shot's windup, and moving then cancels the shot. Forever's Auto Shot
+-- (spell 75) data matches Classic Era's, where that windup is server-side.
+-- A band over the end of Blizzard's ranged swing timer (our own texture on its
+-- StatusBar, which dims with it out of range) marks that window.
+local AUTO_SHOT_WINDUP = 0.5
+local IsSecret = issecretvalue or function() return false end
+
+-- The share of a ranged swing of `swing` seconds that the windup takes, with
+-- `haste` percent ranged haste shortening the windup.
+-- ponytail: haste scaling of the windup is assumed from Classic, unchecked in game.
+function ScarletUI.AutoShotDeadzone(swing, haste)
+    if not swing or swing <= 0 then return 0 end
+    return math.min(1, AUTO_SHOT_WINDUP / (1 + (haste or 0) / 100) / swing)
+end
+
+function ScarletUI:SetupAutoShotDeadzone()
+    local bar = SwingTimerRangedFrame and SwingTimerRangedFrame.StatusBar
+    if self.autoShotDeadzoneBand or not bar or select(2, UnitClass("player")) ~= "HUNTER" then return end
+    local band = bar:CreateTexture(nil, "OVERLAY", nil, -1) -- under the pip and labels
+    self.autoShotDeadzoneBand = band
+    band:SetColorTexture(1, 0.1, 0.1, 0.35)
+    band:SetPoint("TOPRIGHT")
+    band:SetPoint("BOTTOMRIGHT")
+    local swing -- the ranged swing the bar is timing, or the next one
+    local function Update()
+        local haste, quiver = GetRangedHaste()
+        if IsSecret(swing) or IsSecret(haste) or IsSecret(quiver) then return end
+        local share = ScarletUI.AutoShotDeadzone(swing, (haste or 0) + (quiver or 0))
+        band:SetWidth(math.max(1, bar:GetWidth() * share))
+        band:SetShown(ScarletUI.db.global.autoShotDeadzone and share > 0)
+    end
+    self.UpdateAutoShotDeadzone = Update
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    frame:RegisterEvent("PLAYER_SWING")
+    frame:RegisterUnitEvent("UNIT_ATTACK_SPEED", "player")
+    frame:RegisterUnitEvent("UNIT_RANGEDDAMAGE", "player")
+    frame:RegisterUnitEvent("UNIT_INVENTORY_CHANGED", "player")
+    frame:SetScript("OnEvent", function(_, event, duration, swingType)
+        if event == "PLAYER_SWING" then
+            if swingType ~= Enum.PlayerSwingType.Ranged then return end
+            swing = duration
+        else
+            swing = select(3, UnitAttackSpeed("player"))
+        end
+        Update()
+    end)
+    bar:HookScript("OnSizeChanged", Update)
+    swing = select(3, UnitAttackSpeed("player"))
+    Update()
+end
+
 function ScarletUI:SetupFrameTweaks()
+    self:SetupAutoShotDeadzone()
     self:SetupMicroMenuArt()
     self:SetupBuffCollapse()
     self:SetupBagPortraitHooks()
