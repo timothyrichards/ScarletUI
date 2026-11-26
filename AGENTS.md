@@ -605,3 +605,7 @@ Keep changes scoped to the task, preserve unrelated work, and commit completed
 changes. This Windows checkout can report unrelated executable-bit differences;
 use `git -c core.fileMode=false` for task status/staging instead of changing the
 repository configuration or staging unrelated files.
+
+## Versioning
+
+Semver in every TOC (`## Version: MAJOR.MINOR.PATCH`, identical across all five; `tests/toc-version.lua` checks). Each change merged to `master` bumps it: PATCH for fixes, MINOR for new features or options, MAJOR for breaking changes (e.g. a saved-variable reset). Tag the merge commit `vX.Y.Z`. Never push.

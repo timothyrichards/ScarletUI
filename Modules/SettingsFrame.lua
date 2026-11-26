@@ -906,6 +906,13 @@ local function Build()
     if frame.CloseButton then frame.CloseButton:SetScript("OnClick", function() frame:Hide() end) end
 
     if frame.SetTitle then frame:SetTitle("Scarlet UI") else frame.TitleText:SetText("Scarlet UI") end
+    local getMeta = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
+    local version = getMeta and getMeta("ScarletUI", "Version")
+    if version then
+        local text = frame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+        text:SetPoint("RIGHT", frame.CloseButton, "LEFT", -2, 0)
+        text:SetText("v" .. version)
+    end
     if frame.SetPortraitToAsset then frame:SetPortraitToAsset(ICON) else SetPortraitToTexture(frame.portrait, ICON) end
 
     search = CreateFrame("EditBox", nil, frame, "SearchBoxTemplate")
