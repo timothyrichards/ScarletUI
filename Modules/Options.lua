@@ -281,7 +281,7 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                 args = {
                     minimapIcon = {
                         name = "Minimap Icon",
-                        desc = "Show the Scarlet UI button on the minimap. Left-click opens these settings; right-click toggles the saved bank; Shift-right-click opens Edit Mode.",
+                        desc = "Show the Scarlet UI button on the minimap. Left-click opens these settings; right-click toggles the character viewer; Shift-right-click opens Edit Mode.",
                         type = "toggle",
                         width = 1,
                         order = 0,
@@ -869,14 +869,14 @@ function ScarletUI:GetBankCacheSettingsPage(database, order)
     local settings = database.bankCacheModule
     local function Off() return not settings.enabled end
     return {
-        name = "Bank",
-        desc = "Remember each character's bank, to look through it away from the banker.",
+        name = "Characters",
+        desc = "Remember each character's bags, bank, gold, level, and rested XP, to look through them from any character.",
         type = "group",
         order = order,
         args = {
             enabled = {
-                name = "Cached Bank",
-                desc = "Save this character's bank each time you open it. /sui bank, or the button below, then shows the saved bank of any character on this realm.",
+                name = "Character Viewer",
+                desc = "Save this character's bags, gold, level, rested XP, and zone at login and logout and when they change, and its bank each time you open it. /sui bank, or the button below, then shows any saved character on the account.",
                 type = "toggle",
                 width = 1.5,
                 order = 0,
@@ -884,6 +884,7 @@ function ScarletUI:GetBankCacheSettingsPage(database, order)
                 set = function(_, val)
                     settings.enabled = val
                     self:ScheduleBankSnapshot()
+                    self:ScheduleCharacterSnapshot()
                 end,
             },
             tooltip = {
@@ -897,8 +898,8 @@ function ScarletUI:GetBankCacheSettingsPage(database, order)
                 set = function(_, val) settings.tooltip = val end,
             },
             open = {
-                name = "Open Bank Viewer",
-                desc = "Show the saved bank of a character on this realm. Same as /sui bank.",
+                name = "Open Character Viewer",
+                desc = "Show the saved bags and bank of any character on the account. Same as /sui bank or /sui chars.",
                 type = "execute",
                 width = 1,
                 order = 2,

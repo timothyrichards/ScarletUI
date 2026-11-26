@@ -159,7 +159,7 @@ function ScarletUI:ToggleBankFromUI()
     if self.db.global.bankCacheModule.enabled then
         self:ToggleBankViewer()
     else
-        self:Print("The cached bank is turned off. Turn on Cached Bank in /sui to use it.")
+        self:Print("The character viewer is turned off. Turn on Character Viewer in /sui to use it.")
     end
 end
 
@@ -177,7 +177,7 @@ function ScarletUI:SetupMinimapIcon()
         OnTooltipShow = function(tooltip)
             tooltip:AddLine("Scarlet UI")
             tooltip:AddLine("|cffffd100Left-click|r to toggle settings.", 1, 1, 1)
-            tooltip:AddLine("|cffffd100Right-click|r to toggle the saved bank.", 1, 1, 1)
+            tooltip:AddLine("|cffffd100Right-click|r to toggle the character viewer (bags and bank).", 1, 1, 1)
             tooltip:AddLine("|cffffd100Shift-right-click|r to open Edit Mode.", 1, 1, 1)
         end,
     })
@@ -230,7 +230,7 @@ end
 function ScarletUI:SlashCommand(msg)
     if msg == "" then
         self:ToggleSettingsFrame()
-    elseif msg == "bank" then
+    elseif msg == "bank" or msg == "chars" then
         self:ToggleBankViewer()
     elseif msg == "xp" then
         self:ToggleXPPerHour()
@@ -243,7 +243,7 @@ function ScarletUI:SlashCommand(msg)
     elseif msg == "help" then
         self:Print("Available commands:")
         self:Print("- /sui: Toggle the settings window.")
-        self:Print("- /sui bank: Toggle the saved bank of each character on this realm.")
+        self:Print("- /sui bank or /sui chars: Toggle the saved bags, bank, gold, and rested XP of each character.")
         self:Print("- /sui xp: Toggle the XP per hour readout above the experience bar.")
         self:Print("- /sui move: Open Blizzard Edit Mode.")
         self:Print("- /sui debug: Toggle the debug frame.")

@@ -1,14 +1,17 @@
--- Cached bank: the client only shows bank contents while the bank is open, so
--- each character's bank is saved when seen (db.global.bankCache, keyed by
--- AceDB's character key) and shown later in a viewer (/sui bank) and as bank
--- counts on item tooltips. Retail and Forever keep the bank in purchased tabs
+-- Cached bank and character viewer: the client only shows bank contents while
+-- the bank is open, so each character's bank is saved when seen
+-- (db.global.bankCache, keyed by AceDB's character key) and shown later in a
+-- viewer (/sui bank) and as bank counts on item tooltips. Bags, money, level,
+-- rested XP, and zone are saved at login, logout, and on change
+-- (db.global.characterCache) and shown in the same viewer. Retail and Forever
+-- keep the bank in purchased tabs
 -- (C_Bank.FetchPurchasedBankTabIDs; Forever's are bank bags); Era, TBC, and
 -- Mists in the bank container and bank bags. The Warband/account bank is not
 -- saved. Only add-on data is written; tooltips get post-hooked lines.
 local BankCache = {}
 ScarletUI.BankCache = BankCache
 
-local IsSecret = issecretvalue or function() return false end
+local function IsSecret(value) return issecretvalue ~= nil and issecretvalue(value) end
 local COLUMNS, SIZE, GAP, DIM_ALPHA = 10, 37, 4, 0.25 -- the bags' slots per row, size and spacing
 local PORTRAIT = "Interface\\Icons\\INV_Box_02" -- a chest
 local TOOLTIP_COLOR = { r = 0.5, g = 0.75, b = 1 }
@@ -94,11 +97,9 @@ local function EquipmentSets()
     return { exact = exact, byID = byID }
 end
 
--- What the open bank holds: items in bank order and the total per item ID.
--- Nil while it has no slots, which means it has not loaded or cannot be seen.
-function BankCache.Read()
-    local containers = BankCache.Containers()
-    if not containers then return end
+-- What `containers` hold: items in slot order and the total per item ID.
+-- Nil while they have no slots, which means not loaded or cannot be seen.
+function BankCache.ReadContainers(containers)
     local items, counts, size = {}, {}, 0
     local sets = EquipmentSets()
     for _, bag in ipairs(containers) do
@@ -124,6 +125,87 @@ function BankCache.Read()
     return { items = items, counts = counts, size = size }
 end
 
+-- What the open bank holds, or nil when it cannot be read.
+function BankCache.Read()
+    local containers = BankCache.Containers()
+    return containers and BankCache.ReadContainers(containers)
+end
+
+-- The carried bags: the backpack and bag slots, plus Retail's reagent bag.
+-- On Era, TBC, and Mists bag NUM_BAG_SLOTS + 1 is the first bank bag, so the
+-- reagent bag is only taken on bank-tab clients, and never when it is a tab.
+-- The keyring (-1 on Forever) is not read.
+function BankCache.BagContainers()
+    local list = {}
+    for bag = 0, NUM_BAG_SLOTS or 4 do list[#list + 1] = bag end
+    local reagent = Enum and Enum.BagIndex and Enum.BagIndex.ReagentBag
+    if reagent and C_Bank and C_Bank.FetchPurchasedBankTabIDs and Enum.BankType then
+        for _, tab in ipairs(C_Bank.FetchPurchasedBankTabIDs(Enum.BankType.Character) or {}) do
+            if tab == reagent then return list end
+        end
+        list[#list + 1] = reagent
+    end
+    return list
+end
+
+-- Whether the character cannot gain XP, as XPPerHour.lua checks it.
+local function MaxLevel()
+    if IsXPUserDisabled and IsXPUserDisabled() then return true end
+    if IsPlayerAtEffectiveMaxLevel then return IsPlayerAtEffectiveMaxLevel() end
+    local max = GetMaxPlayerLevel and GetMaxPlayerLevel()
+    return max and UnitLevel("player") >= max or false
+end
+
+-- The logged-in character's summary. A value the client keeps secret (Forever)
+-- or has not loaded (an empty zone name) keeps the `previous` saved one.
+function BankCache.ReadCharacter(previous)
+    previous = previous or {}
+    local className, class = UnitClass("player")
+    local read = {
+        class = class, className = className, faction = UnitFactionGroup("player"),
+        level = UnitLevel("player"), money = GetMoney(), zone = GetRealZoneText(),
+        xp = UnitXP("player"), xpMax = UnitXPMax("player"), rested = GetXPExhaustion(), resting = IsResting(),
+        maxLevel = MaxLevel(),
+    }
+    for field, value in pairs(read) do
+        if IsSecret(value) or value == "" then read[field] = previous[field] end
+    end
+    -- Tested only now: a secret value cannot be.
+    read.rested, read.resting, read.maxLevel = read.rested or 0, read.resting and true or false, read.maxLevel and true or false
+    return read
+end
+
+-- Rested XP as a percent of the saved level, projected from the last save to
+-- `now` unless `online`: 5% of the level per 8 hours resting, a quarter of that
+-- outside, up to 150%. Returns percent, percent gained since the save; nil at
+-- max level or without a level size.
+-- ponytail: Forever's rate is assumed to match Classic's; unchecked in game.
+local RESTED_PER_SECOND, RESTED_CAP = 0.05 / (8 * 3600), 1.5
+function BankCache.Rested(entry, now, online)
+    local max = entry.xpMax
+    if entry.maxLevel or not max or max <= 0 then return end
+    local rested, projected = entry.rested or 0, entry.rested or 0
+    if not online and entry.time then
+        local rate = RESTED_PER_SECOND * (entry.resting and 1 or 0.25)
+        projected = math.max(rested, math.min(RESTED_CAP * max, rested + math.max(0, now - entry.time) * rate * max))
+    end
+    return projected / max * 100, (projected - rested) / max * 100
+end
+
+-- Copper as coloured gold, silver, and copper (Craft Profit's format).
+function BankCache.Money(copper)
+    return ScarletUI.CraftProfit.Money(copper or 0)
+end
+
+-- The money of the listed characters, on `realm` only when given.
+function BankCache.AccountMoney(list, realm)
+    local total = 0
+    for _, c in ipairs(list) do
+        if c.info and c.info.money and (not realm or c.realm == realm) then total = total + c.info.money end
+    end
+    return total
+end
+
 -- The name shown for a saved character: its key without " - Realm". Forever's
 -- keys are first name and surname, which already tell same-named ones apart.
 function BankCache.Label(key, realm)
@@ -139,15 +221,29 @@ function BankCache.Named(label, faction)
     return icon and ("|TInterface\\FriendsFrame\\" .. icon .. ":14|t " .. label) or label
 end
 
--- Saved characters on `realm` (AceDB's realm key), `current` first, then by name.
-function BankCache.Characters(cache, realm, current)
-    local list = {}
-    for key, entry in pairs(cache or {}) do
-        if entry.realm == realm then
-            list[#list + 1] = { key = key, label = BankCache.Label(key, realm), entry = entry }
+-- Saved characters on `realm` (AceDB's realm key), `current` first, then by
+-- name: { key, label, realm, entry = saved bank, info = saved summary }.
+-- `characterCache` adds characters with only a summary; `allRealms` lists
+-- every realm, `realm` first and the others by name.
+function BankCache.Characters(cache, realm, current, characterCache, allRealms)
+    local list, seen = {}, {}
+    for _, source in ipairs({ cache or {}, characterCache or {} }) do
+        for key, saved in pairs(source) do
+            if not seen[key] then
+                seen[key] = true
+                local entry, info = cache and cache[key], characterCache and characterCache[key]
+                local where = saved.realm
+                if where == realm or (allRealms and where) then
+                    list[#list + 1] = { key = key, label = BankCache.Label(key, where), realm = where, entry = entry, info = info }
+                end
+            end
         end
     end
     table.sort(list, function(a, b)
+        if a.realm ~= b.realm then
+            if (a.realm == realm) ~= (b.realm == realm) then return a.realm == realm end
+            return tostring(a.realm) < tostring(b.realm)
+        end
         if (a.key == current) ~= (b.key == current) then return a.key == current end
         return a.label < b.label
     end)
@@ -219,7 +315,7 @@ function BankCache.Decorate(button, link)
     return quality == nil
 end
 
-local bankOpen, pending, viewer, viewerTip
+local bankOpen, pending, pendingCharacter, viewer, viewerTip
 local ALL = "ALL" -- the viewer's "All characters" choice
 
 function ScarletUI:SnapshotBank()
@@ -243,6 +339,29 @@ function ScarletUI:ScheduleBankSnapshot()
     C_Timer.After(0.2, function()
         pending = false
         self:SnapshotBank()
+    end)
+end
+
+-- The logged-in character's summary, bags, and last-seen time, in
+-- db.global.characterCache. Bags that read as nothing keep the saved ones.
+function ScarletUI:SnapshotCharacter()
+    if not self.db.global.bankCacheModule.enabled then return end
+    local global, key = self.db.global, self.db.keys.char
+    global.characterCache = global.characterCache or {}
+    local previous = global.characterCache[key] or {}
+    local entry = BankCache.ReadCharacter(previous)
+    entry.realm, entry.time = self.db.keys.realm, time()
+    entry.bags = BankCache.ReadContainers(BankCache.BagContainers()) or previous.bags
+    global.characterCache[key] = entry
+    if viewer and viewer:IsShown() then viewer:Refresh() end
+end
+
+function ScarletUI:ScheduleCharacterSnapshot()
+    if pendingCharacter then return end
+    pendingCharacter = true
+    C_Timer.After(0.2, function()
+        pendingCharacter = false
+        self:SnapshotCharacter()
     end)
 end
 
@@ -298,9 +417,18 @@ function ScarletUI:SetupBankCache()
         self:RegisterEventHandler("BANK_TABS_CHANGED", Update)
     end
     HookTooltips()
+    local function Character() self:ScheduleCharacterSnapshot() end
+    for _, event in ipairs({ "PLAYER_ENTERING_WORLD", "BAG_UPDATE", "PLAYER_MONEY", "PLAYER_XP_UPDATE", "UPDATE_EXHAUSTION",
+        "PLAYER_UPDATE_RESTING", "PLAYER_LEVEL_UP", "ZONE_CHANGED_NEW_AREA" }) do
+        self:RegisterEventHandler(event, Character)
+    end
+    -- No timer runs at logout; this save sets the time and resting state the
+    -- rested projection counts from.
+    self:RegisterEventHandler("PLAYER_LOGOUT", function() self:SnapshotCharacter() end)
+    Character()
 end
 
--- Viewer: the saved bank of a character on this realm, as item icons. The
+-- Viewer: the saved bags and bank of any character, as item icons. The
 -- search box dims items whose name does not match; the grid keeps its places.
 -- The open backpack the viewer sits beside: Bag.lua's frame, Blizzard's
 -- combined bags, or the separate backpack.
@@ -315,7 +443,7 @@ end
 -- backpack opens again.
 local function BuildViewer()
     viewer = CreateFrame("Frame", "ScarletUIBank", UIParent, "PortraitFrameTemplate")
-    viewer:SetSize(COLUMNS * (SIZE + GAP) + 44, 450)
+    viewer:SetSize(COLUMNS * (SIZE + GAP) + 44, 500)
     viewer:SetPoint("CENTER")
     viewer:SetFrameStrata("HIGH")
     viewer:SetToplevel(true)
@@ -358,11 +486,12 @@ local function BuildViewer()
     tinsert(UISpecialFrames, "ScarletUIBank")
     -- The template's X calls HideUIPanel, which refuses addon code in combat.
     if viewer.CloseButton then viewer.CloseButton:SetScript("OnClick", function() viewer:Hide() end) end
-    if viewer.SetTitle then viewer:SetTitle("Scarlet UI Bank") else viewer.TitleText:SetText("Scarlet UI Bank") end
+    if viewer.SetTitle then viewer:SetTitle("Scarlet UI Characters") else viewer.TitleText:SetText("Scarlet UI Characters") end
     if viewer.SetPortraitToAsset then viewer:SetPortraitToAsset(PORTRAIT) else SetPortraitToTexture(viewer.portrait, PORTRAIT) end
 
     local selected, query, shown, waiting = nil, "", {}, false
     local allMode -- the grid shows every character, so slots name their owner on hover
+    local listed = {} -- the characters in the dropdown
     -- Dress each slot and dim non-matches; items without loaded data wait for
     -- GET_ITEM_INFO_RECEIVED.
     local buttons = {}
@@ -398,16 +527,21 @@ local function BuildViewer()
     local dropdown = CreateFrame("DropdownButton", nil, viewer, "WowStyle1DropdownTemplate")
     dropdown:SetPoint("TOPLEFT", 66, -60)
     dropdown:SetWidth(180)
-    dropdown:SetDefaultText("No banks saved")
-    local lastSeen = viewer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    lastSeen:SetPoint("LEFT", dropdown, "RIGHT", 10, 0)
+    dropdown:SetDefaultText("No characters saved")
+    local account = viewer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    account:SetPoint("RIGHT", viewer, "TOPRIGHT", -16, -73) -- the dropdown's row
+    -- The chosen character: level, class, zone, last seen; then money and rested XP.
+    local info = viewer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    info:SetPoint("TOPLEFT", 18, -96)
+    local info2 = viewer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    info2:SetPoint("TOPLEFT", 18, -113)
     local empty = viewer:CreateFontString(nil, "OVERLAY", "GameFontDisable")
     empty:SetPoint("CENTER", 0, -20)
 
     -- ScrollFrameTemplate has the thin modern bar; older clients lack it.
     local ok, scroll = pcall(CreateFrame, "ScrollFrame", nil, viewer, "ScrollFrameTemplate")
     if not ok then scroll = CreateFrame("ScrollFrame", nil, viewer, "UIPanelScrollFrameTemplate") end
-    scroll:SetPoint("TOPLEFT", 14, -96)
+    scroll:SetPoint("TOPLEFT", 14, -134)
     scroll:SetPoint("BOTTOMRIGHT", -30, 10)
     local content = CreateFrame("Frame", nil, scroll)
     content:SetSize(COLUMNS * (SIZE + GAP), 1)
@@ -442,10 +576,18 @@ local function BuildViewer()
             GameTooltip:SetHyperlink(self.link)
             viewerTip = nil
             if allMode then
-                local db = ScarletUI.db
-                for _, c in ipairs(BankCache.Counts(db.global.bankCache, db.keys.realm, ItemID(self.link), db.keys.char)) do
-                    GameTooltip:AddLine(("Bank: %s x%d (%s)"):format(c.label, c.count, BankCache.Age(c.time, time())),
-                        TOOLTIP_COLOR.r, TOOLTIP_COLOR.g, TOOLTIP_COLOR.b)
+                local itemID, realm = ItemID(self.link), ScarletUI.db.keys.realm
+                for _, c in ipairs(listed) do
+                    local label = c.realm == realm and c.label or (c.label .. " (" .. tostring(c.realm) .. ")")
+                    local bags = c.info and c.info.bags and c.info.bags.counts[itemID]
+                    local bank = c.entry and c.entry.counts and c.entry.counts[itemID]
+                    if bags then
+                        GameTooltip:AddLine(("Bags: %s x%d"):format(label, bags), TOOLTIP_COLOR.r, TOOLTIP_COLOR.g, TOOLTIP_COLOR.b)
+                    end
+                    if bank then
+                        GameTooltip:AddLine(("Bank: %s x%d (%s)"):format(label, bank, BankCache.Age(c.entry.time, time())),
+                            TOOLTIP_COLOR.r, TOOLTIP_COLOR.g, TOOLTIP_COLOR.b)
+                    end
                 end
             end
             if self.sets then
@@ -468,12 +610,50 @@ local function BuildViewer()
         return headers[i]
     end
 
+    local DOT = "  \194\183  " -- a middle dot between parts
+    local function Grey(text) return "|cff888888" .. text .. "|r" end
+    local function Seen(c, now)
+        if c.key == ScarletUI.db.keys.char then return "Online" end
+        return "Last seen " .. BankCache.Age(c.info.time, now)
+    end
+    -- "Rested 45% (+12% since logout, resting)"; nil at max level or unknown.
+    local function Rested(c, now)
+        local percent, gained = BankCache.Rested(c.info, now, c.key == ScarletUI.db.keys.char)
+        if not percent then return end
+        local text = ("Rested %d%%"):format(math.floor(percent + 0.5))
+        if gained >= 0.5 then
+            text = text .. (" (+%d%% since logout, %s)"):format(math.floor(gained + 0.5), c.info.resting and "resting" or "outside")
+        end
+        return text
+    end
+    -- A character's Bags and Bank groups. `notes` keeps empty ones, with a line
+    -- saying why; without it only groups with items are added.
+    local function AddGroups(groups, c, now, notes)
+        local bags, bank = c.info and c.info.bags, c.entry
+        local bagItems, bankItems = bags and bags.items or {}, bank and bank.items or {}
+        if notes or #bagItems > 0 then
+            groups[#groups + 1] = { header = "Bags", items = bagItems,
+                note = not bags and "Bags not saved yet. Log in on this character." or #bagItems == 0 and "The bags were empty." or nil }
+        end
+        if notes or #bankItems > 0 then
+            groups[#groups + 1] = { header = "Bank" .. (bank and bank.time and ("  " .. Grey("Updated " .. BankCache.Age(bank.time, now))) or ""),
+                items = bankItems,
+                note = not bank and "No bank saved yet. Open your bank to save it." or #bankItems == 0 and "This bank was empty." or nil }
+        end
+    end
+
     -- The choice is saved: "All characters" or a character key; a character
-    -- that is gone falls back to the first (the current one).
+    -- that is gone falls back to the first (the current one). Every realm is
+    -- listed, this one first, under realm titles when there are several.
     function viewer:Refresh()
         local db = ScarletUI.db
         local settings = db.global.bankCacheModule
-        local characters = BankCache.Characters(db.global.bankCache, db.keys.realm, db.keys.char)
+        local characters = BankCache.Characters(db.global.bankCache, db.keys.realm, db.keys.char, db.global.characterCache, true)
+        listed = characters
+        local realms = 0
+        for i, c in ipairs(characters) do
+            if i == 1 or c.realm ~= characters[i - 1].realm then realms = realms + 1 end
+        end
         local character
         for _, c in ipairs(characters) do
             if c.key == settings.viewerChoice then character = c end
@@ -487,37 +667,71 @@ local function BuildViewer()
                 viewer:Refresh()
             end
         end
+        local function Name(c) return BankCache.Named(c.label, c.info and c.info.faction or c.entry and c.entry.faction) end
+        local function RealmTitle(realm)
+            return tostring(realm) .. "  " .. BankCache.Money(BankCache.AccountMoney(characters, realm))
+        end
+        -- Calls `realmTitle(realm)` before each realm's characters when there are several.
+        local function EachCharacter(fn, realmTitle)
+            for i, c in ipairs(characters) do
+                if realms > 1 and (i == 1 or c.realm ~= characters[i - 1].realm) then realmTitle(c.realm) end
+                fn(c)
+            end
+        end
         dropdown:SetupMenu(function(_, root)
             root:CreateRadio("All characters", Pick(ALL))
-            for _, c in ipairs(characters) do root:CreateRadio(BankCache.Named(c.label, c.entry.faction), Pick(c.key)) end
+            EachCharacter(function(c)
+                local level = c.info and c.info.level and ("  " .. Grey(c.info.level)) or ""
+                root:CreateRadio(Name(c) .. level, Pick(c.key))
+            end, function(realm) root:CreateTitle(RealmTitle(realm)) end)
         end)
-        -- Groups of slots; All mode puts a header with the age on each character's.
+        account:SetText(#characters > 0 and ("Account: " .. BankCache.Money(BankCache.AccountMoney(characters))) or "")
+        -- Groups of slots under headers. All mode heads each character's with
+        -- its name, level, money and last seen, and each realm's with its money.
         local groups, now = {}, time()
         if allMode then
-            for _, c in ipairs(characters) do
-                if c.entry.items and #c.entry.items > 0 then
-                    groups[#groups + 1] = { header = BankCache.Named(c.label, c.entry.faction) .. "  |cff888888Updated " .. BankCache.Age(c.entry.time, now) .. "|r", items = c.entry.items }
+            EachCharacter(function(c)
+                local text = Name(c)
+                if c.info then
+                    text = text .. "  " .. Grey("Level " .. tostring(c.info.level)) .. "  " .. BankCache.Money(c.info.money)
+                        .. "  " .. Grey(Seen(c, now))
                 end
-            end
+                groups[#groups + 1] = { header = text, items = {} }
+                AddGroups(groups, c, now, false)
+            end, function(realm) groups[#groups + 1] = { header = RealmTitle(realm), items = {} } end)
         elseif character then
-            groups[1] = { items = character.entry.items or {} }
+            AddGroups(groups, character, now, true)
         end
-        local entry = character and character.entry
-        lastSeen:SetText(entry and not allMode and ("Updated " .. BankCache.Age(entry.time, now)) or "")
-        empty:SetText(not entry and "No bank saved yet. Open your bank to save it."
-            or #groups == 0 and (allMode and "Every saved bank is empty." or "This bank was empty.") or "")
+        local summary = not allMode and character and character.info
+        if summary then
+            local class = summary.className or summary.class or ""
+            local color = RAID_CLASS_COLORS and RAID_CLASS_COLORS[summary.class]
+            if color then class = ("|cff%02x%02x%02x%s|r"):format(color.r * 255, color.g * 255, color.b * 255, class) end
+            local parts = { ("Level %s %s"):format(tostring(summary.level), class) }
+            if summary.zone then parts[#parts + 1] = summary.zone end
+            parts[#parts + 1] = Seen(character, now)
+            info:SetText(table.concat(parts, DOT))
+            local rested = Rested(character, now)
+            info2:SetText("Gold " .. BankCache.Money(summary.money) .. (rested and (DOT .. rested) or ""))
+        else
+            info:SetText("")
+            info2:SetText("")
+        end
+        empty:SetText(#characters == 0 and "Nothing saved yet." or "")
         local n, y, h = 0, 4, 0
         shown = {}
+        local function Line(text)
+            h = h + 1
+            local header = Header(h)
+            header:ClearAllPoints()
+            header:SetPoint("TOPLEFT", 4, -y)
+            header:SetText(text)
+            header:Show()
+            y = y + 20
+        end
         for _, group in ipairs(groups) do
-            if group.header then
-                h = h + 1
-                local header = Header(h)
-                header:ClearAllPoints()
-                header:SetPoint("TOPLEFT", 4, -y)
-                header:SetText(group.header)
-                header:Show()
-                y = y + 20
-            end
+            Line(group.header)
+            if group.note then Line(Grey(group.note)) end
             for k, item in ipairs(group.items) do
                 n = n + 1
                 local button = Button(n)
@@ -529,7 +743,7 @@ local function BuildViewer()
                 button:Show()
                 shown[n] = item
             end
-            y = y + math.ceil(#group.items / COLUMNS) * (SIZE + GAP) + (group.header and 6 or 0)
+            y = y + math.ceil(#group.items / COLUMNS) * (SIZE + GAP) + (#group.items > 0 and 6 or 0)
         end
         for i = n + 1, #buttons do buttons[i]:Hide() end
         for i = h + 1, #headers do headers[i]:Hide() end

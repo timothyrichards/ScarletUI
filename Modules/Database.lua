@@ -37,7 +37,7 @@ ScarletUI.defaults = {
             enabled = true,
             sortBagsRightToLeft = true,
         },
-        -- Saved banks live in bankCache, keyed by character; these are the switches.
+        -- Saved banks live in bankCache and bags, gold and rested XP in characterCache, keyed by character; these are the switches.
         bankCacheModule = {
             enabled = true,
             tooltip = true,

@@ -107,8 +107,8 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   Era, TBC, and Mists only have the insert setting. Its toggles go on the Bags
   page: a standalone page on Retail and Forever, and a Sorting group on the
   `Bag.lua` page elsewhere.
-- `Modules/BankCache.lua`: cached bank (`db.global.bankCacheModule`: `enabled`
-  and `tooltip`, both on by default, its own Bank settings page). The client only
+- `Modules/BankCache.lua`: cached bank and character viewer (`db.global.bankCacheModule`:
+  `enabled` and `tooltip`, both on by default, its own Characters settings page). The client only
   shows bank contents while the bank is open, so a snapshot (items in bank order
   as link, count, and icon; `counts` per item ID; `size`; `time`; AceDB `realm`
   key; class) is saved in `db.global.bankCache[db.keys.char]` on
@@ -120,21 +120,49 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   no -1 bank container: -1 is its keyring); Era, TBC, and Mists the -1 bank
   container and bags `NUM_BAG_SLOTS + 1` to `NUM_BAG_SLOTS + NUM_BANKBAGSLOTS`,
   plus the reagent bank where `IsReagentBankUnlocked` exists (no current
-  client). The Warband/account bank is not saved. `/sui bank` and the page's
-  button open `ScarletUIBank` (the bags' `PortraitFrameTemplate` and
-  plain `CreateIconButton` slots, since Forever lacks `ItemButtonTemplate`; it opens left of the open backpack, and a drag
-  holds until the backpack opens again) with a dropdown of the characters saved under this AceDB
-  realm key (on Forever the ruleset). Its slots look like bag slots (`BankCache.Decorate`):
+  client). The Warband/account bank is not saved.
+  A character summary goes in `db.global.characterCache[db.keys.char]` (no AceDB
+  default, so the logout strip leaves it alone): `class`, `className`, `faction`, `level`,
+  `money`, `zone` (`GetRealZoneText`), `xp`, `xpMax`, `rested` (`GetXPExhaustion() or 0`),
+  `resting`, `maxLevel` (as `XPPerHour.lua` decides it), `realm`, `time` (last seen), and
+  `bags` (`{ items, counts, size }`, as the bank). It is saved on `PLAYER_ENTERING_WORLD`,
+  `BAG_UPDATE` (bank open or not), `PLAYER_MONEY`, `PLAYER_XP_UPDATE`, `UPDATE_EXHAUSTION`,
+  `PLAYER_UPDATE_RESTING`, `PLAYER_LEVEL_UP`, and `ZONE_CHANGED_NEW_AREA`, debounced 0.2s on
+  its own timer, and at once on `PLAYER_LOGOUT` (no timer runs then). A secret value
+  (`issecretvalue`, Forever) or an empty zone keeps the saved one; bags that read as no
+  slots keep the saved bags. `BankCache.BagContainers` is bags 0 to `NUM_BAG_SLOTS`, plus
+  `Enum.BagIndex.ReagentBag` only on bank-tab clients and only when it is not a tab: on
+  Era, TBC, and Mists bag `NUM_BAG_SLOTS + 1` is a bank bag. The keyring is not read.
+  Rested XP (`BankCache.Rested`) shows as a percent of the saved level, projected from
+  logout at 5% of the level per 8 hours resting, a quarter of that outside, capped at
+  150% without lowering a saved value above it; none online or at max level. Forever's
+  rate is assumed to be Classic's.
+  `/sui bank`, `/sui chars`, and the page's button open `ScarletUIBank` ("Scarlet UI
+  Characters"; the bags' `PortraitFrameTemplate` and plain `CreateIconButton` slots, since
+  Forever lacks `ItemButtonTemplate`). Its bottom right is anchored to the open backpack's
+  bottom left, and a drag holds until the backpack opens again. The dropdown lists the
+  characters of every realm on the client (on Forever, the ruleset), this realm first and
+  then by realm name, each name with its level. With several realms, each realm gets a menu
+  title with its gold. "Account: X" on the dropdown row sums every listed character's
+  gold. Under the dropdown, two lines show the chosen character's level, class (class
+  coloured), zone, and "Online" or "Last seen 3h ago", then its gold and rested XP
+  ("Rested 45% (+12% since logout, resting)"). The grid shows a "Bags" group, then a "Bank"
+  group headed with its age; each says so when nothing is saved. Characters saved before the
+  summary existed show their bank only. Its slots look like bag slots (`BankCache.Decorate`):
   item level per the bags' `itemLevelBag` setting (`ScarletUI.ItemLevelText`, from
   `ItemLevel.lua`), a quality border from Common up, and junk greyed with a coin. Item tooltips get "Bank: N" and
   "Bank (Name): N" lines from a `TooltipDataProcessor` post-call, or
-  `OnTooltipSetItem` on older clients. The dropdown starts with "All characters"
-  (every saved bank on the realm, grouped under a name header with its age, and a
-  tooltip line "Bank: Name xN (age)" per character instead of the hook's); the choice is
+  `OnTooltipSetItem` on older clients; those stay on this realm's banks. The dropdown starts
+  with "All characters": every character under a name header with level, gold, and last
+  seen, then its non-empty Bags and Bank groups. With several realms, each realm's characters
+  go under a realm header with its gold. In that mode the slot tooltip shows the viewer's own
+  "Bags: Name xN" and "Bank: Name xN (age)" lines per character instead of the hook's, naming
+  the realm for other realms. The search dims non-matches in every shown group. The choice is
   kept in `bankCacheModule.viewerChoice`. Ages show as "Updated 3h ago" (`BankCache.Age`),
   not dates. Snapshots record `faction` (`UnitFactionGroup`), shown as a `PlusManz-Horde`/
   `-Alliance` icon before the name (none for older saves). The viewer closes when the
-  backpack frames hide (checked a tick later, so a swap of frames keeps it). The rules (`ScarletUI.BankCache`) are
+  backpack frames hide (checked a tick later, so a swap of frames keeps it). Reset Defaults
+  (`db:ResetDB()`) wipes both caches. The rules (`ScarletUI.BankCache`) are
   tested in `tests/bank-cache.lua`, run by the module-loading check.
 - `Modules/Tracking.lua`: shares minimap tracking menu checkboxes across
   characters via `db.global.trackingModule.states`, keyed by entry name and

@@ -22,6 +22,15 @@ time = function() return now end
 UnitClass = function() return "Paladin", "PALADIN" end
 UnitFactionGroup = function() return "Horde" end
 issecretvalue = nil
+-- The logged-in character, read by the character snapshot.
+local player = { level = 42, money = 123456, zone = "Orgrimmar", xp = 300, xpMax = 1000, rested = 450, resting = true }
+UnitLevel = function() return player.level end
+UnitXP = function() return player.xp end
+UnitXPMax = function() return player.xpMax end
+GetXPExhaustion = function() return player.rested end
+IsResting = function() return player.resting end
+GetMoney = function() return player.money end
+GetRealZoneText = function() return player.zone end
 
 -- bags[bagID] = { size, { [slot] = { itemID, count } } }
 local bags
@@ -37,6 +46,7 @@ local function ModernContainer()
 end
 
 dofile("Modules/BankCache.lua")
+dofile("Modules/CraftProfit.lua") -- its money format
 local BankCache = ScarletUI.BankCache
 ScarletUI.db = {
     global = { bankCacheModule = { enabled = true, tooltip = true } },
@@ -140,7 +150,8 @@ C_Bank.FetchPurchasedBankTabIDs = function() return {} end
 assert(BankCache.Read() == nil)
 C_Bank.FetchPurchasedBankTabIDs = function(bankType) return bankType == 0 and { 6, 7 } or { 15 } end
 
--- Events: saved only while the bank is open, once per burst of updates.
+-- Events: the bank saved only while open, once per burst of updates; the
+-- character snapshot has its own timer, queued at setup and on bag updates.
 GameTooltip = { HookScript = noop }
 local postCalls = {}
 TooltipDataProcessor = { AddTooltipPostCall = function(kind, fn) postCalls[kind] = fn end }
@@ -148,13 +159,16 @@ Enum.TooltipDataType = { Item = 0 }
 ScarletUI:SetupBankCache()
 ScarletUI:SetupBankCache() -- setup reruns after a reset; hooks stay single
 assert(#handlers.BANKFRAME_OPENED == 1 and #handlers.BANK_TABS_CHANGED == 1 and postCalls[0])
+assert(#handlers.PLAYER_LOGOUT == 1 and #handlers.PLAYER_MONEY == 1 and #timers == 1) -- the login snapshot
+RunTimers()
 Fire("BAG_UPDATE", 0)
-assert(#timers == 0) -- bank closed: nothing to read
+assert(#timers == 1) -- bank closed: the character only
+RunTimers()
 Fire("BANKFRAME_OPENED")
 Fire("BAG_UPDATE", 6)
 Fire("BAG_UPDATE", 0)
 Fire("PLAYERBANKSLOTS_CHANGED", 3)
-assert(#timers == 1)
+assert(#timers == 2) -- one bank, one character
 RunTimers()
 local saved = ScarletUI.db.global.bankCache["Scarlet - Realm"]
 assert(saved.time == 1000 and saved.realm == "Realm" and saved.class == "PALADIN" and saved.faction == "Horde" and saved.counts[2589] == 250)
@@ -186,6 +200,136 @@ RunTimers()
 assert(ScarletUI.db.global.bankCache["Scarlet - Realm"].counts[2589] == 150)
 ScarletUI.db.global.bankCacheModule.enabled = true
 Fire("BANKFRAME_CLOSED")
+
+-- Carried bags: the backpack and bag slots. Era, TBC, and Mists put the first
+-- bank bag after them, so it is not read; Retail's reagent bag is, unless it
+-- is a bank tab. The keyring (-1) never is.
+local savedBank, savedEnum = C_Bank, Enum
+C_Bank, Enum = nil, { BagIndex = { Bank = -1, ReagentBag = 5 } }
+local bagList = BankCache.BagContainers()
+assert(#bagList == 5 and bagList[1] == 0 and bagList[5] == 4)
+C_Bank, Enum = savedBank, savedEnum
+assert(#BankCache.BagContainers() == 5) -- tabs, but no reagent bag
+Enum.BagIndex.ReagentBag = 5
+bagList = BankCache.BagContainers()
+assert(#bagList == 6 and bagList[6] == 5)
+C_Bank.FetchPurchasedBankTabIDs = function() return { 5, 6 } end
+assert(#BankCache.BagContainers() == 5)
+C_Bank.FetchPurchasedBankTabIDs = function(bankType) return bankType == 0 and { 6, 7 } or { 15 } end
+Enum.BagIndex.ReagentBag = nil
+-- A set item in a bag location is marked on that bag slot.
+bags[0] = { 16, { [2] = { 2589, 4 }, [3] = { 4306, 1 } } }
+C_EquipmentSet = {
+    GetEquipmentSetIDs = function() return { 1 } end,
+    GetEquipmentSetInfo = function() return "Ret" end,
+    GetItemIDs = function() return { [1] = 2589 } end,
+    GetItemLocations = function() return { [1] = 2000 } end,
+}
+EquipmentManager_UnpackLocation = function() return false, false, true, false, 2, 0 end
+read = BankCache.ReadContainers(BankCache.BagContainers())
+assert(read.size == 16 and #read.items == 2 and read.counts[2589] == 4 and read.counts[4306] == 1)
+assert(read.items[1].sets[1] == "Ret" and read.items[2].sets == nil)
+C_EquipmentSet, EquipmentManager_UnpackLocation = nil, nil
+
+-- Rested XP: 5% of the level per 8 hours resting, a quarter outside, capped at
+-- 150% without lowering a saved value above it; none online or at max level.
+local H8 = 8 * 3600
+local function Rested(entry, at, online)
+    entry.xpMax = entry.xpMax or 1000
+    return BankCache.Rested(entry, at, online)
+end
+local function Near(a, b) return math.abs(a - b) < 1e-9 end
+local pct, gain = Rested({ rested = 100, resting = true, time = 0 }, H8)
+assert(Near(pct, 15) and Near(gain, 5))
+pct, gain = Rested({ rested = 100, resting = false, time = 0 }, H8)
+assert(Near(pct, 11.25) and Near(gain, 1.25))
+pct, gain = Rested({ rested = 1400, resting = true, time = 0 }, 10 * H8)
+assert(Near(pct, 150) and Near(gain, 10))
+pct, gain = Rested({ rested = 1600, resting = true, time = 0 }, H8) -- above the cap: kept
+assert(Near(pct, 160) and Near(gain, 0))
+pct, gain = Rested({ rested = 100, resting = true, time = 0 }, H8, true)
+assert(Near(pct, 10) and Near(gain, 0))
+pct, gain = Rested({ resting = true, time = H8 }, 0) -- clock skew: no negative time
+assert(Near(pct, 0) and Near(gain, 0))
+assert(Rested({ rested = 100, time = 0, maxLevel = true }, H8) == nil)
+assert(BankCache.Rested({ rested = 100, time = 0, xpMax = 0 }, H8) == nil and BankCache.Rested({ time = 0 }, H8) == nil)
+
+-- Money: gold and silver, or silver and copper; nil counts as nothing.
+assert(BankCache.Money(123456) == "12|cffffd700g|r 34|cffc7c7cfs|r")
+assert(BankCache.Money(5000) == "50|cffc7c7cfs|r 0|cffeda55fc|r")
+assert(BankCache.Money(0) == "0|cffeda55fc|r" and BankCache.Money(nil) == "0|cffeda55fc|r")
+local moneyList = { { realm = "A", info = { money = 5 } }, { realm = "B", info = { money = 7 } }, { realm = "A", info = {} }, { realm = "A" } }
+assert(BankCache.AccountMoney(moneyList) == 12 and BankCache.AccountMoney(moneyList, "A") == 5 and BankCache.AccountMoney({}) == 0)
+
+-- Characters from both caches: bank-only and summary-only ones; every realm
+-- with allRealms, this one first, else this realm only.
+local bankOnly = { ["Old - Realm"] = { realm = "Realm" }, ["Far - Other"] = { realm = "Other" } }
+local summaries = { ["Scarlet - Realm"] = { realm = "Realm", level = 42 }, ["Far - Other"] = { realm = "Other", level = 10 },
+    ["Zed - Azure"] = { realm = "Azure" } }
+local merged = BankCache.Characters(bankOnly, "Realm", "Scarlet - Realm", summaries, true)
+assert(#merged == 4 and merged[1].key == "Scarlet - Realm" and merged[1].info.level == 42 and merged[1].entry == nil)
+assert(merged[2].label == "Old" and merged[2].entry and merged[2].info == nil)
+assert(merged[3].key == "Zed - Azure" and merged[3].label == "Zed" and merged[3].realm == "Azure") -- other realms by name
+assert(merged[4].label == "Far" and merged[4].entry and merged[4].info.level == 10)
+merged = BankCache.Characters(bankOnly, "Realm", "Scarlet - Realm", summaries)
+assert(#merged == 2 and merged[1].key == "Scarlet - Realm" and merged[2].key == "Old - Realm")
+
+-- Character snapshots: at login (after a load screen), on money, bag, XP,
+-- rest, level, and zone changes, debounced, whether or not the bank is open.
+now = 3000
+local bankBefore = ScarletUI.db.global.bankCache["Scarlet - Realm"]
+Fire("PLAYER_ENTERING_WORLD")
+assert(#timers == 1)
+RunTimers()
+local me = ScarletUI.db.global.characterCache["Scarlet - Realm"]
+assert(me.time == 3000 and me.realm == "Realm" and me.level == 42 and me.money == 123456 and me.zone == "Orgrimmar")
+assert(me.class == "PALADIN" and me.className == "Paladin" and me.faction == "Horde" and me.xpMax == 1000)
+assert(me.rested == 450 and me.resting == true and me.maxLevel == false)
+assert(me.bags.counts[2589] == 4 and #me.bags.items == 2 and me.bags.size == 16)
+for _, event in ipairs({ "PLAYER_MONEY", "PLAYER_XP_UPDATE", "UPDATE_EXHAUSTION", "PLAYER_UPDATE_RESTING", "PLAYER_LEVEL_UP", "ZONE_CHANGED_NEW_AREA" }) do
+    assert(#handlers[event] == 1, event)
+end
+-- Money and bag changes with the bank closed: the bags and gold, not the bank.
+now, player.money = 3100, 99
+bags[0][2][3] = nil
+Fire("PLAYER_MONEY")
+Fire("BAG_UPDATE", 0)
+assert(#timers == 1)
+RunTimers()
+me = ScarletUI.db.global.characterCache["Scarlet - Realm"]
+assert(me.money == 99 and me.bags.counts[4306] == nil and me.time == 3100)
+assert(ScarletUI.db.global.bankCache["Scarlet - Realm"] == bankBefore)
+-- Logout saves at once (no timer runs then), with the time and rest state.
+now, player.resting = 3200, false
+Fire("PLAYER_LOGOUT")
+me = ScarletUI.db.global.characterCache["Scarlet - Realm"]
+assert(#timers == 0 and me.time == 3200 and me.resting == false)
+-- Secret values (Forever) and a zone not loaded yet keep the saved ones; bags
+-- that read as nothing keep the saved bags.
+local SECRET = {}
+issecretvalue = function(value) return value == SECRET end
+player.xp, player.money, player.zone = SECRET, SECRET, ""
+local savedBag0 = bags[0]
+bags[0] = nil
+ScarletUI:SnapshotCharacter()
+me = ScarletUI.db.global.characterCache["Scarlet - Realm"]
+assert(me.xp == 300 and me.money == 99 and me.zone == "Orgrimmar" and me.bags.counts[2589] == 4)
+issecretvalue, bags[0] = nil, savedBag0
+player.xp, player.money, player.zone, player.resting = 300, 123456, "Orgrimmar", true
+-- Max level: no rested XP to show.
+GetMaxPlayerLevel = function() return 42 end
+ScarletUI:SnapshotCharacter()
+assert(ScarletUI.db.global.characterCache["Scarlet - Realm"].maxLevel == true)
+GetMaxPlayerLevel = nil
+-- Switched off, nothing is saved.
+ScarletUI.db.global.bankCacheModule.enabled = false
+now, player.money = 3300, 1
+Fire("PLAYER_MONEY")
+RunTimers()
+Fire("PLAYER_LOGOUT")
+assert(ScarletUI.db.global.characterCache["Scarlet - Realm"].money == 123456)
+ScarletUI.db.global.bankCacheModule.enabled = true
+ScarletUI.db.global.characterCache = nil
 
 -- Counts and characters: same realm only, the current character first.
 local cache = {
@@ -241,6 +385,8 @@ GameTooltip, ItemRefTooltip = OldTooltip("game"), OldTooltip("ref")
 TooltipDataProcessor = nil
 ScarletUI.bankCacheHooked = nil
 ScarletUI:SetupBankCache()
+RunTimers() -- its login snapshot
+ScarletUI.db.global.characterCache = nil
 lines = {}
 scripts.game(GameTooltip)
 assert(#lines == 2 and lines[1] == "Bank (Alt): 1" and lines[2] == "Bank (Bank): 3" and scripts.ref)
@@ -377,19 +523,29 @@ RunTimers()
 assert(not view.shown)
 ContainerFrameCombinedBags, ContainerFrame1 = nil, nil
 
--- All characters: the first menu entry, grouped under name headers with ages,
--- the choice remembered, one tooltip line per character.
+-- Characters: every realm in the menu, under realm titles with their gold;
+-- each character's bags and bank; "All characters" groups every one under a
+-- name header; the choice remembered.
 local function Radios()
-    local radios = {}
-    menu(nil, { CreateRadio = function(_, label, isSelected, onSelect)
-        radios[#radios + 1] = { label = label, selected = isSelected, pick = onSelect }
-    end })
-    return radios
+    local radios, titles = {}, {}
+    menu(nil, {
+        CreateRadio = function(_, label, isSelected, onSelect)
+            radios[#radios + 1] = { label = label, selected = isSelected, pick = onSelect }
+        end,
+        CreateTitle = function(_, text) titles[#titles + 1] = { text = text, after = #radios } end,
+    })
+    return radios, titles
 end
-local function HeaderTexts()
+-- Shown grid headers, top to bottom, and any text set anywhere.
+local function Headers()
     local list = {}
-    for _, fs in ipairs(texts) do if fs.shown and fs.text and fs.text:find("Updated") and fs.args then list[#list + 1] = fs.text end end
+    for _, fs in ipairs(texts) do if fs.shown and fs.text and fs.args then list[#list + 1] = fs end end
+    table.sort(list, function(a, b) return a.args[2] > b.args[2] end)
+    for i, fs in ipairs(list) do list[i] = fs.text end
     return list
+end
+local function HasText(text)
+    for _, fs in ipairs(texts) do if fs.text == text then return true end end
 end
 local quality2 = {}
 C_Item = { GetItemInfo = function(link) return names[idOf(link)], link, quality2[idOf(link)] end }
@@ -401,95 +557,167 @@ ScarletUI.CreateIconButton = function(_, _, _, name)
     named[name] = button
     return button
 end
+RAID_CLASS_COLORS = { PALADIN = { r = 1, g = 0.5, b = 0 } }
 now = 1000 + 3 * 3600
 local item = function(id, count) return { link = Link(id), count = count, icon = id } end
+local function Bags(...)
+    local list, counts = {}, {}
+    for _, it in ipairs({ ... }) do list[#list + 1] = it; counts[idOf(it.link)] = (counts[idOf(it.link)] or 0) + it.count end
+    return { items = list, counts = counts, size = 16 }
+end
 ScarletUI.db.global.bankCache = {
-    ["Scarlet - Realm"] = { realm = "Realm", faction = "Horde", time = 1000 + 3 * 3600 - 10, counts = { [2589] = 5 }, items = { item(2589, 5) } },
+    ["Scarlet - Realm"] = { realm = "Realm", faction = "Horde", time = now - 10, counts = { [2589] = 5 }, items = { item(2589, 5) } },
     ["Alt - Realm"] = { realm = "Realm", faction = "Alliance", time = 1000, counts = { [2589] = 12, [2592] = 1 }, items = { item(2592, 1), item(2589, 12) } },
-    ["Empty - Realm"] = { realm = "Realm", time = 1000, counts = {}, items = {} },
-    ["Far - Other"] = { realm = "Other", counts = { [2589] = 99 }, items = { item(2589, 99) } },
+    ["Empty - Realm"] = { realm = "Realm", time = 1000, counts = {}, items = {} }, -- saved before the summary existed
+    ["Far - Other"] = { realm = "Other", time = 1000, counts = { [2589] = 99 }, items = { item(2589, 99) } },
+}
+ScarletUI.db.global.characterCache = {
+    ["Scarlet - Realm"] = { realm = "Realm", class = "PALADIN", className = "Paladin", faction = "Horde", level = 42, money = 123456,
+        zone = "Orgrimmar", xpMax = 1000, rested = 450, resting = true, time = now, bags = Bags(item(4306, 3)) },
+    ["Alt - Realm"] = { realm = "Realm", class = "MAGE", className = "Mage", faction = "Alliance", level = 20, money = 5000,
+        zone = "Stormwind City", xpMax = 1000, rested = 100, resting = true, time = now - 8 * 3600, bags = Bags(item(2589, 2)) },
+    ["Bags - Realm"] = { realm = "Realm", faction = "Horde", level = 60, money = 10000, maxLevel = true, time = 1000 }, -- no bags read yet
+    ["Far - Other"] = { realm = "Other", faction = "Horde", level = 10, money = 1000000, xpMax = 500, time = 1000, bags = Bags() },
 }
 names[2589], names[2592] = "Linen Cloth", "Wool Cloth"
 ScarletUI:ToggleBankViewer(false)
 ScarletUI:ToggleBankViewer(true)
-local radios = Radios()
--- Default: the current character, no header, "Updated" beside the menu.
-assert(#radios == 4 and radios[1].label == "All characters")
--- The faction icon leads the name; no faction recorded yet (older saves) means no icon.
+local radios, titles = Radios()
+-- This realm first, the current character first, then by name; then the other realm.
 local H, A = "|TInterface\\FriendsFrame\\PlusManz-Horde:14|t ", "|TInterface\\FriendsFrame\\PlusManz-Alliance:14|t "
-assert(radios[2].label == H .. "Scarlet" and radios[3].label == A .. "Alt" and radios[4].label == "Empty")
+local function Lv(level) return "  |cff888888" .. level .. "|r" end
+assert(#radios == 6 and radios[1].label == "All characters")
+assert(radios[2].label == H .. "Scarlet" .. Lv(42) and radios[3].label == A .. "Alt" .. Lv(20) and radios[4].label == H .. "Bags" .. Lv(60))
+assert(radios[5].label == "Empty" and radios[6].label == H .. "Far" .. Lv(10)) -- an old save: no faction, no level
 assert(BankCache.Named("Bob", "Neutral") == "Bob" and BankCache.Named("Bob") == "Bob")
-assert(radios[2].selected() and not radios[1].selected() and #HeaderTexts() == 0)
-assert(named.ScarletUIBankSlot1.link == Link(2589) and not named.ScarletUIBankSlot2)
--- Picking All saves the choice and groups the slots, a header each.
-radios[1].pick()
-assert(ScarletUI.db.global.bankCacheModule.viewerChoice == "ALL" and Radios()[1].selected())
-local headers = HeaderTexts()
-assert(#headers == 2 and headers[1]:find(H .. "Scarlet", 1, true) and headers[2]:find(A .. "Alt", 1, true)
-    and headers[1]:find("Scarlet", 1, true) and headers[1]:find("Updated just now", 1, true))
-assert(headers[2]:find("Alt", 1, true) and headers[2]:find("Updated 3h ago", 1, true))
-assert(named.ScarletUIBankSlot3.link == Link(2589) and named.ScarletUIBankSlot3.shown and not named.ScarletUIBankSlot4)
-assert(named.ScarletUIBankSlot1.args[2] == -24 and named.ScarletUIBankSlot2.args[2] == -91) -- Alt's header sits between
-assert(named.ScarletUIBankSlot2.args[1] == 4 and named.ScarletUIBankSlot3.args[1] == 45)
--- The search dims across every group.
-local search
-for _, f in ipairs(frames) do if f.hooks.OnTextChanged then search = f end end
-search:SetText("wool")
-for _, fn in ipairs(search.hooks.OnTextChanged) do fn(search) end
-assert(named.ScarletUIBankSlot1.alpha == 0.25 and named.ScarletUIBankSlot2.alpha == 1 and named.ScarletUIBankSlot3.alpha == 0.25)
-search:SetText("")
--- Tooltips: the viewer's own line per character, not the hook's, and with the hook off too.
+-- Realm titles with each realm's gold, only because there are two realms.
+assert(#titles == 2 and titles[1].after == 1 and titles[2].after == 5)
+assert(titles[1].text == "Realm  " .. BankCache.Money(123456 + 5000 + 10000) and titles[2].text == "Other  " .. BankCache.Money(1000000))
+-- The account total counts every realm.
+assert(HasText("Account: " .. BankCache.Money(123456 + 5000 + 10000 + 1000000)))
+-- Default: the current character, online, with its bags then its bank.
+assert(radios[2].selected() and not radios[1].selected())
+local DOT = "  \194\183  "
+assert(HasText("Level 42 |cffff7f00Paladin|r" .. DOT .. "Orgrimmar" .. DOT .. "Online"))
+assert(HasText("Gold " .. BankCache.Money(123456) .. DOT .. "Rested 45%")) -- online: no projection
+local list = Headers()
+assert(#list == 2 and list[1] == "Bags" and list[2] == "Bank  |cff888888Updated just now|r")
+assert(named.ScarletUIBankSlot1.link == Link(4306) and named.ScarletUIBankSlot2.link == Link(2589) and not named.ScarletUIBankSlot3)
+assert(named.ScarletUIBankSlot1.args[2] == -24 and named.ScarletUIBankSlot2.args[2] == -91) -- the Bank header sits between
+-- A logged-out character: last seen, and rested XP gained since at the inn rate.
+radios[3].pick()
+assert(ScarletUI.db.global.bankCacheModule.viewerChoice == "Alt - Realm")
+assert(HasText("Level 20 Mage" .. DOT .. "Stormwind City" .. DOT .. "Last seen 8h ago")) -- no class colour known: plain
+assert(HasText("Gold " .. BankCache.Money(5000) .. DOT .. "Rested 15% (+5% since logout, resting)"))
+assert(named.ScarletUIBankSlot1.link == Link(2589) and named.ScarletUIBankSlot2.link == Link(2592) and named.ScarletUIBankSlot3.shown)
+ScarletUI.db.global.characterCache["Alt - Realm"].resting = false
+radios[3].pick()
+assert(HasText("Gold " .. BankCache.Money(5000) .. DOT .. "Rested 11% (+1% since logout, outside)"))
+-- In single mode the item tooltip is the hook's, this realm's banks only.
 local tip = { lines = {} }
 function tip:SetOwner() self.lines = {} end
 function tip:SetHyperlink(link) postCalls[0](self, { id = idOf(link) }) end
 function tip:AddLine(text) self.lines[#self.lines + 1] = text end
 function tip:Show() end
 GameTooltip = tip
-ScarletUI.db.global.bankCacheModule.tooltip = false
-named.ScarletUIBankSlot3.scripts.OnEnter(named.ScarletUIBankSlot3)
-assert(#tip.lines == 2 and tip.lines[1] == "Bank: Scarlet x5 (just now)" and tip.lines[2] == "Bank: Alt x12 (3h ago)")
-ScarletUI.db.global.bankCacheModule.tooltip = true
 named.ScarletUIBankSlot2.scripts.OnEnter(named.ScarletUIBankSlot2)
-assert(#tip.lines == 1 and tip.lines[1] == "Bank: Alt x1 (3h ago)")
+assert(#tip.lines == 1 and tip.lines[1] == "Bank (Alt): 1")
+-- Max level, no bags saved: no rested part, and a note under Bags; a bank
+-- never saved says how to save it.
+radios[4].pick()
+assert(HasText("Gold " .. BankCache.Money(10000)) and HasText("Level 60 " .. DOT .. "Last seen 3h ago"))
+list = Headers()
+assert(#list == 4 and list[1] == "Bags" and list[2]:find("Bags not saved yet", 1, true) and list[3] == "Bank"
+    and list[4]:find("No bank saved yet", 1, true) and not named.ScarletUIBankSlot1.shown)
+-- A save from before the summary: no info lines, the bank still shows.
+radios[5].pick()
+list = Headers()
+assert(list[2]:find("Bags not saved yet", 1, true) and list[4]:find("This bank was empty", 1, true))
+assert(not HasText("Level nil"))
+-- All characters: realm headers with gold, a name header per character with
+-- level, gold, and last seen, then its non-empty Bags and Bank.
+radios[1].pick()
+assert(ScarletUI.db.global.bankCacheModule.viewerChoice == "ALL" and Radios()[1].selected())
+list = Headers()
+assert(#list == 12, #list)
+assert(list[1] == "Realm  " .. BankCache.Money(138456))
+assert(list[2] == H .. "Scarlet  |cff888888Level 42|r  " .. BankCache.Money(123456) .. "  |cff888888Online|r")
+assert(list[3] == "Bags" and list[4]:find("^Bank") and list[5]:find(A .. "Alt", 1, true) and list[5]:find("Last seen 8h ago", 1, true))
+assert(list[6] == "Bags" and list[7] == "Bank  |cff888888Updated 3h ago|r")
+assert(list[8]:find("Bags", 1, true) and list[8]:find("Level 60", 1, true) and list[9] == "Empty") -- nothing saved to show
+assert(list[10] == "Other  " .. BankCache.Money(1000000) and list[11]:find("Far", 1, true) and list[12] == "Bank  |cff888888Updated 3h ago|r")
+-- Slots: Scarlet's bag, Scarlet's bank, Alt's bag, Alt's bank (2), Far's bank.
+local S = function(i) return named["ScarletUIBankSlot" .. i] end
+assert(S(1).link == Link(4306) and S(2).link == Link(2589) and S(3).link == Link(2589) and S(4).link == Link(2592))
+assert(S(5).link == Link(2589) and S(6).link == Link(2589) and S(6).shown and not S(7))
+assert(S(4).args[1] == 4 and S(5).args[1] == 45 and S(1).args[2] == -64 and S(2).args[2] == -131)
+-- The search dims across every character's bags and banks.
+local search
+for _, f in ipairs(frames) do if f.hooks.OnTextChanged then search = f end end
+local function Search(text)
+    search:SetText(text)
+    for _, fn in ipairs(search.hooks.OnTextChanged) do fn(search) end
+end
+Search("linen")
+assert(S(1).alpha == 0.25 and S(2).alpha == 1 and S(3).alpha == 1 and S(4).alpha == 0.25 and S(5).alpha == 1 and S(6).alpha == 1)
+Search("")
+-- Tooltips: the viewer's own bag and bank lines per character, every realm
+-- (others named), and with the hook off too.
+ScarletUI.db.global.bankCacheModule.tooltip = false
+S(2).scripts.OnEnter(S(2))
+assert(#tip.lines == 4 and tip.lines[1] == "Bank: Scarlet x5 (just now)" and tip.lines[2] == "Bags: Alt x2"
+    and tip.lines[3] == "Bank: Alt x12 (3h ago)" and tip.lines[4] == "Bank: Far (Other) x99 (3h ago)")
+ScarletUI.db.global.bankCacheModule.tooltip = true
+S(1).scripts.OnEnter(S(1))
+assert(#tip.lines == 1 and tip.lines[1] == "Bags: Scarlet x3")
 -- Sets: the corner marker shows on set items only, the tooltip names the sets,
 -- and a set search dims everything else across every group.
 ScarletUI.db.global.bankCache["Alt - Realm"].items[2].sets = { "Ret", "Tank" }
 radios[1].pick() -- refresh
-assert(named.ScarletUIBankSlot2.setMark ~= nil)
-ScarletUI:ToggleBankViewer(false)
-ScarletUI:ToggleBankViewer(true)
-named.ScarletUIBankSlot3.scripts.OnEnter(named.ScarletUIBankSlot3)
-assert(tip.lines[#tip.lines] == "Set: Ret, Tank" and named.ScarletUIBankSlot3.setMark.shown)
-named.ScarletUIBankSlot2.scripts.OnEnter(named.ScarletUIBankSlot2)
-assert(tip.lines[#tip.lines] ~= "Set: Ret, Tank" and not named.ScarletUIBankSlot2.setMark.shown)
-search:SetText("set:ret")
-for _, fn in ipairs(search.hooks.OnTextChanged) do fn(search) end
-assert(named.ScarletUIBankSlot1.alpha == 0.25 and named.ScarletUIBankSlot2.alpha == 0.25 and named.ScarletUIBankSlot3.alpha == 1)
-search:SetText("tank")
-for _, fn in ipairs(search.hooks.OnTextChanged) do fn(search) end
-assert(named.ScarletUIBankSlot3.alpha == 1 and named.ScarletUIBankSlot1.alpha == 0.25)
-search:SetText("")
-for _, fn in ipairs(search.hooks.OnTextChanged) do fn(search) end
+S(5).scripts.OnEnter(S(5))
+assert(tip.lines[#tip.lines] == "Set: Ret, Tank" and S(5).setMark.shown)
+S(4).scripts.OnEnter(S(4))
+assert(tip.lines[#tip.lines] ~= "Set: Ret, Tank" and not S(4).setMark.shown)
+Search("set:ret")
+assert(S(1).alpha == 0.25 and S(4).alpha == 0.25 and S(5).alpha == 1)
+Search("tank")
+assert(S(5).alpha == 1 and S(1).alpha == 0.25)
+Search("")
 -- The choice is remembered across closing and reopening.
 ScarletUI:ToggleBankViewer(false)
 ScarletUI:ToggleBankViewer(true)
-assert(Radios()[1].selected() and HeaderTexts()[1])
--- One character: its own grid, with its age beside the menu; the tooltip is the hook's again.
-Radios()[3].pick()
-assert(ScarletUI.db.global.bankCacheModule.viewerChoice == "Alt - Realm" and #HeaderTexts() == 0)
-local seen
-for _, fs in ipairs(texts) do if fs.text == "Updated 3h ago" then seen = true end end
-assert(seen and named.ScarletUIBankSlot1.link == Link(2592) and not named.ScarletUIBankSlot3.shown)
-named.ScarletUIBankSlot1.scripts.OnEnter(named.ScarletUIBankSlot1)
-assert(#tip.lines == 1 and tip.lines[1] == "Bank (Alt): 1")
+assert(Radios()[1].selected() and #Headers() == 12)
+-- A snapshot while it is shown refreshes it.
+radios[2].pick()
+bags[0] = { 16, { [1] = { 2592, 7 } } }
+ScarletUI:SnapshotCharacter()
+assert(S(1).link == Link(2592))
 -- A character that is gone falls back to the current one.
 ScarletUI.db.global.bankCacheModule.viewerChoice = "Gone - Realm"
 ScarletUI:ToggleBankViewer(false)
 ScarletUI:ToggleBankViewer(true)
 assert(Radios()[2].selected())
+-- One realm: no realm titles or headers.
+ScarletUI.db.global.bankCache["Far - Other"], ScarletUI.db.global.characterCache["Far - Other"] = nil, nil
+Radios()[1].pick()
+radios, titles = Radios()
+assert(#titles == 0 and #radios == 5 and Headers()[1]:find("Scarlet", 1, true))
+-- Nothing saved: an empty menu and a line saying so.
+ScarletUI.db.global.bankCache, ScarletUI.db.global.characterCache = nil, nil
+Radios()[1].pick()
+radios = Radios()
+assert(#radios == 1 and HasText("Nothing saved yet.") and #Headers() == 0)
 ScarletUI:ToggleBankViewer(false)
-C_Item, GameTooltip = nil, nil
+-- Still anchored by its bottom to the bag's bottom.
+local bottomBag = Frame()
+ContainerFrameCombinedBags = bottomBag
+bottomBag:Show()
+ScarletUI:ToggleBankViewer(true)
+assert(view.point == "BOTTOMRIGHT" and view.relative == bottomBag and view.args[2] == "BOTTOMLEFT")
+ScarletUI:ToggleBankViewer(false)
+C_Item, GameTooltip, RAID_CLASS_COLORS = nil, nil, nil
 ContainerFrameCombinedBags, CreateFrame, UISpecialFrames, SOUNDKIT, PlaySound, date, tinsert = nil, nil, nil, nil, nil, nil, nil
+UnitLevel, UnitXP, UnitXPMax, GetXPExhaustion, IsResting, GetMoney, GetRealZoneText = nil, nil, nil, nil, nil, nil, nil
 
 C_Bank, C_Container, TooltipDataProcessor, GameTooltip, ItemRefTooltip = nil, nil, nil, nil, nil
-print("PASS: cached bank snapshots on Classic, Retail, and Forever bank layouts, debounced updates, counts, tooltips, name search, bag-style slots, and viewer placement beside the backpack")
+print("PASS: cached bank snapshots on Classic, Retail, and Forever bank layouts, debounced updates, counts, tooltips, name search, bag-style slots, viewer placement beside the backpack, and the character viewer: bags, gold, rested XP, every realm")
