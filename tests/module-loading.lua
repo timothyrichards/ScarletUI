@@ -906,7 +906,13 @@ do
     GetTime = function() return clock end
     GetMaxPlayerLevel = function() return 60 end
     local barRight, anchor = 300, nil
-    local xpBar = { GetRight = function() return barRight end }
+    local xpBar = { GetRight = function() return barRight end, GetLeft = function() return 300 end }
+    local rested = 770
+    GetXPExhaustion = function() return rested end
+    ScarletUI.BankCache = { Rested = function(entry) -- the real formula is tested in bank-cache.lua
+        if entry.maxLevel then return end
+        return entry.rested / entry.xpMax * 100
+    end }
     StatusTrackingBarManager = { barContainers = { { bars = { {}, { isExpBar = true, StatusBar = xpBar } } } } }
     local savedUIParent, savedAFK = UIParent, UnitIsAFK
     UIParent = { GetRight = function() return 1000 end }
@@ -919,14 +925,22 @@ do
         SetText = function(_, value) fontText = value end,
         GetStringWidth = function() return 50 end, GetStringHeight = function() return 10 end,
     }
-    local first = true
+    local first, frames, restedShown, restedText = true, 0, nil, nil
     CreateFrame = function()
-        local f = { RegisterEvent = noop, SetFrameStrata = noop, SetPoint = function(_, point, rel, relPoint, x) if rel == xpBar then anchor = { point, relPoint, x } end end,
-            ClearAllPoints = function() anchor = nil end, EnableMouse = noop,
-            CreateFontString = function() return fontString end,
+        frames = frames + 1
+        local isRested = frames == 3 -- readout, events, then the rested text
+        local fs = fontString
+        if isRested then
+            fs = { SetPoint = noop, SetFont = noop, GetStringWidth = fontString.GetStringWidth, GetStringHeight = fontString.GetStringHeight,
+                SetText = function(_, value) restedText = value end }
+        end
+        local f = { RegisterEvent = noop, SetFrameStrata = noop, SetPoint = function(_, point, rel, relPoint, x) if rel == xpBar and not isRested then anchor = { point, relPoint, x } end end,
+            ClearAllPoints = function() if not isRested then anchor = nil end end, EnableMouse = noop,
+            CreateFontString = function() return fs end,
             SetScript = function(_, name, fn) (first and scripts or eventScripts)[name] = fn end,
-            SetSize = function(_, w) size = w end, Hide = function() shown = false end,
-            Show = function() shown = true end, GetScript = function() return noop end }
+            SetSize = function(_, w) if not isRested then size = w end end,
+            Hide = function() if isRested then restedShown = false else shown = false end end,
+            Show = function() if isRested then restedShown = true else shown = true end end, GetScript = function() return noop end }
         first = false
         return f
     end
@@ -941,6 +955,7 @@ do
     clock, xp = 3600, 600 -- 500 XP in an hour, 400 left
     eventScripts.OnEvent(nil, "PLAYER_XP_UPDATE", "player")
     assert(shown and fontText == "500 xp/hr  TTL 48m", fontText)
+    assert(fontText ~= nil and restedShown and restedText == "Rested 77%", restedText)
     -- Placed just right of the XP bar; inside its end when that would run off screen.
     assert(anchor[1] == "LEFT" and anchor[2] == "RIGHT" and anchor[3] == 6)
     barRight = 990; ScarletUI.UpdateXPPerHour()
@@ -983,8 +998,12 @@ do
     assert(ScarletUI.db.global.xpPerHour == false and shown == false)
     ScarletUI:ToggleXPPerHour()
     assert(shown)
+    rested = 0; eventScripts.OnEvent(nil, "UPDATE_EXHAUSTION")
+    assert(restedShown == false)
+    rested = 770; eventScripts.OnEvent(nil, "PLAYER_UPDATE_RESTING")
+    assert(restedShown)
     level = 60; ScarletUI.UpdateXPPerHour()
-    assert(shown == false)
+    assert(shown == false and restedShown == false)
     assert(not ScarletUI:Options().args.generalSettings.args.interface.args.xpPerHour.hidden())
     UnitXP, UnitXPMax, GetTime, UnitLevel, StatusTrackingBarManager = savedXP, savedMax, savedTime, savedLevel, savedTrack
     UIParent, UnitIsAFK = savedUIParent, savedAFK

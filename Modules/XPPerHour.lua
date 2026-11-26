@@ -182,11 +182,45 @@ function ScarletUI:SetupXPPerHour()
     end)
 
     local events = CreateFrame("Frame")
-    events:RegisterEvent("PLAYER_XP_UPDATE")
-    events:RegisterEvent("PLAYER_ENTERING_WORLD")
-    events:RegisterEvent("PLAYER_FLAGS_CHANGED")
-    events:RegisterEvent("CHAT_MSG_SYSTEM")
+    for _, event in ipairs({ "PLAYER_XP_UPDATE", "PLAYER_ENTERING_WORLD", "PLAYER_FLAGS_CHANGED", "CHAT_MSG_SYSTEM",
+        "PLAYER_UPDATE_RESTING", "UPDATE_EXHAUSTION", "PLAYER_LEVEL_UP" }) do
+        events:RegisterEvent(event)
+    end
+
+    -- Rested XP on the bar's left end, mirroring the readout on the right. The
+    -- percent is the character viewer's (BankCache.Rested, as if online).
+    local restedFrame = CreateFrame("Frame", nil, UIParent)
+    restedFrame:SetFrameStrata("MEDIUM")
+    local restedText = restedFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    restedText:SetPoint("CENTER")
+    if font then restedText:SetFont(font, size, "OUTLINE") end
+    restedFrame:Hide()
+    local function RefreshRested()
+        local rested, max = GetXPExhaustion(), UnitXPMax("player")
+        local bar = FindXPBar()
+        local percent
+        if bar and not IsSecret(rested) and not IsSecret(max) then
+            percent = self.BankCache.Rested({ rested = rested, xpMax = max, maxLevel = XPDisabled() }, 0, true)
+        end
+        if not percent or percent < 0.5 then
+            restedFrame:Hide()
+            return
+        end
+        restedText:SetText(("Rested %d%%"):format(math.floor(percent + 0.5)))
+        local width = restedText:GetStringWidth() + 4
+        restedFrame:SetSize(width, restedText:GetStringHeight() + 4)
+        restedFrame:ClearAllPoints()
+        local left = bar:GetLeft()
+        if left and left - GAP - width < 0 then
+            restedFrame:SetPoint("LEFT", bar, "LEFT", GAP, 0)
+        else
+            restedFrame:SetPoint("RIGHT", bar, "LEFT", -GAP, 0)
+        end
+        restedFrame:Show()
+    end
+
     events:SetScript("OnEvent", function(_, event, unit)
+        RefreshRested()
         if event == "CHAT_MSG_SYSTEM" then OnSystemMessage(unit) end
         if event == "PLAYER_XP_UPDATE" and (unit == nil or unit == "player") then
             OnXP()
@@ -199,7 +233,8 @@ function ScarletUI:SetupXPPerHour()
     local xp, max = UnitXP("player"), UnitXPMax("player")
     if not IsSecret(xp) and not IsSecret(max) then lastXP, lastMax = xp, max end
 
-    self.UpdateXPPerHour = Refresh
+    RefreshRested()
+    self.UpdateXPPerHour = function() Refresh() RefreshRested() end
     self.ResetXPPerHour = Reset
 end
 
