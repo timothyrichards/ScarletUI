@@ -418,8 +418,12 @@ local function EditBox(parent, width)
 end
 
 -- Inputs whose option has `arg.items` take an item link: an item dropped on
--- them, or Shift-clicked while they have focus. Shift-click goes through the
--- chat link call, post-hooked once (as AceGUI's edit box does).
+-- them, or Shift-clicked while they have focus. Shift-click is caught by
+-- post-hooks on every link path, set up once with the first input:
+-- HandleModifiedItemClick (bags, character, loot, and other item buttons),
+-- ChatFrameUtil.InsertLink, and the deprecated ChatEdit_InsertLink, which is a
+-- copy taken before any hook, so add-ons calling it never reach the other one.
+-- One click can pass through two of them; the first takes it and clears focus.
 local itemInputs = {}
 local function AddItem(edit, link)
     edit:ClearFocus()
@@ -459,9 +463,15 @@ function Widgets.input(parent)
     edit:SetScript("OnReceiveDrag", Drop)
     edit:SetScript("OnMouseDown", Drop)
     if #itemInputs == 0 then
+        if HandleModifiedItemClick then
+            hooksecurefunc("HandleModifiedItemClick", function(link)
+                if IsModifiedClick("CHATLINK") then InsertItemLink(link) end
+            end)
+        end
         if ChatFrameUtil and ChatFrameUtil.InsertLink then
             hooksecurefunc(ChatFrameUtil, "InsertLink", InsertItemLink)
-        elseif ChatEdit_InsertLink then
+        end
+        if ChatEdit_InsertLink then
             hooksecurefunc("ChatEdit_InsertLink", InsertItemLink)
         end
     end

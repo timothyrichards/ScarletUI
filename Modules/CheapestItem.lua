@@ -72,18 +72,77 @@ function ScarletUI:ParseItemID(text)
 end
 
 -- Exclusions are item IDs in db.global.cheapestItemExclusions, never highlighted.
+-- Every change refreshes the highlight and the settings list and says so in chat.
+local function ExclusionsChanged(self, id, message)
+    self:UpdateCheapestItem()
+    LibStub("AceConfigRegistry-3.0"):NotifyChange("ScarletUI")
+    self:Print((select(2, GetItemInfo(id)) or ("Item " .. id)) .. message)
+end
+
 function ScarletUI:ExcludeCheapestItem(text)
     local id = self:ParseItemID(text)
     if id then
         self.db.global.cheapestItemExclusions[id] = true
-        self:UpdateCheapestItem()
+        ExclusionsChanged(self, id, " will not be highlighted as your cheapest item. Ctrl+Alt+Click it again to undo.")
     end
     return id
 end
 
 function ScarletUI:IncludeCheapestItem(id)
     self.db.global.cheapestItemExclusions[id] = nil
-    self:UpdateCheapestItem()
+    ExclusionsChanged(self, id, " can be highlighted as your cheapest item again.")
+end
+
+-- Excludes the item in a bag slot, or brings it back if it already is; true if now excluded.
+function ScarletUI:ToggleCheapestItem(bag, slot)
+    local info = C_Container.GetContainerItemInfo(bag, slot)
+    if not info then return end
+    if self.db.global.cheapestItemExclusions[info.itemID] then
+        self:IncludeCheapestItem(info.itemID)
+        return false
+    end
+    return self:ExcludeCheapestItem(info.itemID) ~= nil
+end
+
+-- Ctrl+Alt+left-click on a bag item toggles its exclusion. Blizzard binds Shift (link, split),
+-- Ctrl (dress up), and Alt (self-cast) alone, and right-click uses or sells, so this chord does
+-- nothing else; a modified click also never picks the item up. A post-hook (HookScript), so the
+-- button's own click runs untainted first.
+local function OnItemClick(button, mouseButton)
+    if mouseButton == "LeftButton" and IsControlKeyDown() and IsAltKeyDown() and not IsShiftKeyDown()
+        and ScarletUI.db.global.highlightCheapestItem then
+        -- Bag.lua slots, Mainline buttons, Classic buttons (parent frame ID is the bag)
+        local bag = button.bag or (button.GetBagID and button:GetBagID()) or button:GetParent():GetID()
+        ScarletUI:ToggleCheapestItem(bag, button:GetID())
+    end
+end
+
+local hooked = setmetatable({}, { __mode = "k" })
+local function HookItemClick(button)
+    if not hooked[button] then
+        hooked[button] = true
+        button:HookScript("OnClick", OnItemClick)
+    end
+end
+
+-- A muted hint on the highlighted item's tooltip, whose owner is its bag button.
+local HINT = "Cheapest item. Ctrl+Alt+Click: never highlight this item"
+local function AddHint(tooltip)
+    local owner = tooltip == GameTooltip and tooltip:GetOwner()
+    if owner and owner.cheapestGlow and owner.cheapestGlow:IsShown() then
+        tooltip:AddLine(HINT, 0.5, 0.5, 0.5)
+        return true
+    end
+end
+
+local function HookTooltip()
+    if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall and Enum and Enum.TooltipDataType then
+        TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, AddHint)
+    else
+        GameTooltip:HookScript("OnTooltipSetItem", function(tooltip)
+            if AddHint(tooltip) then tooltip:Show() end -- resize
+        end)
+    end
 end
 
 -- Bag and slot of the stack with the lowest vendor value (sell price x count).
@@ -113,6 +172,7 @@ function ScarletUI:FindCheapestBagItem()
 end
 
 local function SetGlow(button, show)
+    HookItemClick(button)
     if show and not button.cheapestGlow then
         button.cheapestGlow = button:CreateTexture(nil, "OVERLAY", nil, 2)
         button.cheapestGlow:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
@@ -130,7 +190,12 @@ local function SetGlow(button, show)
 end
 
 -- Runs from BagItemLevel, which already fires on every bag change and bag open.
+local tooltipHooked
 function ScarletUI:UpdateCheapestItem()
+    if not tooltipHooked then
+        tooltipHooked = true
+        HookTooltip()
+    end
     local bag, slot
     if self.db.global.highlightCheapestItem then
         bag, slot = self:FindCheapestBagItem()

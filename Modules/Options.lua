@@ -805,7 +805,7 @@ function ScarletUI:GetBagSettingsPage(database, defaults, order)
             },
             excludeItem = {
                 name = "Exclude Item",
-                desc = "Drop an item here, or click in the box and Shift-click an item in your bags, to keep it from being highlighted. You can also type an item's name or paste its link and press Enter. Excluded items are listed below.",
+                desc = "Ctrl+Alt+Click an item in your bags to keep it from being highlighted, and again to undo. You can also drop an item here, click in the box and Shift-click an item, or type an item's name or paste its link and press Enter. Excluded items are listed below.",
                 type = "input",
                 width = 1.5,
                 order = 1,
@@ -813,9 +813,7 @@ function ScarletUI:GetBagSettingsPage(database, defaults, order)
                 disabled = function() return not database.highlightCheapestItem end,
                 get = function() return "" end,
                 set = function(_, val)
-                    if self:ExcludeCheapestItem(val) then
-                        AceConfigRegistry:NotifyChange("ScarletUI")
-                    elseif strtrim(val or "") ~= "" then
+                    if not self:ExcludeCheapestItem(val) and strtrim(val or "") ~= "" then
                         self:Print("|cffff4444" .. val .. "|r is not an item in your bags or item cache. Drop or Shift-click it instead.")
                     end
                 end,
@@ -856,10 +854,7 @@ function ScarletUI:GetCheapestExclusionOptions(exclusions)
             order = i,
             width = "full",
             arg = { button = REMOVE or "Remove" },
-            func = function()
-                self:IncludeCheapestItem(item.id)
-                AceConfigRegistry:NotifyChange("ScarletUI")
-            end,
+            func = function() self:IncludeCheapestItem(item.id) end,
         }
     end
     return args
