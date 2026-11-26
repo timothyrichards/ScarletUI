@@ -332,19 +332,21 @@ assert(ScarletUI.db.global.characterCache["Scarlet - Realm"].money == 123456)
 ScarletUI.db.global.bankCacheModule.enabled = true
 ScarletUI.db.global.characterCache = nil
 
--- Counts and characters: same realm only, the current character first.
+-- Item lines and characters: the current character first; bags then bank;
+-- other realms named.
 local cache = {
-    ["Scarlet - Realm"] = { realm = "Realm", counts = { [2589] = 5 } },
-    ["Alt - Realm"] = { realm = "Realm", counts = { [2589] = 12, [2592] = 1 } },
-    ["Bank - Realm"] = { realm = "Realm", counts = { [2592] = 3 } },
-    ["Far - Other"] = { realm = "Other", counts = { [2589] = 99 } },
+    ["Scarlet - Realm"] = { realm = "Realm", time = now, counts = { [2589] = 5 } },
+    ["Alt - Realm"] = { realm = "Realm", time = now, counts = { [2589] = 12, [2592] = 1 } },
+    ["Bank - Realm"] = { realm = "Realm", time = now, counts = { [2592] = 3 } },
+    ["Far - Other"] = { realm = "Other", time = now, counts = { [2589] = 99 } },
 }
-local counts = BankCache.Counts(cache, "Realm", 2589, "Scarlet - Realm")
-assert(#counts == 2 and counts[1].key == "Scarlet - Realm" and counts[1].count == 5)
-assert(counts[2].label == "Alt" and counts[2].count == 12)
-counts = BankCache.Counts(cache, "Realm", 2592, "Scarlet - Realm")
-assert(#counts == 2 and counts[1].label == "Alt" and counts[2].label == "Bank")
-assert(#BankCache.Counts(cache, "Realm", 1, "Scarlet - Realm") == 0 and #BankCache.Counts(nil, "Realm", 1) == 0)
+local summaries = { ["Alt - Realm"] = { realm = "Realm", bags = { counts = { [2589] = 2 } } },
+    ["Bags - Realm"] = { realm = "Realm" } } -- no bags read yet
+local all = BankCache.Characters(cache, "Realm", "Scarlet - Realm", summaries, true)
+local itemLines = BankCache.ItemLines(all, 2589, "Realm", now + 7200)
+assert(#itemLines == 4 and itemLines[1] == "Bank: Scarlet x5 (2h ago)" and itemLines[2] == "Bags: Alt x2"
+    and itemLines[3] == "Bank: Alt x12 (2h ago)" and itemLines[4] == "Bank: Far (Other) x99 (2h ago)")
+assert(#BankCache.ItemLines(all, 1, "Realm", now) == 0 and #BankCache.ItemLines({}, 2589, "Realm", now) == 0)
 local characters = BankCache.Characters(cache, "Realm", "Scarlet - Realm")
 assert(#characters == 3 and characters[1].label == "Scarlet" and characters[2].label == "Alt")
 -- Forever's keys are first name and surname, with the ruleset as realm.
@@ -357,7 +359,7 @@ assert(BankCache.Age(4941, 5000) == "just now" and BankCache.Age(4940, 5000) == 
 assert(BankCache.Age(5000 - 3600, 5000) == "1h ago" and BankCache.Age(5000 - 3 * 3600 - 59, 5000) == "3h ago")
 assert(BankCache.Age(5000 - 86399, 5000) == "23h ago" and BankCache.Age(5000 - 2 * 86400, 5000) == "2d ago")
 
--- Tooltips: "Bank: N" for this character, then the others on the realm.
+-- Tooltips: every saved character's lines, as the viewer's All mode shows them.
 ScarletUI.db.global.bankCache = cache
 local lines
 local tooltip = { AddLine = function(_, text) lines[#lines + 1] = text end, IsForbidden = function() return false end }
@@ -367,7 +369,8 @@ local function Hover(itemID)
     return lines
 end
 Hover(2589)
-assert(#lines == 2 and lines[1] == "Bank: 5" and lines[2] == "Bank (Alt): 12")
+assert(#lines == 3 and lines[1] == "Bank: Scarlet x5 (just now)" and lines[2] == "Bank: Alt x12 (just now)"
+    and lines[3] == "Bank: Far (Other) x99 (just now)")
 assert(#Hover(4306) == 0)
 ScarletUI.db.global.bankCacheModule.tooltip = false
 assert(#Hover(2589) == 0)
@@ -390,7 +393,7 @@ RunTimers() -- its login snapshot
 ScarletUI.db.global.characterCache = nil
 lines = {}
 scripts.game(GameTooltip)
-assert(#lines == 2 and lines[1] == "Bank (Alt): 1" and lines[2] == "Bank (Bank): 3" and scripts.ref)
+assert(#lines == 2 and lines[1] == "Bank: Alt x1 (just now)" and lines[2] == "Bank: Bank x3 (just now)" and scripts.ref)
 
 -- Search: names come from C_Item.GetItemInfo, else the global one, else the
 -- [Name] in the link; matching ignores case and surrounding spaces.
@@ -617,7 +620,7 @@ assert(named.ScarletUIBankSlot1.link == Link(2589) and named.ScarletUIBankSlot2.
 ScarletUI.db.global.characterCache["Alt - Realm"].resting = false
 radios[3].pick()
 assert(HasText("Gold " .. BankCache.Money(5000) .. DOT .. "Rested 11% (+1% since logout, outside)"))
--- In single mode the item tooltip is the hook's, this realm's banks only.
+-- In single mode the item tooltip is the hook's.
 local tip = { lines = {} }
 function tip:SetOwner() self.lines = {} end
 function tip:SetHyperlink(link) postCalls[0](self, { id = idOf(link) }) end
@@ -625,7 +628,7 @@ function tip:AddLine(text) self.lines[#self.lines + 1] = text end
 function tip:Show() end
 GameTooltip = tip
 named.ScarletUIBankSlot2.scripts.OnEnter(named.ScarletUIBankSlot2)
-assert(#tip.lines == 1 and tip.lines[1] == "Bank (Alt): 1")
+assert(#tip.lines == 1 and tip.lines[1] == "Bank: Alt x1 (3h ago)")
 -- Max level, no bags saved: no rested part, and a note under Bags; a bank
 -- never saved says how to save it.
 radios[4].pick()

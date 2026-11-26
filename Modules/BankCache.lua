@@ -242,16 +242,18 @@ function BankCache.Characters(cache, realm, current, characterCache, allRealms)
     return list
 end
 
--- { key, label, count, time } per character on `realm` whose bank holds itemID.
-function BankCache.Counts(cache, realm, itemID, current)
-    local list = {}
-    for _, character in ipairs(BankCache.Characters(cache, realm, current)) do
-        local count = character.entry.counts and character.entry.counts[itemID]
-        if count and count > 0 then
-            list[#list + 1] = { key = character.key, label = character.label, count = count, time = character.entry.time }
-        end
+-- Item tooltip lines for itemID, per character in `characters`: "Bags: Name xN",
+-- then "Bank: Name xN (age)". Characters off `realm` are named "Name (realm)".
+function BankCache.ItemLines(characters, itemID, realm, now)
+    local lines = {}
+    for _, c in ipairs(characters) do
+        local label = c.realm == realm and c.label or (c.label .. " (" .. tostring(c.realm) .. ")")
+        local bags = c.info and c.info.bags and c.info.bags.counts and c.info.bags.counts[itemID]
+        local bank = c.entry and c.entry.counts and c.entry.counts[itemID]
+        if bags then lines[#lines + 1] = ("Bags: %s x%d"):format(label, bags) end
+        if bank then lines[#lines + 1] = ("Bank: %s x%d (%s)"):format(label, bank, BankCache.Age(c.entry.time, now)) end
     end
-    return list
+    return lines
 end
 
 -- How old a snapshot is, compactly: "just now", "5m ago", "3h ago", "2d ago".
@@ -357,6 +359,14 @@ function ScarletUI:ScheduleCharacterSnapshot()
     end)
 end
 
+local function AddLines(tooltip, lines)
+    for _, line in ipairs(lines) do
+        tooltip:AddLine(line, TOOLTIP_COLOR.r, TOOLTIP_COLOR.g, TOOLTIP_COLOR.b)
+    end
+    return #lines > 0
+end
+
+-- Every saved character's bags and bank, as the viewer's All mode shows them.
 local function AddBankCounts(tooltip, itemID)
     local self = ScarletUI
     local settings = self.db.global.bankCacheModule
@@ -364,13 +374,9 @@ local function AddBankCounts(tooltip, itemID)
         or (tooltip.IsForbidden and tooltip:IsForbidden()) then
         return
     end
-    local current = self.db.keys.char
-    local counts = BankCache.Counts(self.db.global.bankCache, self.db.keys.realm, itemID, current)
-    for _, character in ipairs(counts) do
-        local label = character.key == current and "Bank" or "Bank (" .. character.label .. ")"
-        tooltip:AddLine(label .. ": " .. character.count, TOOLTIP_COLOR.r, TOOLTIP_COLOR.g, TOOLTIP_COLOR.b)
-    end
-    return #counts > 0
+    local db = self.db
+    local characters = BankCache.Characters(db.global.bankCache, db.keys.realm, db.keys.char, db.global.characterCache, true)
+    return AddLines(tooltip, BankCache.ItemLines(characters, itemID, db.keys.realm, time()))
 end
 
 local function HookTooltips()
@@ -568,19 +574,7 @@ local function BuildViewer()
             GameTooltip:SetHyperlink(self.link)
             viewerTip = nil
             if allMode then
-                local itemID, realm = ItemID(self.link), ScarletUI.db.keys.realm
-                for _, c in ipairs(listed) do
-                    local label = c.realm == realm and c.label or (c.label .. " (" .. tostring(c.realm) .. ")")
-                    local bags = c.info and c.info.bags and c.info.bags.counts[itemID]
-                    local bank = c.entry and c.entry.counts and c.entry.counts[itemID]
-                    if bags then
-                        GameTooltip:AddLine(("Bags: %s x%d"):format(label, bags), TOOLTIP_COLOR.r, TOOLTIP_COLOR.g, TOOLTIP_COLOR.b)
-                    end
-                    if bank then
-                        GameTooltip:AddLine(("Bank: %s x%d (%s)"):format(label, bank, BankCache.Age(c.entry.time, time())),
-                            TOOLTIP_COLOR.r, TOOLTIP_COLOR.g, TOOLTIP_COLOR.b)
-                    end
-                end
+                AddLines(GameTooltip, BankCache.ItemLines(listed, ItemID(self.link), ScarletUI.db.keys.realm, time()))
             end
             if self.sets then
                 GameTooltip:AddLine("Set: " .. table.concat(self.sets, ", "), TOOLTIP_COLOR.r, TOOLTIP_COLOR.g, TOOLTIP_COLOR.b)
