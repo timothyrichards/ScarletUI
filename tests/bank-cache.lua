@@ -531,9 +531,12 @@ local function Radios()
     local radios, titles = {}, {}
     menu(nil, {
         CreateRadio = function(_, label, isSelected, onSelect)
-            radios[#radios + 1] = { label = label, selected = isSelected, pick = onSelect }
+            if label:find("^Realm  ") or label:find("^Other  ") then -- a realm option, kept apart from the characters
+                titles[#titles + 1] = { text = label, after = #radios, selected = isSelected, pick = onSelect }
+            else
+                radios[#radios + 1] = { label = label, selected = isSelected, pick = onSelect }
+            end
         end,
-        CreateTitle = function(_, text) titles[#titles + 1] = { text = text, after = #radios } end,
     })
     return radios, titles
 end
@@ -591,7 +594,7 @@ assert(#radios == 6 and radios[1].label == "All characters")
 assert(radios[2].label == H .. "Scarlet" .. Lv(42) and radios[3].label == A .. "Alt" .. Lv(20) and radios[4].label == H .. "Bags" .. Lv(60))
 assert(radios[5].label == "Empty" and radios[6].label == H .. "Far" .. Lv(10)) -- an old save: no faction, no level
 assert(BankCache.Named("Bob", "Neutral") == "Bob" and BankCache.Named("Bob") == "Bob")
--- Realm titles with each realm's gold, only because there are two realms.
+-- Realm options with each realm's gold, only because there are two realms.
 assert(#titles == 2 and titles[1].after == 1 and titles[2].after == 5)
 assert(titles[1].text == "Realm  " .. BankCache.Money(123456 + 5000 + 10000) and titles[2].text == "Other  " .. BankCache.Money(1000000))
 -- The account total counts every realm.
@@ -662,6 +665,28 @@ end
 Search("linen")
 assert(S(1).alpha == 0.25 and S(2).alpha == 1 and S(3).alpha == 1 and S(4).alpha == 0.25 and S(5).alpha == 1 and S(6).alpha == 1)
 Search("")
+-- A realm option: only that realm's characters, with its gold, searchable.
+radios, titles = Radios()
+titles[2].pick()
+assert(ScarletUI.db.global.bankCacheModule.viewerChoice == "realm:Other")
+radios, titles = Radios()
+assert(titles[2].selected() and not titles[1].selected() and not radios[1].selected() and not radios[2].selected())
+list = Headers()
+assert(#list == 3 and list[1] == "Other  " .. BankCache.Money(1000000) and list[2]:find("Far", 1, true) and list[3]:find("^Bank"))
+assert(S(1).link == Link(2589) and S(1).shown and not S(2).shown)
+Search("wool")
+assert(S(1).alpha == 0.25)
+Search("linen")
+assert(S(1).alpha == 1)
+Search("")
+titles[1].pick()
+assert(Radios() and select(2, Radios())[1].selected())
+list = Headers()
+assert(#list == 9 and list[1] == "Realm  " .. BankCache.Money(138456) and not list[10])
+assert(S(1).link == Link(4306) and S(4).link == Link(2592) and S(5).link == Link(2589) and not S(6).shown)
+S(2).scripts.OnEnter(S(2))
+assert(#tip.lines == 3 and tip.lines[3] == "Bank: Alt x12 (3h ago)") -- no other realms' characters
+radios[1].pick()
 -- Tooltips: the viewer's own bag and bank lines per character, every realm
 -- (others named), and with the hook off too.
 ScarletUI.db.global.bankCacheModule.tooltip = false
@@ -684,6 +709,12 @@ assert(S(1).alpha == 0.25 and S(4).alpha == 0.25 and S(5).alpha == 1)
 Search("tank")
 assert(S(5).alpha == 1 and S(1).alpha == 0.25)
 Search("")
+-- A realm that is gone falls back to the current character.
+ScarletUI.db.global.bankCacheModule.viewerChoice = "realm:Nowhere"
+ScarletUI:ToggleBankViewer(false)
+ScarletUI:ToggleBankViewer(true)
+assert(Radios()[2].selected())
+radios[1].pick()
 -- The choice is remembered across closing and reopening.
 ScarletUI:ToggleBankViewer(false)
 ScarletUI:ToggleBankViewer(true)

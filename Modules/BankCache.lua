@@ -641,18 +641,29 @@ local function BuildViewer()
         local db = ScarletUI.db
         local settings = db.global.bankCacheModule
         local characters = BankCache.Characters(db.global.bankCache, db.keys.realm, db.keys.char, db.global.characterCache, true)
-        listed = characters
         local realms = 0
         for i, c in ipairs(characters) do
             if i == 1 or c.realm ~= characters[i - 1].realm then realms = realms + 1 end
         end
+        -- A realm choice ("realm:Name", offered only with several realms) shows
+        -- that realm's characters as All mode does; a realm that is gone falls back.
+        local realmChoice = realms > 1 and type(settings.viewerChoice) == "string" and settings.viewerChoice:match("^realm:(.*)$")
+        local visible = characters
+        if realmChoice then
+            visible = {}
+            for _, c in ipairs(characters) do
+                if tostring(c.realm) == realmChoice then visible[#visible + 1] = c end
+            end
+            if #visible == 0 then realmChoice, visible = nil, characters end
+        end
+        listed = visible
         local character
         for _, c in ipairs(characters) do
             if c.key == settings.viewerChoice then character = c end
         end
         character = character or characters[1]
-        selected = #characters > 0 and (settings.viewerChoice == ALL and ALL or character.key) or nil
-        allMode = selected == ALL
+        selected = #characters > 0 and (settings.viewerChoice == ALL and ALL or realmChoice and "realm:" .. realmChoice or character.key) or nil
+        allMode = settings.viewerChoice == ALL or realmChoice and true or false
         local function Pick(key)
             return function() return key == selected end, function()
                 settings.viewerChoice = key
@@ -664,9 +675,10 @@ local function BuildViewer()
             return tostring(realm) .. "  " .. BankCache.Money(BankCache.AccountMoney(characters, realm))
         end
         -- Calls `realmTitle(realm)` before each realm's characters when there are several.
-        local function EachCharacter(fn, realmTitle)
-            for i, c in ipairs(characters) do
-                if realms > 1 and (i == 1 or c.realm ~= characters[i - 1].realm) then realmTitle(c.realm) end
+        local function EachCharacter(fn, realmTitle, list)
+            list = list or visible
+            for i, c in ipairs(list) do
+                if realms > 1 and (i == 1 or c.realm ~= list[i - 1].realm) then realmTitle(c.realm) end
                 fn(c)
             end
         end
@@ -675,7 +687,7 @@ local function BuildViewer()
             EachCharacter(function(c)
                 local level = c.info and c.info.level and ("  " .. Grey(c.info.level)) or ""
                 root:CreateRadio(Name(c) .. level, Pick(c.key))
-            end, function(realm) root:CreateTitle(RealmTitle(realm)) end)
+            end, function(realm) root:CreateRadio(RealmTitle(realm), Pick("realm:" .. tostring(realm))) end, characters)
         end)
         account:SetText(#characters > 0 and ("Account: " .. BankCache.Money(BankCache.AccountMoney(characters))) or "")
         -- Groups of slots under headers. All mode heads each character's with
