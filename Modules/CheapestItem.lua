@@ -103,15 +103,16 @@ function ScarletUI:ToggleCheapestItem(bag, slot)
         self:IncludeCheapestItem(info.itemID)
         return false
     end
-    return self:ExcludeCheapestItem(info.itemID, "Ctrl+Alt+Click it again to undo.") ~= nil
+    return self:ExcludeCheapestItem(info.itemID, "Alt+Click it again to undo.") ~= nil
 end
 
--- Ctrl+Alt+left-click on a bag item toggles its exclusion. Blizzard binds Shift (link, split),
--- Ctrl (dress up), and Alt (self-cast) alone, and right-click uses or sells, so this chord does
--- nothing else; a modified click also never picks the item up. A post-hook (HookScript), so the
+-- Alt+left-click on a bag item toggles its exclusion. Blizzard's default modified clicks give
+-- Shift (link, split, compare) and Ctrl (dress up) item actions, and a post-hook can't stop them;
+-- Alt alone only means self-cast and the equipment flyout, neither a bag-item click, and right-click
+-- uses or sells. A modified click also never picks the item up. A post-hook (HookScript), so the
 -- button's own click runs untainted first.
 local function OnItemClick(button, mouseButton)
-    if mouseButton == "LeftButton" and IsControlKeyDown() and IsAltKeyDown() and not IsShiftKeyDown()
+    if mouseButton == "LeftButton" and IsAltKeyDown() and not IsControlKeyDown() and not IsShiftKeyDown()
         and ScarletUI.db.global.highlightCheapestItem then
         -- Bag.lua slots, Mainline buttons, Classic buttons (parent frame ID is the bag)
         local bag = button.bag or (button.GetBagID and button:GetBagID()) or button:GetParent():GetID()
@@ -128,7 +129,7 @@ local function HookItemClick(button)
 end
 
 -- A muted hint on the highlighted item's tooltip, whose owner is its bag button.
-local HINT = "Cheapest item. Ctrl+Alt+Click: never highlight this item"
+local HINT = "Cheapest item. Alt+Click: never highlight this item"
 local function AddHint(tooltip)
     local owner = tooltip == GameTooltip and tooltip:GetOwner()
     if owner and owner.cheapestGlow and owner.cheapestGlow:IsShown() then

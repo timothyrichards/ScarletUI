@@ -242,14 +242,14 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   `db.global.cheapestItemExclusions` (`ExcludeCheapestItem` takes a link, ID, or
   cached name): the Exclude Item input under the toggle (`arg.items`) and an Excluded
   Items group of Remove buttons (`arg.button` labels an execute row's button).
-  Ctrl+Alt+left-click on a bag item (`ToggleCheapestItem`) excludes it, or brings it
+  Alt+left-click (no Ctrl or Shift, whose default item clicks still fire) on a bag item (`ToggleCheapestItem`) excludes it, or brings it
   back if it already is, while the highlight is on: an `OnClick` `HookScript` added
   to each button the first time `UpdateCheapestItem` outlines or clears it (Blizzard
   frames and `Bag.lua` slots), so the button's own click runs first and untainted.
   The chord was picked because Blizzard binds Shift, Ctrl, and Alt alone, and add-ons
   favour Alt and right-click. Every exclude or undo prints a chat line and calls
   `NotifyChange`. The highlighted item's `GameTooltip` (owner has a shown
-  `cheapestGlow`) gets a grey "Ctrl+Alt+Click" hint, from a `TooltipDataProcessor`
+  `cheapestGlow`) gets a grey "Alt+Click" hint, from a `TooltipDataProcessor`
   post-call or `OnTooltipSetItem`. In the settings window an `arg.items` input adds
   an item dropped on it, or one Shift-clicked while it has focus: post-hooks on
   `HandleModifiedItemClick` (with `IsModifiedClick("CHATLINK")`),
