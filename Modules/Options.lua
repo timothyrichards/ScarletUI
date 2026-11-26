@@ -805,7 +805,7 @@ function ScarletUI:GetBagSettingsPage(database, defaults, order)
             },
             excludeItem = {
                 name = "Exclude Item",
-                desc = "Ctrl+Alt+Click an item in your bags to keep it from being highlighted, and again to undo. You can also drop an item here, click in the box and Shift-click an item, or type an item's name or paste its link and press Enter. Excluded items are listed below.",
+                desc = "Alt+Click an item in your bags to keep it from being highlighted, and again to undo. You can also drop an item here, click in the box and Shift-click an item, or type an item's name or paste its link and press Enter. Excluded items are listed below.",
                 type = "input",
                 width = 1.5,
                 order = 1,

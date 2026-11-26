@@ -133,8 +133,8 @@ assert(cheap.cheapestGlow.shown and not pricey.cheapestGlow.shown, "Removed excl
 assert(ScarletUI:ParseItemID(" 1234 ") == 1234 and ScarletUI:ParseItemID("Linen Cloth") == 2589, "Item ID or name not parsed")
 assert(ScarletUI:ExcludeCheapestItem("Nonexistent Item") == nil and ScarletUI:ExcludeCheapestItem("") == nil)
 assert(next(ScarletUI.db.global.cheapestItemExclusions) == nil, "Unknown item was excluded")
--- Ctrl+Alt+left-click on a bag item excludes it, and again brings it back, saying so in chat each time.
-local ctrl, alt, shift = true, true, false
+-- Alt+left-click on a bag item excludes it, and again brings it back, saying so in chat each time.
+local ctrl, alt, shift = false, true, false
 IsControlKeyDown = function() return ctrl end
 IsAltKeyDown = function() return alt end
 IsShiftKeyDown = function() return shift end
@@ -145,13 +145,14 @@ assert(#printed == 1 and printed[1]:find("again to undo"), "No exclude confirmat
 cheap:OnClick("LeftButton")
 assert(not ScarletUI.db.global.cheapestItemExclusions[2] and cheap.cheapestGlow.shown, "Second click did not undo")
 assert(#printed == 2 and printed[2]:find("highlighted as your cheapest item again"), "No undo confirmation")
--- Other clicks and chords leave the list alone: right-click, Shift added, Ctrl or Alt alone, highlight off.
-for _, case in ipairs({ { "RightButton", true, true, false }, { "LeftButton", true, true, true },
-    { "LeftButton", true, false, false }, { "LeftButton", false, true, false } }) do
+-- Other clicks and chords leave the list alone: right-click, Ctrl or Shift added (they dress up or
+-- link too), Ctrl alone, no modifier, highlight off.
+for _, case in ipairs({ { "RightButton", false, true, false }, { "LeftButton", true, true, false },
+    { "LeftButton", false, true, true }, { "LeftButton", true, false, false }, { "LeftButton", false, false, false } }) do
     ctrl, alt, shift = case[2], case[3], case[4]
     cheap:OnClick(case[1])
 end
-ctrl, alt, shift = true, true, false
+ctrl, alt, shift = false, true, false
 ScarletUI.db.global.highlightCheapestItem = false
 cheap:OnClick("LeftButton")
 ScarletUI.db.global.highlightCheapestItem = true
@@ -166,7 +167,7 @@ GameTooltip.owner = pricey
 tooltipScripts.OnTooltipSetItem(GameTooltip)
 GameTooltip.owner = cheap
 tooltipScripts.OnTooltipSetItem(GameTooltip)
-assert(#tooltipLines == 1 and tooltipLines[1]:find("Ctrl+Alt+Click", 1, true), "Cheapest tooltip hint wrong")
+assert(#tooltipLines == 1 and tooltipLines[1]:find("Alt+Click", 1, true) and not tooltipLines[1]:find("Ctrl"), "Cheapest tooltip hint wrong")
 -- Set item lists are keyed by equipment slot and can have holes.
 C_EquipmentSet = {
     GetEquipmentSetIDs = function() return { 0 } end,
