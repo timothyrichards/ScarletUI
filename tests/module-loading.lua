@@ -436,6 +436,7 @@ local savedItem, highlight = C_Item, ScarletUI.db.global.highlightCheapestItem
 C_Item = { GetItemInfo = function(id) return "Linen Cloth", "|Hitem:" .. id .. "|h[Linen Cloth]|h" end,
     GetItemInfoInstant = function(id) return id, nil, nil, nil, 134 end }
 ScarletUI.db.global.highlightCheapestItem = false
+GameTooltip = { HookScript = noop }
 dofile("Modules/CheapestItem.lua")
 local highlights = ScarletUI:Options().args.bagModuleSettings.args.highlightSettings.args
 assert(highlights.excluded.hidden(), "Empty exclusion list shown")
@@ -462,7 +463,7 @@ for i = 2, #listed do
     assert(itemNames[a] < itemNames[b] or itemNames[a] == itemNames[b] and a < b, "Excluded items out of order")
 end
 ScarletUI.db.global.cheapestItemExclusions = {}
-C_Item, ScarletUI.db.global.highlightCheapestItem = savedItem, highlight
+C_Item, ScarletUI.db.global.highlightCheapestItem, GameTooltip = savedItem, highlight, nil
 C_Container = nil
 assert(#shutdown == 0 and shutdown["ScarletUI-ActionBars"] and shutdown["ScarletUI-Tracking"])
 ScarletUI.eventHandlers, ScarletUI.frame = originalHandlers, originalFrame

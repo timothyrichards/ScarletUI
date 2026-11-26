@@ -241,10 +241,21 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   when `C_EquipmentSet` exists. Players exclude items by ID in
   `db.global.cheapestItemExclusions` (`ExcludeCheapestItem` takes a link, ID, or
   cached name): the Exclude Item input under the toggle (`arg.items`) and an Excluded
-  Items group of Remove buttons (`arg.button` labels an execute row's button). In
-  the settings window an `arg.items` input adds an item dropped on it, or one
-  Shift-clicked while it has focus (a post-hook on `ChatFrameUtil.InsertLink`, or
-  `ChatEdit_InsertLink`, as AceGUI's edit box uses in the old panel).
+  Items group of Remove buttons (`arg.button` labels an execute row's button).
+  Ctrl+Alt+left-click on a bag item (`ToggleCheapestItem`) excludes it, or brings it
+  back if it already is, while the highlight is on: an `OnClick` `HookScript` added
+  to each button the first time `UpdateCheapestItem` outlines or clears it (Blizzard
+  frames and `Bag.lua` slots), so the button's own click runs first and untainted.
+  The chord was picked because Blizzard binds Shift, Ctrl, and Alt alone, and add-ons
+  favour Alt and right-click. Every exclude or undo prints a chat line and calls
+  `NotifyChange`. The highlighted item's `GameTooltip` (owner has a shown
+  `cheapestGlow`) gets a grey "Ctrl+Alt+Click" hint, from a `TooltipDataProcessor`
+  post-call or `OnTooltipSetItem`. In the settings window an `arg.items` input adds
+  an item dropped on it, or one Shift-clicked while it has focus: post-hooks on
+  `HandleModifiedItemClick` (with `IsModifiedClick("CHATLINK")`),
+  `ChatFrameUtil.InsertLink`, and `ChatEdit_InsertLink`, which on current clients is a
+  copy of the other taken before any hook, so add-ons calling it bypass that hook. The
+  first hook to take a click clears focus, so the others skip it.
 - `Modules/TidyIcons.lua`: icon adjustments.
 - `Modules/Tooltips.lua`: appends percent of max mana to GameTooltip spell cost
   lines via post-hooks only (`TooltipDataProcessor` or `OnTooltipSetSpell`).

@@ -19,6 +19,13 @@ C_Timer = { After = function(_, callback) callback() end }
 CharacterFrame = { HookScript = noop }
 EventRegistry = { RegisterCallback = noop }
 hooksecurefunc = noop
+local tooltipScripts, tooltipLines = {}, {}
+GameTooltip = {
+    HookScript = function(_, script, hook) tooltipScripts[script] = hook end,
+    GetOwner = function(self) return self.owner end,
+    AddLine = function(_, text) tooltipLines[#tooltipLines + 1] = text end,
+    Show = noop,
+}
 
 local function button(bag, slot)
     return {
@@ -26,6 +33,7 @@ local function button(bag, slot)
         GetID = function() return slot end,
         GetItemLocation = function() return ItemLocation:CreateFromBagAndSlot(bag, slot) end,
         GetChildren = function() end,
+        HookScript = function(self, script, hook) self[script] = hook end,
         IsShown = function() return true end,
         GetWidth = function() return 37 end,
         GetHeight = function() return 37 end,
@@ -40,6 +48,7 @@ local function button(bag, slot)
                 Show = function(self) self.shown = true end,
                 Hide = function(self) self.shown = false end,
                 SetShown = function(self, shown) self.shown = shown end,
+                IsShown = function(self) return self.shown end,
             }
         end,
         CreateTexture = function(self) return self:CreateFontString() end,
@@ -106,6 +115,9 @@ ContainerFrameCombinedBags = { EnumerateValidItems = function()
 end }
 ContainerFrame1Item1, ContainerFrame1Item2 = cheap, pricey
 ScarletUI = { db = { global = { highlightCheapestItem = true, cheapestItemExclusions = {} } }, bagSlots = { [2] = custom } }
+local printed = {}
+ScarletUI.Print = function(_, text) printed[#printed + 1] = text end
+LibStub = function() return { NotifyChange = noop } end
 C_Item.GetItemInfoInstant = function(name) if name == "Linen Cloth" then return 2589 end end
 dofile("Modules/CheapestItem.lua")
 -- No C_EquipmentSet yet: Era and TBC have no Equipment Manager.
@@ -114,12 +126,47 @@ assert(cheap.cheapestGlow.shown and custom.cheapestGlow.shown, "Cheapest stack n
 assert(not pricey.cheapestGlow, "Stack worth more in total was highlighted")
 -- An excluded item is skipped, so the next cheapest is highlighted; removing it brings it back.
 assert(ScarletUI:ExcludeCheapestItem("|cffffffff|Hitem:2::::::::60:::::|h[Junk]|h|r") == 2)
+assert(printed[#printed]:find("Remove it under Excluded Items", 1, true), "Settings exclusion gave the bag undo hint")
 assert(pricey.cheapestGlow.shown and not cheap.cheapestGlow.shown, "Excluded item was highlighted")
 ScarletUI:IncludeCheapestItem(2)
 assert(cheap.cheapestGlow.shown and not pricey.cheapestGlow.shown, "Removed exclusion still skipped")
 assert(ScarletUI:ParseItemID(" 1234 ") == 1234 and ScarletUI:ParseItemID("Linen Cloth") == 2589, "Item ID or name not parsed")
 assert(ScarletUI:ExcludeCheapestItem("Nonexistent Item") == nil and ScarletUI:ExcludeCheapestItem("") == nil)
 assert(next(ScarletUI.db.global.cheapestItemExclusions) == nil, "Unknown item was excluded")
+-- Ctrl+Alt+left-click on a bag item excludes it, and again brings it back, saying so in chat each time.
+local ctrl, alt, shift = true, true, false
+IsControlKeyDown = function() return ctrl end
+IsAltKeyDown = function() return alt end
+IsShiftKeyDown = function() return shift end
+printed = {}
+cheap:OnClick("LeftButton")
+assert(ScarletUI.db.global.cheapestItemExclusions[2] and pricey.cheapestGlow.shown, "Quick-exclude did not exclude")
+assert(#printed == 1 and printed[1]:find("again to undo"), "No exclude confirmation")
+cheap:OnClick("LeftButton")
+assert(not ScarletUI.db.global.cheapestItemExclusions[2] and cheap.cheapestGlow.shown, "Second click did not undo")
+assert(#printed == 2 and printed[2]:find("highlighted as your cheapest item again"), "No undo confirmation")
+-- Other clicks and chords leave the list alone: right-click, Shift added, Ctrl or Alt alone, highlight off.
+for _, case in ipairs({ { "RightButton", true, true, false }, { "LeftButton", true, true, true },
+    { "LeftButton", true, false, false }, { "LeftButton", false, true, false } }) do
+    ctrl, alt, shift = case[2], case[3], case[4]
+    cheap:OnClick(case[1])
+end
+ctrl, alt, shift = true, true, false
+ScarletUI.db.global.highlightCheapestItem = false
+cheap:OnClick("LeftButton")
+ScarletUI.db.global.highlightCheapestItem = true
+ScarletUI:UpdateCheapestItem()
+assert(next(ScarletUI.db.global.cheapestItemExclusions) == nil and #printed == 2, "Wrong click changed exclusions")
+local empty = stacks[2]
+stacks[2] = nil
+assert(ScarletUI:ToggleCheapestItem(0, 2) == nil and #printed == 2, "Empty slot toggled")
+stacks[2] = empty
+-- The highlighted item's tooltip gets a hint line; other items' do not.
+GameTooltip.owner = pricey
+tooltipScripts.OnTooltipSetItem(GameTooltip)
+GameTooltip.owner = cheap
+tooltipScripts.OnTooltipSetItem(GameTooltip)
+assert(#tooltipLines == 1 and tooltipLines[1]:find("Ctrl+Alt+Click", 1, true), "Cheapest tooltip hint wrong")
 -- Set item lists are keyed by equipment slot and can have holes.
 C_EquipmentSet = {
     GetEquipmentSetIDs = function() return { 0 } end,
