@@ -148,15 +148,7 @@ function BankCache.BagContainers()
     return list
 end
 
--- Whether the character cannot gain XP, as XPPerHour.lua checks it.
-local function MaxLevel()
-    if IsXPUserDisabled and IsXPUserDisabled() then return true end
-    if IsPlayerAtEffectiveMaxLevel then return IsPlayerAtEffectiveMaxLevel() end
-    local max = GetMaxPlayerLevel and GetMaxPlayerLevel()
-    return max and UnitLevel("player") >= max or false
-end
-
--- The logged-in character's summary. A value the client keeps secret (Forever)
+-- The logged-in character's summary; maxLevel means it cannot gain XP. A value the client keeps secret (Forever)
 -- or has not loaded (an empty zone name) keeps the `previous` saved one.
 function BankCache.ReadCharacter(previous)
     previous = previous or {}
@@ -165,7 +157,7 @@ function BankCache.ReadCharacter(previous)
         class = class, className = className, faction = UnitFactionGroup("player"),
         level = UnitLevel("player"), money = GetMoney(), zone = GetRealZoneText(),
         xp = UnitXP("player"), xpMax = UnitXPMax("player"), rested = GetXPExhaustion(), resting = IsResting(),
-        maxLevel = MaxLevel(),
+        maxLevel = ScarletUI.XPDisabled(), -- XPPerHour.lua's check
     }
     for field, value in pairs(read) do
         if IsSecret(value) or value == "" then read[field] = previous[field] end

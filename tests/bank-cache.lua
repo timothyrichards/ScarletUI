@@ -47,6 +47,7 @@ end
 
 dofile("Modules/BankCache.lua")
 dofile("Modules/CraftProfit.lua") -- its money format
+dofile("Modules/XPPerHour.lua") -- its max-level check
 local BankCache = ScarletUI.BankCache
 ScarletUI.db = {
     global = { bankCacheModule = { enabled = true, tooltip = true } },

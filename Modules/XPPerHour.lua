@@ -34,6 +34,7 @@ local function XPDisabled()
     local max = GetMaxPlayerLevel and GetMaxPlayerLevel()
     return max and UnitLevel("player") >= max or false
 end
+ScarletUI.XPDisabled = XPDisabled -- also the character viewer's max level (BankCache.lua)
 
 function ScarletUI:SetupXPPerHour()
     if self.xpPerHourFrame or not StatusTrackingBarManager then return end

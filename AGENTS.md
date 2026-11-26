@@ -124,7 +124,7 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   A character summary goes in `db.global.characterCache[db.keys.char]` (no AceDB
   default, so the logout strip leaves it alone): `class`, `className`, `faction`, `level`,
   `money`, `zone` (`GetRealZoneText`), `xp`, `xpMax`, `rested` (`GetXPExhaustion() or 0`),
-  `resting`, `maxLevel` (as `XPPerHour.lua` decides it), `realm`, `time` (last seen), and
+  `resting`, `maxLevel` (`ScarletUI.XPDisabled`, shared with `XPPerHour.lua`), `realm`, `time` (last seen), and
   `bags` (`{ items, counts, size }`, as the bank). It is saved on `PLAYER_ENTERING_WORLD`,
   `BAG_UPDATE` (bank open or not), `PLAYER_MONEY`, `PLAYER_XP_UPDATE`, `UPDATE_EXHAUSTION`,
   `PLAYER_UPDATE_RESTING`, `PLAYER_LEVEL_UP`, and `ZONE_CHANGED_NEW_AREA`, debounced 0.2s on
