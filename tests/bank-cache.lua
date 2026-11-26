@@ -369,8 +369,9 @@ local function Hover(itemID)
     return lines
 end
 Hover(2589)
-assert(#lines == 3 and lines[1] == "Bank: Scarlet x5 (just now)" and lines[2] == "Bank: Alt x12 (just now)"
-    and lines[3] == "Bank: Far (Other) x99 (just now)")
+assert(#lines == 1 and lines[1] == "Total: 116")
+assert(BankCache.Total(all, 2589) == 118) -- plus Alt's 2 in bags
+assert(BankCache.Total(all, 1) == 0)
 assert(#Hover(4306) == 0)
 ScarletUI.db.global.bankCacheModule.tooltip = false
 assert(#Hover(2589) == 0)
@@ -393,7 +394,7 @@ RunTimers() -- its login snapshot
 ScarletUI.db.global.characterCache = nil
 lines = {}
 scripts.game(GameTooltip)
-assert(#lines == 2 and lines[1] == "Bank: Alt x1 (just now)" and lines[2] == "Bank: Bank x3 (just now)" and scripts.ref)
+assert(#lines == 1 and lines[1] == "Total: 4" and scripts.ref)
 
 -- Search: names come from C_Item.GetItemInfo, else the global one, else the
 -- [Name] in the link; matching ignores case and surrounding spaces.
@@ -620,7 +621,7 @@ assert(named.ScarletUIBankSlot1.link == Link(2589) and named.ScarletUIBankSlot2.
 ScarletUI.db.global.characterCache["Alt - Realm"].resting = false
 radios[3].pick()
 assert(HasText("Gold " .. BankCache.Money(5000) .. DOT .. "Rested 11% (+1% since logout, outside)"))
--- In single mode the item tooltip is the hook's.
+-- In single mode the item tooltip is the hook's one total line.
 local tip = { lines = {} }
 function tip:SetOwner() self.lines = {} end
 function tip:SetHyperlink(link) postCalls[0](self, { id = idOf(link) }) end
@@ -628,7 +629,7 @@ function tip:AddLine(text) self.lines[#self.lines + 1] = text end
 function tip:Show() end
 GameTooltip = tip
 named.ScarletUIBankSlot2.scripts.OnEnter(named.ScarletUIBankSlot2)
-assert(#tip.lines == 1 and tip.lines[1] == "Bank: Alt x1 (3h ago)")
+assert(#tip.lines == 1 and tip.lines[1] == "Total: 1")
 -- Max level, no bags saved: no rested part, and a note under Bags; a bank
 -- never saved says how to save it.
 radios[4].pick()
@@ -718,10 +719,13 @@ ScarletUI:ToggleBankViewer(false)
 ScarletUI:ToggleBankViewer(true)
 assert(Radios()[2].selected())
 radios[1].pick()
--- The choice is remembered across closing and reopening.
+-- Closing and reopening goes back to the current character, not the last pick.
 ScarletUI:ToggleBankViewer(false)
 ScarletUI:ToggleBankViewer(true)
-assert(Radios()[1].selected() and #Headers() == 12)
+assert(Radios()[2].selected() and not Radios()[1].selected() and ScarletUI.db.global.bankCacheModule.viewerChoice == nil)
+radios[3].pick() -- picking while open still works
+assert(Radios()[3].selected())
+radios[1].pick()
 -- A snapshot while it is shown refreshes it.
 radios[2].pick()
 bags[0] = { 16, { [1] = { 2592, 7 } } }

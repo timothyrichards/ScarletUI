@@ -256,6 +256,16 @@ function BankCache.ItemLines(characters, itemID, realm, now)
     return lines
 end
 
+-- Count of itemID in all of `characters`' bags and banks.
+function BankCache.Total(characters, itemID)
+    local total = 0
+    for _, c in ipairs(characters) do
+        total = total + (c.info and c.info.bags and c.info.bags.counts and c.info.bags.counts[itemID] or 0)
+            + (c.entry and c.entry.counts and c.entry.counts[itemID] or 0)
+    end
+    return total
+end
+
 -- How old a snapshot is, compactly: "just now", "5m ago", "3h ago", "2d ago".
 -- Minutes under an hour, hours under a day, then days, each rounded down.
 function BankCache.Age(saved, now)
@@ -366,7 +376,7 @@ local function AddLines(tooltip, lines)
     return #lines > 0
 end
 
--- Every saved character's bags and bank, as the viewer's All mode shows them.
+-- One line: the item's total across every saved character's bags and banks.
 local function AddBankCounts(tooltip, itemID)
     local self = ScarletUI
     local settings = self.db.global.bankCacheModule
@@ -376,7 +386,8 @@ local function AddBankCounts(tooltip, itemID)
     end
     local db = self.db
     local characters = BankCache.Characters(db.global.bankCache, db.keys.realm, db.keys.char, db.global.characterCache, true)
-    return AddLines(tooltip, BankCache.ItemLines(characters, itemID, db.keys.realm, time()))
+    local total = BankCache.Total(characters, itemID)
+    return total > 0 and AddLines(tooltip, { "Total: " .. total })
 end
 
 local function HookTooltips()
@@ -752,6 +763,7 @@ local function BuildViewer()
         PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN)
         HookBags()
         if not moved then Anchor() end
+        ScarletUI.db.global.bankCacheModule.viewerChoice = nil -- every opening starts on the current character
         self:Refresh()
     end)
     -- Closing by any route (X, Escape unfocused) starts the next opening unfiltered.
