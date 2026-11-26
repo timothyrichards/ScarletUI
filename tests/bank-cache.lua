@@ -659,7 +659,7 @@ function tip:AddLine(text) self.lines[#self.lines + 1] = text end
 function tip:Show() end
 GameTooltip = tip
 named.ScarletUIBankSlot2.scripts.OnEnter(named.ScarletUIBankSlot2)
-assert(#tip.lines == 1 and tip.lines[1] == "Total: 1")
+assert(#tip.lines == 1 and tip.lines[1] == "Bank: Alt x1 (3h ago)") -- breakdown, no hook Total
 -- Max level, no bags saved: no rested part, and a note under Bags; a bank
 -- never saved says how to save it.
 radios[4].pick()
@@ -729,7 +729,7 @@ list = Headers()
 assert(#list == 9 and list[1] == "Realm  " .. BankCache.Money(138456) and not list[10])
 assert(S(1).link == Link(4306) and S(4).link == Link(2592) and S(5).link == Link(2589) and not S(6).shown)
 S(2).scripts.OnEnter(S(2))
-assert(#tip.lines == 3 and tip.lines[3] == "Bank: Alt x12 (3h ago)") -- no other realms' characters
+assert(#tip.lines == 4 and tip.lines[3] == "Bank: Alt x12 (3h ago)" and tip.lines[4] == "Bank: Far (Other) x99 (3h ago)") -- every saved character, as the hook Total counts
 radios[1].pick()
 -- Tooltips: the viewer's own bag and bank lines per character, every realm
 -- (others named), and with the hook off too.
