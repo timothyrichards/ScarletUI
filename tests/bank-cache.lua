@@ -421,6 +421,36 @@ GetItemInfo = function(link) return names[idOf(link)] end
 assert(BankCache.Matches("item:2589", "LINEN") and not BankCache.Matches("item:2589", "wool"))
 GetItemInfo = nil
 
+-- Filter: only matching items stay; sections and headings with none go.
+names = { [1] = "Linen Cloth", [2] = "Wool Cloth", [3] = "Iron Bar" }
+C_Item = { GetItemInfo = function(link) return names[idOf(link)] end }
+local function It(id) return { link = "item:" .. id } end
+local groups = {
+    { header = "Realm", items = {}, rank = 1 },
+    { header = "Alt", items = {}, rank = 2 },
+    { header = "Bags", items = { It(1), It(3) } },
+    { header = "Bank", items = { It(3) } },
+    { header = "Bob", items = {}, rank = 2 },
+    { header = "Bags", items = { It(2), It(1) }, note = "x" },
+    { header = "Realm2", items = {}, rank = 1 },
+    { header = "Cy", items = {}, rank = 2 },
+    { header = "Bags", items = { It(3) } },
+}
+assert(BankCache.Filter(groups, "  ") == groups) -- blank: untouched
+local out = BankCache.Filter(groups, "cloth")
+local heads = {}
+for _, g in ipairs(out) do heads[#heads + 1] = g.header .. ":" .. #g.items end
+assert(table.concat(heads, ",") == "Realm:0,Alt:0,Bags:1,Bob:0,Bags:2", table.concat(heads, ","))
+assert(out[3].items[1].link == "item:1" and out[5].note == nil)
+assert(#BankCache.Filter(groups, "zzz") == 0)
+out = BankCache.Filter(groups, "iron")
+heads = {}
+for _, g in ipairs(out) do heads[#heads + 1] = g.header end
+assert(table.concat(heads, ",") == "Realm,Alt,Bags,Bank,Realm2,Cy,Bags", table.concat(heads, ","))
+local _, pendingNames = BankCache.Filter({ { header = "Bags", items = { It(77) } } }, "x")
+assert(pendingNames == true) -- unloaded name: asks again later
+C_Item = nil
+
 -- Viewer slots dressed as bag slots: quality border from Common up, junk
 -- greyed with a coin, the item level per the bags' setting.
 local quality = { [1] = 0, [2] = 1, [3] = 4 }
@@ -659,15 +689,25 @@ local S = function(i) return named["ScarletUIBankSlot" .. i] end
 assert(S(1).link == Link(4306) and S(2).link == Link(2589) and S(3).link == Link(2589) and S(4).link == Link(2592))
 assert(S(5).link == Link(2589) and S(6).link == Link(2589) and S(6).shown and not S(7))
 assert(S(4).args[1] == 4 and S(5).args[1] == 45 and S(1).args[2] == -64 and S(2).args[2] == -131)
--- The search dims across every character's bags and banks.
+-- The search hides non-matches and packs the rest; empty sections and headings go.
 local search
 for _, f in ipairs(frames) do if f.hooks.OnTextChanged then search = f end end
 local function Search(text)
     search:SetText(text)
     for _, fn in ipairs(search.hooks.OnTextChanged) do fn(search) end
 end
+local function Shown()
+    local n = 0
+    for i = 1, 20 do if S(i) and S(i).shown then n = n + 1 end end
+    return n
+end
 Search("linen")
-assert(S(1).alpha == 0.25 and S(2).alpha == 1 and S(3).alpha == 1 and S(4).alpha == 0.25 and S(5).alpha == 1 and S(6).alpha == 1)
+assert(Shown() == 4 and S(1).link == Link(2589) and S(2).link == Link(2589) and S(3).link == Link(2589) and S(4).link == Link(2589))
+list = Headers()
+assert(#list == 9 and not HasText("No matches"))
+for _, h in ipairs(list) do assert(not h:find("Level 60", 1, true)) end -- the character with nothing saved is gone
+Search("zzz")
+assert(Shown() == 0 and #Headers() == 0 and HasText("No matches"))
 Search("")
 -- A realm option: only that realm's characters, with its gold, searchable.
 radios, titles = Radios()
@@ -679,9 +719,9 @@ list = Headers()
 assert(#list == 3 and list[1] == "Other  " .. BankCache.Money(1000000) and list[2]:find("Far", 1, true) and list[3]:find("^Bank"))
 assert(S(1).link == Link(2589) and S(1).shown and not S(2).shown)
 Search("wool")
-assert(S(1).alpha == 0.25)
+assert(not S(1).shown and #Headers() == 0 and HasText("No matches"))
 Search("linen")
-assert(S(1).alpha == 1)
+assert(S(1).shown and S(1).alpha == 1 and #Headers() == 3 and not HasText("No matches"))
 Search("")
 titles[1].pick()
 assert(Radios() and select(2, Radios())[1].selected())
@@ -701,7 +741,7 @@ ScarletUI.db.global.bankCacheModule.tooltip = true
 S(1).scripts.OnEnter(S(1))
 assert(#tip.lines == 1 and tip.lines[1] == "Bags: Scarlet x3")
 -- Sets: the corner marker shows on set items only, the tooltip names the sets,
--- and a set search dims everything else across every group.
+-- and a set search hides everything else across every group.
 ScarletUI.db.global.bankCache["Alt - Realm"].items[2].sets = { "Ret", "Tank" }
 radios[1].pick() -- refresh
 S(5).scripts.OnEnter(S(5))
@@ -709,9 +749,9 @@ assert(tip.lines[#tip.lines] == "Set: Ret, Tank" and S(5).setMark.shown)
 S(4).scripts.OnEnter(S(4))
 assert(tip.lines[#tip.lines] ~= "Set: Ret, Tank" and not S(4).setMark.shown)
 Search("set:ret")
-assert(S(1).alpha == 0.25 and S(4).alpha == 0.25 and S(5).alpha == 1)
+assert(Shown() == 1 and S(1).link == Link(2589) and S(1).setMark.shown and #Headers() == 3) -- realm, Alt, Bank: only Alt's set item
 Search("tank")
-assert(S(5).alpha == 1 and S(1).alpha == 0.25)
+assert(Shown() == 1 and S(1).link == Link(2589))
 Search("")
 -- A realm that is gone falls back to the current character.
 ScarletUI.db.global.bankCacheModule.viewerChoice = "realm:Nowhere"

@@ -12,7 +12,7 @@ local BankCache = {}
 ScarletUI.BankCache = BankCache
 
 local function IsSecret(value) return issecretvalue ~= nil and issecretvalue(value) end
-local COLUMNS, SIZE, GAP, DIM_ALPHA = 10, 37, 4, 0.25 -- the bags' slots per row, size and spacing
+local COLUMNS, SIZE, GAP = 10, 37, 4 -- the bags' slots per row, size and spacing
 local PORTRAIT = "Interface\\Icons\\INV_Box_02" -- a chest
 local TOOLTIP_COLOR = { r = 0.5, g = 0.75, b = 1 }
 
@@ -304,6 +304,38 @@ function BankCache.Matches(link, query, sets)
     return name:lower():find(query, 1, true) ~= nil
 end
 
+-- The viewer's groups cut down to what `query` matches. A group is
+-- { header, items, note, rank }: groups with a `rank` are headings (1 realm,
+-- 2 character) that hold no items; the rest are item sections. Non-matching
+-- items go, sections left empty go (notes included), and a heading stays only
+-- while a section under it does. A blank query returns `groups` untouched.
+-- Second result: some item's name is not loaded yet, so asking again later may differ.
+function BankCache.Filter(groups, query)
+    if query:match("^%s*$") then return groups end
+    local unknown, kept, out = false, {}, {}
+    for i = #groups, 1, -1 do
+        local group = groups[i]
+        if group.rank then
+            if kept[group.rank] then out[#out + 1] = group end
+            kept[group.rank] = false
+            if group.rank == 1 then kept[2] = false end
+        else
+            local items = {}
+            for _, item in ipairs(group.items) do
+                local match, pending = BankCache.Matches(item.link, query, item.sets)
+                if match then items[#items + 1] = item end
+                unknown = unknown or pending == true
+            end
+            if #items > 0 then
+                out[#out + 1] = { header = group.header, items = items }
+                kept[1], kept[2] = true, true
+            end
+        end
+    end
+    for i = 1, math.floor(#out / 2) do out[i], out[#out - i + 1] = out[#out - i + 1], out[i] end
+    return out, unknown
+end
+
 -- A viewer slot dressed as a bag slot: the item level on gear (the bags'
 -- setting), a quality-coloured border from Common up, and junk greyed with a
 -- coin. Returns true while the item's data has not loaded.
@@ -438,7 +470,7 @@ function ScarletUI:SetupBankCache()
 end
 
 -- Viewer: the saved bags and bank of any character, as item icons. The
--- search box dims items whose name does not match; the grid keeps its places.
+-- search box hides items whose name does not match and packs the rest.
 -- The open backpack the viewer sits beside: Bag.lua's frame, Blizzard's
 -- combined bags, or the separate backpack.
 local function OpenBag()
@@ -501,19 +533,10 @@ local function BuildViewer()
     local selected, query, shown, waiting = nil, "", {}, false
     local allMode -- the grid shows every character, so slots name their owner on hover
     local listed = {} -- the characters in the dropdown
-    -- Dress each slot and dim non-matches; items without loaded data wait for
-    -- GET_ITEM_INFO_RECEIVED.
+    -- Layout dresses the slots of the matching items; items without loaded data
+    -- wait for GET_ITEM_INFO_RECEIVED.
     local buttons = {}
-    local function ApplyFilter()
-        waiting = false
-        for i, item in ipairs(shown) do
-            if not buttons[i] then break end -- Refresh failed partway
-            local match, unknown = BankCache.Matches(item.link, query, item.sets)
-            waiting = BankCache.Decorate(buttons[i], item.link) or waiting or unknown
-            buttons[i]:SetAlpha(match and 1 or DIM_ALPHA)
-            buttons[i].setMark:SetShown(item.sets ~= nil)
-        end
-    end
+    local Layout, allGroups, savedCount
 
     -- SearchBoxTemplate has the clear button and placeholder; older clients lack it.
     local ok, search = pcall(CreateFrame, "EditBox", nil, viewer, "SearchBoxTemplate")
@@ -524,7 +547,7 @@ local function BuildViewer()
     search:SetPoint("TOPRIGHT", -14, -33)
     search:HookScript("OnTextChanged", function(self)
         query = self:GetText()
-        ApplyFilter()
+        if Layout then Layout() end
     end)
     -- Escape clears the search first, then closes the frame.
     search:SetScript("OnEscapePressed", function(self)
@@ -705,9 +728,9 @@ local function BuildViewer()
                     text = text .. "  " .. Grey("Level " .. tostring(c.info.level)) .. "  " .. BankCache.Money(c.info.money)
                         .. "  " .. Grey(Seen(c, now))
                 end
-                groups[#groups + 1] = { header = text, items = {} }
+                groups[#groups + 1] = { header = text, items = {}, rank = 2 }
                 AddGroups(groups, c, now, false)
-            end, function(realm) groups[#groups + 1] = { header = RealmTitle(realm), items = {} } end)
+            end, function(realm) groups[#groups + 1] = { header = RealmTitle(realm), items = {}, rank = 1 } end)
         elseif character then
             AddGroups(groups, character, now, true)
         end
@@ -726,7 +749,15 @@ local function BuildViewer()
             info:SetText("")
             info2:SetText("")
         end
-        empty:SetText(#characters == 0 and "Nothing saved yet." or "")
+        allGroups, savedCount = groups, #characters
+        Layout()
+    end
+    -- Lays out the groups the search matches, packed with no gaps; headings and
+    -- sections with no match are left out.
+    function Layout()
+        local groups, unknown = BankCache.Filter(allGroups, query)
+        waiting = unknown or false
+        empty:SetText(savedCount == 0 and "Nothing saved yet." or #groups == 0 and "No matches" or "")
         local n, y, h = 0, 4, 0
         shown = {}
         local function Line(text)
@@ -749,7 +780,10 @@ local function BuildViewer()
                 button.Count:SetText((item.count or 1) > 1 and item.count or "")
                 button:ClearAllPoints()
                 button:SetPoint("TOPLEFT", ((k - 1) % COLUMNS) * (SIZE + GAP) + 4, -(y + math.floor((k - 1) / COLUMNS) * (SIZE + GAP)))
+                button:SetAlpha(1)
                 button:Show()
+                waiting = BankCache.Decorate(button, item.link) or waiting
+                button.setMark:SetShown(item.sets ~= nil)
                 shown[n] = item
             end
             y = y + math.ceil(#group.items / COLUMNS) * (SIZE + GAP) + (#group.items > 0 and 6 or 0)
@@ -757,7 +791,6 @@ local function BuildViewer()
         for i = n + 1, #buttons do buttons[i]:Hide() end
         for i = h + 1, #headers do headers[i]:Hide() end
         content:SetHeight(y + 4)
-        ApplyFilter()
     end
     viewer:SetScript("OnShow", function(self)
         PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN)
@@ -775,7 +808,7 @@ local function BuildViewer()
         queued = true
         C_Timer.After(0.1, function() -- item data arrives in bursts
             queued = false
-            ApplyFilter()
+            Layout()
         end)
     end)
 end
