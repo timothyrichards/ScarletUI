@@ -53,6 +53,17 @@ ScarletUI.db = {
     global = { bankCacheModule = { enabled = true, tooltip = true } },
     keys = { char = "Scarlet - Realm", realm = "Realm" },
 }
+-- AceDB's logout order: OnDatabaseShutdown, then default-only tables stripped
+-- (bankCacheModule once viewerChoice is cleared), then addons' PLAYER_LOGOUT.
+local shutdown = {}
+ScarletUI.db.RegisterCallback = function(target, event, fn) shutdown[target .. event] = fn end
+local function Logout()
+    for _, fn in pairs(shutdown) do fn() end
+    local settings = ScarletUI.db.global.bankCacheModule
+    ScarletUI.db.global.bankCacheModule = nil
+    Fire("PLAYER_LOGOUT")
+    ScarletUI.db.global.bankCacheModule = settings -- reloaded with defaults
+end
 
 -- Era, TBC, and Mists: the bank container and the bank bags after the bag slots.
 ModernContainer()
@@ -160,7 +171,7 @@ Enum.TooltipDataType = { Item = 0 }
 ScarletUI:SetupBankCache()
 ScarletUI:SetupBankCache() -- setup reruns after a reset; hooks stay single
 assert(#handlers.BANKFRAME_OPENED == 1 and #handlers.BANK_TABS_CHANGED == 1 and postCalls[0])
-assert(#handlers.PLAYER_LOGOUT == 1 and #handlers.PLAYER_MONEY == 1 and #timers == 1) -- the login snapshot
+assert(shutdown["ScarletUI-BankCacheOnDatabaseShutdown"] and #handlers.PLAYER_MONEY == 1 and #timers == 1) -- the login snapshot
 RunTimers()
 Fire("BAG_UPDATE", 0)
 assert(#timers == 1) -- bank closed: the character only
@@ -302,7 +313,7 @@ assert(me.money == 99 and me.bags.counts[4306] == nil and me.time == 3100)
 assert(ScarletUI.db.global.bankCache["Scarlet - Realm"] == bankBefore)
 -- Logout saves at once (no timer runs then), with the time and rest state.
 now, player.resting = 3200, false
-Fire("PLAYER_LOGOUT")
+Logout()
 me = ScarletUI.db.global.characterCache["Scarlet - Realm"]
 assert(#timers == 0 and me.time == 3200 and me.resting == false)
 -- Secret values (Forever) and a zone not loaded yet keep the saved ones; bags
@@ -327,7 +338,7 @@ ScarletUI.db.global.bankCacheModule.enabled = false
 now, player.money = 3300, 1
 Fire("PLAYER_MONEY")
 RunTimers()
-Fire("PLAYER_LOGOUT")
+Logout()
 assert(ScarletUI.db.global.characterCache["Scarlet - Realm"].money == 123456)
 ScarletUI.db.global.bankCacheModule.enabled = true
 ScarletUI.db.global.characterCache = nil
