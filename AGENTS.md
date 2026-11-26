@@ -212,7 +212,9 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   (`C_SwingTimer.IsTargetWithinSwingRange(0)`, or Raptor Strike's range with no
   melee weapon), Auto Shot (75) out of range, and `CheckInteractDistance(target, 2)`
   (trade, 8-11 yd) true, since Auto Shot also reads out of range past 35 yd. Nil
-  or secret readings never count. A 0.1s `OnUpdate` runs only while the target is
+  or secret readings never count. Retail re-allowed that check on enemies in
+  combat (2023-12-11 hotfix); if Forever blocks it, the first `ADDON_ACTION_BLOCKED`
+  naming it stops in-combat calls. A 0.1s `OnUpdate` runs only while the target is
   attackable (`PLAYER_TARGET_CHANGED`, `UNIT_FACTION`). Tested in
   `tests/hunter-dead-zone.lua`.
 - `Modules/Chat.lua`: chat tabs and font size. It reruns on every

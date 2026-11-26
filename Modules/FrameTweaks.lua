@@ -186,6 +186,10 @@ end
 -- (on its StatusBar) doesn't fade it. Polled only while the target is hostile.
 local DEAD_ZONE_POLL = 0.1
 local AUTO_SHOT, RAPTOR_STRIKE, TRADE_DISTANCE = 75, 2973, 2
+-- Retail blocked CheckInteractDistance in combat (10.2.0), then allowed enemy
+-- units again (2023-12-11 hotfix). Should Forever still block it, the first
+-- ADDON_ACTION_BLOCKED for it stops in-combat calls, so polling can't spam them.
+local distanceBlocked = false
 
 local function Known(value)
     if IsSecret(value) then return nil end
@@ -198,7 +202,8 @@ end
 
 function ScarletUI.TargetInDeadZone()
     if not HostileTarget() then return false end
-    local melee = C_SwingTimer and Known(C_SwingTimer.IsTargetWithinSwingRange(0)) -- main hand
+    local melee = C_SwingTimer and C_SwingTimer.IsTargetWithinSwingRange
+        and Known(C_SwingTimer.IsTargetWithinSwingRange(0)) -- main hand
     if melee == nil then
         local name = C_Spell.GetSpellName(RAPTOR_STRIKE) -- the rank the player knows
         melee = name and Known(C_Spell.IsSpellInRange(name, "target"))
@@ -206,6 +211,7 @@ function ScarletUI.TargetInDeadZone()
     local shot = Known(C_Spell.IsSpellInRange(AUTO_SHOT, "target"))
     -- Unknown readings (nil, secret) never count as out of range.
     if melee ~= false or shot ~= false then return false end
+    if distanceBlocked and InCombatLockdown() then return false end
     return Known(CheckInteractDistance("target", TRADE_DISTANCE)) == true
 end
 
@@ -241,7 +247,13 @@ function ScarletUI:SetupHunterDeadZone()
     self.UpdateHunterDeadZone = Update
     poll:RegisterEvent("PLAYER_TARGET_CHANGED")
     poll:RegisterUnitEvent("UNIT_FACTION", "target")
-    poll:SetScript("OnEvent", Update)
+    poll:RegisterEvent("ADDON_ACTION_BLOCKED")
+    poll:SetScript("OnEvent", function(_, event, addon, func)
+        if event ~= "ADDON_ACTION_BLOCKED" then return Update() end
+        if addon == "ScarletUI" and type(func) == "string" and func:find("CheckInteractDistance", 1, true) then
+            distanceBlocked = true
+        end
+    end)
     Update()
 end
 

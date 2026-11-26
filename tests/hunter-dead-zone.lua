@@ -56,6 +56,8 @@ Reset() swingMelee = nil raptor = nil assert(InDeadZone() == false)
 C_SwingTimer = nil
 Reset() raptor = false assert(InDeadZone() == true)
 Reset() raptor = true assert(InDeadZone() == false)
+C_SwingTimer = {} -- without the swing range check, too
+Reset() raptor = false assert(InDeadZone() == true)
 C_SwingTimer = { IsTargetWithinSwingRange = function() return swingMelee end }
 
 -- The overlay: hunters only, polled only with a hostile target, follows the toggle.
@@ -121,10 +123,23 @@ Reset() hostile = false
 poll.scripts.OnEvent(poll, "UNIT_FACTION", "target")
 assert(not overlay.shown and poll.scripts.OnUpdate == nil)
 
+-- If Forever blocks the distance check in combat, it stops asking then, not out of combat.
+local fighting = false
+InCombatLockdown = function() return fighting end
+poll.scripts.OnEvent(poll, "ADDON_ACTION_BLOCKED", "OtherAddon", "CheckInteractDistance()")
+poll.scripts.OnEvent(poll, "ADDON_ACTION_BLOCKED", "ScarletUI", "CastSpellByName()")
+fighting = true
+Reset() assert(InDeadZone() == true and asked.close)
+assert(poll.scripts.OnUpdate == nil) -- blocked-action events don't start polling
+poll.scripts.OnEvent(poll, "ADDON_ACTION_BLOCKED", "ScarletUI", "CheckInteractDistance()")
+Reset() assert(InDeadZone() == false and not asked.close)
+fighting = false
+Reset() assert(InDeadZone() == true and asked.close)
+
 -- Set up once.
 ScarletUI:SetupHunterDeadZone()
 assert(#frames == 2)
 
 SwingTimerRangedFrame, C_SwingTimer, C_Spell, CheckInteractDistance, issecretvalue = nil, nil, nil, nil, nil
-UnitCanAttack, UnitIsDeadOrGhost = nil, nil
-print("PASS: hunter dead zone range readings, secret and unknown values, Raptor Strike fallback, overlay polling, toggle, and hunters only")
+UnitCanAttack, UnitIsDeadOrGhost, InCombatLockdown = nil, nil, nil
+print("PASS: hunter dead zone range readings, secret and unknown values, Raptor Strike fallback, blocked distance checks, overlay polling, toggle, and hunters only")
