@@ -2111,3 +2111,6 @@ dofile("tests/auto-shot-clip.lua")
 
 -- Also replaces the ScarletUI global.
 dofile("tests/hunter-dead-zone.lua")
+
+-- Also replaces the ScarletUI global.
+dofile("tests/enchant-text.lua")

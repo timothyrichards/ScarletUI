@@ -172,6 +172,19 @@ function ScarletUI:GetGeneralSettingsPage(database, order)
                             self:InspectFrameItemLevel()
                         end,
                     },
+                    enchantText = {
+                        name = "Enchants",
+                        desc = "Show each item's enchant beside its slot in the character and inspect windows. Slots that could be enchanted but are not say No enchant in red; rings count only where this expansion lets everyone enchant them, or you are an enchanter.",
+                        type = "toggle",
+                        width = 1,
+                        order = 1.5,
+                        get = function(_) return database.enchantText end,
+                        set = function(_, val)
+                            database.enchantText = val
+                            self:CharacterFrameItemLevel()
+                            self:InspectFrameItemLevel()
+                        end,
+                    },
                     itemLevelBag = {
                         name = "Bags",
                         desc = "Show item levels on equipment in your bags and bank.",

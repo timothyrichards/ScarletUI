@@ -227,6 +227,23 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   On Forever it also shows the average under the stats pane level text, since
   that client has none. Do not add rows to `PAPERDOLL_STATCATEGORIES`: it taints
   `CharacterFrame:OnShow`, which then fails on secret player health values.
+- `Modules/EnchantText.lua`: enchant text beside the character and inspect window
+  slots (`db.global.enchantText`, on by default, toggle in the Item Level group). It
+  reruns from the end of `CharacterFrameItemLevel` and `InspectFrameItemLevel`, so it
+  follows their equipment events. The enchant ID is the item link's second field;
+  its text is read from `C_TooltipInfo.GetHyperlink`, or a hidden `GameTooltip` where
+  that is missing: the `ENCHANTED_TOOLTIP_LINE` ("Enchanted: %s") line, else the green
+  line the same link with the enchant removed lacks (Classic tooltips show a bare
+  line). Texts are cached by enchant ID, stripped of markup, abbreviated and cut to
+  20 characters (`EnchantText.Shorten`); an unloaded tooltip retries after 1s, three
+  times. An equipped item with no enchant shows a red "No enchant" only where
+  `EnchantText.RULES` (hand-kept per client, not taken from ElvUI, which wasn't
+  installed) says the slot can be enchanted: never neck, trinkets, belt, shirt or
+  tabard; rings on Retail for everyone, on TBC to Mists only for the player as an
+  enchanter (`GetProfessions` skill line 333, else `IsPlayerSpell` on the rank spells),
+  never on inspect there; shields, off-hand frills and ranged scopes per expansion.
+  Labels sit on the side facing the model; with a ranged slot the off hand's goes
+  above it. Tested in `tests/enchant-text.lua`, run by the module-loading check.
 - `Modules/CheapestItem.lua`: outlines the bag stack with the lowest total
   vendor value (sell price x count) on the Blizzard
   combined/individual bag frames and the `Bag.lua` frame

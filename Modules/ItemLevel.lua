@@ -152,6 +152,10 @@ function ScarletUI:CharacterFrameItemLevel()
         end
     end
 
+    if self.UpdateEnchantTexts then
+        self:UpdateEnchantTexts("Character", "player")
+    end
+
     -- Forever's stats pane has no item level, so show the average under the level text.
     -- Adding a row to PAPERDOLL_STATCATEGORIES taints CharacterFrame:OnShow and breaks secret health values.
     if versionText == "FOREVER" and CharacterLevelText then
@@ -219,6 +223,10 @@ function ScarletUI:InspectFrameItemLevel()
                 ItemLevelText(itemLink, nil, itemButton, hide)
             end
         end
+    end
+
+    if self.UpdateEnchantTexts then
+        self:UpdateEnchantTexts("Inspect", unit)
     end
 end
 
