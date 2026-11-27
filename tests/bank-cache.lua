@@ -311,11 +311,21 @@ RunTimers()
 me = ScarletUI.db.global.characterCache["Scarlet - Realm"]
 assert(me.money == 99 and me.bags.counts[4306] == nil and me.time == 3100)
 assert(ScarletUI.db.global.bankCache["Scarlet - Realm"] == bankBefore)
--- Logout saves at once (no timer runs then), with the time and rest state.
-now, player.resting = 3200, false
+-- Logout saves the time at once (no timer runs then) and reads nothing else:
+-- Forever reads 0 gold, XP, and rest while logging out, which zeroed every
+-- alt's gold in the character viewer.
+now = 3200
+player.money, player.xp, player.xpMax, player.rested, player.resting = 0, 0, 0, nil, false
 Logout()
 me = ScarletUI.db.global.characterCache["Scarlet - Realm"]
-assert(#timers == 0 and me.time == 3200 and me.resting == false)
+assert(#timers == 0 and me.time == 3200 and me.money == 99 and me.xpMax == 1000 and me.rested == 450 and me.resting == true)
+player.money, player.xp, player.xpMax, player.rested, player.resting = 99, 300, 1000, 450, true
+-- 0 gold before the client knows the money keeps the saved gold; after
+-- PLAYER_MONEY this session, 0 is real.
+player.money = 0
+assert(BankCache.ReadCharacter({ money = 5 }).money == 5 and BankCache.ReadCharacter({}).money == 0)
+assert(BankCache.ReadCharacter({ money = 5 }, true).money == 0)
+player.money = 99
 -- Secret values (Forever) and a zone not loaded yet keep the saved ones; bags
 -- that read as nothing keep the saved bags.
 local SECRET = {}

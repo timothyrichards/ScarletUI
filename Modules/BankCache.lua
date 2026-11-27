@@ -149,8 +149,10 @@ function BankCache.BagContainers()
 end
 
 -- The logged-in character's summary; maxLevel means it cannot gain XP. A value the client keeps secret (Forever)
--- or has not loaded (an empty zone name) keeps the `previous` saved one.
-function BankCache.ReadCharacter(previous)
+-- or has not loaded (an empty zone name) keeps the `previous` saved one, and so
+-- does 0 gold over saved gold unless `moneyChanged` (PLAYER_MONEY this session):
+-- before the client knows the money it reads 0.
+function BankCache.ReadCharacter(previous, moneyChanged)
     previous = previous or {}
     local className, class = UnitClass("player")
     local read = {
@@ -162,6 +164,7 @@ function BankCache.ReadCharacter(previous)
     for field, value in pairs(read) do
         if IsSecret(value) or value == "" then read[field] = previous[field] end
     end
+    if read.money == 0 and not moneyChanged then read.money = previous.money or 0 end
     -- Tested only now: a secret value cannot be.
     read.rested, read.resting, read.maxLevel = read.rested or 0, read.resting and true or false, read.maxLevel and true or false
     return read
@@ -351,7 +354,7 @@ function BankCache.Decorate(button, link)
     return quality == nil
 end
 
-local bankOpen, pending, pendingCharacter, viewer, viewerTip
+local bankOpen, pending, pendingCharacter, moneyChanged, viewer, viewerTip
 local ALL = "ALL" -- the viewer's "All characters" choice
 
 function ScarletUI:SnapshotBank()
@@ -380,12 +383,18 @@ end
 
 -- The logged-in character's summary, bags, and last-seen time, in
 -- db.global.characterCache. Bags that read as nothing keep the saved ones.
-function ScarletUI:SnapshotCharacter()
+-- `atLogout` only sets the time: Forever reads 0 gold, XP, and rest while
+-- logging out (not on /reload), so the last save from the session stands.
+function ScarletUI:SnapshotCharacter(atLogout)
     if not self.db.global.bankCacheModule.enabled then return end
     local global, key = self.db.global, self.db.keys.char
     global.characterCache = global.characterCache or {}
     local previous = global.characterCache[key] or {}
-    local entry = BankCache.ReadCharacter(previous)
+    if atLogout and previous.time then
+        previous.time = time()
+        return
+    end
+    local entry = BankCache.ReadCharacter(previous, moneyChanged)
     entry.realm, entry.time = self.db.keys.realm, time()
     entry.bags = BankCache.ReadContainers(BankCache.BagContainers()) or previous.bags
     global.characterCache[key] = entry
@@ -458,15 +467,18 @@ function ScarletUI:SetupBankCache()
         self:RegisterEventHandler("BANK_TABS_CHANGED", Update)
     end
     HookTooltips()
-    local function Character() self:ScheduleCharacterSnapshot() end
+    local function Character(event)
+        if event == "PLAYER_MONEY" then moneyChanged = true end
+        self:ScheduleCharacterSnapshot()
+    end
     for _, event in ipairs({ "PLAYER_ENTERING_WORLD", "BAG_UPDATE", "PLAYER_MONEY", "PLAYER_XP_UPDATE", "UPDATE_EXHAUSTION",
         "PLAYER_UPDATE_RESTING", "PLAYER_LEVEL_UP", "ZONE_CHANGED_NEW_AREA" }) do
         self:RegisterEventHandler(event, Character)
     end
-    -- No timer runs at logout; this save sets the time and resting state the
-    -- rested projection counts from. AceDB strips default-only tables (such as
-    -- bankCacheModule) on PLAYER_LOGOUT before our handlers run; this fires first.
-    self.db.RegisterCallback("ScarletUI-BankCache", "OnDatabaseShutdown", function() self:SnapshotCharacter() end)
+    -- The logout time is what the rested projection counts from. AceDB strips
+    -- default-only tables (such as bankCacheModule) on PLAYER_LOGOUT before our
+    -- handlers run; this fires first.
+    self.db.RegisterCallback("ScarletUI-BankCache", "OnDatabaseShutdown", function() self:SnapshotCharacter(true) end)
     Character()
 end
 
