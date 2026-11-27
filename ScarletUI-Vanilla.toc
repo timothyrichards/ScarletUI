@@ -2,7 +2,7 @@
 ## Title: Scarlet UI
 ## Author: ScarletPaladin
 ## Notes: Misc UI features/modifications preferred by ScarletPaladin
-## Version: 1.4.1
+## Version: 1.4.2
 ## SavedVariables: ScarletUIDB
 ## LoadSavedVariablesFirst: 1
 ## X-Curse-Project-ID: 858380

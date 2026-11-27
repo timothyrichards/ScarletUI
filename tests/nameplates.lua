@@ -85,6 +85,28 @@ now = now + 10
 ScarletUI:UpdateNameplate("nameplate1")
 assert(plates.nameplate1.UnitFrame.healthBar.color[3] == module.nonTankThreatColors.tank[3], "main tank not detected")
 
+-- Classic: a pet with aggro gets the pet color by its own threat situation, solo or grouped, in
+-- Blizzard's tokens (pet, partypetN), even when someone else has more raw threat.
+local function ExpectPetColor(message)
+    plates = { nameplate1 = Plate() }
+    now = now + 10
+    ScarletUI:UpdateNameplate("nameplate1")
+    assert(plates.nameplate1.UnitFrame.healthBar.color[3] == module.nonTankThreatColors.pet[3], message)
+end
+raid, members, assignments = false, 1, {}
+names = { player = "Me", Player = "Me", pet = "Wolf", nameplate1 = "Boar" }
+threat = { Me = { status = 1, situation = 1, amount = 1200 }, Wolf = { situation = 3, amount = 1000 } }
+ExpectPetColor("solo hunter's pet with aggro didn't get the pet color")
+raid, members = false, 2
+names.party1, names.partypet1, names.pet = "Lock", "Imp", nil
+threat = { Me = { status = 0, situation = 0, amount = 100 }, Lock = { situation = 0, amount = 200 }, Imp = { situation = 3, amount = 150 } }
+ExpectPetColor("a party member's pet with aggro didn't get the pet color")
+threat.Me = { status = 3, situation = 3, amount = 100 }
+plates = { nameplate1 = Plate() }
+now = now + 10
+ScarletUI:UpdateNameplate("nameplate1")
+assert(plates.nameplate1.UnitFrame.healthBar.color[3] == module.nonTankThreatColors.threat[3], "a pet beat the player's own aggro")
+
 -- Units without a nameplate or UnitFrame must not error, including special units.
 module.specialUnitNames = "Boss"
 ScarletUI:SetupNameplates()
@@ -184,12 +206,12 @@ members, names.party1 = 1, nil
 now = now + 10
 ScarletUI:UpdateNameplate("nameplate1")
 assert(not plate.threatAmountText.shown, "solo tank showed a lead")
-names.playerpet, threat.Pet = "Pet", { situation = 0 }
+names.pet, threat.Pet = "Pet", { situation = 0 }
 Percent(secretLead, "pet on the threat list didn't give a lead")
 threat.Pet.situation = nil
 ScarletUI:UpdateNameplate("nameplate1")
 assert(not plate.threatAmountText.shown, "pet off the threat list still gave a lead")
-names.playerpet, threat.Pet = nil, nil
+names.pet, threat.Pet = nil, nil
 members, names.party1 = 2, "Other"
 now = now + 10
 threat.Other.situation = SECRET
@@ -341,6 +363,14 @@ ExpectBlizzard(frame, "recolored with Blizzard's threat health bar color off")
 frame.displayThreatHealthBarColor = true
 inParty = false
 ExpectBlizzard(frame, "recolored solo, where Blizzard shows no threat")
+-- Solo, a hunter's or warlock's own pet with aggro is still painted, then Blizzard's color returns.
+members, names.party1, threat.Me.situation = 1, nil, 1
+names.pet, threat.Pet = "Pet", { situation = 3 }
+ExpectColor(frame, "nonTankThreatColors", "pet", "solo pet with aggro didn't get the pet color")
+threat.Pet.situation = 0
+ExpectBlizzard(frame, "solo pet without aggro was recolored")
+members, names.party1, names.pet, threat.Pet, threat.Me.situation = 2, "Other", nil, nil, 3
+now = now + 10
 frame.explicitThreatSituation = 0
 ExpectColor(frame, "nonTankThreatColors", "noThreat", "Blizzard's nameplate preview didn't get the colors")
 frame.explicitThreatSituation, inParty = nil, true
@@ -355,13 +385,13 @@ ApplyColors({ displayThreatHealthBarColor = true, displayedUnit = "nameplate1", 
 
 -- A pet or another tank with aggro: each unit's own threat situation, with nothing compared.
 threat.Me.situation = 1
-names.playerpet, threat.Pet = "Pet", { situation = 3 }
+names.pet, threat.Pet = "Pet", { situation = 3 }
 ExpectColor(frame, "nonTankThreatColors", "pet", "a pet with aggro didn't get the pet color")
 isTank, threat.Me.leadSituation = true, 3
 ExpectColor(frame, "tankThreatColors", "pet", "a pet with aggro didn't get the tank's pet color")
 threat.Pet.situation = secretState
 ExpectColor(frame, "tankThreatColors", "noThreat", "a secret pet situation didn't fall back")
-names.playerpet, threat.Pet = nil, nil
+names.pet, threat.Pet = nil, nil
 threat.Other.situation = 3
 ExpectColor(frame, "tankThreatColors", "noThreat", "a non-tank with aggro got the tank color")
 local roles = { party1 = "TANK" }
@@ -418,7 +448,7 @@ for _, group in ipairs({ "nonTank", "tank" }) do
     local groupArgs = colors[group].args
     assert(groupArgs.noThreat.name == "No Threat" and groupArgs.lowThreat.name == "Low Threat" and groupArgs.threat.name == "Have Threat")
     assert(groupArgs.pet.name == "Pet Threat" and groupArgs.tank.name == "Tank Threat", "Forever lost pet or tank threat colors")
-    assert(groupArgs.pet.desc:find("Only in a group") and groupArgs.tank.desc, "Forever pet or tank threat colors have no tooltip")
+    assert(groupArgs.pet.desc:find("Your pet") and groupArgs.tank.desc, "Forever pet or tank threat colors have no tooltip")
 end
 -- Tank Names saves, and the plates repaint with the new tanks.
 names.party1, threat.Other.situation, threat.Me.situation = "Other", 3, 1

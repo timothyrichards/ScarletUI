@@ -189,20 +189,11 @@ threatThrottleFrame:SetScript("OnUpdate", function(_, dt)
     end
 end)
 
--- Pre-computed pet unit strings, rebuilt periodically
-local petUnitStrings = {}
-local lastPetRebuild = 0
-local function RebuildPetUnitStrings()
-    local now = GetTime()
-    if now - lastPetRebuild < 1 then return end
-    lastPetRebuild = now
-    wipe(petUnitStrings)
-    petUnitStrings["player"] = "playerpet"
-    for i = 1, 40 do
-        petUnitStrings["party" .. i] = "party" .. i .. "pet"
-        petUnitStrings["raid" .. i] = "raid" .. i .. "pet"
-    end
-end
+-- A group member's pet token, in Blizzard's own form: pet, partypetN, raidpetN.
+local petTokens = setmetatable({ player = "pet" }, { __index = function(t, member)
+    t[member] = member:gsub("^(%a+)(%d+)$", "%1pet%2")
+    return t[member]
+end })
 
 local function trim(s)
     return s:match("^%s*(.-)%s*$")
@@ -265,8 +256,6 @@ local function IterateGroupMembers()
 end
 
 local function ThreatFunc(unit)
-    RebuildPetUnitStrings()
-
     local firstUnit, secondUnit
     local firstThreat, secondThreat = -1, -1  -- Initialize with values less than zero
     local threat, pet, anySecret
@@ -289,7 +278,7 @@ local function ThreatFunc(unit)
             end
         end
 
-        pet = petUnitStrings[member] or (member .. "pet")
+        pet = petTokens[member]
         if UnitExists(pet) then
             threat = select(5, UnitDetailedThreatSituation(pet, unit))
 
@@ -310,28 +299,6 @@ local function ThreatFunc(unit)
     end
 
     return firstUnit, firstThreat, secondUnit, secondThreat, anySecret
-end
-
-local function IsPet(unitId)
-    if UnitIsUnit(unitId, "pet") then
-        return true
-    end
-
-    for i = 1, 4 do
-        if UnitIsUnit(unitId, "partypet" .. i) then
-            return true
-        end
-    end
-
-    if IsInRaid() then
-        for i = 1, GetNumGroupMembers() do
-            if UnitIsUnit(unitId, "raidpet" .. i) then
-                return true
-            end
-        end
-    end
-
-    return false
 end
 
 -- Cache for party assignments to prevent excessive API calls
@@ -396,14 +363,13 @@ end
 -- pet is on the unit's threat list. A secret threat situation might mean they are, so it counts.
 -- Units outside the group can't be found this way and are treated as absent.
 local function OthersOnThreatList(unitId)
-    RebuildPetUnitStrings()
     local status, pet
     for member in IterateGroupMembers() do
         if not UnitIsUnit(member, "player") then
             status = UnitThreatSituation(member, unitId)
             if IsSecret(status) or status ~= nil then return true end
         end
-        pet = petUnitStrings[member] or (member .. "pet")
+        pet = petTokens[member]
         if UnitExists(pet) then
             status = UnitThreatSituation(pet, unitId)
             if IsSecret(status) or status ~= nil then return true end
@@ -495,9 +461,8 @@ end
 -- threat situation says this without comparing anyone's threat. The caller has already checked the
 -- player hasn't got aggro, so the player's own raidN entry never matches.
 local function OtherAggroKey(mob)
-    RebuildPetUnitStrings()
     for member in IterateGroupMembers() do
-        if HasAggro(petUnitStrings[member] or (member .. "pet"), mob) then return "pet" end
+        if HasAggro(petTokens[member], mob) then return "pet" end
         if member ~= "player" and HasAggro(member, mob) then
             return IsGroupTank(member) and "tank" or nil
         end
@@ -525,7 +490,7 @@ local function ForeverThreatColor(frame)
         local unit = frame.displayedUnit
         local inParty = UnitInParty("player")
         if not (frame.optionTable and frame.optionTable.usePlayerForAggroHighlightThreat)
-            or IsSecret(unit) or IsSecret(inParty) or inParty == false or not IsNameplateToken(unit) then
+            or IsSecret(unit) or IsSecret(inParty) or not IsNameplateToken(unit) then
             return
         end
         local situation = UnitThreatSituation("player", unit)
@@ -534,6 +499,9 @@ local function ForeverThreatColor(frame)
             local key = OtherAggroKey(unit)
             if key then return module[group][key] end
         end
+        -- Solo, Blizzard shows no threat colors, so only a pet with aggro is painted. Blizzard
+        -- repaints its own color on the next threat update, once the pet loses aggro.
+        if inParty == false then return end
         if isTank then
             status = UnitThreatLeadSituation("player", unit)
             -- A lead of 0 also means no threat at all, so only call it a safe lead while tanking.
@@ -731,11 +699,10 @@ function ScarletUI:UpdateNameplate(unitId)
         threatColorGroup = nameplatesModule.tankThreatColors
     end
 
-    if firstUnit and IsPet(firstUnit) then
+    -- A pet has aggro by its own threat situation; the highest raw threat isn't always the one tanking.
+    if not threatOnly and (threatStatus == nil or threatStatus < 2) and OtherAggroKey(unitId) == "pet" then
         threatStatus = 4
-    end
-
-    if not threatOnly and firstUnit and IsTank(UnitName(firstUnit)) and not UnitIsUnit(firstUnit, "Player") then
+    elseif not threatOnly and firstUnit and IsTank(UnitName(firstUnit)) and not UnitIsUnit(firstUnit, "Player") then
         threatStatus = 5
     end
 
@@ -1628,14 +1595,14 @@ function ScarletUI:GetNameplatesModuleSettingsPage(database, defaults, order)
                 noThreat = "On the threat list, well behind the tank.",
                 lowThreat = "About to pull threat, or tanking while someone else has more threat.",
                 threat = "You have aggro.",
-                pet = "A pet in your group has aggro. Only in a group: Blizzard shows no threat colors solo.",
+                pet = "Your pet, or a pet in your group, has aggro.",
                 tank = "Another tank in your group has aggro (see Tank Names).",
             },
             tank = {
                 noThreat = "Someone else has aggro.",
                 lowThreat = "You have aggro, but someone is catching up.",
                 threat = "You have aggro with a safe lead.",
-                pet = "A pet in your group has aggro. Only in a group: Blizzard shows no threat colors solo.",
+                pet = "Your pet, or a pet in your group, has aggro.",
                 tank = "Another tank in your group has aggro (see Tank Names).",
             },
         }
