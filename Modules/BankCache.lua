@@ -385,6 +385,9 @@ end
 -- db.global.characterCache. Bags that read as nothing keep the saved ones.
 -- `atLogout` only sets the time: Forever reads 0 gold, XP, and rest while
 -- logging out (not on /reload), so the last save from the session stands.
+-- ponytail: a change in the last 0.2s before logout or /reload (its queued
+-- snapshot never runs) is lost until the next login; resting also reads false
+-- at logout, so no field is known safe to read then. Fix only if it bites.
 function ScarletUI:SnapshotCharacter(atLogout)
     if not self.db.global.bankCacheModule.enabled then return end
     local global, key = self.db.global, self.db.keys.char
