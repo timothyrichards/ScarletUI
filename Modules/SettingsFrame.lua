@@ -17,7 +17,7 @@ local TEXT_WIDTH = 330 -- a row's name and description; the control takes the re
 local NAV = {
     { header = "Features" },
     { "generalSettings.interface", master = true, desc = "Small interface tweaks and reminders." },
-    { "generalSettings.itemLevel", master = true, desc = "Show item levels on equipment and in bags." },
+    { "generalSettings.itemLevel", master = true, desc = "Show item levels and enchants on equipment and in bags." },
     { "bagModuleSettings", master = true },
     { "bankCacheSettings" },
     { "chatModuleSettings" },
