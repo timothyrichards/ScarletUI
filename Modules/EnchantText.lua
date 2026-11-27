@@ -217,13 +217,15 @@ local function TooltipLines(link)
     return lines
 end
 
--- Enchant text by enchant ID; false once the enchant could not be read after retries.
-local texts, attempts = {}, {}
+-- Enchant text by enchant ID. Only found texts are kept: an enchant that can't be
+-- read yet (item data still loading) is read again on the next update.
+local texts = {}
 EnchantText.cache = texts
-local MAX_ATTEMPTS = 3
+-- Timed retries after an update leaves an enchant unread. Events start the count over.
+local MAX_RETRIES = 3
 
 local function ReadEnchant(link, enchantID)
-    if texts[enchantID] ~= nil then
+    if texts[enchantID] then
         return texts[enchantID]
     end
     local lines = TooltipLines(link)
@@ -234,12 +236,7 @@ local function ReadEnchant(link, enchantID)
             return texts[enchantID]
         end
     end
-    -- Item data not loaded yet, or no line found: try again shortly.
-    attempts[enchantID] = (attempts[enchantID] or 0) + 1
-    if attempts[enchantID] >= MAX_ATTEMPTS then
-        texts[enchantID] = false
-    end
-    return nil, attempts[enchantID] < MAX_ATTEMPTS
+    return nil
 end
 
 local ENCHANTING = 333
@@ -295,15 +292,16 @@ local function Place(label, button, side)
     end
 end
 
--- prefix is the slot buttons' name prefix: "Character" or "Inspect".
-function ScarletUI:UpdateEnchantTexts(prefix, unit)
+-- prefix is the slot buttons' name prefix: "Character" or "Inspect". retries counts
+-- the timed rereads so far; event-driven calls leave it nil.
+function ScarletUI:UpdateEnchantTexts(prefix, unit, retries)
     local versionText, interfaceVersion = self:GetWoWVersion()
     local rules = EnchantText.RULES[versionText]
     local enabled = self.db.global.enchantText and unit
     local hasEnchanting = enabled and unit == "player" and rules and rules.rings == "enchanter" and PlayerHasEnchanting()
     local rangedButton = interfaceVersion < 50000 and _G[prefix .. "RangedSlot"]
     local threeWeapons = rangedButton and rangedButton:IsShown()
-    local retry = false
+    local unread = false
 
     for slot, side in pairs(SLOTS) do
         local button = _G[prefix .. slot .. "Slot"]
@@ -313,10 +311,8 @@ function ScarletUI:UpdateEnchantTexts(prefix, unit)
                 local link = GetInventoryItemLink(unit, GetInventorySlotInfo(slot .. "Slot"))
                 local enchantID = EnchantText.EnchantID(link)
                 if enchantID then
-                    local again
-                    text, again = ReadEnchant(link, enchantID)
-                    color = GREEN
-                    retry = retry or again
+                    text, color = ReadEnchant(link, enchantID), GREEN
+                    unread = unread or not text
                 elseif link then
                     local _, _, _, equipLoc, _, classID, subClassID = GetItemInfoInstant(link)
                     if EnchantText.CanEnchant(rules, slot, classID, subClassID, equipLoc, hasEnchanting) then
@@ -341,12 +337,13 @@ function ScarletUI:UpdateEnchantTexts(prefix, unit)
     end
 
     -- Uncached items have no tooltip yet; read them again in a moment.
+    retries = retries or 0
     self.enchantRetry = self.enchantRetry or {}
-    if retry and not self.enchantRetry[prefix] then
+    if unread and retries < MAX_RETRIES and not self.enchantRetry[prefix] then
         self.enchantRetry[prefix] = true
         C_Timer.After(1, function()
             self.enchantRetry[prefix] = nil
-            self:UpdateEnchantTexts(prefix, prefix == "Inspect" and InspectFrame and InspectFrame.unit or unit)
+            self:UpdateEnchantTexts(prefix, prefix == "Inspect" and InspectFrame and InspectFrame.unit or unit, retries + 1)
         end)
     end
 end

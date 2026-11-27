@@ -1,5 +1,20 @@
 -- Run from the addon root: lua tests/enchant-text.lua
 -- Enchant text beside the character and inspect window slots.
+local SLOT_NAMES = { "Head", "Neck", "Shoulder", "Back", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet",
+    "Finger0", "Finger1", "Trinket0", "Trinket1", "MainHand", "SecondaryHand", "Ranged" }
+-- Globals this test replaces, put back at the end for the tests that run after it.
+local TOUCHED = { "C_Item", "ENCHANTED_TOOLTIP_LINE", "GetInventorySlotInfo", "GetInventoryItemLink",
+    "C_TooltipInfo", "C_Timer", "IsPlayerSpell", "InspectFrame", "CreateFrame",
+    "ScarletUIEnchantScanTooltipTextLeft1", "ScarletUIEnchantScanTooltipTextLeft2" }
+for _, name in ipairs(SLOT_NAMES) do
+    TOUCHED[#TOUCHED + 1] = "Character" .. name .. "Slot"
+    TOUCHED[#TOUCHED + 1] = "Inspect" .. name .. "Slot"
+end
+local saved = {}
+for _, name in ipairs(TOUCHED) do
+    saved[name] = _G[name]
+end
+
 local version = { "FOREVER", 16001 }
 ScarletUI = { db = { global = { enchantText = true } } }
 ScarletUI.GetWoWVersion = function() return version[1], version[2] end
@@ -103,8 +118,6 @@ end
 local function Button()
     return { CreateFontString = function() return FontString() end, IsShown = function() return true end }
 end
-local SLOT_NAMES = { "Head", "Neck", "Shoulder", "Back", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet",
-    "Finger0", "Finger1", "Trinket0", "Trinket1", "MainHand", "SecondaryHand", "Ranged" }
 local slotIDs = {}
 for index, name in ipairs(SLOT_NAMES) do
     slotIDs[name .. "Slot"] = index
@@ -174,6 +187,23 @@ assert(head.shown and head.text == "+8 Stamina")
 assert(not Label("Character", "Back").shown and not Label("Character", "MainHand").shown, "unequipped slots clear")
 print("PASS: enchant cache, retry for uncached items, cleared slots")
 
+-- Events while an item loads never give up on its enchant; the timed retries stop after three.
+loaded = false
+TIPS[2506] = "+10 Agility"
+Equip("player", { Head = "item:1:2506:0" })
+for _ = 1, 6 do
+    ScarletUI:UpdateEnchantTexts("Character", "player") -- equip, inventory and inspect events
+end
+for _ = 1, 3 do
+    assert(#timers == 1, "retries while the item is unread")
+    table.remove(timers)()
+end
+assert(#timers == 0 and not head.shown, "timed retries stop after three")
+loaded = true
+ScarletUI:UpdateEnchantTexts("Character", "player")
+assert(head.shown and head.text == "+10 Agility", "a late-loading enchant is read on the next event")
+print("PASS: unread enchants are never cached as missing; timed retries are capped")
+
 -- The toggle hides everything.
 ScarletUI.db.global.enchantText = false
 ScarletUI:UpdateEnchantTexts("Character", "player")
@@ -235,4 +265,7 @@ ScarletUI:UpdateEnchantTexts("Character", "player")
 assert(Label("Character", "MainHand").text == "Fiery Weapon")
 print("PASS: hidden tooltip scan on clients without C_TooltipInfo")
 
-C_TooltipInfo, C_Timer, CreateFrame, InspectFrame, IsPlayerSpell = nil, nil, nil, nil, nil
+CharacterRangedSlot = nil
+for _, name in ipairs(TOUCHED) do
+    _G[name] = saved[name]
+end

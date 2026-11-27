@@ -234,9 +234,10 @@ ElvUI also enables lightweight mode. See `docs/classic-beta.md` for beta details
   its text is read from `C_TooltipInfo.GetHyperlink`, or a hidden `GameTooltip` where
   that is missing: the `ENCHANTED_TOOLTIP_LINE` ("Enchanted: %s") line, else the green
   line the same link with the enchant removed lacks (Classic tooltips show a bare
-  line). Texts are cached by enchant ID, stripped of markup, abbreviated and cut to
-  20 characters (`EnchantText.Shorten`); an unloaded tooltip retries after 1s, three
-  times. An equipped item with no enchant shows a red "No enchant" only where
+  line). Found texts are cached by enchant ID, stripped of markup, abbreviated and cut
+  to 20 characters (`EnchantText.Shorten`). An unread one (item data still loading) is
+  never cached: it is retried 1s apart up to three times after each event-driven update,
+  and read again on the next event. An equipped item with no enchant shows a red "No enchant" only where
   `EnchantText.RULES` (hand-kept per client, not taken from ElvUI, which wasn't
   installed) says the slot can be enchanted: never neck, trinkets, belt, shirt or
   tabard; rings on Retail for everyone, on TBC to Mists only for the player as an
